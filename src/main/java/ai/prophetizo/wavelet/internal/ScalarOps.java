@@ -260,7 +260,7 @@ public final class ScalarOps {
 
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (Double.compare(coeff, 0.0) == 0) continue;
+            if (coeff == 0.0) continue;
 
             int base = 2 * i;
             int idx0 = base & outputMask;
