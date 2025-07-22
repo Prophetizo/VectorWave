@@ -15,6 +15,12 @@ import static java.util.Arrays.fill;
 public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
+    
+    // Note on zero coefficient handling:
+    // Throughout this class, we skip exact zero coefficients (coeff == 0.0) for performance.
+    // This is intentional as wavelet transforms preserve exact zeros from sparse or 
+    // zero-padded signals. Very small coefficients are NOT treated as zero to maintain 
+    // numerical precision in reconstruction.
 
     /**
      * Performs convolution followed by downsampling by 2 with periodic boundary handling.
@@ -112,10 +118,7 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            // Skip exact zero coefficients - this is intentional as wavelet transforms
-            // preserve exact zeros from sparse or zero-padded signals. Very small 
-            // coefficients should not be treated as zero to maintain numerical precision.
-            if (coeff == 0.0) continue;
+            if (coeff == 0.0) continue; // Skip zero coefficients (see class-level note)
 
             int baseIndex = 2 * i;
 
@@ -145,10 +148,7 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            // Skip exact zero coefficients - this is intentional as wavelet transforms
-            // preserve exact zeros from sparse or zero-padded signals. Very small 
-            // coefficients should not be treated as zero to maintain numerical precision.
-            if (coeff == 0.0) continue;
+            if (coeff == 0.0) continue; // Skip zero coefficients (see class-level note)
 
             int baseIndex = 2 * i;
 
@@ -242,10 +242,7 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            // Skip exact zero coefficients - this is intentional as wavelet transforms
-            // preserve exact zeros from sparse or zero-padded signals. Very small 
-            // coefficients should not be treated as zero to maintain numerical precision.
-            if (coeff == 0.0) continue;
+            if (coeff == 0.0) continue; // Skip zero coefficients (see class-level note)
 
             int baseIndex = 2 * i;
 

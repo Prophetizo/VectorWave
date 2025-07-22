@@ -23,6 +23,10 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 10, time = 1)
 public class SmallSignalBenchmark {
     
+    // Financial signal simulation constants
+    private static final double PERIODIC_AMPLITUDE = 0.1;
+    private static final double PERIODIC_WAVELENGTH = 20.0;
+    
     @Param({"256", "512", "1024"})
     private int signalLength;
     
@@ -44,7 +48,7 @@ public class SmallSignalBenchmark {
         for (int i = 0; i < signalLength; i++) {
             // Brownian motion simulation
             trend *= (1 + volatility * (Math.random() - 0.5));
-            signal[i] = trend + 0.1 * Math.sin(2 * Math.PI * i / 20); // Add some periodicity
+            signal[i] = trend + PERIODIC_AMPLITUDE * Math.sin(2 * Math.PI * i / PERIODIC_WAVELENGTH); // Add some periodicity
         }
         
         // Initialize wavelets and transforms

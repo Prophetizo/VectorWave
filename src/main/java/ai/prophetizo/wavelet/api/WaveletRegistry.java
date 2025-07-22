@@ -25,7 +25,11 @@ public final class WaveletRegistry {
         register(Daubechies.DB2);
         register(Daubechies.DB4);
         register(Symlet.SYM2);
+        register(Symlet.SYM3);
+        register(Symlet.SYM4);
         register(Coiflet.COIF1);
+        register(Coiflet.COIF2);
+        register(Coiflet.COIF3);
 
         // Register biorthogonal wavelets
         register(BiorthogonalSpline.BIOR1_3);
