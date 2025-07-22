@@ -59,14 +59,14 @@ public class SmallSignalBenchmark {
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.Throughput)
+    
     public void forward(Blackhole bh) {
         TransformResult result = transform.forward(signal);
         bh.consume(result);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.Throughput)
+    
     public void forwardInverse(Blackhole bh) {
         TransformResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
