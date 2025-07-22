@@ -74,7 +74,6 @@ public class SmallSignalBenchmark {
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.Throughput)
     public void batchTransform(Blackhole bh) {
         TransformResult[] results = new TransformResult[batchSignals.length];
         for (int i = 0; i < batchSignals.length; i++) {
