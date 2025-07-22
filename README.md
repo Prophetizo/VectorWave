@@ -12,7 +12,7 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 - **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
 - **Boundary Modes**: Supports periodic and zero-padding boundary handling
-- **Performance**: Optimized scalar implementation with comprehensive benchmarking
+- **Performance**: Optimized for small signals (<1024 samples) with integrated performance enhancements for financial time series analysis
 
 ## Requirements
 

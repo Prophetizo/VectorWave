@@ -49,6 +49,22 @@ public final class ValidationUtils {
      * @throws InvalidSignalException if the signal is invalid
      */
     public static void validateSignal(double[] signal, String parameterName) {
+        // Optimized path for small signals: combine all checks in single pass
+        if (signal != null && signal.length > 0 && signal.length <= 1024 && isPowerOfTwo(signal.length)) {
+            // Fast path: single pass validation for small power-of-2 signals
+            for (int i = 0; i < signal.length; i++) {
+                double value = signal[i];
+                if (Double.isNaN(value)) {
+                    throw InvalidSignalException.nanValue(parameterName, i);
+                }
+                if (Double.isInfinite(value)) {
+                    throw InvalidSignalException.infinityValue(parameterName, i, value);
+                }
+            }
+            return;
+        }
+        
+        // Standard validation path for large signals or when fast path conditions not met
         // Check null and empty using common method
         validateNotNullOrEmpty(signal, parameterName);
 

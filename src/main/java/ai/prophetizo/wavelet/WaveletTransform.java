@@ -73,8 +73,9 @@ public class WaveletTransform {
 
         // Perform convolution and downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            ScalarOps.convolveAndDownsamplePeriodic(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsamplePeriodic(signal, highPassFilter, detailCoeffs);
+            // Use combined transform for better cache efficiency when possible
+            ScalarOps.combinedTransformPeriodic(signal, lowPassFilter, highPassFilter, 
+                                               approximationCoeffs, detailCoeffs);
         } else {
             ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
             ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
