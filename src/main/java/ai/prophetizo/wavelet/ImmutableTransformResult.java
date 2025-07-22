@@ -3,14 +3,15 @@ package ai.prophetizo.wavelet;
 import java.nio.DoubleBuffer;
 
 /**
- * Memory-efficient immutable transform result that avoids unnecessary copying.
+ * Performance-optimized immutable transform result for internal operations.
  * <p>
- * This implementation stores coefficients in a single array and provides
- * read-only views instead of defensive copies. This significantly reduces
- * memory allocation overhead for small signal processing.
+ * This implementation stores coefficients in a single contiguous array for
+ * better cache locality and provides both defensive copies (for API compatibility)
+ * and direct access methods (for performance-critical internal operations).
  * <p>
- * For trusted internal operations, use the direct array access methods.
- * For external API, use the buffer views which are read-only.
+ * For maximum performance in trusted internal code, use the direct array access
+ * methods or buffer views to avoid copying overhead. For API compatibility,
+ * use the standard accessor methods which return defensive copies.
  */
 public final class ImmutableTransformResult {
 
@@ -116,10 +117,14 @@ public final class ImmutableTransformResult {
 
     /**
      * Converts this immutable result to a standard TransformResult.
-     * Creates defensive copies for compatibility.
+     * 
+     * Note: This method creates defensive copies of the coefficient arrays.
+     * For performance-critical internal operations, use the direct access
+     * methods or buffer views instead.
+     * 
+     * @return a new TransformResult with defensive copies of the coefficients
      */
     public TransformResult toTransformResult() {
-        // Since TransformResultImpl is package-private, we return our own implementation
         return new TransformResultImpl(approximationCoeffs(), detailCoeffs());
     }
 }

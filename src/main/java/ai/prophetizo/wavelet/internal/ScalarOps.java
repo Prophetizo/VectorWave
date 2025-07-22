@@ -112,7 +112,10 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (coeff == 0.0) continue;  // Skip zero coefficients
+            // Skip exact zero coefficients - this is intentional as wavelet transforms
+            // preserve exact zeros from sparse or zero-padded signals. Very small 
+            // coefficients should not be treated as zero to maintain numerical precision.
+            if (coeff == 0.0) continue;
 
             int baseIndex = 2 * i;
 
@@ -142,7 +145,10 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (coeff == 0.0) continue;  // Skip zero coefficients
+            // Skip exact zero coefficients - this is intentional as wavelet transforms
+            // preserve exact zeros from sparse or zero-padded signals. Very small 
+            // coefficients should not be treated as zero to maintain numerical precision.
+            if (coeff == 0.0) continue;
 
             int baseIndex = 2 * i;
 
@@ -236,7 +242,10 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (coeff == 0.0) continue;  // Skip zero coefficients
+            // Skip exact zero coefficients - this is intentional as wavelet transforms
+            // preserve exact zeros from sparse or zero-padded signals. Very small 
+            // coefficients should not be treated as zero to maintain numerical precision.
+            if (coeff == 0.0) continue;
 
             int baseIndex = 2 * i;
 
