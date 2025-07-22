@@ -236,7 +236,7 @@ public final class ScalarOps {
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (Double.compare(coeff, 0.0) == 0) continue;  // Skip zero coefficients
+            if (coeff == 0.0) continue;  // Skip zero coefficients
 
             int baseIndex = 2 * i;
 
