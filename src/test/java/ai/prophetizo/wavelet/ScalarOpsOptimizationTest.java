@@ -171,7 +171,7 @@ class ScalarOpsOptimizationTest {
         assertEquals(-1.0, result.detailCoeffs()[0], EPSILON);
         
         // Views should be read-only
-        assertThrows(Exception.class, () -> {
+        assertThrows(ReadOnlyBufferException.class, () -> {
             result.approximationCoeffsView().put(0, 999.0);
         });
     }
