@@ -11,16 +11,18 @@ import static java.util.Arrays.fill;
  * - Cache-friendly memory access patterns
  * <p>
  * The optimizations are automatically applied based on signal and filter characteristics.
+ * <p>
+ * <strong>Note on zero coefficient handling:</strong>
+ * Throughout this class, exact zero coefficients (coeff == 0.0) are skipped for performance.
+ * This is intentional as wavelet transforms preserve exact zeros from sparse or 
+ * zero-padded signals. Very small coefficients are NOT treated as zero to maintain 
+ * numerical precision in reconstruction.
  */
 public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
     
-    // Note on zero coefficient handling:
-    // Throughout this class, we skip exact zero coefficients (coeff == 0.0) for performance.
-    // This is intentional as wavelet transforms preserve exact zeros from sparse or 
-    // zero-padded signals. Very small coefficients are NOT treated as zero to maintain 
-    // numerical precision in reconstruction.
+// (Removed the internal comment as it has been moved to the class-level Javadoc)
 
     /**
      * Performs convolution followed by downsampling by 2 with periodic boundary handling.
