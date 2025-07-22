@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.internal;
 
+import static java.util.Arrays.fill;
+
 /**
  * Scalar implementation of the core wavelet transform operations.
  * <p>
@@ -105,7 +107,7 @@ public final class ScalarOps {
 
         // Standard implementation
         // Clear output array
-        java.util.Arrays.fill(output, 0.0);
+        fill(output, 0.0);
 
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
@@ -229,7 +231,7 @@ public final class ScalarOps {
         int outputMask = outputLen - 1; // For bitwise modulo
 
         // Clear output array
-        java.util.Arrays.fill(output, 0.0);
+        fill(output, 0.0);
 
         // Upsample and convolve
         for (int i = 0; i < coeffs.length; i++) {
@@ -254,7 +256,7 @@ public final class ScalarOps {
         double f1 = filter[1];
 
         // Clear output array
-        java.util.Arrays.fill(output, 0.0);
+        fill(output, 0.0);
 
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
