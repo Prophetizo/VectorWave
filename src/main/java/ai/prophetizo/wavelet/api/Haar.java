@@ -2,11 +2,11 @@ package ai.prophetizo.wavelet.api;
 
 /**
  * The Haar wavelet, the simplest possible wavelet.
- * 
+ *
  * <p>The Haar wavelet is a step function that represents the simplest
  * orthogonal wavelet. It has compact support and is particularly useful
  * for educational purposes and applications requiring fast computation.</p>
- * 
+ *
  * <p>Properties:
  * <ul>
  *   <li>Orthogonal</li>
@@ -23,7 +23,7 @@ public record Haar() implements OrthogonalWavelet {
     public String name() {
         return "Haar";
     }
-    
+
     @Override
     public String description() {
         return "Haar wavelet - the simplest orthogonal wavelet";
@@ -38,7 +38,7 @@ public record Haar() implements OrthogonalWavelet {
     public double[] highPassDecomposition() {
         return new double[]{DECOMP_COEFFS[1], -DECOMP_COEFFS[0]};
     }
-    
+
     @Override
     public int vanishingMoments() {
         return 1;

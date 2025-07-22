@@ -79,7 +79,7 @@ public class Main {
 
             // Inverse transform
             double[] reconstructed = transform.inverse(result);
-            
+
             // Calculate reconstruction error
             double maxError = 0;
             for (int i = 0; i < signal.length; i++) {
@@ -94,12 +94,12 @@ public class Main {
     private static void demonstrateWaveletRegistry() {
         System.out.println("\n\nWAVELET REGISTRY");
         System.out.println("================");
-        
+
         System.out.println("\nAvailable wavelets: " + WaveletRegistry.getAvailableWavelets());
         System.out.println("\nOrthogonal wavelets: " + WaveletRegistry.getOrthogonalWavelets());
         System.out.println("Biorthogonal wavelets: " + WaveletRegistry.getBiorthogonalWavelets());
         System.out.println("Continuous wavelets: " + WaveletRegistry.getContinuousWavelets());
-        
+
         System.out.println("\nGetting wavelet by name:");
         Wavelet db4 = WaveletRegistry.getWavelet("db4");
         System.out.println("   db4: " + db4.description());

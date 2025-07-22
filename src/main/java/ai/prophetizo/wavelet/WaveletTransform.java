@@ -15,16 +15,16 @@ import java.util.Objects;
  * orthogonal (Haar, Daubechies, Symlets, Coiflets), biorthogonal, and
  * continuous wavelets. All transforms use a scalar implementation for
  * correctness and maintainability.</p>
- * 
+ *
  * <p>Example usage:</p>
  * <pre>{@code
  * // Create transform with Haar wavelet
  * WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
- * 
+ *
  * // Perform forward transform
  * double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
  * TransformResult result = transform.forward(signal);
- * 
+ *
  * // Perform inverse transform
  * double[] reconstructed = transform.inverse(result);
  * }</pre>
@@ -74,8 +74,8 @@ public class WaveletTransform {
         // Perform convolution and downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
             // Use combined transform for better cache efficiency when possible
-            ScalarOps.combinedTransformPeriodic(signal, lowPassFilter, highPassFilter, 
-                                               approximationCoeffs, detailCoeffs);
+            ScalarOps.combinedTransformPeriodic(signal, lowPassFilter, highPassFilter,
+                    approximationCoeffs, detailCoeffs);
         } else {
             ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
             ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);

@@ -17,14 +17,14 @@ import java.util.Objects;
  * WaveletTransform transform = new WaveletTransformFactory()
  *     .withBoundaryMode(BoundaryMode.PERIODIC)
  *     .create(new Haar());
- * 
+ *
  * // Using default factory method
  * WaveletTransform transform2 = WaveletTransformFactory.createDefault(Daubechies.DB4);
- * 
+ *
  * // With biorthogonal wavelet
  * WaveletTransform transform3 = new WaveletTransformFactory()
  *     .create(BiorthogonalSpline.BIOR1_3);
- *     
+ *
  * // With continuous wavelet (discretized)
  * WaveletTransform transform4 = new WaveletTransformFactory()
  *     .create(new MorletWavelet());

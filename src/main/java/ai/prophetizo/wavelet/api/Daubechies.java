@@ -2,11 +2,11 @@ package ai.prophetizo.wavelet.api;
 
 /**
  * The Daubechies family of orthogonal wavelets.
- * 
+ *
  * <p>Daubechies wavelets are a family of orthogonal wavelets with compact
  * support and the maximum number of vanishing moments for a given support
  * width. They are widely used in signal processing and data compression.</p>
- * 
+ *
  * <p>Properties:
  * <ul>
  *   <li>Orthogonal</li>
@@ -15,7 +15,7 @@ package ai.prophetizo.wavelet.api;
  *   <li>Smooth (smoothness increases with order)</li>
  * </ul>
  * </p>
- * 
+ *
  * <p>Common variants: DB2, DB3, DB4, ..., DB10</p>
  */
 public record Daubechies(String name, double[] lowPassCoeffs, int order) implements OrthogonalWavelet {
@@ -34,7 +34,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
             },
             4
     );
-    
+
     @Override
     public String description() {
         return "Daubechies wavelet of order " + order;
@@ -54,7 +54,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
         }
         return highPass;
     }
-    
+
     @Override
     public int vanishingMoments() {
         return order;
