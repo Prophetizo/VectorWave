@@ -13,6 +13,7 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
 - **Boundary Modes**: Supports periodic and zero-padding boundary handling
 - **Performance**: Optimized for small signals (<1024 samples) with integrated performance enhancements for financial time series analysis
+- **Mathematical Verification**: Built-in coefficient verification for all wavelets with documented sources
 
 ## Requirements
 
@@ -72,6 +73,10 @@ Wavelet haar = WaveletRegistry.getWavelet("haar");
 
 // Print all available wavelets
 WaveletRegistry.printAvailableWavelets();
+
+// Verify mathematical properties
+boolean isValidHaar = new Haar().verifyCoefficients();
+boolean isValidDB4 = Daubechies.DB4.verifyCoefficients();
 ```
 
 ## Performance Benchmarking
@@ -203,7 +208,13 @@ The project includes GitHub Actions workflows for:
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
+## Documentation
+
+- [WAVELET_PROPERTIES.md](WAVELET_PROPERTIES.md) - Detailed mathematical properties and sources for all wavelets
+- [BENCHMARKING.md](BENCHMARKING.md) - Comprehensive benchmarking guide and performance tuning
+- [CLAUDE.md](CLAUDE.md) - Codebase guidance for AI assistants
+
 ## Acknowledgments
 
-- Wavelet coefficients based on standard mathematical definitions
+- Wavelet coefficients based on peer-reviewed mathematical sources (see WAVELET_PROPERTIES.md)
 - Benchmarking powered by JMH (Java Microbenchmark Harness)

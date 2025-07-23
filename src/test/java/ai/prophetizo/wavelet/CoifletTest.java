@@ -66,6 +66,18 @@ class CoifletTest {
     }
     
     @Test
+    @DisplayName("Coiflet coefficients satisfy orthogonality conditions")
+    void testCoefficientOrthogonality() {
+        // Verify that all Coiflet variants satisfy the mathematical requirements
+        assertTrue(Coiflet.COIF1.verifyCoefficients(), 
+            "COIF1 coefficients should satisfy orthogonality conditions");
+        assertTrue(Coiflet.COIF2.verifyCoefficients(), 
+            "COIF2 coefficients should satisfy orthogonality conditions");
+        assertTrue(Coiflet.COIF3.verifyCoefficients(), 
+            "COIF3 coefficients should satisfy orthogonality conditions");
+    }
+    
+    @Test
     @DisplayName("Coiflet high-pass filter generation")
     void testHighPassGeneration() {
         // Verify high-pass filter is correctly generated from low-pass

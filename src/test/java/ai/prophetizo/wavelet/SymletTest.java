@@ -84,4 +84,25 @@ class SymletTest {
                 sym.name() + " should provide perfect reconstruction");
         }
     }
+    
+    @Test
+    @DisplayName("SYM2 coefficients satisfy mathematical properties")
+    void testSYM2CoefficientVerification() {
+        assertTrue(Symlet.SYM2.verifyCoefficients(), 
+            "SYM2 coefficients should satisfy all mathematical properties");
+    }
+    
+    @Test
+    @DisplayName("SYM3 coefficients satisfy mathematical properties")
+    void testSYM3CoefficientVerification() {
+        assertTrue(Symlet.SYM3.verifyCoefficients(), 
+            "SYM3 coefficients should satisfy all mathematical properties");
+    }
+    
+    @Test
+    @DisplayName("SYM4 coefficients satisfy mathematical properties")
+    void testSYM4CoefficientVerification() {
+        assertTrue(Symlet.SYM4.verifyCoefficients(), 
+            "SYM4 coefficients should satisfy all mathematical properties");
+    }
 }
