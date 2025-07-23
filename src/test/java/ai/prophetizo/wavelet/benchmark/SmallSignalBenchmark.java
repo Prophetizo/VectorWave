@@ -27,7 +27,7 @@ public class SmallSignalBenchmark {
     private static final double PERIODIC_AMPLITUDE = 0.1;
     private static final double PERIODIC_WAVELENGTH = 20.0;
     
-    @Param({"256", "512", "1024"})
+    @Param({"64", "128", "256", "512", "1024"})
     private int signalLength;
     
     @Param({"haar", "db2", "db4"})
