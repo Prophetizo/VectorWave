@@ -83,6 +83,48 @@ A lightweight benchmark for quick performance checks.
 - Limited iterations for fast results
 - Good for regression testing
 
+### 6. Vector Optimization Comparison
+
+Compares original VectorOps vs optimized VectorOps implementations.
+
+```bash
+./jmh-runner.sh VectorOptimizationBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 128, 256, 512, 1024, 2048, 4096
+- Filter lengths: 4, 8 (DB2 and DB4)
+- Measures: Performance of convolution, combined transforms, and Haar optimization
+- Uses 3 forks for statistical reliability
+
+### 7. Real-Time Application Benchmarks
+
+Measures performance for real-time use cases like audio processing and financial tick data.
+
+```bash
+./jmh-runner.sh RealTimeBenchmark
+```
+
+**Parameters:**
+- Audio buffer sizes: 64, 128, 256, 512 samples
+- Measures: Latency, throughput, and memory allocation overhead
+- Scenarios: Audio processing, financial tick batches, sensor data filtering
+- Includes real-time denoising benchmarks
+
+### 8. Latency-Focused Benchmarks
+
+Detailed latency analysis for real-time constraints.
+
+```bash
+./jmh-runner.sh LatencyBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 16, 32, 64, 128, 256 samples
+- Measures: Percentile latencies (50th, 90th, 95th, 99th, 99.9th)
+- Tests: Jitter, GC impact, thread contention, allocation overhead
+- Wavelet comparison: Haar vs DB2 vs DB4 latency
+
 ## JMH Parameters
 
 Customize benchmark execution with these parameters:
