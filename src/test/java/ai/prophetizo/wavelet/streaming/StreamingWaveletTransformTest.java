@@ -146,8 +146,8 @@ class StreamingWaveletTransformTest {
             }
             transform.process(data);
             
-            // Give a moment for processing to complete
-            Thread.sleep(50);
+            // Wait for processing to complete
+            assertTrue(latch.await(1, TimeUnit.SECONDS), "Processing did not complete in time");
             
             // Verify we got the block
             assertEquals(1, blockCount.get());
