@@ -95,7 +95,7 @@ public class SmallSignalBenchmark {
      * allocations on performance over 100 iterations.
      */
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
+    @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public void memoryPressure(Blackhole bh) {
         for (int i = 0; i < 100; i++) {
