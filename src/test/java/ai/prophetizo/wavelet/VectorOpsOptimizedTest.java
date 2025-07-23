@@ -16,6 +16,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class VectorOpsOptimizedTest {
     
+    /**
+     * Epsilon for floating-point comparisons between scalar and SIMD implementations.
+     * 
+     * The value 1e-10 provides a good balance between:
+     * - Detecting actual implementation errors
+     * - Allowing for minor numerical differences due to:
+     *   - Different order of operations in SIMD (non-associativity of FP arithmetic)
+     *   - Potential use of fused multiply-add (FMA) instructions
+     *   - Different rounding behaviors between scalar and vector operations
+     * 
+     * If tests fail due to numerical precision on specific hardware, consider
+     * relaxing to 1e-9 or 1e-8, but document the hardware configuration.
+     */
     private static final double EPSILON = 1e-10;
     
     // Test filter coefficients from actual wavelets
