@@ -19,13 +19,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class FinancialStatisticsTest {
     
     private static final double EPSILON = 1e-10;
+    private static final int CACHE_SIZE = 100; // Maximum number of entries in the random cache
     
     // Cache for random number generators to ensure reproducibility
     // Each unique sequence index gets its own Random instance with a deterministic seed
-    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.LinkedHashMap<Integer, Random>(100, 0.75f, true) {
+    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.LinkedHashMap<Integer, Random>(CACHE_SIZE, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<Integer, Random> eldest) {
-            return size() > 100; // Limit the cache size to 100 entries
+            return size() > CACHE_SIZE; // Limit the cache size to CACHE_SIZE entries
         }
     };
     
