@@ -117,11 +117,11 @@ public final class ImmutableTransformResult {
 
     /**
      * Converts this immutable result to a standard TransformResult.
-     * 
+     * <p>
      * Note: This method creates defensive copies of the coefficient arrays.
      * For performance-critical internal operations, use the direct access
      * methods or buffer views instead.
-     * 
+     *
      * @return a new TransformResult with defensive copies of the coefficients
      */
     public TransformResult toTransformResult() {

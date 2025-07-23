@@ -21,7 +21,7 @@ import static java.util.Arrays.fill;
 public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
-    
+
 // (Removed the internal comment as it has been moved to the class-level Javadoc)
 
     /**
@@ -327,8 +327,8 @@ public final class ScalarOps {
      * Wrapper method for periodic convolution and downsampling that returns the result.
      * Used by WaveletOpsFactory.
      */
-    public static double[] convolveAndDownsamplePeriodic(double[] signal, double[] filter, 
-                                                        int signalLength, int filterLength) {
+    public static double[] convolveAndDownsamplePeriodic(double[] signal, double[] filter,
+                                                         int signalLength, int filterLength) {
         double[] output = new double[signalLength / 2];
         convolveAndDownsamplePeriodic(signal, filter, output);
         return output;
@@ -339,7 +339,7 @@ public final class ScalarOps {
      * Used by WaveletOpsFactory.
      */
     public static double[] convolveAndDownsampleZeroPadding(double[] signal, double[] filter,
-                                                           int signalLength, int filterLength) {
+                                                            int signalLength, int filterLength) {
         double[] output = new double[signalLength / 2];
         convolveAndDownsampleDirect(signal, filter, output);
         return output;
@@ -350,7 +350,7 @@ public final class ScalarOps {
      * Used by WaveletOpsFactory.
      */
     public static double[] upsampleAndConvolvePeriodic(double[] coeffs, double[] filter,
-                                                      int coeffsLength, int filterLength) {
+                                                       int coeffsLength, int filterLength) {
         double[] output = new double[coeffsLength * 2];
         upsampleAndConvolvePeriodic(coeffs, filter, output);
         return output;
@@ -361,7 +361,7 @@ public final class ScalarOps {
      * Used by WaveletOpsFactory.
      */
     public static double[] upsampleAndConvolveZeroPadding(double[] coeffs, double[] filter,
-                                                         int coeffsLength, int filterLength) {
+                                                          int coeffsLength, int filterLength) {
         double[] output = new double[coeffsLength * 2];
         upsampleAndConvolveDirect(coeffs, filter, output);
         return output;

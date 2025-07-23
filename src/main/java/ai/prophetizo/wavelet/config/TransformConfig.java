@@ -27,11 +27,11 @@ public final class TransformConfig {
         this.forceScalar = builder.forceScalar;
         this.forceSIMD = builder.forceSIMD;
         this.maxDecompositionLevels = builder.maxDecompositionLevels;
-        
+
         // Validate: can't force both scalar and SIMD
         if (forceScalar && forceSIMD) {
             throw new IllegalArgumentException(
-                "Cannot force both scalar and SIMD operations");
+                    "Cannot force both scalar and SIMD operations");
         }
     }
 
@@ -66,14 +66,14 @@ public final class TransformConfig {
     public boolean isForceScalar() {
         return forceScalar;
     }
-    
+
     /**
      * @return true if scalar operations are forced (same as isForceScalar)
      */
     public boolean isForceScalarOperations() {
         return forceScalar;
     }
-    
+
     /**
      * @return true if SIMD operations are forced when available
      */
@@ -143,7 +143,7 @@ public final class TransformConfig {
             this.forceScalar = forceScalar;
             return this;
         }
-        
+
         /**
          * Sets whether to force SIMD operations when available.
          * If SIMD is not available, this setting is ignored.

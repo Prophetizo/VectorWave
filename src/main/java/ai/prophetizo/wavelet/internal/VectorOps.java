@@ -1,13 +1,16 @@
 package ai.prophetizo.wavelet.internal;
 
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorSpecies;
 
 /**
  * SIMD-optimized wavelet operations using Java Vector API.
- * 
+ *
  * <p>This class provides vectorized implementations of core wavelet operations,
  * offering significant performance improvements on modern CPUs with SIMD support.</p>
- * 
+ *
  * <p>Key optimizations:</p>
  * <ul>
  *   <li>Vectorized convolution for filter operations</li>
@@ -15,84 +18,84 @@ import jdk.incubator.vector.*;
  *   <li>SIMD-accelerated boundary handling</li>
  *   <li>Automatic fallback to scalar operations when needed</li>
  * </ul>
- * 
+ *
  * <p>Performance characteristics:</p>
  * <ul>
  *   <li>2-8x speedup on AVX2/AVX512 capable processors</li>
  *   <li>Best performance with aligned data and power-of-2 lengths</li>
  *   <li>Automatic selection of optimal vector species</li>
  * </ul>
- * 
+ *
  * @since 1.3.0
  */
 public final class VectorOps {
-    
+
     // Vector species for different data widths
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final int VECTOR_LENGTH = SPECIES.length();
-    
+
     // Minimum signal length to use vectorization
     private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;
-    
+
     private VectorOps() {
         // Utility class
     }
-    
+
     /**
      * Checks if Vector API is available and beneficial for the given signal length.
      */
     public static boolean isVectorizedOperationBeneficial(int signalLength) {
         return signalLength >= MIN_VECTOR_LENGTH && VECTOR_LENGTH > 1;
     }
-    
+
     /**
      * Vectorized convolution with downsampling for periodic boundary mode.
-     * 
-     * @param signal input signal
-     * @param filter wavelet filter coefficients
+     *
+     * @param signal       input signal
+     * @param filter       wavelet filter coefficients
      * @param signalLength length of the signal (must be power of 2)
      * @param filterLength length of the filter
      * @return downsampled convolution result
      */
     public static double[] convolveAndDownsamplePeriodic(
             double[] signal, double[] filter, int signalLength, int filterLength) {
-        
+
         int outputLength = signalLength / 2;
         double[] output = new double[outputLength];
-        
+
         // Use vectorization only if beneficial
         if (!isVectorizedOperationBeneficial(signalLength)) {
             return ScalarOps.convolveAndDownsamplePeriodic(signal, filter, signalLength, filterLength);
         }
-        
+
         // Process main body with vectorization
         int i = 0;
         int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
-        
+
         for (; i < vectorBound; i += VECTOR_LENGTH) {
             // Initialize result vector
             DoubleVector result = DoubleVector.zero(SPECIES);
-            
+
             // Compute convolution for each output element in the vector
             for (int k = 0; k < filterLength; k++) {
                 // Broadcast filter coefficient
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
-                
+
                 // Load signal values (with proper indexing for downsampling)
                 double[] signalValues = new double[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
                     int idx = (2 * (i + v) + k) & (signalLength - 1); // Periodic boundary
                     signalValues[v] = signal[idx];
                 }
-                
+
                 DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
                 result = result.add(filterVec.mul(signalVec));
             }
-            
+
             // Store results
             result.intoArray(output, i);
         }
-        
+
         // Handle remaining elements with scalar operations
         for (; i < outputLength; i++) {
             double sum = 0.0;
@@ -102,46 +105,46 @@ public final class VectorOps {
             }
             output[i] = sum;
         }
-        
+
         return output;
     }
-    
+
     /**
      * Vectorized convolution with downsampling for zero-padding boundary mode.
      */
     public static double[] convolveAndDownsampleZeroPadding(
             double[] signal, double[] filter, int signalLength, int filterLength) {
-        
+
         int outputLength = signalLength / 2;
         double[] output = new double[outputLength];
-        
+
         if (!isVectorizedOperationBeneficial(signalLength)) {
             return ScalarOps.convolveAndDownsampleZeroPadding(signal, filter, signalLength, filterLength);
         }
-        
+
         int i = 0;
         int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
-        
+
         for (; i < vectorBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
-            
+
             for (int k = 0; k < filterLength; k++) {
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
-                
+
                 // Load signal values with bounds checking
                 double[] signalValues = new double[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
                     int idx = 2 * (i + v) + k;
                     signalValues[v] = (idx < signalLength) ? signal[idx] : 0.0;
                 }
-                
+
                 DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
                 result = result.add(filterVec.mul(signalVec));
             }
-            
+
             result.intoArray(output, i);
         }
-        
+
         // Scalar fallback for remainder
         for (; i < outputLength; i++) {
             double sum = 0.0;
@@ -153,188 +156,196 @@ public final class VectorOps {
             }
             output[i] = sum;
         }
-        
+
         return output;
     }
-    
+
     /**
      * Vectorized upsampling with convolution for periodic boundary mode.
      */
     public static double[] upsampleAndConvolvePeriodic(
             double[] signal, double[] filter, int signalLength, int filterLength) {
-        
+
         int outputLength = signalLength * 2;
         double[] output = new double[outputLength];
-        
+
         if (!isVectorizedOperationBeneficial(outputLength)) {
             return ScalarOps.upsampleAndConvolvePeriodic(signal, filter, signalLength, filterLength);
         }
-        
+
         // Process even indices (direct copy with filtering)
         int i = 0;
         int vectorBound = signalLength - (signalLength % VECTOR_LENGTH);
-        
+
         for (; i < vectorBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
-            
+
             // Process filter coefficients that align with signal samples
             for (int k = 0; k < filterLength; k += 2) {
-                int signalIdx = (i - k/2 + signalLength) % signalLength;
-                
+                int signalIdx = (i - k / 2 + signalLength) % signalLength;
+
                 // Load signal values
                 double[] signalValues = new double[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
                     int idx = (signalIdx + v) % signalLength;
                     signalValues[v] = signal[idx];
                 }
-                
+
                 DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
                 result = result.add(signalVec.mul(filterVec));
             }
-            
+
             // Store at even indices
             for (int v = 0; v < VECTOR_LENGTH; v++) {
                 output[2 * (i + v)] = result.lane(v);
             }
         }
-        
+
         // Handle remaining even indices
         for (; i < signalLength; i++) {
             double sum = 0.0;
             for (int k = 0; k < filterLength; k += 2) {
-                int idx = (i - k/2 + signalLength) % signalLength;
+                int idx = (i - k / 2 + signalLength) % signalLength;
                 sum += filter[k] * signal[idx];
             }
             output[2 * i] = sum;
         }
-        
+
         // Process odd indices
         i = 0;
         for (; i < vectorBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
-            
+
             for (int k = 1; k < filterLength; k += 2) {
-                int signalIdx = (i - k/2 + signalLength) % signalLength;
-                
+                int signalIdx = (i - k / 2 + signalLength) % signalLength;
+
                 double[] signalValues = new double[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
                     int idx = (signalIdx + v) % signalLength;
                     signalValues[v] = signal[idx];
                 }
-                
+
                 DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
                 result = result.add(signalVec.mul(filterVec));
             }
-            
+
             // Store at odd indices
             for (int v = 0; v < VECTOR_LENGTH; v++) {
                 output[2 * (i + v) + 1] = result.lane(v);
             }
         }
-        
+
         // Handle remaining odd indices
         for (; i < signalLength; i++) {
             double sum = 0.0;
             for (int k = 1; k < filterLength; k += 2) {
-                int idx = (i - k/2 + signalLength) % signalLength;
+                int idx = (i - k / 2 + signalLength) % signalLength;
                 sum += filter[k] * signal[idx];
             }
             output[2 * i + 1] = sum;
         }
-        
+
         return output;
     }
-    
+
     /**
      * Vectorized upsampling with convolution for zero-padding boundary mode.
      */
     public static double[] upsampleAndConvolveZeroPadding(
             double[] coeffs, double[] filter, int coeffsLength, int filterLength) {
-        
+
         int outputLength = coeffsLength * 2;
         double[] output = new double[outputLength];
-        
+
         if (!isVectorizedOperationBeneficial(outputLength)) {
             return ScalarOps.upsampleAndConvolveZeroPadding(coeffs, filter, coeffsLength, filterLength);
         }
-        
+
         // For now, fall back to scalar implementation
         // TODO: Implement vectorized version
         return ScalarOps.upsampleAndConvolveZeroPadding(coeffs, filter, coeffsLength, filterLength);
     }
-    
+
+    /**
+     * Get information about the Vector API implementation.
+     */
+    public static String getVectorInfo() {
+        return String.format("Vector API: Species=%s, Length=%d, Enabled=%b",
+                SPECIES, VECTOR_LENGTH, VECTOR_LENGTH > 1);
+    }
+
     /**
      * Vectorized element-wise operations for wavelet denoising.
      */
     public static class Denoising {
-        
+
         /**
          * Soft thresholding for wavelet coefficients.
-         * 
+         *
          * @param coefficients wavelet coefficients to threshold
-         * @param threshold threshold value
+         * @param threshold    threshold value
          * @return thresholded coefficients
          */
         public static double[] softThreshold(double[] coefficients, double threshold) {
             int length = coefficients.length;
             double[] result = new double[length];
-            
+
             if (!isVectorizedOperationBeneficial(length)) {
                 // Scalar fallback
                 for (int i = 0; i < length; i++) {
                     double coeff = coefficients[i];
                     double absCoeff = Math.abs(coeff);
-                    result[i] = absCoeff <= threshold ? 0.0 : 
-                               Math.signum(coeff) * (absCoeff - threshold);
+                    result[i] = absCoeff <= threshold ? 0.0 :
+                            Math.signum(coeff) * (absCoeff - threshold);
                 }
                 return result;
             }
-            
+
             // Vectorized implementation
             DoubleVector thresholdVec = DoubleVector.broadcast(SPECIES, threshold);
             DoubleVector negThresholdVec = DoubleVector.broadcast(SPECIES, -threshold);
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
-            
+
             int i = 0;
             int vectorBound = length - (length % VECTOR_LENGTH);
-            
+
             for (; i < vectorBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
-                
+
                 // Create masks for different cases
                 VectorMask<Double> positiveMask = coeff.compare(VectorOperators.GT, thresholdVec);
                 VectorMask<Double> negativeMask = coeff.compare(VectorOperators.LT, negThresholdVec);
                 VectorMask<Double> zeroMask = positiveMask.or(negativeMask).not();
-                
+
                 // Apply soft thresholding
                 DoubleVector result_vec = zeroVec;
                 result_vec = coeff.sub(thresholdVec).blend(result_vec, positiveMask.not());
                 result_vec = coeff.add(thresholdVec).blend(result_vec, negativeMask.not());
                 result_vec = zeroVec.blend(result_vec, zeroMask.not());
-                
+
                 result_vec.intoArray(result, i);
             }
-            
+
             // Handle remainder with scalar operations
             for (; i < length; i++) {
                 double coeff = coefficients[i];
                 double absCoeff = Math.abs(coeff);
-                result[i] = absCoeff <= threshold ? 0.0 : 
-                           Math.signum(coeff) * (absCoeff - threshold);
+                result[i] = absCoeff <= threshold ? 0.0 :
+                        Math.signum(coeff) * (absCoeff - threshold);
             }
-            
+
             return result;
         }
-        
+
         /**
          * Hard thresholding for wavelet coefficients.
          */
         public static double[] hardThreshold(double[] coefficients, double threshold) {
             int length = coefficients.length;
             double[] result = new double[length];
-            
+
             if (!isVectorizedOperationBeneficial(length)) {
                 // Scalar fallback
                 for (int i = 0; i < length; i++) {
@@ -342,40 +353,32 @@ public final class VectorOps {
                 }
                 return result;
             }
-            
+
             // Vectorized implementation
             DoubleVector thresholdVec = DoubleVector.broadcast(SPECIES, threshold);
             DoubleVector negThresholdVec = DoubleVector.broadcast(SPECIES, -threshold);
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
-            
+
             int i = 0;
             int vectorBound = length - (length % VECTOR_LENGTH);
-            
+
             for (; i < vectorBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
-                
+
                 // Create mask for values to keep
                 VectorMask<Double> keepMask = coeff.abs().compare(VectorOperators.GT, thresholdVec);
-                
+
                 // Apply hard thresholding
                 DoubleVector result_vec = coeff.blend(zeroVec, keepMask.not());
                 result_vec.intoArray(result, i);
             }
-            
+
             // Handle remainder
             for (; i < length; i++) {
                 result[i] = Math.abs(coefficients[i]) <= threshold ? 0.0 : coefficients[i];
             }
-            
+
             return result;
         }
-    }
-    
-    /**
-     * Get information about the Vector API implementation.
-     */
-    public static String getVectorInfo() {
-        return String.format("Vector API: Species=%s, Length=%d, Enabled=%b",
-            SPECIES, VECTOR_LENGTH, VECTOR_LENGTH > 1);
     }
 }
