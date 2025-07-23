@@ -126,16 +126,18 @@ class StreamingWaveletTransformTest {
                     blockCount.incrementAndGet();
                     assertEquals(blockSize / 2, item.approximationCoeffs().length);
                     assertEquals(blockSize / 2, item.detailCoeffs().length);
+                    latch.countDown(); // Count down when we receive the block
                 }
                 
                 @Override
                 public void onError(Throwable throwable) {
                     fail("Unexpected error: " + throwable);
+                    latch.countDown(); // Also count down on error to prevent hanging
                 }
                 
                 @Override
                 public void onComplete() {
-                    latch.countDown();
+                    // onComplete is only called when the transform is closed
                 }
             });
             
