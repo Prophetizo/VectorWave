@@ -73,37 +73,14 @@ public final class VectorOpsOptimized {
             // Unroll first few filter taps for common sizes
             if (filterLength >= 4) {
                 // Unroll first 4 taps
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    indices[v] = (2 * (i + v)) & signalMask;
-                }
-                DoubleVector sig0 = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                accumulator = sig0.mul(filter[0]);
-
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    indices[v] = (2 * (i + v) + 1) & signalMask;
-                }
-                DoubleVector sig1 = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                accumulator = accumulator.add(sig1.mul(filter[1]));
-
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    indices[v] = (2 * (i + v) + 2) & signalMask;
-                }
-                DoubleVector sig2 = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                accumulator = accumulator.add(sig2.mul(filter[2]));
-
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    indices[v] = (2 * (i + v) + 3) & signalMask;
-                }
-                DoubleVector sig3 = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                accumulator = accumulator.add(sig3.mul(filter[3]));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[0], indices, signalMask, i, 0));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[1], indices, signalMask, i, 1));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[2], indices, signalMask, i, 2));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[3], indices, signalMask, i, 3));
 
                 // Process remaining filter taps
                 for (int k = 4; k < filterLength; k++) {
-                    for (int v = 0; v < VECTOR_LENGTH; v++) {
-                        indices[v] = (2 * (i + v) + k) & signalMask;
-                    }
-                    DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                    accumulator = accumulator.add(sigVec.mul(filter[k]));
+                    accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[k], indices, signalMask, i, k));
                 }
             } else {
                 // General case for small filters
