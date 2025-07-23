@@ -124,7 +124,7 @@ public class VectorOptimizationBenchmark {
     // The Haar transform has specialized vectorized operations due to its simple coefficients.
     
     @Benchmark
-    @Fork(value = 3)  // Removed unused -DtestHaar=true system property
+    @Fork(value = 3)
     public void scalarHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];
@@ -140,7 +140,7 @@ public class VectorOptimizationBenchmark {
     }
     
     @Benchmark
-    @Fork(value = 3)  // Removed unused -DtestHaar=true system property
+    @Fork(value = 3)
     public void vectorOptimizedHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];

@@ -413,7 +413,10 @@ class StreamingWaveletTransformTest {
         public void onError(Throwable throwable) {
             this.error = throwable;
             // Count down latch to unblock waiting tests
-            while (latch.getCount() > 0) {
+            // Use a bounded loop to prevent potential infinite loops
+            long remaining = latch.getCount();
+            long maxIterations = Math.min(remaining, 1000); // Reasonable upper bound
+            for (long i = 0; i < maxIterations && latch.getCount() > 0; i++) {
                 latch.countDown();
             }
         }

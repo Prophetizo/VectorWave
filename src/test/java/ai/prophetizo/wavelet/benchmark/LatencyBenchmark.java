@@ -14,6 +14,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Latency-focused benchmarks for real-time applications.
@@ -57,8 +58,9 @@ public class LatencyBenchmark {
     // Thread-local pre-allocated arrays for multi-threaded benchmarks
     private static final int MAX_THREADS = 8;
     private double[][] threadLocalSignals;
+    private static final AtomicInteger threadCounter = new AtomicInteger(0);
     private static final ThreadLocal<Integer> threadIndex = ThreadLocal.withInitial(() -> {
-        return (int) (Thread.currentThread().getId() % MAX_THREADS);
+        return threadCounter.getAndIncrement() % MAX_THREADS;
     });
     
     @Setup(Level.Trial)
