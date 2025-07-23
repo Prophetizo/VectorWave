@@ -45,16 +45,13 @@ public sealed interface TransformResult permits TransformResultImpl {
  * Package-private implementation of TransformResult.
  * This class can only be instantiated within the wavelet package.
  */
-final class TransformResultImpl implements TransformResult {
+record TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) implements TransformResult {
     // System property to enable full validation in production
     // System property name for enabling full validation
     private static final String FULL_VALIDATION_PROPERTY = "ai.prophetizo.wavelet.fullValidation";
 
     private static final boolean FULL_VALIDATION =
             Boolean.getBoolean(FULL_VALIDATION_PROPERTY);
-
-    private final double[] approximationCoeffs;
-    private final double[] detailCoeffs;
 
     /**
      * Package-private constructor that validates and defensively copies the coefficient arrays.
@@ -127,11 +124,11 @@ final class TransformResultImpl implements TransformResult {
                 "\n  Detail (cD)        = " + Arrays.toString(detailCoeffs) +
                 "\n}";
     }
-    
+
     /**
      * Creates a TransformResult without validation for internal use.
      * Package-private for use by optimized transform classes.
-     * 
+     *
      * @param approxCoeffs approximation coefficients (will be cloned)
      * @param detailCoeffs detail coefficients (will be cloned)
      * @return new TransformResult
@@ -139,7 +136,7 @@ final class TransformResultImpl implements TransformResult {
     static TransformResult createFast(double[] approxCoeffs, double[] detailCoeffs) {
         // Bypass validation by temporarily setting the property
         boolean originalValidation = FULL_VALIDATION;
-        
+
         try {
             if (originalValidation) {
                 System.setProperty(FULL_VALIDATION_PROPERTY, "false");
