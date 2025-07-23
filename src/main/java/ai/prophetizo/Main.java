@@ -19,7 +19,7 @@ public class Main {
 
         // Create factory for building transforms
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
 
         // Demonstrate different wavelet types
         demonstrateOrthogonalWavelets(signal, factory);

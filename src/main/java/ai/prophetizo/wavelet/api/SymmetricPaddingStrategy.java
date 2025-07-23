@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Symmetric padding strategy that mirrors the signal at boundaries.
  *
@@ -20,13 +22,13 @@ public record SymmetricPaddingStrategy() implements PaddingStrategy {
     @Override
     public double[] pad(double[] signal, int targetLength) {
         if (signal == null) {
-            throw new IllegalArgumentException("Signal cannot be null");
+            throw new InvalidArgumentException("Signal cannot be null");
         }
         if (signal.length == 0) {
-            throw new IllegalArgumentException("Signal cannot be empty");
+            throw new InvalidArgumentException("Signal cannot be empty");
         }
         if (targetLength < signal.length) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Target length " + targetLength + " must be >= signal length " + signal.length);
         }
 

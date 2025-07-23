@@ -1,6 +1,8 @@
 package ai.prophetizo.wavelet.config;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 
 /**
  * Immutable configuration for wavelet transform.
@@ -30,8 +32,7 @@ public final class TransformConfig {
 
         // Validate: can't force both scalar and SIMD
         if (forceScalar && forceSIMD) {
-            throw new IllegalArgumentException(
-                    "Cannot force both scalar and SIMD operations");
+            throw InvalidConfigurationException.conflictingOptions("forceScalar", "forceSIMD");
         }
     }
 
@@ -161,12 +162,11 @@ public final class TransformConfig {
          *
          * @param maxLevels maximum levels (must be >= 1)
          * @return this builder
-         * @throws IllegalArgumentException if maxLevels < 1
+         * @throws InvalidArgumentException if maxLevels < 1
          */
         public Builder maxDecompositionLevels(int maxLevels) {
             if (maxLevels < 1) {
-                throw new IllegalArgumentException(
-                        "maxDecompositionLevels must be at least 1.");
+                throw InvalidArgumentException.notPositive(maxLevels);
             }
             this.maxDecompositionLevels = maxLevels;
             return this;

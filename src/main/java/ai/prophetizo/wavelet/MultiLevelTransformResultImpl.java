@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
@@ -50,17 +51,17 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
         ValidationUtils.validateNotNullOrEmpty(finalApproximation, "finalApproximation");
 
         if (detailsByLevel == null) {
-            throw new IllegalArgumentException("detailsByLevel cannot be null");
+            throw new InvalidArgumentException("detailsByLevel cannot be null");
         }
         if (wavelet == null) {
-            throw new IllegalArgumentException("wavelet cannot be null");
+            throw new InvalidArgumentException("wavelet cannot be null");
         }
         if (boundaryMode == null) {
-            throw new IllegalArgumentException("boundaryMode cannot be null");
+            throw new InvalidArgumentException("boundaryMode cannot be null");
         }
 
         if (detailsByLevel.length == 0) {
-            throw new IllegalArgumentException("At least one decomposition level required");
+            throw new InvalidArgumentException("At least one decomposition level required");
         }
 
         // Validate each detail level
@@ -104,7 +105,7 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
     @Override
     public double[] detailsAtLevel(int level) {
         if (level < 1 || level > levels) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Level must be between 1 and " + levels + ", got: " + level);
         }
         return detailsByLevel[level - 1].clone();
@@ -113,7 +114,7 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
     @Override
     public double[] approximationAtLevel(int level) {
         if (level < 0 || level > levels) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Level must be between 0 and " + levels + ", got: " + level);
         }
 
@@ -144,7 +145,7 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
     @Override
     public TransformResult getTransformResultAtLevel(int level) {
         if (level < 1 || level > levels) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Level must be between 1 and " + levels + ", got: " + level);
         }
 

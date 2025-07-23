@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Interface for continuous wavelets used in Continuous Wavelet Transform (CWT).
  *
@@ -29,7 +31,7 @@ public non-sealed interface ContinuousWavelet extends Wavelet {
      */
     default double psi(double t, double scale, double translation) {
         if (scale <= 0) {
-            throw new IllegalArgumentException("Scale must be positive");
+            throw new InvalidArgumentException("Scale must be positive");
         }
         return (1.0 / Math.sqrt(scale)) * psi((t - translation) / scale);
     }

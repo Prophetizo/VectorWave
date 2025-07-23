@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -178,7 +179,7 @@ class MultiLevelWaveletTransformTest extends BaseWaveletTest {
         
         // Verify we can't decompose further
         int maxLevels = result.levels();
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decompose(signal, maxLevels + 1),
             "Should not allow decomposition beyond maximum levels");
         
@@ -262,17 +263,17 @@ class MultiLevelWaveletTransformTest extends BaseWaveletTest {
         
         // Invalid number of levels
         double[] signal = new double[64];
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decompose(signal, 0));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decompose(signal, -1));
         
         // Invalid adaptive threshold
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decomposeAdaptive(signal, 0.0));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decomposeAdaptive(signal, 1.0));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> mwt.decomposeAdaptive(signal, -0.1));
     }
     

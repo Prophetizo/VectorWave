@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 import java.util.*;
 
 /**
@@ -60,12 +62,12 @@ public final class WaveletRegistry {
      *
      * @param name the wavelet name (case-insensitive)
      * @return the wavelet instance
-     * @throws IllegalArgumentException if wavelet not found
+     * @throws InvalidArgumentException if wavelet not found
      */
     public static Wavelet getWavelet(String name) {
         Wavelet wavelet = WAVELETS.get(name.toLowerCase());
         if (wavelet == null) {
-            throw new IllegalArgumentException("Unknown wavelet: " + name);
+            throw new InvalidArgumentException("Unknown wavelet: " + name);
         }
         return wavelet;
     }

@@ -27,7 +27,7 @@ public final class VectorOpsOptimized {
     private static final int VECTOR_LENGTH = SPECIES.length();
     // Minimum signal length to use vectorization
     private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;
-    
+
     // Cache line size for blocking
     private static final int CACHE_LINE_SIZE = 64; // bytes
     private static final int BYTES_PER_DOUBLE = 8;
@@ -39,9 +39,9 @@ public final class VectorOpsOptimized {
 
     /**
      * Optimized convolution with downsampling using gather operations.
-     * 
+     *
      * <p>Note on memory allocation: This method allocates small int arrays (typically 2-8 elements)
-     * on the stack for gather indices. While this creates temporary objects, it avoids the 
+     * on the stack for gather indices. While this creates temporary objects, it avoids the
      * complexity and potential memory leaks of ThreadLocal caching. The JVM is highly optimized
      * for such small, short-lived allocations through TLAB (Thread Local Allocation Buffers)
      * and escape analysis, making this approach both safe and efficient for production use.</p>
@@ -120,7 +120,7 @@ public final class VectorOpsOptimized {
         for (int v = 0; v < VECTOR_LENGTH; v++) {
             indices[v] = (2 * (baseIndex + v) + filterIndex) & signalMask;
         }
-        
+
         // Gather signal values and multiply by filter coefficient
         DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
         return sigVec.mul(filterCoeff);

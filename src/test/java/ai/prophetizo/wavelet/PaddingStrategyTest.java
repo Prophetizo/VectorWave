@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -111,12 +112,12 @@ class PaddingStrategyTest {
     @DisplayName("Padding validates inputs")
     void testPaddingValidation(PaddingStrategy strategy, String name) {
         // Null signal
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> strategy.pad(null, 8));
         
         // Target length too small
         double[] signal = {1, 2, 3, 4};
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> strategy.pad(signal, 2));
     }
     

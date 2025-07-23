@@ -252,7 +252,7 @@ public final class VectorOps {
 
     /**
      * Vectorized upsampling with convolution for zero-padding boundary mode.
-     * 
+     *
      * <p>This implementation uses SIMD operations to efficiently process multiple
      * filter coefficients in parallel. Zero-padding mode is simpler than periodic
      * mode as it doesn't require modulo operations for boundary handling.</p>
@@ -282,14 +282,14 @@ public final class VectorOps {
         for (int i = 0; i < coeffsLength; i++) {
             double coeff = coeffs[i];
             if (coeff == 0.0) continue; // Skip zero coefficients for efficiency
-            
+
             int baseIndex = 2 * i;
             DoubleVector coeffVec = DoubleVector.broadcast(SPECIES, coeff);
-            
+
             // Process filter coefficients in vectorized chunks
             int j = 0;
             int filterBound = filterLength - VECTOR_LENGTH;
-            
+
             for (; j <= filterBound; j += VECTOR_LENGTH) {
                 int outputIndex = baseIndex + j;
                 if (outputIndex + VECTOR_LENGTH <= outputLength) {
@@ -311,7 +311,7 @@ public final class VectorOps {
                     }
                 }
             }
-            
+
             // Handle remaining filter coefficients with scalar operations
             for (; j < filterLength; j++) {
                 int outputIndex = baseIndex + j;

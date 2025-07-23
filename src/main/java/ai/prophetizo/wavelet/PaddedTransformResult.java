@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Transform result that tracks the original signal length before padding.
  *
@@ -22,10 +24,10 @@ final class PaddedTransformResult implements TransformResult {
      */
     PaddedTransformResult(TransformResult delegate, int originalLength) {
         if (delegate == null) {
-            throw new IllegalArgumentException("Delegate result cannot be null");
+            throw new InvalidArgumentException("Delegate result cannot be null");
         }
         if (originalLength <= 0) {
-            throw new IllegalArgumentException("Original length must be positive");
+            throw new InvalidArgumentException("Original length must be positive");
         }
         this.delegate = delegate;
         this.originalLength = originalLength;

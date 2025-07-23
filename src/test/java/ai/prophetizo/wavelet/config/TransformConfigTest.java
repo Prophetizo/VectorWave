@@ -72,11 +72,11 @@ class TransformConfigTest {
     void testBuilderInvalidDecompositionLevels(int invalidLevel) {
         TransformConfig.Builder builder = TransformConfig.builder();
         
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        InvalidArgumentException exception = assertThrows(InvalidArgumentException.class,
             () -> builder.maxDecompositionLevels(invalidLevel));
         
-        assertTrue(exception.getMessage().contains("must be at least 1"),
-            "Error message should mention minimum requirement");
+        assertTrue(exception.getMessage().contains("must be positive"),
+            "Error message should mention positive requirement");
     }
     
     @Test

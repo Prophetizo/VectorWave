@@ -4,6 +4,8 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.InvalidStateException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
@@ -84,17 +86,17 @@ public class MultiLevelWaveletTransform {
     public MultiLevelWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode,
                                       TransformConfig config) {
         if (wavelet == null) {
-            throw new IllegalArgumentException("wavelet cannot be null");
+            throw new InvalidArgumentException("wavelet cannot be null");
         }
         if (boundaryMode == null) {
-            throw new IllegalArgumentException("boundaryMode cannot be null");
+            throw new InvalidArgumentException("boundaryMode cannot be null");
         }
         if (config == null) {
-            throw new IllegalArgumentException("config cannot be null");
+            throw new InvalidArgumentException("config cannot be null");
         }
 
         if (!(wavelet instanceof DiscreteWavelet)) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Only discrete wavelets are supported. Got: " + wavelet.getClass().getSimpleName());
         }
 
@@ -135,13 +137,13 @@ public class MultiLevelWaveletTransform {
         ValidationUtils.validateSignal(signal, "signal");
 
         if (requestedLevels < 1) {
-            throw new IllegalArgumentException("Number of levels must be at least 1");
+            throw new InvalidArgumentException("Number of levels must be at least 1");
         }
 
         // Calculate maximum possible levels
         int maxLevels = calculateMaxLevels(signal.length);
         if (requestedLevels > maxLevels) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Requested levels (" + requestedLevels + ") exceeds maximum possible (" +
                             maxLevels + ") for signal length " + signal.length);
         }
@@ -183,7 +185,7 @@ public class MultiLevelWaveletTransform {
         ValidationUtils.validateSignal(signal, "signal");
 
         if (energyThreshold <= 0.0 || energyThreshold >= 1.0) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Energy threshold must be between 0 and 1, got: " + energyThreshold);
         }
 
@@ -240,7 +242,7 @@ public class MultiLevelWaveletTransform {
      */
     public double[] reconstruct(MultiLevelTransformResult result) {
         if (result == null) {
-            throw new IllegalArgumentException("result cannot be null");
+            throw new InvalidArgumentException("result cannot be null");
         }
 
         // Start with final approximation
@@ -275,11 +277,11 @@ public class MultiLevelWaveletTransform {
      */
     public double[] reconstructFromLevel(MultiLevelTransformResult result, int fromLevel) {
         if (result == null) {
-            throw new IllegalArgumentException("result cannot be null");
+            throw new InvalidArgumentException("result cannot be null");
         }
 
         if (fromLevel < 0 || fromLevel > result.levels()) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "From level must be between 0 and " + result.levels() + ", got: " + fromLevel);
         }
 
@@ -311,7 +313,7 @@ public class MultiLevelWaveletTransform {
      */
     private int calculateMaxLevels(int signalLength) {
         if (!(wavelet instanceof DiscreteWavelet discreteWavelet)) {
-            throw new IllegalStateException("Wavelet must be discrete");
+            throw new InvalidStateException("Wavelet must be discrete");
         }
 
         int filterLength = discreteWavelet.lowPassDecomposition().length;

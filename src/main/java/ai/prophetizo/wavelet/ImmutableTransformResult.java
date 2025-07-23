@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 import java.nio.DoubleBuffer;
 
 /**
@@ -24,11 +26,11 @@ public final class ImmutableTransformResult {
      */
     public ImmutableTransformResult(double[] approximationCoeffs, double[] detailCoeffs) {
         if (approximationCoeffs == null || detailCoeffs == null) {
-            throw new IllegalArgumentException("Coefficient arrays cannot be null");
+            throw new InvalidArgumentException("Coefficient arrays cannot be null");
         }
 
         if (approximationCoeffs.length != detailCoeffs.length) {
-            throw new IllegalArgumentException("Coefficient arrays must have equal length");
+            throw new InvalidArgumentException("Coefficient arrays must have equal length");
         }
 
         this.splitPoint = approximationCoeffs.length;
@@ -61,7 +63,7 @@ public final class ImmutableTransformResult {
      */
     public static ImmutableTransformResult fromWorkspace(double[] workspace, int coefficientLength) {
         if (workspace.length != 2 * coefficientLength) {
-            throw new IllegalArgumentException("Workspace size mismatch");
+            throw new InvalidArgumentException("Workspace size mismatch");
         }
         return new ImmutableTransformResult(workspace, coefficientLength);
     }

@@ -15,7 +15,7 @@ import java.util.Objects;
  * <pre>{@code
  * // Using factory with configuration
  * WaveletTransform transform = new WaveletTransformFactory()
- *     .withBoundaryMode(BoundaryMode.PERIODIC)
+ *     .boundaryMode(BoundaryMode.PERIODIC)
  *     .create(new Haar());
  *
  * // Using default factory method
@@ -59,9 +59,9 @@ public class WaveletTransformFactory {
      * @return this factory for method chaining
      * @throws NullPointerException if boundaryMode is null
      */
-    public WaveletTransformFactory withBoundaryMode(BoundaryMode boundaryMode) {
+    public WaveletTransformFactory boundaryMode(BoundaryMode boundaryMode) {
         this.boundaryMode = Objects.requireNonNull(boundaryMode,
-                "boundaryMode cannot be null.");
+                "boundaryMode cannot be null");
         return this;
     }
 
@@ -73,7 +73,7 @@ public class WaveletTransformFactory {
      * @throws NullPointerException if wavelet is null
      */
     public WaveletTransform create(Wavelet wavelet) {
-        Objects.requireNonNull(wavelet, "wavelet cannot be null.");
+        Objects.requireNonNull(wavelet, "wavelet cannot be null");
         return new WaveletTransform(wavelet, boundaryMode);
     }
 

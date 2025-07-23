@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
 import ai.prophetizo.wavelet.test.WaveletTestUtils;
@@ -189,9 +190,9 @@ class WaveletTransformTest extends BaseWaveletTest {
     @Test
     @DisplayName("Transform with unsupported boundary mode should fail at factory")
     void testUnsupportedBoundaryMode() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(InvalidConfigurationException.class,
             () -> createTransform(new Haar(), BoundaryMode.SYMMETRIC),
-            "Should throw UnsupportedOperationException for SYMMETRIC mode");
+            "Should throw InvalidConfigurationException for SYMMETRIC mode");
     }
     
     // === Multi-Wavelet Tests ===

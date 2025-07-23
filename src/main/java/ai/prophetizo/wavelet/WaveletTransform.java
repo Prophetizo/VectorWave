@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.ValidationUtils;
@@ -62,8 +63,7 @@ public class WaveletTransform {
 
         // Validate supported boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
-            throw new UnsupportedOperationException(
-                    "Only PERIODIC and ZERO_PADDING boundary modes are currently supported.");
+            throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
 
         // Create appropriate operations implementation

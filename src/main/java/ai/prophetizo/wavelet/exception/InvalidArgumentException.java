@@ -17,6 +17,16 @@ public class InvalidArgumentException extends WaveletTransformException {
     }
 
     /**
+     * Creates an exception for null arguments.
+     *
+     * @param parameterName the name of the null parameter
+     * @return a new InvalidArgumentException
+     */
+    public static InvalidArgumentException nullArgument(String parameterName) {
+        return new InvalidArgumentException(parameterName + " cannot be null");
+    }
+
+    /**
      * Creates an exception for negative or zero input where positive is required.
      *
      * @param value the invalid value
@@ -24,7 +34,7 @@ public class InvalidArgumentException extends WaveletTransformException {
      */
     public static InvalidArgumentException notPositive(int value) {
         return new InvalidArgumentException(
-                String.format("Input must be positive, but was: %d.", value));
+                String.format("Input must be positive, but was: %d", value));
     }
 
     /**

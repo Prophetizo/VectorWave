@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.internal.ArrayPool;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.ValidationUtils;
@@ -53,10 +54,10 @@ public class WaveletTransformPool {
      */
     public WaveletTransformPool(Wavelet wavelet, BoundaryMode boundaryMode) {
         if (wavelet == null) {
-            throw new IllegalArgumentException("Wavelet cannot be null");
+            throw new InvalidArgumentException("Wavelet cannot be null");
         }
         if (boundaryMode == null) {
-            throw new IllegalArgumentException("Boundary mode cannot be null");
+            throw new InvalidArgumentException("Boundary mode cannot be null");
         }
         this.wavelet = wavelet;
         this.boundaryMode = boundaryMode;
@@ -73,12 +74,12 @@ public class WaveletTransformPool {
                 this.lowPassRecon = biortho.lowPassReconstruction();
                 this.highPassRecon = biortho.highPassReconstruction();
             } else {
-                throw new IllegalArgumentException(
+                throw new InvalidArgumentException(
                         "Unsupported wavelet type: " + wavelet.getClass().getSimpleName()
                 );
             }
         } else {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Only discrete wavelets are supported. Got: " + wavelet.getClass().getSimpleName()
             );
         }
@@ -130,20 +131,20 @@ public class WaveletTransformPool {
      */
     public double[] inverse(TransformResult coefficients) {
         if (coefficients == null) {
-            throw new IllegalArgumentException("Coefficients cannot be null");
+            throw new InvalidArgumentException("Coefficients cannot be null");
         }
 
         double[] approxCoeffs = coefficients.approximationCoeffs();
         double[] detailCoeffs = coefficients.detailCoeffs();
 
         if (approxCoeffs == null) {
-            throw new IllegalArgumentException("Approximation coefficients cannot be null");
+            throw new InvalidArgumentException("Approximation coefficients cannot be null");
         }
         if (detailCoeffs == null) {
-            throw new IllegalArgumentException("Detail coefficients cannot be null");
+            throw new InvalidArgumentException("Detail coefficients cannot be null");
         }
         if (approxCoeffs.length != detailCoeffs.length) {
-            throw new IllegalArgumentException("Coefficient arrays must have same length");
+            throw new InvalidArgumentException("Coefficient arrays must have same length");
         }
 
         int outputLength = approxCoeffs.length * 2;

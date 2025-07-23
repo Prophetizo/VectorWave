@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Strategy for padding non-power-of-2 signals to the required length.
  *
@@ -46,7 +48,7 @@ public sealed interface PaddingStrategy
             return result;
         }
         if (originalLength > result.length) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Original length " + originalLength + " exceeds result length " + result.length);
         }
         double[] trimmed = new double[originalLength];

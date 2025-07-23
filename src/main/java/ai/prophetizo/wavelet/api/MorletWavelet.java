@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * The Morlet wavelet (also known as Gabor wavelet) is a complex-valued
  * continuous wavelet commonly used for time-frequency analysis.
@@ -94,7 +96,7 @@ public final class MorletWavelet implements ContinuousWavelet {
     @Override
     public double[] discretize(int numCoeffs) {
         if (numCoeffs % 2 != 0) {
-            throw new IllegalArgumentException("Number of coefficients must be even");
+            throw new InvalidArgumentException("Number of coefficients must be even");
         }
 
         double[] coeffs = new double[numCoeffs];

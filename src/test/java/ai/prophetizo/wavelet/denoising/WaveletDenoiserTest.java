@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.denoising;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,10 +26,10 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Constructor validation")
     void testConstructorValidation() {
-        assertThrows(NullPointerException.class, 
+        assertThrows(InvalidArgumentException.class, 
             () -> new WaveletDenoiser(null, BoundaryMode.PERIODIC));
         
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> new WaveletDenoiser(new Haar(), null));
     }
     

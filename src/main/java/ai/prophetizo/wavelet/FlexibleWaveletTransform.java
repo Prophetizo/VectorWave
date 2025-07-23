@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.PaddingStrategy;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.ZeroPaddingStrategy;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Objects;
@@ -136,7 +137,7 @@ public class FlexibleWaveletTransform {
      */
     public double[] inverse(TransformResult transformResult) {
         if (transformResult == null) {
-            throw new IllegalArgumentException("Transform result cannot be null");
+            throw new InvalidArgumentException("Transform result cannot be null");
         }
 
         // Create standard transform for inverse operation

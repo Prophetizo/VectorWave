@@ -309,7 +309,7 @@ public final class ScalarOps {
                 if ((i & 7) == 0 && ai.prophetizo.wavelet.internal.PrefetchOptimizer.isPrefetchBeneficial(signalLen)) {
                     ai.prophetizo.wavelet.internal.PrefetchOptimizer.prefetchForCombinedTransform(signal, i, filterLen);
                 }
-                
+
                 double sumLow = 0.0;
                 double sumHigh = 0.0;
                 int kStart = 2 * i;

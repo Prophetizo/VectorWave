@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Zero padding strategy that extends signals with zeros.
  *
@@ -20,10 +22,10 @@ public record ZeroPaddingStrategy() implements PaddingStrategy {
     @Override
     public double[] pad(double[] signal, int targetLength) {
         if (signal == null) {
-            throw new IllegalArgumentException("Signal cannot be null");
+            throw new InvalidArgumentException("Signal cannot be null");
         }
         if (targetLength < signal.length) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentException(
                     "Target length " + targetLength + " must be >= signal length " + signal.length);
         }
 
