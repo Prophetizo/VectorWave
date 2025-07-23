@@ -110,6 +110,23 @@ public final class VectorOpsOptimized {
     }
 
     /**
+     * Helper method for gather and multiply-accumulate operation.
+     * Gathers signal values based on indices and multiplies by filter coefficient.
+     */
+    private static DoubleVector gatherMultiplyAccumulate(double[] signal, double filterCoeff,
+                                                         int[] indices, int signalMask,
+                                                         int baseIndex, int filterIndex) {
+        // Compute indices for this filter tap
+        for (int v = 0; v < VECTOR_LENGTH; v++) {
+            indices[v] = (2 * (baseIndex + v) + filterIndex) & signalMask;
+        }
+        
+        // Gather signal values and multiply by filter coefficient
+        DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+        return sigVec.mul(filterCoeff);
+    }
+
+    /**
      * Vectorized combined transform for both approximation and detail coefficients.
      * Processes both filters in a single pass for better cache efficiency.
      */
