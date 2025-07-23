@@ -12,6 +12,8 @@ public final class TransformConfig {
     private final BoundaryMode boundaryMode;
     // Forces scalar engine if true, otherwise auto-detects.
     private final boolean forceScalar;
+    // Forces use of SIMD operations when available.
+    private final boolean forceSIMD;
     // Maximum allowed decomposition levels.
     private final int maxDecompositionLevels;
 
@@ -23,7 +25,14 @@ public final class TransformConfig {
     private TransformConfig(Builder builder) {
         this.boundaryMode = builder.boundaryMode;
         this.forceScalar = builder.forceScalar;
+        this.forceSIMD = builder.forceSIMD;
         this.maxDecompositionLevels = builder.maxDecompositionLevels;
+        
+        // Validate: can't force both scalar and SIMD
+        if (forceScalar && forceSIMD) {
+            throw new IllegalArgumentException(
+                "Cannot force both scalar and SIMD operations");
+        }
     }
 
     /**
@@ -57,6 +66,20 @@ public final class TransformConfig {
     public boolean isForceScalar() {
         return forceScalar;
     }
+    
+    /**
+     * @return true if scalar operations are forced (same as isForceScalar)
+     */
+    public boolean isForceScalarOperations() {
+        return forceScalar;
+    }
+    
+    /**
+     * @return true if SIMD operations are forced when available
+     */
+    public boolean isForceSIMD() {
+        return forceSIMD;
+    }
 
     /**
      * @return maximum decomposition levels
@@ -75,6 +98,7 @@ public final class TransformConfig {
         return "TransformConfig{" +
                 "boundaryMode=" + boundaryMode +
                 ", forceScalar=" + forceScalar +
+                ", forceSIMD=" + forceSIMD +
                 ", maxDecompositionLevels=" + maxDecompositionLevels +
                 '}';
     }
@@ -88,6 +112,8 @@ public final class TransformConfig {
         private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
         // Default: do not force scalar engine.
         private boolean forceScalar = false;
+        // Default: auto-detect SIMD availability.
+        private boolean forceSIMD = false;
         // Default: allow up to 20 decomposition levels (handles signals up to 2^20 = 1,048,576 samples).
         private int maxDecompositionLevels = 20;
 
@@ -115,6 +141,18 @@ public final class TransformConfig {
          */
         public Builder forceScalar(boolean forceScalar) {
             this.forceScalar = forceScalar;
+            return this;
+        }
+        
+        /**
+         * Sets whether to force SIMD operations when available.
+         * If SIMD is not available, this setting is ignored.
+         *
+         * @param forceSIMD true to force SIMD operations
+         * @return this builder
+         */
+        public Builder forceSIMD(boolean forceSIMD) {
+            this.forceSIMD = forceSIMD;
             return this;
         }
 

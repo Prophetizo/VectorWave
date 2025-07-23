@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.ValidationUtils;
@@ -33,6 +34,8 @@ public class WaveletTransform {
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
+    private final WaveletOpsFactory.WaveletOps operations;
+    private final boolean useSIMD;
 
     /**
      * Constructs a transformer with the specified wavelet and boundary mode.
@@ -42,6 +45,18 @@ public class WaveletTransform {
      * @throws NullPointerException if any parameter is null
      */
     public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode) {
+        this(wavelet, boundaryMode, null);
+    }
+
+    /**
+     * Constructs a transformer with the specified wavelet, boundary mode, and configuration.
+     *
+     * @param wavelet      The wavelet to use for the transformations
+     * @param boundaryMode The boundary handling mode
+     * @param config       Optional transform configuration (null for defaults)
+     * @throws NullPointerException if wavelet or boundaryMode is null
+     */
+    public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, TransformConfig config) {
         this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null.");
         this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null.");
 
@@ -50,6 +65,10 @@ public class WaveletTransform {
             throw new UnsupportedOperationException(
                     "Only PERIODIC and ZERO_PADDING boundary modes are currently supported.");
         }
+
+        // Create appropriate operations implementation
+        this.operations = WaveletOpsFactory.create(config);
+        this.useSIMD = operations.getImplementationType().startsWith("Vector");
     }
 
     /**
@@ -139,5 +158,23 @@ public class WaveletTransform {
      */
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
+    }
+
+    /**
+     * Returns true if this transform is using SIMD operations.
+     *
+     * @return true if SIMD is being used, false otherwise
+     */
+    public boolean isUsingSIMD() {
+        return useSIMD;
+    }
+
+    /**
+     * Gets implementation details about the operations being used.
+     *
+     * @return implementation type string
+     */
+    public String getImplementationType() {
+        return operations.getImplementationType();
     }
 }

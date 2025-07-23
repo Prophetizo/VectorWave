@@ -14,10 +14,26 @@ Run all benchmarks:
 - Java 21+
 - Maven 3.6+
 - Sufficient heap memory (4GB+ recommended)
+- For SIMD benchmarks: CPU with AVX2/AVX512 support
+- Vector API is automatically enabled via Maven configuration
 
 ## Available Benchmarks
 
-### 1. Signal Size Scaling
+### 1. SIMD Performance Comparison
+
+Compares scalar vs SIMD-optimized operations across different signal sizes.
+
+```bash
+./jmh-runner.sh SIMDBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 64, 128, 256, 512, 1024, 2048, 4096
+- Boundary modes: PERIODIC, ZERO_PADDING
+- Measures: Performance difference between scalar and vector operations
+- Includes financial signal benchmarks
+
+### 2. Signal Size Scaling
 
 Measures performance across different signal sizes to understand scaling characteristics.
 
@@ -30,7 +46,7 @@ Measures performance across different signal sizes to understand scaling charact
 - Measures: Throughput and average time
 - Includes cold-start and batch processing tests
 
-### 2. Wavelet Type Comparison
+### 3. Wavelet Type Comparison
 
 Compares performance across different wavelet families.
 
@@ -43,7 +59,7 @@ Compares performance across different wavelet families.
 - Measures: Transform time for each wavelet type
 - Fixed signal size: 4096 samples
 
-### 3. Validation Performance
+### 4. Validation Performance
 
 Measures the overhead of input validation.
 
@@ -55,7 +71,7 @@ Measures the overhead of input validation.
 - Various validation scenarios
 - Measures validation overhead in nanoseconds
 
-### 4. Quick Performance Test
+### 5. Quick Performance Test
 
 A lightweight benchmark for quick performance checks.
 

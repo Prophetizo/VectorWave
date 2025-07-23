@@ -320,4 +320,50 @@ public final class ScalarOps {
             convolveAndDownsamplePeriodic(signal, highFilter, detailCoeffs);
         }
     }
+
+    // ========== Wrapper methods for WaveletOpsFactory compatibility ==========
+
+    /**
+     * Wrapper method for periodic convolution and downsampling that returns the result.
+     * Used by WaveletOpsFactory.
+     */
+    public static double[] convolveAndDownsamplePeriodic(double[] signal, double[] filter, 
+                                                        int signalLength, int filterLength) {
+        double[] output = new double[signalLength / 2];
+        convolveAndDownsamplePeriodic(signal, filter, output);
+        return output;
+    }
+
+    /**
+     * Wrapper method for zero-padding convolution and downsampling that returns the result.
+     * Used by WaveletOpsFactory.
+     */
+    public static double[] convolveAndDownsampleZeroPadding(double[] signal, double[] filter,
+                                                           int signalLength, int filterLength) {
+        double[] output = new double[signalLength / 2];
+        convolveAndDownsampleDirect(signal, filter, output);
+        return output;
+    }
+
+    /**
+     * Wrapper method for periodic upsampling and convolution that returns the result.
+     * Used by WaveletOpsFactory.
+     */
+    public static double[] upsampleAndConvolvePeriodic(double[] coeffs, double[] filter,
+                                                      int coeffsLength, int filterLength) {
+        double[] output = new double[coeffsLength * 2];
+        upsampleAndConvolvePeriodic(coeffs, filter, output);
+        return output;
+    }
+
+    /**
+     * Wrapper method for zero-padding upsampling and convolution that returns the result.
+     * Used by WaveletOpsFactory.
+     */
+    public static double[] upsampleAndConvolveZeroPadding(double[] coeffs, double[] filter,
+                                                         int coeffsLength, int filterLength) {
+        double[] output = new double[coeffsLength * 2];
+        upsampleAndConvolveDirect(coeffs, filter, output);
+        return output;
+    }
 }
