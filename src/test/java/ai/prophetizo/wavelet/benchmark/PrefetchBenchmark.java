@@ -139,7 +139,13 @@ public class PrefetchBenchmark {
                 indices[j] = (2 * i + j) % signalLength;
             }
             
-            // Shuffle indices
+            // Shuffle indices using the Fisher-Yates algorithm
+            // 
+            // This shuffle is intentionally used to simulate poor cache access patterns
+            // by randomizing the order in which signal elements are accessed. This 
+            // introduces an O(n) overhead for each convolution operation, which is 
+            // not typical for standard convolution performance. The purpose of this 
+            // is to defeat caching and measure the impact of cache prefetching optimizations.
             for (int j = filterLen - 1; j > 0; j--) {
                 int k = random.nextInt(j + 1);
                 int temp = indices[j];
