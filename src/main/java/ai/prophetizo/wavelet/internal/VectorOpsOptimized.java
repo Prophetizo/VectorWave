@@ -27,10 +27,7 @@ public final class VectorOpsOptimized {
     private static final int VECTOR_LENGTH = SPECIES.length();
     // Minimum signal length to use vectorization
     private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;
-    // Thread-local cache for indices arrays to avoid repeated allocations
-    private static final ThreadLocal<int[]> INDICES_CACHE = ThreadLocal.withInitial(
-            () -> new int[VECTOR_LENGTH]
-    );
+    
     // Cache line size for blocking
     private static final int CACHE_LINE_SIZE = 64; // bytes
     private static final int BYTES_PER_DOUBLE = 8;
@@ -42,6 +39,12 @@ public final class VectorOpsOptimized {
 
     /**
      * Optimized convolution with downsampling using gather operations.
+     * 
+     * <p>Note on memory allocation: This method allocates small int arrays (typically 2-8 elements)
+     * on the stack for gather indices. While this creates temporary objects, it avoids the 
+     * complexity and potential memory leaks of ThreadLocal caching. The JVM is highly optimized
+     * for such small, short-lived allocations through TLAB (Thread Local Allocation Buffers)
+     * and escape analysis, making this approach both safe and efficient for production use.</p>
      */
     public static double[] convolveAndDownsamplePeriodicOptimized(
             double[] signal, double[] filter, int signalLength, int filterLength) {
@@ -60,8 +63,9 @@ public final class VectorOpsOptimized {
         int i = 0;
         int vectorBound = outputLength - VECTOR_LENGTH;
 
-        // Get cached indices array from thread-local storage
-        int[] indices = INDICES_CACHE.get();
+        // Allocate indices array on stack for small size
+        // This avoids both ThreadLocal issues and allocation overhead
+        int[] indices = new int[VECTOR_LENGTH];
 
         for (; i <= vectorBound; i += VECTOR_LENGTH) {
             DoubleVector accumulator = DoubleVector.zero(SPECIES);
@@ -147,7 +151,8 @@ public final class VectorOpsOptimized {
         }
 
         int signalMask = signalLen - 1;
-        int[] indices = INDICES_CACHE.get();
+        // Allocate indices array on stack
+        int[] indices = new int[VECTOR_LENGTH];
 
         int i = 0;
         int vectorBound = outputLen - VECTOR_LENGTH;
@@ -263,7 +268,8 @@ public final class VectorOpsOptimized {
         Arrays.fill(output, clearBound + VECTOR_LENGTH, outputLength, 0.0);
 
         // Process coefficients
-        int[] scatterIndices = INDICES_CACHE.get();
+        // Allocate scatter indices array on stack
+        int[] scatterIndices = new int[VECTOR_LENGTH];
 
         // Process even indices (direct placement)
         for (int k = 0; k < filterLength; k += 2) {

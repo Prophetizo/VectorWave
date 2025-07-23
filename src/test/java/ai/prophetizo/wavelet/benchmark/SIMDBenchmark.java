@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -61,12 +62,13 @@ public class SIMDBenchmark {
         }
         
         // Create financial-like signal (random walk with trend)
+        Random random = new Random(42);
         financialSignal = new double[signalSize];
         financialSignal[0] = 100.0;
         double trend = 0.0001;
         double volatility = 0.01;
         for (int i = 1; i < signalSize; i++) {
-            double randomShock = (Math.random() - 0.5) * volatility;
+            double randomShock = (random.nextDouble() - 0.5) * volatility;
             financialSignal[i] = financialSignal[i-1] * (1 + trend + randomShock);
         }
         

@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.api.WaveletRegistry;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,6 +41,9 @@ public class SmallSignalBenchmark {
     
     @Setup
     public void setup() {
+        // Use fixed seed for reproducible benchmarks
+        Random random = new Random(42);
+        
         // Create test signal with financial-like characteristics
         signal = new double[signalLength];
         double trend = 100.0;
@@ -47,7 +51,7 @@ public class SmallSignalBenchmark {
         
         for (int i = 0; i < signalLength; i++) {
             // Brownian motion simulation
-            trend *= (1 + volatility * (Math.random() - 0.5));
+            trend *= (1 + volatility * (random.nextDouble() - 0.5));
             signal[i] = trend + PERIODIC_AMPLITUDE * Math.sin(2 * Math.PI * i / PERIODIC_WAVELENGTH); // Add some periodicity
         }
         

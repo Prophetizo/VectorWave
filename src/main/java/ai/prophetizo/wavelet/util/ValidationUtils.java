@@ -17,6 +17,13 @@ import static ai.prophetizo.wavelet.util.WaveletConstants.calculateNextPowerOfTw
  */
 public final class ValidationUtils {
 
+    /**
+     * Maximum signal length for optimized validation path.
+     * Signals up to this size use a single-pass validation for better performance.
+     * This threshold is chosen based on typical cache sizes and performance characteristics.
+     */
+    private static final int SMALL_SIGNAL_THRESHOLD = 1024;
+
     private ValidationUtils() {
         // Utility class, prevent instantiation
     }
@@ -51,7 +58,7 @@ public final class ValidationUtils {
      */
     public static void validateSignal(double[] signal, String parameterName) {
         // Optimized path for small signals: combine all checks in single pass
-        if (signal != null && signal.length >= 2 && signal.length <= 1024 && isPowerOfTwo(signal.length)) {
+        if (signal != null && signal.length >= 2 && signal.length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(signal.length)) {
             // Fast path: single pass validation for small power-of-2 signals
             for (int i = 0; i < signal.length; i++) {
                 double value = signal[i];

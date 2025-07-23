@@ -310,6 +310,91 @@ class WaveletTransformTest extends BaseWaveletTest {
         }
     }
     
+    @Test
+    @DisplayName("Zero-padding boundary mode with vectorized operations")
+    void testZeroPaddingVectorizedOperations() {
+        // Test with zero-padding mode to ensure vectorized implementation works
+        double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
+        WaveletTransform transform = new WaveletTransform(Daubechies.DB2, BoundaryMode.ZERO_PADDING);
+        
+        // Forward transform
+        TransformResult result = transform.forward(signal);
+        
+        // Inverse transform
+        double[] reconstructed = transform.inverse(result);
+        
+        // Due to zero-padding, there will be border effects.
+        // The reconstruction won't be perfect, but should be reasonable
+        double totalError = 0.0;
+        for (int i = 0; i < signal.length; i++) {
+            totalError += Math.abs(signal[i] - reconstructed[i]);
+        }
+        double avgError = totalError / signal.length;
+        
+        // Zero-padding introduces errors, but they should be bounded
+        assertTrue(avgError < 0.5, 
+            "Average reconstruction error should be reasonable: " + avgError);
+        
+        // Test with larger signal to ensure vectorization is used
+        double[] largeSignal = new double[256];
+        for (int i = 0; i < largeSignal.length; i++) {
+            largeSignal[i] = Math.sin(2 * Math.PI * i / 32.0);
+        }
+        
+        TransformResult largeResult = transform.forward(largeSignal);
+        double[] largeReconstructed = transform.inverse(largeResult);
+        
+        // Check reconstruction error is bounded
+        double largeError = 0.0;
+        for (int i = 0; i < largeSignal.length; i++) {
+            largeError += Math.abs(largeSignal[i] - largeReconstructed[i]);
+        }
+        double largeAvgError = largeError / largeSignal.length;
+        
+        assertTrue(largeAvgError < 0.1, 
+            "Average reconstruction error for smooth signal should be small: " + largeAvgError);
+    }
+    
+    @Test
+    @DisplayName("Zero-padding vs Periodic boundary mode comparison")
+    void testBoundaryModeComparison() {
+        // Create a signal with strong boundary discontinuity
+        // Use a ramp function that would wrap around in periodic mode
+        double[] signal = new double[64];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = i; // Linear ramp from 0 to 63
+        }
+        
+        // Use DB2 which is more sensitive to boundary conditions than Haar
+        WaveletTransform periodicTransform = new WaveletTransform(Daubechies.DB2, BoundaryMode.PERIODIC);
+        WaveletTransform zeroPadTransform = new WaveletTransform(Daubechies.DB2, BoundaryMode.ZERO_PADDING);
+        
+        TransformResult periodicResult = periodicTransform.forward(signal);
+        TransformResult zeroPadResult = zeroPadTransform.forward(signal);
+        
+        // The results should be different due to boundary handling
+        double[] periodicDetails = periodicResult.detailCoeffs();
+        double[] zeroPadDetails = zeroPadResult.detailCoeffs();
+        
+        // Check the last few coefficients where boundary effects are strongest
+        double maxDiff = 0.0;
+        int diffCount = 0;
+        for (int i = 0; i < periodicDetails.length; i++) {
+            double diff = Math.abs(periodicDetails[i] - zeroPadDetails[i]);
+            maxDiff = Math.max(maxDiff, diff);
+            if (diff > 1e-10) {
+                diffCount++;
+            }
+        }
+        
+        assertTrue(diffCount > 0, 
+            "Periodic and zero-padding modes should produce different results. Max diff: " + maxDiff);
+        
+        // Verify that the difference is significant
+        assertTrue(maxDiff > 0.1, 
+            "Boundary mode differences should be significant for ramp signal. Max diff: " + maxDiff);
+    }
+    
     // === Helper Methods ===
     
 }

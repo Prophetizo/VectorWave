@@ -252,6 +252,10 @@ public final class VectorOps {
 
     /**
      * Vectorized upsampling with convolution for zero-padding boundary mode.
+     * 
+     * <p>This implementation uses SIMD operations to efficiently process multiple
+     * filter coefficients in parallel. Zero-padding mode is simpler than periodic
+     * mode as it doesn't require modulo operations for boundary handling.</p>
      */
     public static double[] upsampleAndConvolveZeroPadding(
             double[] coeffs, double[] filter, int coeffsLength, int filterLength) {
@@ -263,9 +267,61 @@ public final class VectorOps {
             return ScalarOps.upsampleAndConvolveZeroPadding(coeffs, filter, coeffsLength, filterLength);
         }
 
-        // For now, fall back to scalar implementation
-        // TODO: Implement vectorized version
-        return ScalarOps.upsampleAndConvolveZeroPadding(coeffs, filter, coeffsLength, filterLength);
+        // Clear output array using vector operations for efficiency
+        int clearBound = outputLength - VECTOR_LENGTH;
+        DoubleVector zeros = DoubleVector.zero(SPECIES);
+        for (int i = 0; i <= clearBound; i += VECTOR_LENGTH) {
+            zeros.intoArray(output, i);
+        }
+        // Clear remainder
+        for (int i = clearBound + VECTOR_LENGTH; i < outputLength; i++) {
+            output[i] = 0.0;
+        }
+
+        // Process each coefficient
+        for (int i = 0; i < coeffsLength; i++) {
+            double coeff = coeffs[i];
+            if (coeff == 0.0) continue; // Skip zero coefficients for efficiency
+            
+            int baseIndex = 2 * i;
+            DoubleVector coeffVec = DoubleVector.broadcast(SPECIES, coeff);
+            
+            // Process filter coefficients in vectorized chunks
+            int j = 0;
+            int filterBound = filterLength - VECTOR_LENGTH;
+            
+            for (; j <= filterBound; j += VECTOR_LENGTH) {
+                int outputIndex = baseIndex + j;
+                if (outputIndex + VECTOR_LENGTH <= outputLength) {
+                    // Load filter coefficients
+                    DoubleVector filterVec = DoubleVector.fromArray(SPECIES, filter, j);
+                    // Load current output values
+                    DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, outputIndex);
+                    // Multiply and accumulate
+                    outputVec = outputVec.add(coeffVec.mul(filterVec));
+                    // Store back
+                    outputVec.intoArray(output, outputIndex);
+                } else {
+                    // Handle boundary with scalar operations
+                    for (int k = 0; k < VECTOR_LENGTH && j + k < filterLength; k++) {
+                        int idx = outputIndex + k;
+                        if (idx < outputLength) {
+                            output[idx] += coeff * filter[j + k];
+                        }
+                    }
+                }
+            }
+            
+            // Handle remaining filter coefficients with scalar operations
+            for (; j < filterLength; j++) {
+                int outputIndex = baseIndex + j;
+                if (outputIndex < outputLength) {
+                    output[outputIndex] += coeff * filter[j];
+                }
+            }
+        }
+
+        return output;
     }
 
     /**

@@ -4,6 +4,8 @@ import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 
+import java.util.Random;
+
 /**
  * Quick performance comparison test to show the impact of our optimizations.
  * 
@@ -226,11 +228,14 @@ public class PerformanceComparisonTest {
     }
     
     private static double[] generateSignal(int size) {
+        // Use fixed seed for reproducible benchmarks
+        Random random = new Random(42);
+        
         double[] signal = new double[size];
         for (int i = 0; i < size; i++) {
             signal[i] = Math.sin(2 * Math.PI * i / 32.0) + 
                        0.5 * Math.cos(8 * Math.PI * i / 32.0) +
-                       0.1 * (Math.random() - 0.5);
+                       0.1 * (random.nextDouble() - 0.5);
         }
         return signal;
     }

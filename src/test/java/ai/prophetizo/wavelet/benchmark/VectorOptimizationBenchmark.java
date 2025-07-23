@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -38,6 +39,9 @@ public class VectorOptimizationBenchmark {
     
     @Setup(Level.Trial)
     public void setup() {
+        // Use fixed seed for reproducible benchmarks
+        Random random = new Random(42);
+        
         // Create test signal
         signal = new double[signalSize];
         for (int i = 0; i < signalSize; i++) {
@@ -45,11 +49,11 @@ public class VectorOptimizationBenchmark {
                        0.5 * Math.sin(2 * Math.PI * i / 16.0);
         }
         
-        // Create test filter (normalized)
+        // Create test filter (normalized) with seeded random values
         filter = new double[filterLength];
         double sum = 0.0;
         for (int i = 0; i < filterLength; i++) {
-            filter[i] = Math.random();
+            filter[i] = random.nextDouble();
             sum += filter[i];
         }
         // Normalize

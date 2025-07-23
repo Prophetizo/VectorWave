@@ -21,14 +21,66 @@ class FinancialStatisticsTest {
     private static final double EPSILON = 1e-10;
     private static final int CACHE_SIZE = 100; // Maximum number of entries in the random cache
     
-    // Cache for random number generators to ensure reproducibility
-    // Each unique sequence index gets its own Random instance with a deterministic seed
-    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.LinkedHashMap<Integer, Random>(CACHE_SIZE, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(java.util.Map.Entry<Integer, Random> eldest) {
-            return size() > CACHE_SIZE; // Limit the cache size to CACHE_SIZE entries
+    /**
+     * Thread-safe LRU cache for Random instances to ensure reproducible test data.
+     * Each unique sequence index gets its own Random instance with a deterministic seed.
+     * The cache is limited to CACHE_SIZE entries with LRU eviction policy.
+     * 
+     * <p>Note: For production code requiring caching, consider using a proper caching
+     * library like Caffeine or Guava Cache for better performance and features.</p>
+     */
+    private static final java.util.Map<Integer, Random> RANDOM_CACHE = 
+        java.util.Collections.synchronizedMap(
+            new java.util.LinkedHashMap<Integer, Random>(CACHE_SIZE + 1, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<Integer, Random> eldest) {
+                    return size() > CACHE_SIZE;
+                }
+            }
+        );
+    
+    /**
+     * Clears the Random cache. Useful for test cleanup or memory-sensitive scenarios.
+     * This method is thread-safe.
+     */
+    static void clearRandomCache() {
+        RANDOM_CACHE.clear();
+    }
+    
+    @Test
+    @DisplayName("Random cache eviction and size limit")
+    void testRandomCacheEviction() {
+        // Clear cache to start fresh
+        clearRandomCache();
+        
+        // Fill cache beyond capacity
+        for (int i = 0; i < CACHE_SIZE + 50; i++) {
+            gaussianRandom(i);
         }
-    };
+        
+        // Cache size should not exceed limit
+        assertTrue(RANDOM_CACHE.size() <= CACHE_SIZE, 
+            "Cache size " + RANDOM_CACHE.size() + " exceeds limit " + CACHE_SIZE);
+        
+        // Verify that values are deterministic within a test run
+        // Note: If a Random instance is evicted and recreated, it will produce
+        // different values even with the same seed, because the internal state resets
+        int cachedIndex = 10; // Should still be in cache
+        double value1 = gaussianRandom(cachedIndex);
+        double value2 = gaussianRandom(cachedIndex);
+        assertNotEquals(value1, value2, "Subsequent calls should produce different random values");
+        
+        // Verify reproducibility across test runs by checking a fresh Random
+        clearRandomCache();
+        Random testRng = new Random(42L * 1000L + 42L); // Same seed formula as index 42
+        double expectedValue = testRng.nextGaussian();
+        double actualValue = gaussianRandom(42);
+        assertEquals(expectedValue, actualValue, EPSILON, 
+            "First call with given index should produce predictable value");
+        
+        // Clear cache for other tests
+        clearRandomCache();
+    }
     
     @Test
     @DisplayName("Preservation of return statistics")
