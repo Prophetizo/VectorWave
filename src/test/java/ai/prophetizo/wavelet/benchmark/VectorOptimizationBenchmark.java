@@ -204,7 +204,7 @@ public class VectorOptimizationBenchmark {
         double[] highPassFilter = new double[filterLength];
         
         for (int i = 0; i < filterLength; i++) {
-            highPassFilter[i] = Math.pow(-1, i) * lowPassFilter[filterLength - 1 - i];
+            highPassFilter[i] = (i % 2 == 0 ? 1 : -1) * lowPassFilter[filterLength - 1 - i];
         }
         
         return highPassFilter;
