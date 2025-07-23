@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
@@ -137,7 +138,7 @@ public class MultiLevelWaveletTransform {
         ValidationUtils.validateSignal(signal, "signal");
 
         if (requestedLevels < 1) {
-            throw new InvalidArgumentException("Number of levels must be at least 1");
+            throw new InvalidArgumentException(ErrorCode.VAL_NOT_POSITIVE, "Number of levels must be at least 1");
         }
 
         // Calculate maximum possible levels

@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,14 +28,14 @@ class WaveletTransformFactoryTest {
     @Test
     @DisplayName("Create with null wavelet should throw exception")
     void testCreateNullWavelet() {
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> factory.create(null));
     }
     
     @Test
     @DisplayName("WithBoundaryMode with null should throw exception")
     void testWithBoundaryModeNull() {
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> factory.boundaryMode(null));
     }
     

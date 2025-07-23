@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
 import ai.prophetizo.wavelet.test.WaveletTestUtils;
@@ -42,17 +43,17 @@ class WaveletTransformTest extends BaseWaveletTest {
     @Test
     @DisplayName("Constructor should reject null wavelet")
     void testConstructorNullWavelet() {
-        assertThrows(NullPointerException.class, 
+        assertThrows(InvalidArgumentException.class, 
             () -> new WaveletTransform(null, BoundaryMode.PERIODIC),
-            "Should throw NullPointerException for null wavelet");
+            "Should throw InvalidArgumentException for null wavelet");
     }
     
     @Test
     @DisplayName("Constructor should reject null boundary mode")
     void testConstructorNullBoundaryMode() {
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> new WaveletTransform(new Haar(), null),
-            "Should throw NullPointerException for null boundary mode");
+            "Should throw InvalidArgumentException for null boundary mode");
     }
     
     // === Forward Transform Validation Tests ===

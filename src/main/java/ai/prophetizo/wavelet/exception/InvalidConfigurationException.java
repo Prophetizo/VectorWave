@@ -16,6 +16,16 @@ public class InvalidConfigurationException extends WaveletTransformException {
     }
 
     /**
+     * Constructs a new invalid configuration exception with the specified error code and detail message.
+     *
+     * @param errorCode the error code
+     * @param message   the detail message
+     */
+    public InvalidConfigurationException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
+    }
+
+    /**
      * Creates an exception for conflicting configuration options.
      *
      * @param option1 the first conflicting option
@@ -23,7 +33,7 @@ public class InvalidConfigurationException extends WaveletTransformException {
      * @return a new InvalidConfigurationException
      */
     public static InvalidConfigurationException conflictingOptions(String option1, String option2) {
-        return new InvalidConfigurationException(
+        return new InvalidConfigurationException(ErrorCode.CFG_CONFLICTING_OPTIONS,
                 String.format("Conflicting configuration: both %s and %s cannot be set", option1, option2));
     }
 
@@ -35,7 +45,7 @@ public class InvalidConfigurationException extends WaveletTransformException {
      * @return a new InvalidConfigurationException
      */
     public static InvalidConfigurationException unsupportedOperation(String waveletType, String operation) {
-        return new InvalidConfigurationException(
+        return new InvalidConfigurationException(ErrorCode.CFG_UNSUPPORTED_OPERATION,
                 String.format("%s wavelets do not support %s", waveletType, operation));
     }
 
@@ -46,7 +56,7 @@ public class InvalidConfigurationException extends WaveletTransformException {
      * @return a new InvalidConfigurationException
      */
     public static InvalidConfigurationException unsupportedBoundaryMode(String boundaryMode) {
-        return new InvalidConfigurationException(
+        return new InvalidConfigurationException(ErrorCode.CFG_UNSUPPORTED_BOUNDARY_MODE,
                 String.format("Boundary mode %s is not supported", boundaryMode));
     }
 }

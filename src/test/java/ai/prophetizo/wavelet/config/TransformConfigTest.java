@@ -61,7 +61,7 @@ class TransformConfigTest {
     void testBuilderNullBoundaryMode() {
         TransformConfig.Builder builder = TransformConfig.builder();
         
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> builder.boundaryMode(null),
             "Should throw exception for null boundary mode");
     }

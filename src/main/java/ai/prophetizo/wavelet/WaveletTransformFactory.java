@@ -2,8 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
-
-import java.util.Objects;
+import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
  * Factory for creating WaveletTransform instances.
@@ -60,8 +59,7 @@ public class WaveletTransformFactory {
      * @throws NullPointerException if boundaryMode is null
      */
     public WaveletTransformFactory boundaryMode(BoundaryMode boundaryMode) {
-        this.boundaryMode = Objects.requireNonNull(boundaryMode,
-                "boundaryMode cannot be null");
+        this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
         return this;
     }
 
@@ -73,7 +71,7 @@ public class WaveletTransformFactory {
      * @throws NullPointerException if wavelet is null
      */
     public WaveletTransform create(Wavelet wavelet) {
-        Objects.requireNonNull(wavelet, "wavelet cannot be null");
+        NullChecks.requireNonNull(wavelet, "wavelet");
         return new WaveletTransform(wavelet, boundaryMode);
     }
 

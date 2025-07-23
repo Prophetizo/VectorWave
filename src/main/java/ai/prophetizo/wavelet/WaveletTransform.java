@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.util.NullChecks;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Objects;
@@ -58,8 +59,8 @@ public class WaveletTransform {
      * @throws NullPointerException if wavelet or boundaryMode is null
      */
     public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, TransformConfig config) {
-        this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null.");
-        this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null.");
+        this.wavelet = NullChecks.requireNonNull(wavelet, "wavelet");
+        this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
 
         // Validate supported boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {

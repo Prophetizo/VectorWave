@@ -198,11 +198,11 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
      */
     private static class StreamingStatisticsImpl implements StreamingStatistics {
         private final long startTime = System.nanoTime();
+        private final long overruns = 0;
         private long samplesProcessed = 0;
         private long blocksEmitted = 0;
         private long totalProcessingTime = 0;
         private long maxProcessingTime = 0;
-        private final long overruns = 0;
 
         synchronized void addSamples(long count) {
             samplesProcessed += count;

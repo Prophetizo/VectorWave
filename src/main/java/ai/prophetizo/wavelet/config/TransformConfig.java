@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.config;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
  * Immutable configuration for wavelet transform.
@@ -129,8 +130,7 @@ public final class TransformConfig {
          * @return this builder
          */
         public Builder boundaryMode(BoundaryMode boundaryMode) {
-            this.boundaryMode = java.util.Objects.requireNonNull(boundaryMode,
-                    "boundaryMode cannot be null.");
+            this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
             return this;
         }
 

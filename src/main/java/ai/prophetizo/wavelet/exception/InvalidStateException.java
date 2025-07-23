@@ -16,13 +16,23 @@ public class InvalidStateException extends WaveletTransformException {
     }
 
     /**
+     * Constructs a new invalid state exception with the specified error code and detail message.
+     *
+     * @param errorCode the error code
+     * @param message   the detail message
+     */
+    public InvalidStateException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
+    }
+
+    /**
      * Creates an exception for operations attempted on a closed resource.
      *
      * @param resourceName the name of the closed resource
      * @return a new InvalidStateException
      */
     public static InvalidStateException closed(String resourceName) {
-        return new InvalidStateException(resourceName + " is closed");
+        return new InvalidStateException(ErrorCode.STATE_CLOSED, resourceName + " is closed");
     }
 
     /**
@@ -32,6 +42,6 @@ public class InvalidStateException extends WaveletTransformException {
      * @return a new InvalidStateException
      */
     public static InvalidStateException notInitialized(String objectName) {
-        return new InvalidStateException(objectName + " has not been initialized");
+        return new InvalidStateException(ErrorCode.STATE_INVALID, objectName + " has not been initialized");
     }
 }
