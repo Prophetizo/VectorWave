@@ -33,6 +33,8 @@ public class WaveletTransformPool {
     private final BoundaryMode boundaryMode;
     private final double[] lowPassFilter;
     private final double[] highPassFilter;
+    private final double[] lowPassRecon;
+    private final double[] highPassRecon;
     
     /**
      * Creates a wavelet transform with pooled memory and periodic boundary handling.
@@ -62,6 +64,19 @@ public class WaveletTransformPool {
         if (wavelet instanceof DiscreteWavelet discreteWavelet) {
             this.lowPassFilter = discreteWavelet.lowPassDecomposition();
             this.highPassFilter = discreteWavelet.highPassDecomposition();
+            
+            // Pre-compute reconstruction filters
+            if (wavelet instanceof OrthogonalWavelet) {
+                this.lowPassRecon = this.lowPassFilter;
+                this.highPassRecon = this.highPassFilter;
+            } else if (wavelet instanceof BiorthogonalWavelet biortho) {
+                this.lowPassRecon = biortho.lowPassReconstruction();
+                this.highPassRecon = biortho.highPassReconstruction();
+            } else {
+                throw new IllegalArgumentException(
+                    "Unsupported wavelet type: " + wavelet.getClass().getSimpleName()
+                );
+            }
         } else {
             throw new IllegalArgumentException(
                 "Only discrete wavelets are supported. Got: " + wavelet.getClass().getSimpleName()
@@ -138,11 +153,7 @@ public class WaveletTransformPool {
         double[] temp = ArrayPool.borrow(outputLength);
         
         try {
-            // Get reconstruction filters
-            double[] lowPassRecon = wavelet instanceof OrthogonalWavelet ?
-                    lowPassFilter : ((BiorthogonalWavelet) wavelet).lowPassReconstruction();
-            double[] highPassRecon = wavelet instanceof OrthogonalWavelet ?
-                    highPassFilter : ((BiorthogonalWavelet) wavelet).highPassReconstruction();
+            // Use pre-computed reconstruction filters
             
             if (boundaryMode == BoundaryMode.PERIODIC) {
                 ScalarOps.upsampleAndConvolvePeriodic(approxCoeffs, lowPassRecon, reconstructed);
@@ -195,11 +206,7 @@ public class WaveletTransformPool {
                 ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
             }
             
-            // Inverse transform
-            double[] lowPassRecon = wavelet instanceof OrthogonalWavelet ?
-                    lowPassFilter : ((BiorthogonalWavelet) wavelet).lowPassReconstruction();
-            double[] highPassRecon = wavelet instanceof OrthogonalWavelet ?
-                    highPassFilter : ((BiorthogonalWavelet) wavelet).highPassReconstruction();
+            // Inverse transform using pre-computed reconstruction filters
             
             if (boundaryMode == BoundaryMode.PERIODIC) {
                 ScalarOps.upsampleAndConvolvePeriodic(approxCoeffs, lowPassRecon, reconstructed);
