@@ -58,7 +58,7 @@ public final class ValidationUtils {
      */
     public static void validateSignal(double[] signal, String parameterName) {
         // Optimized path for small signals: combine all checks in single pass
-        if (signal != null && signal.length >= 2 && signal.length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(signal.length)) {
+        if (signal != null && isPowerOfTwo(signal.length) && signal.length >= 2 && signal.length <= SMALL_SIGNAL_THRESHOLD) {
             // Fast path: single pass validation for small power-of-2 signals
             for (int i = 0; i < signal.length; i++) {
                 double value = signal[i];
