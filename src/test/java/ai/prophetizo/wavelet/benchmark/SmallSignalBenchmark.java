@@ -89,15 +89,10 @@ public class SmallSignalBenchmark {
     }
     
     /**
-     * Measures memory allocation overhead and GC pressure.
-     * 
-     * This benchmark specifically tests the cost of defensive copying in TransformResult.
-     * Each call to approximationCoeffs() and detailCoeffs() creates a new array copy
-     * to ensure immutability. Additionally, the forward() method itself allocates arrays
-     * for the transform results. With 100 iterations, this creates 400 array allocations
-     * per benchmark invocation (2 from forward() + 2 from getters per iteration),
-     * allowing us to measure the impact of memory allocation and potential GC pressure
-     * on performance.
+     * Benchmarks memory allocation overhead and GC pressure caused by defensive copying.
+     * Tests the allocation cost in TransformResult during forward() and getter calls,
+     * which create new arrays to ensure immutability. Measures the impact of these
+     * allocations on performance over 100 iterations.
      */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
