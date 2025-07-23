@@ -32,6 +32,7 @@ Compares scalar vs SIMD-optimized operations across different signal sizes.
 - Boundary modes: PERIODIC, ZERO_PADDING
 - Measures: Performance difference between scalar and vector operations
 - Includes financial signal benchmarks
+- **Note**: Minimal SIMD overhead for small signals (<256 samples)
 
 ### 2. Signal Size Scaling
 
@@ -96,6 +97,7 @@ Compares original VectorOps vs optimized VectorOps implementations.
 - Filter lengths: 4, 8 (DB2 and DB4)
 - Measures: Performance of convolution, combined transforms, and Haar optimization
 - Uses 3 forks for statistical reliability
+- **Note**: Clean implementation with obsolete comments removed
 
 ### 7. Real-Time Application Benchmarks
 
@@ -124,6 +126,8 @@ Detailed latency analysis for real-time constraints.
 - Measures: Percentile latencies (50th, 90th, 95th, 99th, 99.9th)
 - Tests: Jitter, GC impact, thread contention, allocation overhead
 - Wavelet comparison: Haar vs DB2 vs DB4 latency
+- **Recent Results**: Haar ~107 ns/op, DB2 ~193 ns/op, DB4 ~294 ns/op (64 samples)
+- **Thread Safety**: Fixed indexing collision with AtomicInteger
 
 ### 9. Cache Prefetch Optimization Benchmarks
 

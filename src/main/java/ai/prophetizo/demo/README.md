@@ -147,6 +147,20 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 **Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDemo`
 
+### 10. ScalarVsVectorDemo
+
+**Purpose**: Understanding scalar vs SIMD/vector optimization paths
+
+**What it covers**:
+
+- Forcing scalar operations for debugging/compatibility
+- Forcing SIMD operations for maximum performance
+- Auto-detection of optimal path
+- Performance comparison between modes
+- Configuration validation and best practices
+
+**Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.ScalarVsVectorDemo`
+
 ## Demo Categories by Use Case
 
 ### Getting Started

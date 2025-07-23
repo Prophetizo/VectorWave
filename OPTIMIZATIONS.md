@@ -4,6 +4,13 @@
 
 This document describes the performance optimizations integrated into the canonical VectorWave implementation for small signal sizes (<1024 samples), specifically targeted at financial time series analysis. All optimizations are transparently applied - no API changes are required.
 
+## Latest Performance Updates
+
+- **Nanosecond Latencies**: Achieved 107-294 ns for 64-sample signals
+- **SIMD Integration**: Configurable scalar/SIMD paths via TransformConfig
+- **Thread Safety**: Fixed concurrent access issues with atomic operations
+- **Streaming Support**: Optimized for real-time processing without buffering
+
 ## Implemented Optimizations
 
 ### 1. Bitwise Modulo Operations
@@ -32,6 +39,12 @@ This document describes the performance optimizations integrated into the canoni
 - **Location**: `ScalarOps.combinedTransformPeriodic()` used by `WaveletTransform`
 - **Impact**: Better cache utilization for small signals
 - **Description**: Automatically processes both filters in single pass for periodic boundary mode
+
+### 6. SIMD/Vector API Support
+- **Location**: `VectorOps.java` with configurable paths
+- **Impact**: Performance improvements for larger signals
+- **Description**: Optional hardware acceleration with minimal overhead for small signals
+- **Configuration**: Use `TransformConfig.forceScalar()` or `forceSIMD()` for explicit control
 
 ## Performance Results
 

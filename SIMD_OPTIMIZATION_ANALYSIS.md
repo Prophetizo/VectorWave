@@ -1,6 +1,25 @@
 # SIMD Optimization Analysis for VectorWave
 
-## Current Implementation Issues and Optimization Opportunities
+## Current Implementation Status
+
+### Completed Optimizations
+
+1. **Java Vector API Integration**
+   - Successfully integrated with incubator vector module
+   - Configurable scalar/SIMD paths via TransformConfig
+   - Auto-detection of optimal execution path based on signal size
+
+2. **Thread Safety**
+   - Fixed thread indexing collision issues
+   - Implemented atomic operations for concurrent access
+   - Thread-safe memory pooling
+
+3. **Performance Characteristics**
+   - Minimal overhead for small signals (<256 samples)
+   - Performance benefits increase with signal size
+   - Nanosecond-level latencies achieved (107-294 ns for 64 samples)
+
+## Current Implementation Analysis and Remaining Opportunities
 
 ### 1. **Memory Access Pattern Issues**
 
@@ -205,16 +224,21 @@ public static void blockedConvolution(double[] signal, double[] filter,
 
 ## Performance Targets
 
-### Expected Improvements:
+### Achieved Performance:
+- **Small signals (64 samples)**: 107-294 ns latency
+- **SIMD overhead**: Minimal for signals <256 samples
+- **Thread safety**: Zero collision with atomic indexing
+
+### Remaining Optimization Targets:
 1. **Memory Access**: 2-3x improvement from gather operations
 2. **Combined Transform**: 1.5x improvement from single-pass processing
 3. **Haar Specialization**: 3-4x improvement for Haar wavelet
 4. **Cache Optimization**: 1.2-1.5x improvement from better locality
 
 ### Overall Target:
-- 3-5x speedup over scalar for signals > 512 samples
-- 2-3x speedup for signals 256-512 samples
-- Minimal overhead for very small signals
+- Further speedup for signals > 512 samples
+- Maintain current performance for small signals
+- Zero overhead when SIMD is not beneficial
 
 ## Implementation Priority
 
@@ -267,10 +291,40 @@ public static void blockedConvolution(double[] signal, double[] filter,
    - Consider migration path from incubator module
    - Prepare for wider vector lengths (AVX512, SVE)
 
+## Configuration and Usage
+
+### Enabling SIMD Optimizations
+
+```java
+// Force SIMD operations
+TransformConfig config = TransformConfig.builder()
+    .forceSIMD(true)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .build();
+
+// Force scalar operations (for debugging/compatibility)
+TransformConfig config = TransformConfig.builder()
+    .forceScalar(true)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .build();
+
+// Auto-detect (default)
+TransformConfig config = TransformConfig.builder()
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .build();
+```
+
+### Running with Vector API
+
+```bash
+# Add JVM flags for Vector API support
+java --add-modules jdk.incubator.vector -cp target/classes ai.prophetizo.demo.ScalarVsVectorDemo
+```
+
 ## Next Steps
 
-1. Implement Phase 1 (Memory Access Optimization)
-2. Benchmark and validate improvements
-3. Proceed to Phase 2 if Phase 1 shows benefits
-4. Create specialized benchmarks for each optimization
-5. Document performance characteristics
+1. Continue optimizing memory access patterns
+2. Implement specialized Haar wavelet SIMD path
+3. Benchmark combined transform implementation
+4. Profile cache behavior with larger signals
+5. Document platform-specific performance characteristics

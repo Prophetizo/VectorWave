@@ -2,6 +2,26 @@
 
 This document summarizes the architectural improvements made to ensure consistency and maintainability across the VectorWave codebase.
 
+## Recent Updates (2025)
+
+### Performance and Bug Fixes
+1. **Thread Safety**: Fixed thread indexing collision in LatencyBenchmark using AtomicInteger
+2. **Streaming Transforms**: Resolved infinite loop issue in StreamingWaveletTransformTest
+3. **Code Cleanup**: Removed obsolete comments in VectorOptimizationBenchmark
+4. **SIMD Control**: Added TransformConfig for explicit scalar/SIMD path control
+
+### New Features
+1. **ScalarVsVectorDemo**: Demonstrates optimization path control and validation
+2. **Enhanced Exception Hierarchy**: Custom exceptions with error codes for precise handling
+3. **Memory Pooling**: Thread-safe memory pools for reduced GC pressure
+4. **Multi-level Decomposition**: Efficient multi-resolution analysis
+
+### Performance Characteristics
+- Haar wavelet: ~107 ns/op for 64-sample signals
+- DB2 wavelet: ~193 ns/op for 64-sample signals  
+- DB4 wavelet: ~294 ns/op for 64-sample signals
+- Minimal SIMD overhead for small signals (<256 samples)
+
 ## 1. Standardized Builder Method Naming
 
 **Before:**

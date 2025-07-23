@@ -13,7 +13,14 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
 - **Boundary Modes**: Supports periodic and zero-padding boundary handling
 - **Performance**: Optimized for small signals (<1024 samples) with integrated performance enhancements for financial time series analysis
+- **SIMD/Vector API Support**: Optional hardware acceleration with configurable scalar/SIMD paths
 - **Mathematical Verification**: Built-in coefficient verification for all wavelets with documented sources
+- **Advanced Features**:
+  - Custom exception hierarchy for precise error handling
+  - Memory pooling for reduced GC pressure
+  - Streaming/real-time transform support
+  - Multi-level wavelet decomposition
+  - Thread-safe operations with atomic indexing
 
 ## Requirements
 
@@ -22,7 +29,17 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 
 ### SIMD/Vector API Support
 
-VectorWave includes optional SIMD optimizations using Java's Vector API (incubator module). These optimizations are automatically enabled when available and provide 1.5-3x performance improvements on compatible hardware.
+VectorWave includes optional SIMD optimizations using Java's Vector API (incubator module). These optimizations are automatically enabled when available and provide performance improvements on compatible hardware.
+
+**Configuration Options**:
+- **Auto-detection** (default): System automatically chooses optimal path
+- **Force Scalar**: Use `TransformConfig.forceScalar(true)` for debugging or compatibility
+- **Force SIMD**: Use `TransformConfig.forceSIMD(true)` for maximum performance
+
+**Performance Characteristics**:
+- Minimal overhead for small signals (<256 samples)
+- Performance benefits increase with signal size
+- Thread-safe with atomic indexing to prevent collisions
 
 **Note**: When building the project, you may see warnings about "using incubating module(s)". This is expected and does not affect functionality. The Vector API is an incubating feature that will be finalized in a future JDK release.
 
@@ -46,6 +63,10 @@ java -cp target/classes ai.prophetizo.Main
 java -cp target/classes ai.prophetizo.demo.BasicUsageDemo
 java -cp target/classes ai.prophetizo.demo.WaveletSelectionGuideDemo
 java -cp target/classes ai.prophetizo.demo.PerformanceOptimizationDemo
+java -cp target/classes ai.prophetizo.demo.ScalarVsVectorDemo
+
+# For demos requiring Vector API support
+java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.ScalarVsVectorDemo
 ```
 
 See [Demo Suite Documentation](src/main/java/ai/prophetizo/demo/README.md) for the complete list of available demos.
@@ -55,6 +76,7 @@ See [Demo Suite Documentation](src/main/java/ai/prophetizo/demo/README.md) for t
 ```java
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.config.TransformConfig;
 
 // Using Haar wavelet
 WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
@@ -74,6 +96,13 @@ transform = new WaveletTransformFactory()
 // Using Morlet wavelet (continuous)
 transform = new WaveletTransformFactory()
     .create(new MorletWavelet(6.0, 1.0));
+
+// Configuring optimization paths
+TransformConfig config = TransformConfig.builder()
+    .forceScalar(true)  // or forceSIMD(true)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .build();
+transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, config);
 ```
 
 ### Wavelet Registry

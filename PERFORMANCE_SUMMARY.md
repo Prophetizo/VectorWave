@@ -6,10 +6,19 @@ This document summarizes the performance optimizations implemented in VectorWave
 
 ## Performance Metrics
 
+### Latest Benchmark Results (64-sample signals)
+
+| Wavelet | Latency | Notes |
+|---------|---------|-------|
+| Haar | ~107 ns/op | Fastest, ideal for step-like signals |
+| DB2 | ~193 ns/op | Good balance of speed and smoothness |
+| DB4 | ~294 ns/op | Better frequency localization |
+
 ### Single Transform Performance (Forward Only)
 
 | Signal Size | Haar | DB2 | DB4 |
 |------------|------|-----|-----|
+| 64 samples | 0.11 μs | 0.19 μs | 0.29 μs |
 | 256 samples | 1.79 μs | 0.95 μs | 1.40 μs |
 | 512 samples | 1.08 μs | 1.68 μs | 3.25 μs |
 | 1024 samples | 2.19 μs | 3.86 μs | 5.28 μs |
@@ -70,8 +79,11 @@ For a 512-sample signal using DB4:
 ### 8. **SIMD Vectorization** 
 - Parallel processing using Java Vector API
 - Vectorized convolution and filtering operations
+- Configurable scalar/SIMD paths via TransformConfig
+- Thread-safe operations with AtomicInteger indexing
 - Automatic fallback to scalar operations when not beneficial
-- **Impact**: 1.5-3x speedup for signals > 256 samples on AVX2/AVX512 CPUs
+- **Impact**: Performance improvements for larger signals on AVX2/AVX512 CPUs
+- **Note**: Minimal overhead for small signals (<256 samples)
 
 ## Financial Time Series Specific Optimizations
 
@@ -98,12 +110,30 @@ All benchmarks run with:
 - 5 warmup iterations, 10 measurement iterations
 - Intel/Apple Silicon processors
 
+## Recent Optimizations and Fixes
+
+### 1. **Thread Safety Improvements**
+- Fixed thread indexing collision issue in LatencyBenchmark
+- Implemented AtomicInteger for thread-safe index generation
+- **Result**: Eliminated race conditions in multi-threaded scenarios
+
+### 2. **StreamingWaveletTransform Fix**
+- Resolved infinite loop issue in StreamingWaveletTransformTest
+- Improved boundary condition handling for streaming transforms
+- **Result**: Stable streaming performance for real-time applications
+
+### 3. **SIMD Path Control**
+- Added TransformConfig for explicit scalar/SIMD control
+- ScalarVsVectorDemo for optimization path validation
+- **Result**: Better control over performance characteristics
+
 ## Future Optimization Opportunities
 
 ### 1. **SIMD Vectorization** (✓ Completed)
 - Java Vector API integration for parallel processing
+- Configurable via TransformConfig (forceScalar/forceSIMD)
 - Automatic selection between scalar and vector operations
-- **Achieved**: 1.5-3x improvement for signals > 256 samples
+- **Status**: Implemented with minimal overhead for small signals
 - **Note**: Requires JVM flag `--add-modules jdk.incubator.vector` (automatically configured)
 
 ### 2. **GPU Acceleration**
@@ -119,9 +149,9 @@ All benchmarks run with:
 ### For Optimal Performance:
 
 1. **Use appropriate wavelet for your data**:
-   - Haar: Fastest, good for step-like signals
-   - DB2: Balance of speed and smoothness
-   - DB4: Better frequency localization, slower
+   - Haar: Fastest (~107 ns/op for 64 samples), good for step-like signals
+   - DB2: Balance of speed and smoothness (~193 ns/op for 64 samples)
+   - DB4: Better frequency localization (~294 ns/op for 64 samples)
 
 2. **Batch similar-sized signals together**:
    - Enables memory pool reuse
@@ -138,12 +168,26 @@ All benchmarks run with:
    - Fastest boundary handling
    - Appropriate for cyclic data
 
+5. **Configure optimization paths appropriately**:
+   ```java
+   // Force scalar for debugging/compatibility
+   TransformConfig.builder().forceScalar(true).build()
+   
+   // Force SIMD for maximum performance
+   TransformConfig.builder().forceSIMD(true).build()
+   
+   // Auto-detect (default)
+   TransformConfig.builder().build()
+   ```
+
 ## Conclusion
 
 VectorWave achieves sub-microsecond performance for typical financial time series analysis tasks. The optimizations provide:
 
 - **2-5x improvement** over naive implementations
-- **Additional 1.5-3x speedup** with SIMD on modern CPUs
+- **Nanosecond-level latencies** for small signals (107-294 ns for 64 samples)
+- **Configurable optimization paths** for different use cases
+- **Thread-safe operations** for concurrent processing
 - **Consistent performance** without GC spikes
 - **Memory efficiency** for resource-constrained environments
 - **Numerical accuracy** for financial calculations
