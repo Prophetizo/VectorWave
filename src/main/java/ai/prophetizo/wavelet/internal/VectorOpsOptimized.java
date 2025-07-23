@@ -31,6 +31,11 @@ public final class VectorOpsOptimized {
     // Minimum signal length to use vectorization
     private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;
     
+    // Thread-local cache for indices arrays to avoid repeated allocations
+    private static final ThreadLocal<int[]> INDICES_CACHE = ThreadLocal.withInitial(
+        () -> new int[VECTOR_LENGTH]
+    );
+    
     private VectorOpsOptimized() {
         // Utility class
     }
@@ -55,8 +60,8 @@ public final class VectorOpsOptimized {
         int i = 0;
         int vectorBound = outputLength - VECTOR_LENGTH;
         
-        // Pre-allocate index array for gather operations
-        int[] indices = new int[VECTOR_LENGTH];
+        // Get cached indices array from thread-local storage
+        int[] indices = INDICES_CACHE.get();
         
         for (; i <= vectorBound; i += VECTOR_LENGTH) {
             DoubleVector accumulator = DoubleVector.zero(SPECIES);
@@ -142,7 +147,7 @@ public final class VectorOpsOptimized {
         }
         
         int signalMask = signalLen - 1;
-        int[] indices = new int[VECTOR_LENGTH];
+        int[] indices = INDICES_CACHE.get();
         
         int i = 0;
         int vectorBound = outputLen - VECTOR_LENGTH;
@@ -258,7 +263,7 @@ public final class VectorOpsOptimized {
         Arrays.fill(output, clearBound + VECTOR_LENGTH, outputLength, 0.0);
         
         // Process coefficients
-        int[] scatterIndices = new int[VECTOR_LENGTH];
+        int[] scatterIndices = INDICES_CACHE.get();
         
         // Process even indices (direct placement)
         for (int k = 0; k < filterLength; k += 2) {
