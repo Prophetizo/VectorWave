@@ -24,7 +24,7 @@ import java.util.Arrays;
  * <p>For debugging, enable full validation with:
  * {@code -Dai.prophetizo.wavelet.fullValidation=true}</p>
  */
-public sealed interface TransformResult permits TransformResultImpl {
+public sealed interface TransformResult permits TransformResultImpl, PaddedTransformResult {
 
     /**
      * Returns a defensive copy of the approximation coefficients.

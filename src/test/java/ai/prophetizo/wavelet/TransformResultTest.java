@@ -5,6 +5,10 @@ import org.junit.jupiter.api.DisplayName;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Unit tests for TransformResult implementation.
  * 
@@ -156,9 +160,16 @@ class TransformResultTest {
             "TransformResult should be a sealed interface");
         
         Class<?>[] permitted = TransformResult.class.getPermittedSubclasses();
-        assertEquals(1, permitted.length,
-            "TransformResult should have exactly one permitted implementation");
-        assertEquals("TransformResultImpl", permitted[0].getSimpleName(),
-            "Only TransformResultImpl should implement TransformResult");
+        assertEquals(2, permitted.length,
+            "TransformResult should have exactly two permitted implementations");
+        
+        // Check that both expected implementations are present
+        Set<String> permittedNames = Arrays.stream(permitted)
+            .map(Class::getSimpleName)
+            .collect(Collectors.toSet());
+        assertTrue(permittedNames.contains("TransformResultImpl"),
+            "TransformResultImpl should implement TransformResult");
+        assertTrue(permittedNames.contains("PaddedTransformResult"),
+            "PaddedTransformResult should implement TransformResult");
     }
 }
