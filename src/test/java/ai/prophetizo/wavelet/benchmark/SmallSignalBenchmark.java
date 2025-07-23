@@ -85,7 +85,13 @@ public class SmallSignalBenchmark {
     }
     
     /**
-     * Measure memory allocation rate
+     * Measures memory allocation overhead and GC pressure.
+     * 
+     * This benchmark specifically tests the cost of defensive copying in TransformResult.
+     * Each call to approximationCoeffs() and detailCoeffs() creates a new array copy
+     * to ensure immutability. With 100 iterations, this creates 200 array allocations
+     * per benchmark invocation, allowing us to measure the impact of memory allocation
+     * and potential GC pressure on performance.
      */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
@@ -93,7 +99,8 @@ public class SmallSignalBenchmark {
     public void memoryPressure(Blackhole bh) {
         for (int i = 0; i < 100; i++) {
             TransformResult result = transform.forward(signal);
-            // Force defensive copy
+            // Accessing coefficients triggers defensive array copying in TransformResult
+            // to maintain immutability. This measures the allocation overhead.
             double[] approx = result.approximationCoeffs();
             double[] detail = result.detailCoeffs();
             bh.consume(approx);

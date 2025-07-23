@@ -39,13 +39,29 @@ public sealed interface TransformResult permits TransformResultImpl, PaddedTrans
      * @return the detail coefficients (cD)
      */
     double[] detailCoeffs();
+    
+    /**
+     * Creates a new TransformResult with modified coefficients.
+     * This factory method is the recommended way to create modified transform results
+     * for operations like thresholding or denoising.
+     *
+     * @param approximationCoeffs the approximation coefficients
+     * @param detailCoeffs the detail coefficients
+     * @return a new TransformResult
+     * @throws IllegalArgumentException if coefficients are invalid
+     */
+    static TransformResult create(double[] approximationCoeffs, double[] detailCoeffs) {
+        return new TransformResultImpl(approximationCoeffs, detailCoeffs);
+    }
 }
 
 /**
  * Package-private implementation of TransformResult.
  * This class can only be instantiated within the wavelet package.
  */
-record TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) implements TransformResult {
+final class TransformResultImpl implements TransformResult {
+    private final double[] approximationCoeffs;
+    private final double[] detailCoeffs;
     // System property to enable full validation in production
     // System property name for enabling full validation
     private static final String FULL_VALIDATION_PROPERTY = "ai.prophetizo.wavelet.fullValidation";
@@ -68,14 +84,25 @@ record TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) 
      * @param detailCoeffs        the detail coefficients (must not be null/empty)
      */
     TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) {
-        if (FULL_VALIDATION) {
+        this(approximationCoeffs, detailCoeffs, true);
+    }
+    
+    /**
+     * Private constructor with validation control.
+     * 
+     * @param approximationCoeffs the approximation coefficients (must not be null/empty)
+     * @param detailCoeffs        the detail coefficients (must not be null/empty)
+     * @param validate            whether to perform validation
+     */
+    private TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs, boolean validate) {
+        if (validate && FULL_VALIDATION) {
             // Full validation mode for debugging
             ValidationUtils.validateNotNullOrEmpty(approximationCoeffs, "approximationCoeffs");
             ValidationUtils.validateNotNullOrEmpty(detailCoeffs, "detailCoeffs");
             ValidationUtils.validateMatchingLengths(approximationCoeffs, detailCoeffs);
             ValidationUtils.validateFiniteValues(approximationCoeffs, "approximationCoeffs");
             ValidationUtils.validateFiniteValues(detailCoeffs, "detailCoeffs");
-        } else {
+        } else if (validate) {
             // Use assertions for internal consistency checks
             assert approximationCoeffs != null : "approximationCoeffs cannot be null.";
             assert detailCoeffs != null : "detailCoeffs cannot be null.";
@@ -128,24 +155,17 @@ record TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) 
     /**
      * Creates a TransformResult without validation for internal use.
      * Package-private for use by optimized transform classes.
+     * 
+     * <p>This method should only be used by internal transform operations that have
+     * already validated the coefficient arrays. It bypasses validation for performance
+     * in hot code paths.</p>
      *
      * @param approxCoeffs approximation coefficients (will be cloned)
      * @param detailCoeffs detail coefficients (will be cloned)
      * @return new TransformResult
      */
     static TransformResult createFast(double[] approxCoeffs, double[] detailCoeffs) {
-        // Bypass validation by temporarily setting the property
-        boolean originalValidation = FULL_VALIDATION;
-
-        try {
-            if (originalValidation) {
-                System.setProperty(FULL_VALIDATION_PROPERTY, "false");
-            }
-            return new TransformResultImpl(approxCoeffs, detailCoeffs);
-        } finally {
-            if (originalValidation) {
-                System.setProperty(FULL_VALIDATION_PROPERTY, "true");
-            }
-        }
+        // Use private constructor that bypasses validation
+        return new TransformResultImpl(approxCoeffs, detailCoeffs, false);
     }
 }

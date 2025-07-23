@@ -14,8 +14,8 @@ import static java.util.Arrays.fill;
  * <p>
  * <strong>Note on zero coefficient handling:</strong>
  * Throughout this class, exact zero coefficients (coeff == 0.0) are skipped for performance.
- * This is intentional as wavelet transforms preserve exact zeros from sparse or 
- * zero-padded signals. Very small coefficients are NOT treated as zero to maintain 
+ * This is intentional as wavelet transforms preserve exact zeros from sparse or
+ * zero-padded signals. Very small coefficients are NOT treated as zero to maintain
  * numerical precision in reconstruction.
  */
 public final class ScalarOps {
@@ -268,7 +268,7 @@ public final class ScalarOps {
 
         for (int i = 0; i < coeffs.length; i++) {
             double coeff = coeffs[i];
-            if (coeff == 0.0) continue;
+            if (coeff == 0.0) continue; // Skip zero coefficients (see class-level note)
 
             int base = 2 * i;
             int idx0 = base & outputMask;

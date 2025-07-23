@@ -29,7 +29,7 @@ class TransformResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Modify original arrays
         approx[0] = 999.0;
@@ -48,7 +48,7 @@ class TransformResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         double[] approx1 = result.approximationCoeffs();
         double[] approx2 = result.approximationCoeffs();
@@ -72,7 +72,7 @@ class TransformResultTest {
         double[] approx = {1.5, 2.5, 3.5};
         double[] detail = {0.1, 0.2, 0.3};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         String str = result.toString();
         
         assertTrue(str.contains("TransformResult"), "Should contain class name");
@@ -90,7 +90,7 @@ class TransformResultTest {
         
         // With assertions enabled, this should throw
         assertThrows(AssertionError.class, () -> {
-            new TransformResultImpl(empty, empty);
+            TransformResult.create(empty, empty);
         }, "Empty arrays should trigger assertion error");
     }
     
@@ -101,7 +101,7 @@ class TransformResultTest {
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
         assertDoesNotThrow(() -> {
-            TransformResult result = new TransformResultImpl(approx, detail);
+            TransformResult result = TransformResult.create(approx, detail);
             assertEquals(4, result.approximationCoeffs().length);
             assertEquals(4, result.detailCoeffs().length);
         });
@@ -120,7 +120,7 @@ class TransformResultTest {
             detail[i] = i * 0.01;
         }
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Verify defensive copies work for large arrays
         approx[0] = 999.0;
@@ -140,7 +140,7 @@ class TransformResultTest {
         double[] detail = {Double.MIN_VALUE, -Double.MIN_VALUE, 
                           Double.MIN_NORMAL, -Double.MIN_NORMAL};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Verify special values are preserved exactly
         assertEquals(0.0, result.approximationCoeffs()[0]);

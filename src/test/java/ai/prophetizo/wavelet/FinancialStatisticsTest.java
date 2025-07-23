@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class FinancialStatisticsTest {
     
     private static final double EPSILON = 1e-10;
+    
+    // Cache for random number generators to ensure reproducibility
+    // Each unique sequence index gets its own Random instance with a deterministic seed
+    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.HashMap<>();
     
     @Test
     @DisplayName("Preservation of return statistics")
@@ -93,7 +98,7 @@ class FinancialStatisticsTest {
             details[i] = softThreshold(details[i], threshold);
         }
         
-        TransformResult denoisedResult = new TransformResultImpl(
+        TransformResult denoisedResult = TransformResult.create(
             result.approximationCoeffs(), details);
         double[] denoisedReturns = transform.inverse(denoisedResult);
         
@@ -377,12 +382,24 @@ class FinancialStatisticsTest {
         }
     }
     
-    // Simple deterministic "random" for reproducibility
-    private static double gaussianRandom(int seed) {
-        // Box-Muller transform with deterministic input
-        double u1 = ((seed * 1103515245 + 12345) & 0x7fffffff) / (double) 0x7fffffff;
-        double u2 = ((seed * 69069 + 1) & 0x7fffffff) / (double) 0x7fffffff;
+    /**
+     * Returns a Gaussian (normal) distributed random value with mean 0 and standard deviation 1.
+     * Uses Java's Random class for proper statistical properties while maintaining
+     * reproducibility through deterministic seeding based on the sequence index.
+     * 
+     * <p>Each unique sequence index gets its own Random instance to ensure that
+     * the same index always produces the same value, which is important for
+     * reproducible test results.</p>
+     * 
+     * @param sequenceIndex the index in the sequence, used to seed the random generator
+     * @return a Gaussian distributed random value
+     */
+    private static double gaussianRandom(int sequenceIndex) {
+        // Get or create a Random instance for this sequence index
+        Random rng = RANDOM_CACHE.computeIfAbsent(sequenceIndex, 
+            idx -> new Random(idx * 1000L + 42L)); // Deterministic seed based on index
         
-        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        // Using nextGaussian() provides better statistical properties than manual Box-Muller
+        return rng.nextGaussian();
     }
 }

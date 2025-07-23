@@ -170,7 +170,7 @@ class FinancialTimeSeriesTest {
         assertTrue(zeroedCount > 0, "Some detail coefficients should be below threshold");
         
         // Reconstruct with modified coefficients
-        TransformResult denoisedResult = new TransformResultImpl(
+        TransformResult denoisedResult = TransformResult.create(
             result.approximationCoeffs(), details);
         double[] denoised = transform.inverse(denoisedResult);
         
