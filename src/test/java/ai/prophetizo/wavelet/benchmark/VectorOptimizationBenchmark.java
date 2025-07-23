@@ -14,13 +14,22 @@ import java.util.concurrent.TimeUnit;
  * Benchmarks comparing original VectorOps vs optimized VectorOps implementations.
  * 
  * <p>Run with: {@code ./jmh-runner.sh VectorOptimizationBenchmark}</p>
+ * 
+ * <p>Using 3 forks for more statistically reliable results by:</p>
+ * <ul>
+ *   <li>Accounting for JVM startup variations</li>
+ *   <li>Reducing impact of system noise and background processes</li>
+ *   <li>Providing better confidence in performance measurements</li>
+ * </ul>
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgs = {
+@Fork(value = 3, jvmArgs = {
     "--add-modules", "jdk.incubator.vector",
-    "-XX:+UnlockDiagnosticVMOptions"
+    "-XX:+UnlockDiagnosticVMOptions",
+    "-Xms1G", "-Xmx1G",
+    "-XX:+UseG1GC"
 })
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
@@ -64,8 +73,9 @@ public class VectorOptimizationBenchmark {
         // Create low/high filters for combined transform
         lowFilter = filter.clone();
         highFilter = new double[filterLength];
+        // QMF (Quadrature Mirror Filter) relationship: h[n] = (-1)^n * g[L-1-n]
         for (int i = 0; i < filterLength; i++) {
-            highFilter[i] = (i % 2 == 0) ? filter[filterLength - 1 - i] : -filter[filterLength - 1 - i];
+            highFilter[i] = Math.pow(-1, i) * filter[filterLength - 1 - i];
         }
     }
     
@@ -116,7 +126,7 @@ public class VectorOptimizationBenchmark {
     // ===== Haar Transform Benchmarks =====
     
     @Benchmark
-    @Fork(value = 1, jvmArgsAppend = "-DtestHaar=true")
+    @Fork(value = 3, jvmArgsAppend = "-DtestHaar=true")
     public void scalarHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];
@@ -132,7 +142,7 @@ public class VectorOptimizationBenchmark {
     }
     
     @Benchmark
-    @Fork(value = 1, jvmArgsAppend = "-DtestHaar=true")
+    @Fork(value = 3, jvmArgsAppend = "-DtestHaar=true")
     public void vectorOptimizedHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];

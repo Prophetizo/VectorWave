@@ -323,16 +323,49 @@ class FinancialStatisticsTest {
         return prices;
     }
     
+    /**
+     * Calculates log returns from price series.
+     * 
+     * <p><strong>Important:</strong> This method ensures the returned array has
+     * exactly 256 elements (power of 2) for wavelet transform compatibility.
+     * If the price series is too short, the returns are padded using the last
+     * calculated return value repeated, which better preserves statistical
+     * properties than padding with zeros.</p>
+     * 
+     * @param prices the price series (must have at least 2 elements)
+     * @return log returns array of size 256
+     * @throws IllegalArgumentException if prices has fewer than 2 elements
+     */
     private double[] calculateReturns(double[] prices) {
-        double[] returns = new double[256]; // Fixed power of 2
-        int len = Math.min(prices.length - 1, returns.length);
-        for (int i = 0; i < len; i++) {
+        if (prices.length < 2) {
+            throw new IllegalArgumentException(
+                "Price series must have at least 2 elements to calculate returns");
+        }
+        
+        double[] returns = new double[256]; // Fixed power of 2 for wavelet transform
+        int numReturns = Math.min(prices.length - 1, returns.length);
+        
+        // Calculate actual returns
+        for (int i = 0; i < numReturns; i++) {
             returns[i] = Math.log(prices[i + 1] / prices[i]);
         }
-        // Pad with zeros if needed
-        for (int i = len; i < returns.length; i++) {
-            returns[i] = 0.0;
+        
+        // If we have fewer returns than needed, pad with the mean return
+        // This is more realistic than padding with zeros for financial data
+        if (numReturns < returns.length) {
+            // Calculate mean return from available data
+            double sumReturns = 0;
+            for (int i = 0; i < numReturns; i++) {
+                sumReturns += returns[i];
+            }
+            double meanReturn = sumReturns / numReturns;
+            
+            // Pad with mean return (preserves expected value)
+            for (int i = numReturns; i < returns.length; i++) {
+                returns[i] = meanReturn;
+            }
         }
+        
         return returns;
     }
     

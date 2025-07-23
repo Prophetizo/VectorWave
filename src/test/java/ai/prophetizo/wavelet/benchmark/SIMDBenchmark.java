@@ -14,17 +14,22 @@ import java.util.concurrent.TimeUnit;
  * Benchmarks comparing scalar vs SIMD performance for wavelet transforms.
  * 
  * <p>Run with: {@code ./jmh-runner.sh SIMDBenchmark}</p>
+ * 
+ * <p>Using 3 forks for more statistically reliable results. Note that
+ * diagnostic JVM flags will generate output for each fork.</p>
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 1, jvmArgs = {
+@Fork(value = 3, jvmArgs = {
     "--add-modules", "jdk.incubator.vector",
     "-XX:+UnlockDiagnosticVMOptions",
     "-XX:+PrintInlining",
     "-XX:+PrintCompilation",
     "-XX:+LogCompilation",
-    "-XX:LogFile=hotspot.log"
+    "-XX:LogFile=hotspot.log",
+    "-Xms1G", "-Xmx1G",
+    "-XX:+UseG1GC"
 })
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
