@@ -76,8 +76,9 @@ class VectorOpsOptimizedTest {
     void testCombinedTransformOptimized() {
         int signalSize = 256;
         double[] signal = new double[signalSize];
+        Random random = new Random(42); // Seed for reproducibility
         for (int i = 0; i < signalSize; i++) {
-            signal[i] = Math.random() - 0.5;
+            signal[i] = random.nextDouble() - 0.5;
         }
         
         // Use actual DB2 filters
