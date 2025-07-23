@@ -15,6 +15,10 @@ import java.util.Arrays;
  * <p>For small signals typical in financial analysis (< 1024 samples),
  * this approach provides optimal memory efficiency while maintaining
  * fast access to frequently-used coefficients.</p>
+ * 
+ * <p>The implementation includes a cache for reconstructed approximations
+ * with a {@code clearCache()} method to prevent memory accumulation in
+ * long-lived instances.</p>
  */
 final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
     
@@ -25,6 +29,9 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
     // Cache for lazy reconstruction of intermediate approximations
     private final double[][] approximationCache;
     private final Object[] cacheLocks; // For thread-safe lazy initialization
+    
+    // Flag to track if cache has been cleared (for optimization)
+    private volatile boolean cacheCleared = false;
     
     // Keep reference to wavelet for reconstruction
     private final Wavelet wavelet;
@@ -224,5 +231,58 @@ final class MultiLevelTransformResultImpl implements MultiLevelTransformResult {
         sb.append("}");
         
         return sb.toString();
+    }
+    
+    /**
+     * Clears the approximation cache to free memory.
+     * 
+     * <p>This method is useful for long-lived MultiLevelTransformResult objects
+     * to prevent memory accumulation. After clearing, approximations will be
+     * reconstructed on demand if accessed again.</p>
+     * 
+     * <p>The final approximation (at the deepest level) is always retained
+     * as it's part of the core data structure.</p>
+     * 
+     * <p>Thread-safe: This method can be called concurrently with other operations.</p>
+     */
+    @Override
+    public void clearCache() {
+        // Clear all cached approximations except the final one
+        for (int i = 0; i < levels; i++) {
+            synchronized (cacheLocks[i]) {
+                approximationCache[i] = null;
+            }
+        }
+        // Note: approximationCache[levels] contains finalApproximation and is kept
+        cacheCleared = true;
+    }
+    
+    /**
+     * Returns the current memory usage of the cache in bytes (approximate).
+     * 
+     * <p>This is useful for monitoring memory consumption and deciding
+     * when to call {@code clearCache()}.</p>
+     * 
+     * @return approximate memory usage in bytes
+     */
+    @Override
+    public long getCacheMemoryUsage() {
+        long bytes = 0;
+        for (int i = 0; i < levels; i++) {
+            double[] cached = approximationCache[i];
+            if (cached != null) {
+                bytes += cached.length * 8; // 8 bytes per double
+            }
+        }
+        return bytes;
+    }
+    
+    /**
+     * Returns true if the cache has been cleared at least once.
+     * 
+     * @return true if clearCache() has been called
+     */
+    public boolean isCacheCleared() {
+        return cacheCleared;
     }
 }

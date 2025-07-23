@@ -35,6 +35,11 @@ import ai.prophetizo.wavelet.util.BatchValidation;
  * 
  * // Denoise by reconstructing without finest details
  * double[] smoothed = mwt.reconstructFromLevel(result, 2);
+ * 
+ * // For long-lived results, clear cache to free memory
+ * if (result.getCacheMemoryUsage() > 1_000_000) { // 1MB threshold
+ *     result.clearCache();
+ * }
  * }</pre>
  * 
  * @since 1.1.0

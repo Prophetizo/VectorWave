@@ -111,4 +111,34 @@ public sealed interface MultiLevelTransformResult permits MultiLevelTransformRes
         }
         return totalEnergy;
     }
+    
+    /**
+     * Clears any internal caches to free memory.
+     * 
+     * <p>This method is useful for long-lived MultiLevelTransformResult objects
+     * to prevent memory accumulation. After clearing, data will be
+     * reconstructed on demand if accessed again.</p>
+     * 
+     * <p>Implementations should ensure this operation is thread-safe and
+     * does not affect the correctness of subsequent operations.</p>
+     * 
+     * @since 1.2.0
+     */
+    default void clearCache() {
+        // Default implementation does nothing
+        // Implementations with caches should override this method
+    }
+    
+    /**
+     * Returns the current memory usage of any internal caches in bytes.
+     * 
+     * <p>This is useful for monitoring memory consumption and deciding
+     * when to call {@code clearCache()}.</p>
+     * 
+     * @return approximate cache memory usage in bytes, or 0 if no cache
+     * @since 1.2.0
+     */
+    default long getCacheMemoryUsage() {
+        return 0; // Default: no cache
+    }
 }
