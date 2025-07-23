@@ -161,8 +161,10 @@ class TransformResultTest {
         
         Class<?>[] permitted = TransformResult.class.getPermittedSubclasses();
         assertNotNull(permitted, "Should have permitted subclasses");
-        assertTrue(permitted.length >= 2,
-            "TransformResult should have at least two permitted implementations");
+        
+        // We expect exactly 2 permitted implementations
+        assertEquals(2, permitted.length,
+            "TransformResult should have exactly 2 permitted implementations");
         
         // Check that expected implementations are present
         Set<String> permittedNames = Arrays.stream(permitted)
@@ -175,13 +177,7 @@ class TransformResultTest {
         assertTrue(permittedNames.contains("PaddedTransformResult"),
             "PaddedTransformResult should implement TransformResult");
         
-        // Log if additional implementations are found (future-proofing)
-        if (permitted.length > 2) {
-            System.out.println("Additional TransformResult implementations found: " + 
-                permittedNames.stream()
-                    .filter(name -> !name.equals("TransformResultImpl") && 
-                                   !name.equals("PaddedTransformResult"))
-                    .collect(Collectors.joining(", ")));
-        }
+        // Note: If we add more implementations in the future, update the expected count
+        // and add corresponding assertions here
     }
 }
