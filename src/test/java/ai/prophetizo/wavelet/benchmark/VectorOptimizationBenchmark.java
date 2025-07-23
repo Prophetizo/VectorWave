@@ -120,9 +120,11 @@ public class VectorOptimizationBenchmark {
     }
     
     // ===== Haar Transform Benchmarks =====
+    // Note: These benchmarks test optimized Haar wavelet implementations.
+    // The Haar transform has specialized vectorized operations due to its simple coefficients.
     
     @Benchmark
-    @Fork(value = 3, jvmArgsAppend = "-DtestHaar=true")
+    @Fork(value = 3)  // Removed unused -DtestHaar=true system property
     public void scalarHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];
@@ -138,7 +140,7 @@ public class VectorOptimizationBenchmark {
     }
     
     @Benchmark
-    @Fork(value = 3, jvmArgsAppend = "-DtestHaar=true")
+    @Fork(value = 3)  // Removed unused -DtestHaar=true system property
     public void vectorOptimizedHaarTransform(Blackhole bh) {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];

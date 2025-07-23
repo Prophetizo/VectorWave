@@ -34,9 +34,12 @@ class PrefetchOptimizerTest {
         if (signalLength < 256) {
             assertFalse(result, "Small signals should not benefit from prefetch");
         } else {
-            // Result depends on platform support
-            // Just verify it returns a boolean without error
-            assertTrue(result == true || result == false);
+            // For larger signals (>= 256), prefetch benefit depends on platform support
+            // The method should return a consistent value for the same platform
+            boolean firstCall = PrefetchOptimizer.isPrefetchBeneficial(signalLength);
+            boolean secondCall = PrefetchOptimizer.isPrefetchBeneficial(signalLength);
+            assertEquals(firstCall, secondCall, 
+                "isPrefetchBeneficial should return consistent results for the same input");
         }
     }
     

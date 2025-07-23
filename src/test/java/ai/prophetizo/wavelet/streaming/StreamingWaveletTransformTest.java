@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for streaming wavelet transform functionality.
  */
 class StreamingWaveletTransformTest {
+    
+    // Use seeded Random for reproducible test results
+    private static final Random random = new Random(42);
     
     @Test
     void testBasicStreaming() throws Exception {
@@ -157,7 +161,7 @@ class StreamingWaveletTransformTest {
             // Process exactly one block
             double[] data = new double[blockSize];
             for (int i = 0; i < data.length; i++) {
-                data[i] = Math.random();
+                data[i] = random.nextDouble();
             }
             transform.process(data);
             

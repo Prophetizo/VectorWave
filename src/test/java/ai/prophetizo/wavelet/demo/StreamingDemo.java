@@ -222,8 +222,6 @@ public class StreamingDemo {
             @Override
             public void onError(Throwable throwable) {
                 System.err.println("Error in audio processing: " + throwable.getMessage());
-                // In production, this would be logged with a proper logging framework
-                // logger.error("Audio stream processing failed", throwable);
             }
             
             @Override
@@ -311,8 +309,6 @@ public class StreamingDemo {
             @Override
             public void onError(Throwable throwable) {
                 System.err.println("Error in financial data processing: " + throwable.getMessage());
-                // In production, this would be logged with a proper logging framework
-                // logger.error("Financial stream processing failed", throwable);
             }
             
             @Override
