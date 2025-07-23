@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.benchmark;
 
+import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.internal.VectorOps;
 import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
@@ -116,9 +117,10 @@ public class VectorOptimizationBenchmark {
         double[] approx = new double[signalSize / 2];
         double[] detail = new double[signalSize / 2];
         
-        // Haar coefficients
-        double[] haarLow = {0.7071067811865476, 0.7071067811865476};
-        double[] haarHigh = {0.7071067811865476, -0.7071067811865476};
+        // Haar coefficients from actual implementation
+        Haar haar = new Haar();
+        double[] haarLow = haar.lowPassDecomposition();
+        double[] haarHigh = haar.highPassDecomposition();
         
         ScalarOps.combinedTransformPeriodic(signal, haarLow, haarHigh, approx, detail);
         bh.consume(approx);

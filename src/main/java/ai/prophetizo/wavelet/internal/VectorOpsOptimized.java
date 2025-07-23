@@ -25,7 +25,8 @@ public final class VectorOpsOptimized {
     
     // Cache line size for blocking
     private static final int CACHE_LINE_SIZE = 64; // bytes
-    private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_SIZE / 8;
+    private static final int BYTES_PER_DOUBLE = 8;
+    private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_SIZE / BYTES_PER_DOUBLE;
     
     // Minimum signal length to use vectorization
     private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;

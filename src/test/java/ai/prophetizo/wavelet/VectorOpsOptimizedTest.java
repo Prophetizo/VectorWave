@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.internal.VectorOps;
 import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
@@ -16,6 +18,14 @@ class VectorOpsOptimizedTest {
     
     private static final double EPSILON = 1e-10;
     
+    // Test filter coefficients from actual wavelets
+    private static final double[] HAAR_LOW_PASS = new Haar().lowPassDecomposition();
+    private static final double[] HAAR_HIGH_PASS = new Haar().highPassDecomposition();
+    private static final double[] DB2_LOW_PASS = Daubechies.DB2.lowPassDecomposition();
+    private static final double[] DB2_HIGH_PASS = Daubechies.DB2.highPassDecomposition();
+    private static final double[] DB4_LOW_PASS = Daubechies.DB4.lowPassDecomposition();
+    private static final double[] DB4_HIGH_PASS = Daubechies.DB4.highPassDecomposition();
+    
     @ParameterizedTest
     @ValueSource(ints = {64, 128, 256, 512, 1024})
     void testConvolveAndDownsampleOptimized(int signalSize) {
@@ -25,8 +35,8 @@ class VectorOpsOptimizedTest {
             signal[i] = Math.sin(2 * Math.PI * i / 32.0);
         }
         
-        // Create test filter (DB4-like)
-        double[] filter = {0.23, 0.71, 0.63, -0.03, -0.19, 0.03, 0.03, -0.01};
+        // Use actual DB4 filter coefficients
+        double[] filter = DB4_LOW_PASS;
         
         // Compute with different implementations
         double[] scalarResult = ScalarOps.convolveAndDownsamplePeriodic(
@@ -51,9 +61,9 @@ class VectorOpsOptimizedTest {
             signal[i] = Math.random() - 0.5;
         }
         
-        // DB2 filters
-        double[] lowFilter = {0.48, 0.84, 0.22, -0.13};
-        double[] highFilter = {-0.13, -0.22, 0.84, -0.48};
+        // Use actual DB2 filters
+        double[] lowFilter = DB2_LOW_PASS;
+        double[] highFilter = DB2_HIGH_PASS;
         
         // Scalar reference
         double[] scalarApprox = new double[signalSize / 2];
@@ -82,9 +92,9 @@ class VectorOpsOptimizedTest {
             signal[i] = i % 17; // Repeating pattern
         }
         
-        // Haar coefficients
-        double[] haarLow = {0.7071067811865476, 0.7071067811865476};
-        double[] haarHigh = {0.7071067811865476, -0.7071067811865476};
+        // Use actual Haar coefficients
+        double[] haarLow = HAAR_LOW_PASS;
+        double[] haarHigh = HAAR_HIGH_PASS;
         
         // Scalar reference
         double[] scalarApprox = new double[signalSize / 2];
@@ -112,8 +122,8 @@ class VectorOpsOptimizedTest {
             coeffs[i] = Math.cos(2 * Math.PI * i / 16.0);
         }
         
-        // Test filter
-        double[] filter = {0.25, 0.5, 0.25};
+        // Test with a simple symmetric filter
+        double[] filter = createSymmetricFilter(3);
         
         // Compute with different implementations
         double[] scalarResult = ScalarOps.upsampleAndConvolvePeriodic(
@@ -130,7 +140,7 @@ class VectorOpsOptimizedTest {
     void testBoundaryConditions() {
         // Test with very small signal
         double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-        double[] filter = {0.5, 0.5};
+        double[] filter = createNormalizedFilter(0.5, 0.5);
         
         double[] scalarResult = ScalarOps.convolveAndDownsamplePeriodic(
             signal, filter, signal.length, filter.length);
@@ -163,5 +173,48 @@ class VectorOpsOptimizedTest {
         
         assertArrayEquals(scalarResult, optimizedResult, EPSILON, 
             "Large filter results differ");
+    }
+    
+    /**
+     * Creates a normalized filter with the given coefficients.
+     * The filter is normalized so that the sum of coefficients equals 1.
+     */
+    private static double[] createNormalizedFilter(double... coefficients) {
+        double sum = 0.0;
+        for (double coeff : coefficients) {
+            sum += coeff;
+        }
+        double[] normalized = new double[coefficients.length];
+        for (int i = 0; i < coefficients.length; i++) {
+            normalized[i] = coefficients[i] / sum;
+        }
+        return normalized;
+    }
+    
+    /**
+     * Creates a symmetric filter of the given length with triangular shape.
+     * For length 3: [0.25, 0.5, 0.25]
+     * For length 5: [0.0625, 0.25, 0.375, 0.25, 0.0625]
+     */
+    private static double[] createSymmetricFilter(int length) {
+        double[] filter = new double[length];
+        int mid = length / 2;
+        
+        // Create triangular filter
+        for (int i = 0; i <= mid; i++) {
+            filter[i] = i + 1;
+            filter[length - 1 - i] = i + 1;
+        }
+        
+        // Normalize
+        double sum = 0.0;
+        for (double val : filter) {
+            sum += val;
+        }
+        for (int i = 0; i < length; i++) {
+            filter[i] /= sum;
+        }
+        
+        return filter;
     }
 }
