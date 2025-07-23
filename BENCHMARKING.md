@@ -125,6 +125,22 @@ Detailed latency analysis for real-time constraints.
 - Tests: Jitter, GC impact, thread contention, allocation overhead
 - Wavelet comparison: Haar vs DB2 vs DB4 latency
 
+### 9. Cache Prefetch Optimization Benchmarks
+
+Measures the impact of cache prefetching optimizations on large signal processing.
+
+```bash
+./jmh-runner.sh PrefetchBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 256, 1024, 4096, 16384, 65536 samples
+- Wavelets: Haar, DB4, Sym8
+- Compares: Standard vs prefetch-optimized transforms
+- Measures: Impact of cache-friendly access patterns
+- Includes: Multi-level transform prefetch benefits
+- Baseline: Random access pattern to show cache miss impact
+
 ## JMH Parameters
 
 Customize benchmark execution with these parameters:

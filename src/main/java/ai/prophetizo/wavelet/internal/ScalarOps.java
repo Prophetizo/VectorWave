@@ -50,6 +50,12 @@ public final class ScalarOps {
             return;
         }
 
+        // For large signals, use prefetch-optimized version if beneficial
+        if (ai.prophetizo.wavelet.internal.PrefetchOptimizer.isPrefetchBeneficial(signalLen)) {
+            ai.prophetizo.wavelet.internal.PrefetchOptimizer.convolveAndDownsamplePeriodicWithPrefetch(signal, filter, output);
+            return;
+        }
+
         // Standard implementation for large signals or non-power-of-2
         for (int i = 0; i < output.length; i++) {
             double sum = 0.0;
@@ -299,6 +305,11 @@ public final class ScalarOps {
             int signalMask = signalLen - 1;
 
             for (int i = 0; i < approxCoeffs.length; i++) {
+                // Add prefetching for better cache performance
+                if ((i & 7) == 0 && ai.prophetizo.wavelet.internal.PrefetchOptimizer.isPrefetchBeneficial(signalLen)) {
+                    ai.prophetizo.wavelet.internal.PrefetchOptimizer.prefetchForCombinedTransform(signal, i, filterLen);
+                }
+                
                 double sumLow = 0.0;
                 double sumHigh = 0.0;
                 int kStart = 2 * i;

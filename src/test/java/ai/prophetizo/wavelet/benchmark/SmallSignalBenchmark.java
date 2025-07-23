@@ -93,20 +93,32 @@ public class SmallSignalBenchmark {
      * 
      * This benchmark specifically tests the cost of defensive copying in TransformResult.
      * Each call to approximationCoeffs() and detailCoeffs() creates a new array copy
-     * to ensure immutability. With 100 iterations, this creates 200 array allocations
-     * per benchmark invocation, allowing us to measure the impact of memory allocation
-     * and potential GC pressure on performance.
+     * to ensure immutability. Additionally, the forward() method itself allocates arrays
+     * for the transform results. With 100 iterations, this creates 400 array allocations
+     * per benchmark invocation (2 from forward() + 2 from getters per iteration),
+     * allowing us to measure the impact of memory allocation and potential GC pressure
+     * on performance.
      */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public void memoryPressure(Blackhole bh) {
         for (int i = 0; i < 100; i++) {
+            // Step 1: forward() allocates new arrays for transform results
             TransformResult result = transform.forward(signal);
-            // Accessing coefficients triggers defensive array copying in TransformResult
-            // to maintain immutability. This measures the allocation overhead.
+            
+            // Step 2: Each getter method creates defensive copies to ensure immutability
+            // approximationCoeffs() allocates a new array of size signalSize/2
             double[] approx = result.approximationCoeffs();
+            
+            // detailCoeffs() allocates another new array of size signalSize/2
             double[] detail = result.detailCoeffs();
+            
+            // Total allocations per iteration:
+            // - 2 arrays from forward() (internal to TransformResult)
+            // - 2 arrays from defensive copying (approx + detail getters)
+            // With 100 iterations, this creates 400 array allocations total
+            
             bh.consume(approx);
             bh.consume(detail);
         }
