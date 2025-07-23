@@ -74,6 +74,9 @@ public class VectorOptimizationBenchmark {
         lowFilter = filter.clone();
         highFilter = new double[filterLength];
         // QMF (Quadrature Mirror Filter) relationship: h[n] = (-1)^n * g[L-1-n]
+        // This relationship generates the high-pass filter (h) from the low-pass filter (g),
+        // ensuring that the wavelet transform is orthogonal. Orthogonality is crucial for
+        // preserving energy and enabling perfect reconstruction in wavelet analysis.
         for (int i = 0; i < filterLength; i++) {
             highFilter[i] = Math.pow(-1, i) * filter[filterLength - 1 - i];
         }
