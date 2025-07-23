@@ -30,8 +30,9 @@ class StreamingWaveletTransformTest {
             
             CountDownLatch latch = new CountDownLatch(2); // Expect 2 blocks
             List<TransformResult> results = new ArrayList<>();
+            TestSubscriber<TransformResult> subscriber = new TestSubscriber<>(results, latch);
             
-            transform.subscribe(new TestSubscriber<>(results, latch));
+            transform.subscribe(subscriber);
             
             // Process 256 samples in chunks
             double[] chunk = new double[64];
@@ -44,6 +45,9 @@ class StreamingWaveletTransformTest {
             
             // Close is handled by try-with-resources
             assertTrue(latch.await(1, TimeUnit.SECONDS), "Timeout waiting for results");
+            
+            // Verify no errors occurred
+            subscriber.assertNoError();
             
             assertEquals(2, results.size(), "Should emit 2 blocks");
             
@@ -62,8 +66,9 @@ class StreamingWaveletTransformTest {
             
             CountDownLatch latch = new CountDownLatch(1);
             List<TransformResult> results = new ArrayList<>();
+            TestSubscriber<TransformResult> subscriber = new TestSubscriber<>(results, latch);
             
-            transform.subscribe(new TestSubscriber<>(results, latch));
+            transform.subscribe(subscriber);
             
             // Process samples one by one
             for (int i = 0; i < 64; i++) {
@@ -72,6 +77,9 @@ class StreamingWaveletTransformTest {
             
             // Close is handled by try-with-resources
             assertTrue(latch.await(1, TimeUnit.SECONDS));
+            
+            // Verify no errors occurred
+            subscriber.assertNoError();
             
             assertEquals(1, results.size());
             assertEquals(64, transform.getStatistics().getSamplesProcessed());
@@ -85,8 +93,9 @@ class StreamingWaveletTransformTest {
             
             CountDownLatch latch = new CountDownLatch(1);
             List<TransformResult> results = new ArrayList<>();
+            TestSubscriber<TransformResult> subscriber = new TestSubscriber<>(results, latch);
             
-            transform.subscribe(new TestSubscriber<>(results, latch));
+            transform.subscribe(subscriber);
             
             // Process partial block
             double[] data = new double[100];
@@ -102,6 +111,10 @@ class StreamingWaveletTransformTest {
             transform.flush();
             
             assertTrue(latch.await(1, TimeUnit.SECONDS));
+            
+            // Verify no errors occurred
+            subscriber.assertNoError();
+            
             assertEquals(1, results.size());
         }
     }
@@ -373,6 +386,7 @@ class StreamingWaveletTransformTest {
         private final List<T> results;
         private final CountDownLatch latch;
         private Flow.Subscription subscription;
+        private volatile Throwable error;
         
         TestSubscriber(List<T> results, CountDownLatch latch) {
             this.results = results;
@@ -393,10 +407,24 @@ class StreamingWaveletTransformTest {
         
         @Override
         public void onError(Throwable throwable) {
-            throwable.printStackTrace();
+            this.error = throwable;
+            // Count down latch to unblock waiting tests
+            while (latch.getCount() > 0) {
+                latch.countDown();
+            }
         }
         
         @Override
         public void onComplete() {}
+        
+        public Throwable getError() {
+            return error;
+        }
+        
+        public void assertNoError() {
+            if (error != null) {
+                throw new AssertionError("Unexpected error in subscriber", error);
+            }
+        }
     }
 }
