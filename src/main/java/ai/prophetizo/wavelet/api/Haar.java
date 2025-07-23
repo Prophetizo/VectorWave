@@ -17,7 +17,11 @@ package ai.prophetizo.wavelet.api;
  * </p>
  */
 public record Haar() implements OrthogonalWavelet {
-    private static final double[] DECOMP_COEFFS = {1 / Math.sqrt(2), 1 / Math.sqrt(2)};
+    private static final double SQRT2_INV = 1.0 / Math.sqrt(2);
+    
+    // Pre-computed filter coefficients to avoid allocations
+    private static final double[] LOW_PASS_COEFFS = {SQRT2_INV, SQRT2_INV};
+    private static final double[] HIGH_PASS_COEFFS = {SQRT2_INV, -SQRT2_INV};
 
     @Override
     public String name() {
@@ -31,12 +35,12 @@ public record Haar() implements OrthogonalWavelet {
 
     @Override
     public double[] lowPassDecomposition() {
-        return DECOMP_COEFFS.clone();
+        return LOW_PASS_COEFFS.clone();
     }
 
     @Override
     public double[] highPassDecomposition() {
-        return new double[]{DECOMP_COEFFS[1], -DECOMP_COEFFS[0]};
+        return HIGH_PASS_COEFFS.clone();
     }
 
     @Override

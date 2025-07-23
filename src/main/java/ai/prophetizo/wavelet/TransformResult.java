@@ -127,4 +127,28 @@ final class TransformResultImpl implements TransformResult {
                 "\n  Detail (cD)        = " + Arrays.toString(detailCoeffs) +
                 "\n}";
     }
+    
+    /**
+     * Creates a TransformResult without validation for internal use.
+     * Package-private for use by optimized transform classes.
+     * 
+     * @param approxCoeffs approximation coefficients (will be cloned)
+     * @param detailCoeffs detail coefficients (will be cloned)
+     * @return new TransformResult
+     */
+    static TransformResult createFast(double[] approxCoeffs, double[] detailCoeffs) {
+        // Bypass validation by temporarily setting the property
+        boolean originalValidation = FULL_VALIDATION;
+        
+        try {
+            if (originalValidation) {
+                System.setProperty(FULL_VALIDATION_PROPERTY, "false");
+            }
+            return new TransformResultImpl(approxCoeffs, detailCoeffs);
+        } finally {
+            if (originalValidation) {
+                System.setProperty(FULL_VALIDATION_PROPERTY, "true");
+            }
+        }
+    }
 }
