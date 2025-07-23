@@ -145,27 +145,37 @@ public class PerformanceComparisonTest {
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
         
         // Individual processing
-        long startTime = System.nanoTime();
-        for (int iter = 0; iter < 100; iter++) {
-            for (int i = 0; i < batchSize; i++) {
-                transform.forward(batch[i]);
-            }
-        }
-        long individualTime = System.nanoTime() - startTime;
+        long individualTime = measureBatchProcessingTime(transform, batch, 100, "Individual");
         
         // Batch processing (simulated with reused transform)
-        startTime = System.nanoTime();
-        for (int iter = 0; iter < 100; iter++) {
-            for (int i = 0; i < batchSize; i++) {
-                // The transform reuses internal structures
-                transform.forward(batch[i]);
-            }
-        }
-        long batchTime = System.nanoTime() - startTime;
+        // The transform reuses internal structures
+        long batchTime = measureBatchProcessingTime(transform, batch, 100, "Batch-style");
         
         System.out.printf("   Individual: %.2f ms per batch%n", individualTime / 1_000_000.0 / 100);
         System.out.printf("   Batch-style: %.2f ms per batch%n", batchTime / 1_000_000.0 / 100);
         System.out.println();
+    }
+    
+    /**
+     * Measures the time to process a batch of signals multiple times.
+     *
+     * @param transform the wavelet transform to use
+     * @param batch the batch of signals to process
+     * @param iterations number of times to process the entire batch
+     * @param description description of the processing mode (for documentation)
+     * @return total processing time in nanoseconds
+     */
+    private static long measureBatchProcessingTime(WaveletTransform transform, 
+                                                   double[][] batch, 
+                                                   int iterations,
+                                                   String description) {
+        long startTime = System.nanoTime();
+        for (int iter = 0; iter < iterations; iter++) {
+            for (double[] signal : batch) {
+                transform.forward(signal);
+            }
+        }
+        return System.nanoTime() - startTime;
     }
     
     private static void testMemoryPooling(double[] signal) {

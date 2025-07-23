@@ -72,14 +72,7 @@ public class VectorOptimizationBenchmark {
         
         // Create low/high filters for combined transform
         lowFilter = filter.clone();
-        highFilter = new double[filterLength];
-        // QMF (Quadrature Mirror Filter) relationship: h[n] = (-1)^n * g[L-1-n]
-        // This relationship generates the high-pass filter (h) from the low-pass filter (g),
-        // ensuring that the wavelet transform is orthogonal. Orthogonality is crucial for
-        // preserving energy and enabling perfect reconstruction in wavelet analysis.
-        for (int i = 0; i < filterLength; i++) {
-            highFilter[i] = Math.pow(-1, i) * filter[filterLength - 1 - i];
-        }
+        highFilter = generateQMFHighPassFilter(filter);
     }
     
     // ===== Convolution and Downsampling Benchmarks =====
@@ -184,5 +177,36 @@ public class VectorOptimizationBenchmark {
         double[] result = VectorOpsOptimized.upsampleAndConvolvePeriodicOptimized(
             coeffs, filter, coeffs.length, filterLength);
         bh.consume(result);
+    }
+    
+    /**
+     * Generates the high-pass filter from a low-pass filter using the Quadrature Mirror Filter (QMF) relationship.
+     * 
+     * <p>The QMF relationship is defined as: h[n] = (-1)^n * g[L-1-n], where:
+     * <ul>
+     *   <li>h[n] is the high-pass filter coefficient at index n</li>
+     *   <li>g[n] is the low-pass filter coefficient</li>
+     *   <li>L is the filter length</li>
+     * </ul>
+     * 
+     * <p>This relationship ensures that the wavelet transform is orthogonal, which is crucial for:
+     * <ul>
+     *   <li>Preserving energy in the transform domain</li>
+     *   <li>Enabling perfect reconstruction of the original signal</li>
+     *   <li>Maintaining mathematical properties required for wavelet analysis</li>
+     * </ul>
+     * 
+     * @param lowPassFilter the low-pass filter coefficients
+     * @return the corresponding high-pass filter coefficients
+     */
+    private static double[] generateQMFHighPassFilter(double[] lowPassFilter) {
+        int filterLength = lowPassFilter.length;
+        double[] highPassFilter = new double[filterLength];
+        
+        for (int i = 0; i < filterLength; i++) {
+            highPassFilter[i] = Math.pow(-1, i) * lowPassFilter[filterLength - 1 - i];
+        }
+        
+        return highPassFilter;
     }
 }

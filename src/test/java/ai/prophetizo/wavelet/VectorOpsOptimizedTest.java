@@ -13,22 +13,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for optimized vector operations to ensure correctness.
+ * 
+ * <p>These tests compare the output of scalar, standard vector, and optimized vector
+ * implementations to ensure they produce equivalent results within acceptable
+ * floating-point precision bounds.</p>
+ * 
+ * <h3>Floating-Point Precision</h3>
+ * <p>The tests use an epsilon value of 1e-10 for comparisons, which provides a good balance between:</p>
+ * <ul>
+ *   <li>Detecting actual implementation errors</li>
+ *   <li>Allowing for minor numerical differences due to:
+ *     <ul>
+ *       <li>Different order of operations in SIMD (non-associativity of FP arithmetic)</li>
+ *       <li>Potential use of fused multiply-add (FMA) instructions</li>
+ *       <li>Different rounding behaviors between scalar and vector operations</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ * <p>If tests fail due to numerical precision on specific hardware, consider
+ * relaxing the epsilon to 1e-9 or 1e-8, but document the hardware configuration.</p>
  */
 class VectorOpsOptimizedTest {
     
-    /**
-     * Epsilon for floating-point comparisons between scalar and SIMD implementations.
-     * 
-     * The value 1e-10 provides a good balance between:
-     * - Detecting actual implementation errors
-     * - Allowing for minor numerical differences due to:
-     *   - Different order of operations in SIMD (non-associativity of FP arithmetic)
-     *   - Potential use of fused multiply-add (FMA) instructions
-     *   - Different rounding behaviors between scalar and vector operations
-     * 
-     * If tests fail due to numerical precision on specific hardware, consider
-     * relaxing to 1e-9 or 1e-8, but document the hardware configuration.
-     */
     private static final double EPSILON = 1e-10;
     
     // Test filter coefficients from actual wavelets

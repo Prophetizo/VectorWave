@@ -36,8 +36,7 @@ import java.util.concurrent.TimeUnit;
     "-XX:+UseG1GC",
     "-XX:MaxGCPauseMillis=5",  // Aggressive pause target
     "-XX:+UseNUMA",  // NUMA awareness for better latency
-    "-XX:+AlwaysPreTouch",  // Pre-touch heap for predictable latency
-    "-XX:-UseBiasedLocking"  // Reduce thread coordination overhead
+    "-XX:+AlwaysPreTouch"  // Pre-touch heap for predictable latency
 })
 @Warmup(iterations = 20, time = 1)
 @Measurement(iterations = 50, time = 1)
@@ -54,6 +53,13 @@ public class LatencyBenchmark {
     // Pre-allocated arrays to reduce allocation jitter
     private double[] workspace;
     private TransformResult cachedResult;
+    
+    // Thread-local pre-allocated arrays for multi-threaded benchmarks
+    private static final int MAX_THREADS = 8;
+    private double[][] threadLocalSignals;
+    private static final ThreadLocal<Integer> threadIndex = ThreadLocal.withInitial(() -> {
+        return (int) (Thread.currentThread().getId() % MAX_THREADS);
+    });
     
     @Setup(Level.Trial)
     public void setup() {
@@ -80,6 +86,12 @@ public class LatencyBenchmark {
         
         // Pre-allocate result to measure transform-only latency
         cachedResult = transform.forward(signal);
+        
+        // Pre-allocate thread-local arrays
+        threadLocalSignals = new double[MAX_THREADS][signalSize];
+        for (int t = 0; t < MAX_THREADS; t++) {
+            System.arraycopy(signal, 0, threadLocalSignals[t], 0, signalSize);
+        }
     }
     
     // ===== Percentile Latency Measurements =====
@@ -150,9 +162,8 @@ public class LatencyBenchmark {
     @Measurement(iterations = 100, time = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Threads(4)  // Multiple threads to measure contention
     public void multiThreadedJitter(Blackhole bh) {
-        // Each thread works on its own copy
-        double[] localSignal = new double[signalSize];
-        System.arraycopy(signal, 0, localSignal, 0, signalSize);
+        // Use pre-allocated thread-local arrays to avoid allocation overhead
+        double[] localSignal = threadLocalSignals[threadIndex.get()];
         TransformResult result = transform.forward(localSignal);
         bh.consume(result);
     }

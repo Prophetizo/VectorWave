@@ -9,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.Random;
 
 /**
  * Demonstration of streaming wavelet transform capabilities.
@@ -22,6 +23,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * </ul>
  */
 public class StreamingDemo {
+    
+    // Use seeded Random for reproducible demonstrations
+    private static final Random random = new Random(42);
     
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== VectorWave Streaming Transform Demo ===\n");
@@ -238,7 +242,7 @@ public class StreamingDemo {
                 chunk[j] = 0.5 * Math.sin(2 * Math.PI * 440 * t) +
                           0.3 * Math.sin(2 * Math.PI * 880 * t) +
                           0.1 * Math.sin(2 * Math.PI * 1760 * t) +
-                          0.05 * (Math.random() - 0.5);  // noise
+                          0.05 * (random.nextDouble() - 0.5);  // noise
             }
             
             transform.process(chunk);
@@ -317,14 +321,14 @@ public class StreamingDemo {
         double price = 100.0;
         for (int i = 0; i < 256; i++) {
             // Random walk with drift
-            double return_ = 0.0001 + 0.01 * (Math.random() - 0.5);
+            double return_ = 0.0001 + 0.01 * (random.nextDouble() - 0.5);
             price *= (1 + return_);
             
             // Process log return
             transform.process(Math.log(price / 100.0));
             
             // Simulate variable tick rate
-            if (Math.random() < 0.3) {
+            if (random.nextDouble() < 0.3) {
                 Thread.sleep(1);
             }
         }

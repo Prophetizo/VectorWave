@@ -172,6 +172,7 @@ class StreamingWaveletTransformTest {
             
             AtomicInteger receivedCount = new AtomicInteger();
             CountDownLatch subscriptionLatch = new CountDownLatch(1);
+            CountDownLatch receiveLatch = new CountDownLatch(1);
             
             transform.subscribe(new Flow.Subscriber<TransformResult>() {
                 private Flow.Subscription subscription;
@@ -187,6 +188,7 @@ class StreamingWaveletTransformTest {
                 @Override
                 public void onNext(TransformResult item) {
                     receivedCount.incrementAndGet();
+                    receiveLatch.countDown();
                     // Don't request more
                 }
                 
@@ -205,7 +207,8 @@ class StreamingWaveletTransformTest {
                 transform.process(block);
             }
             
-            Thread.sleep(100);
+            // Wait for the first item to be received
+            assertTrue(receiveLatch.await(1, TimeUnit.SECONDS), "Did not receive first item");
             
             // Should only receive 1 due to backpressure
             assertEquals(1, receivedCount.get());
@@ -220,6 +223,7 @@ class StreamingWaveletTransformTest {
             
             AtomicInteger totalBlocks = new AtomicInteger();
             CountDownLatch completeLatch = new CountDownLatch(1);
+            CountDownLatch blocksLatch = new CountDownLatch(4); // Expect 4 blocks
             
             transform.subscribe(new Flow.Subscriber<TransformResult>() {
                 @Override
@@ -230,6 +234,7 @@ class StreamingWaveletTransformTest {
                 @Override
                 public void onNext(TransformResult item) {
                     totalBlocks.incrementAndGet();
+                    blocksLatch.countDown();
                 }
                 
                 @Override
@@ -272,7 +277,8 @@ class StreamingWaveletTransformTest {
                 thread.join();
             }
             
-            Thread.sleep(100); // Give time for all blocks to be processed
+            // Wait for all blocks to be processed
+            assertTrue(blocksLatch.await(1, TimeUnit.SECONDS), "Did not receive all 4 blocks");
             
             transform.close();
             assertTrue(completeLatch.await(1, TimeUnit.SECONDS));

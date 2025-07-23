@@ -111,6 +111,9 @@ public class RealTimeBenchmark {
         
         // Setup denoiser for real-time filtering
         denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+        
+        // Initialize cold cache buffers after audioBuffer is populated
+        initializeColdBuffers();
     }
     
     // ===== Audio Processing Benchmarks =====
@@ -237,20 +240,43 @@ public class RealTimeBenchmark {
     
     // ===== Cache Effects Benchmarks =====
     
-    private double[] coldBuffer;
+    // Pre-allocated buffers to simulate cold cache without allocation overhead
+    private static final int NUM_COLD_BUFFERS = 1024;  // Large enough to exceed L3 cache
+    private double[][] coldBuffers;
+    private int coldBufferIndex = 0;
     
-    @Setup(Level.Invocation)
-    public void setupCold() {
-        // Create new buffer to simulate cold cache
-        coldBuffer = new double[audioBufferSize];
-        System.arraycopy(audioBuffer, 0, coldBuffer, 0, audioBufferSize);
+    /**
+     * Initializes cold cache buffers after main setup.
+     * Pre-allocates multiple buffers to avoid allocation overhead during benchmarking.
+     * The buffers are large enough to exceed typical L3 cache sizes, ensuring
+     * cache misses when rotating through them.
+     */
+    private void initializeColdBuffers() {
+        // Pre-allocate multiple buffers to rotate through
+        // This avoids allocation overhead during benchmark
+        coldBuffers = new double[NUM_COLD_BUFFERS][];
+        for (int i = 0; i < NUM_COLD_BUFFERS; i++) {
+            coldBuffers[i] = new double[audioBufferSize];
+            System.arraycopy(audioBuffer, 0, coldBuffers[i], 0, audioBufferSize);
+            
+            // Touch random locations to pollute cache in a controlled way
+            if (i > 0) {
+                for (int j = 0; j < audioBufferSize; j += 64) {
+                    coldBuffers[i][j] += 0.00001 * i;  // Minimal change to avoid optimizer removal
+                }
+            }
+        }
     }
     
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void coldCacheLatency(Blackhole bh) {
-        TransformResult result = audioTransform.forward(coldBuffer);
+        // Rotate through pre-allocated buffers to simulate cold cache
+        double[] buffer = coldBuffers[coldBufferIndex];
+        coldBufferIndex = (coldBufferIndex + 1) % NUM_COLD_BUFFERS;
+        
+        TransformResult result = audioTransform.forward(buffer);
         bh.consume(result);
     }
     
