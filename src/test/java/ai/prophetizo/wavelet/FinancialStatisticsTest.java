@@ -22,7 +22,12 @@ class FinancialStatisticsTest {
     
     // Cache for random number generators to ensure reproducibility
     // Each unique sequence index gets its own Random instance with a deterministic seed
-    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.HashMap<>();
+    private static final java.util.Map<Integer, Random> RANDOM_CACHE = new java.util.LinkedHashMap<Integer, Random>(100, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(java.util.Map.Entry<Integer, Random> eldest) {
+            return size() > 100; // Limit the cache size to 100 entries
+        }
+    };
     
     @Test
     @DisplayName("Preservation of return statistics")
