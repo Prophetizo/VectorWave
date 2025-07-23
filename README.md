@@ -34,11 +34,21 @@ VectorWave includes optional SIMD optimizations using Java's Vector API (incubat
 mvn clean compile
 ```
 
-### Running the Demo
+### Running the Demos
+
+VectorWave includes a comprehensive demo suite showcasing all features:
 
 ```bash
+# Run the main demo
 java -cp target/classes ai.prophetizo.Main
+
+# Run specific demos (see src/main/java/ai/prophetizo/demo/)
+java -cp target/classes ai.prophetizo.demo.BasicUsageDemo
+java -cp target/classes ai.prophetizo.demo.WaveletSelectionGuideDemo
+java -cp target/classes ai.prophetizo.demo.PerformanceOptimizationDemo
 ```
+
+See [Demo Suite Documentation](src/main/java/ai/prophetizo/demo/README.md) for the complete list of available demos.
 
 ### Basic Usage
 
