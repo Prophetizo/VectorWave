@@ -1,6 +1,9 @@
 package ai.prophetizo.wavelet.config;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
  * Immutable configuration for wavelet transform.
@@ -12,6 +15,8 @@ public final class TransformConfig {
     private final BoundaryMode boundaryMode;
     // Forces scalar engine if true, otherwise auto-detects.
     private final boolean forceScalar;
+    // Forces use of SIMD operations when available.
+    private final boolean forceSIMD;
     // Maximum allowed decomposition levels.
     private final int maxDecompositionLevels;
 
@@ -23,7 +28,13 @@ public final class TransformConfig {
     private TransformConfig(Builder builder) {
         this.boundaryMode = builder.boundaryMode;
         this.forceScalar = builder.forceScalar;
+        this.forceSIMD = builder.forceSIMD;
         this.maxDecompositionLevels = builder.maxDecompositionLevels;
+
+        // Validate: can't force both scalar and SIMD
+        if (forceScalar && forceSIMD) {
+            throw InvalidConfigurationException.conflictingOptions("forceScalar", "forceSIMD");
+        }
     }
 
     /**
@@ -59,6 +70,20 @@ public final class TransformConfig {
     }
 
     /**
+     * @return true if scalar operations are forced (same as isForceScalar)
+     */
+    public boolean isForceScalarOperations() {
+        return forceScalar;
+    }
+
+    /**
+     * @return true if SIMD operations are forced when available
+     */
+    public boolean isForceSIMD() {
+        return forceSIMD;
+    }
+
+    /**
      * @return maximum decomposition levels
      */
     public int getMaxDecompositionLevels() {
@@ -75,6 +100,7 @@ public final class TransformConfig {
         return "TransformConfig{" +
                 "boundaryMode=" + boundaryMode +
                 ", forceScalar=" + forceScalar +
+                ", forceSIMD=" + forceSIMD +
                 ", maxDecompositionLevels=" + maxDecompositionLevels +
                 '}';
     }
@@ -88,6 +114,8 @@ public final class TransformConfig {
         private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
         // Default: do not force scalar engine.
         private boolean forceScalar = false;
+        // Default: auto-detect SIMD availability.
+        private boolean forceSIMD = false;
         // Default: allow up to 20 decomposition levels (handles signals up to 2^20 = 1,048,576 samples).
         private int maxDecompositionLevels = 20;
 
@@ -102,8 +130,7 @@ public final class TransformConfig {
          * @return this builder
          */
         public Builder boundaryMode(BoundaryMode boundaryMode) {
-            this.boundaryMode = java.util.Objects.requireNonNull(boundaryMode,
-                    "boundaryMode cannot be null.");
+            this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
             return this;
         }
 
@@ -119,16 +146,27 @@ public final class TransformConfig {
         }
 
         /**
+         * Sets whether to force SIMD operations when available.
+         * If SIMD is not available, this setting is ignored.
+         *
+         * @param forceSIMD true to force SIMD operations
+         * @return this builder
+         */
+        public Builder forceSIMD(boolean forceSIMD) {
+            this.forceSIMD = forceSIMD;
+            return this;
+        }
+
+        /**
          * Sets the maximum decomposition levels.
          *
          * @param maxLevels maximum levels (must be >= 1)
          * @return this builder
-         * @throws IllegalArgumentException if maxLevels < 1
+         * @throws InvalidArgumentException if maxLevels < 1
          */
         public Builder maxDecompositionLevels(int maxLevels) {
             if (maxLevels < 1) {
-                throw new IllegalArgumentException(
-                        "maxDecompositionLevels must be at least 1.");
+                throw InvalidArgumentException.notPositive(maxLevels);
             }
             this.maxDecompositionLevels = maxLevels;
             return this;

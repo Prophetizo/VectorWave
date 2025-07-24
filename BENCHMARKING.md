@@ -14,10 +14,27 @@ Run all benchmarks:
 - Java 21+
 - Maven 3.6+
 - Sufficient heap memory (4GB+ recommended)
+- For SIMD benchmarks: CPU with AVX2/AVX512 support
+- Vector API is automatically enabled via Maven configuration
 
 ## Available Benchmarks
 
-### 1. Signal Size Scaling
+### 1. SIMD Performance Comparison
+
+Compares scalar vs SIMD-optimized operations across different signal sizes.
+
+```bash
+./jmh-runner.sh SIMDBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 64, 128, 256, 512, 1024, 2048, 4096
+- Boundary modes: PERIODIC, ZERO_PADDING
+- Measures: Performance difference between scalar and vector operations
+- Includes financial signal benchmarks
+- **Note**: Minimal SIMD overhead for small signals (<256 samples)
+
+### 2. Signal Size Scaling
 
 Measures performance across different signal sizes to understand scaling characteristics.
 
@@ -30,7 +47,7 @@ Measures performance across different signal sizes to understand scaling charact
 - Measures: Throughput and average time
 - Includes cold-start and batch processing tests
 
-### 2. Wavelet Type Comparison
+### 3. Wavelet Type Comparison
 
 Compares performance across different wavelet families.
 
@@ -43,7 +60,7 @@ Compares performance across different wavelet families.
 - Measures: Transform time for each wavelet type
 - Fixed signal size: 4096 samples
 
-### 3. Validation Performance
+### 4. Validation Performance
 
 Measures the overhead of input validation.
 
@@ -55,7 +72,7 @@ Measures the overhead of input validation.
 - Various validation scenarios
 - Measures validation overhead in nanoseconds
 
-### 4. Quick Performance Test
+### 5. Quick Performance Test
 
 A lightweight benchmark for quick performance checks.
 
@@ -66,6 +83,67 @@ A lightweight benchmark for quick performance checks.
 **Parameters:**
 - Limited iterations for fast results
 - Good for regression testing
+
+### 6. Vector Optimization Comparison
+
+Compares original VectorOps vs optimized VectorOps implementations.
+
+```bash
+./jmh-runner.sh VectorOptimizationBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 128, 256, 512, 1024, 2048, 4096
+- Filter lengths: 4, 8 (DB2 and DB4)
+- Measures: Performance of convolution, combined transforms, and Haar optimization
+- Uses 3 forks for statistical reliability
+- **Note**: Clean implementation with obsolete comments removed
+
+### 7. Real-Time Application Benchmarks
+
+Measures performance for real-time use cases like audio processing and financial tick data.
+
+```bash
+./jmh-runner.sh RealTimeBenchmark
+```
+
+**Parameters:**
+- Audio buffer sizes: 64, 128, 256, 512 samples
+- Measures: Latency, throughput, and memory allocation overhead
+- Scenarios: Audio processing, financial tick batches, sensor data filtering
+- Includes real-time denoising benchmarks
+
+### 8. Latency-Focused Benchmarks
+
+Detailed latency analysis for real-time constraints.
+
+```bash
+./jmh-runner.sh LatencyBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 16, 32, 64, 128, 256 samples
+- Measures: Percentile latencies (50th, 90th, 95th, 99th, 99.9th)
+- Tests: Jitter, GC impact, thread contention, allocation overhead
+- Wavelet comparison: Haar vs DB2 vs DB4 latency
+- **Recent Results**: Haar ~107 ns/op, DB2 ~193 ns/op, DB4 ~294 ns/op (64 samples)
+- **Thread Safety**: Fixed indexing collision with AtomicInteger
+
+### 9. Cache Prefetch Optimization Benchmarks
+
+Measures the impact of cache prefetching optimizations on large signal processing.
+
+```bash
+./jmh-runner.sh PrefetchBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 256, 1024, 4096, 16384, 65536 samples
+- Wavelets: Haar, DB4, Sym8
+- Compares: Standard vs prefetch-optimized transforms
+- Measures: Impact of cache-friendly access patterns
+- Includes: Multi-level transform prefetch benefits
+- Baseline: Random access pattern to show cache miss impact
 
 ## JMH Parameters
 

@@ -12,12 +12,36 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 - **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
 - **Boundary Modes**: Supports periodic and zero-padding boundary handling
-- **Performance**: Optimized scalar implementation with comprehensive benchmarking
+- **Performance**: Optimized for small signals (<1024 samples) with integrated performance enhancements for financial time series analysis
+- **SIMD/Vector API Support**: Optional hardware acceleration with configurable scalar/SIMD paths
+- **Mathematical Verification**: Built-in coefficient verification for all wavelets with documented sources
+- **Advanced Features**:
+  - Custom exception hierarchy for precise error handling
+  - Memory pooling for reduced GC pressure
+  - Streaming/real-time transform support
+  - Multi-level wavelet decomposition
+  - Thread-safe operations with atomic indexing
 
 ## Requirements
 
 - Java 21 or higher
 - Maven 3.6+
+
+### SIMD/Vector API Support
+
+VectorWave includes optional SIMD optimizations using Java's Vector API (incubator module). These optimizations are automatically enabled when available and provide performance improvements on compatible hardware.
+
+**Configuration Options**:
+- **Auto-detection** (default): System automatically chooses optimal path
+- **Force Scalar**: Use `TransformConfig.forceScalar(true)` for debugging or compatibility
+- **Force SIMD**: Use `TransformConfig.forceSIMD(true)` for maximum performance
+
+**Performance Characteristics**:
+- Minimal overhead for small signals (<256 samples)
+- Performance benefits increase with signal size
+- Thread-safe with atomic indexing to prevent collisions
+
+**Note**: When building the project, you may see warnings about "using incubating module(s)". This is expected and does not affect functionality. The Vector API is an incubating feature that will be finalized in a future JDK release.
 
 ## Quick Start
 
@@ -27,17 +51,32 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 mvn clean compile
 ```
 
-### Running the Demo
+### Running the Demos
+
+VectorWave includes a comprehensive demo suite showcasing all features:
 
 ```bash
+# Run the main demo
 java -cp target/classes ai.prophetizo.Main
+
+# Run specific demos (see src/main/java/ai/prophetizo/demo/)
+java -cp target/classes ai.prophetizo.demo.BasicUsageDemo
+java -cp target/classes ai.prophetizo.demo.WaveletSelectionGuideDemo
+java -cp target/classes ai.prophetizo.demo.PerformanceOptimizationDemo
+java -cp target/classes ai.prophetizo.demo.ScalarVsVectorDemo
+
+# For demos requiring Vector API support
+java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.ScalarVsVectorDemo
 ```
+
+See [Demo Suite Documentation](src/main/java/ai/prophetizo/demo/README.md) for the complete list of available demos.
 
 ### Basic Usage
 
 ```java
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.config.TransformConfig;
 
 // Using Haar wavelet
 WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
@@ -57,6 +96,13 @@ transform = new WaveletTransformFactory()
 // Using Morlet wavelet (continuous)
 transform = new WaveletTransformFactory()
     .create(new MorletWavelet(6.0, 1.0));
+
+// Configuring optimization paths
+TransformConfig config = TransformConfig.builder()
+    .forceScalar(true)  // or forceSIMD(true)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .build();
+transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, config);
 ```
 
 ### Wavelet Registry
@@ -72,6 +118,10 @@ Wavelet haar = WaveletRegistry.getWavelet("haar");
 
 // Print all available wavelets
 WaveletRegistry.printAvailableWavelets();
+
+// Verify mathematical properties
+boolean isValidHaar = new Haar().verifyCoefficients();
+boolean isValidDB4 = Daubechies.DB4.verifyCoefficients();
 ```
 
 ## Performance Benchmarking
@@ -203,7 +253,13 @@ The project includes GitHub Actions workflows for:
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
+## Documentation
+
+- [WAVELET_PROPERTIES.md](WAVELET_PROPERTIES.md) - Detailed mathematical properties and sources for all wavelets
+- [BENCHMARKING.md](BENCHMARKING.md) - Comprehensive benchmarking guide and performance tuning
+- [CLAUDE.md](CLAUDE.md) - Codebase guidance for AI assistants
+
 ## Acknowledgments
 
-- Wavelet coefficients based on standard mathematical definitions
+- Wavelet coefficients based on peer-reviewed mathematical sources (see WAVELET_PROPERTIES.md)
 - Benchmarking powered by JMH (Java Microbenchmark Harness)

@@ -17,6 +17,13 @@ import static ai.prophetizo.wavelet.util.WaveletConstants.calculateNextPowerOfTw
  */
 public final class ValidationUtils {
 
+    /**
+     * Maximum signal length for optimized validation path.
+     * Signals up to this size use a single-pass validation for better performance.
+     * This threshold is chosen based on typical cache sizes and performance characteristics.
+     */
+    private static final int SMALL_SIGNAL_THRESHOLD = 1024;
+
     private ValidationUtils() {
         // Utility class, prevent instantiation
     }
@@ -33,11 +40,12 @@ public final class ValidationUtils {
 
     /**
      * Validates that a signal is suitable for wavelet transform.
-     * Checks for null, empty, power-of-two length, and finite values.
+     * Checks for null, empty, minimum length, power-of-two length, and finite values.
      *
      * <p>This method performs validation in the following order:
      * <ol>
      *   <li>Null and empty checks via {@link #validateNotNullOrEmpty(double[], String)}</li>
+     *   <li>Minimum length check (must be at least 2)</li>
      *   <li>Power-of-two length validation</li>
      *   <li>Finite value checks via {@link #validateFiniteValues(double[], String)}</li>
      * </ol>
@@ -49,8 +57,29 @@ public final class ValidationUtils {
      * @throws InvalidSignalException if the signal is invalid
      */
     public static void validateSignal(double[] signal, String parameterName) {
+        // Optimized path for small signals: combine all checks in single pass
+        if (signal != null && isPowerOfTwo(signal.length) && signal.length >= 2 && signal.length <= SMALL_SIGNAL_THRESHOLD) {
+            // Fast path: single pass validation for small power-of-2 signals
+            for (int i = 0; i < signal.length; i++) {
+                double value = signal[i];
+                if (Double.isNaN(value)) {
+                    throw InvalidSignalException.nanValue(parameterName, i);
+                }
+                if (Double.isInfinite(value)) {
+                    throw InvalidSignalException.infinityValue(parameterName, i, value);
+                }
+            }
+            return;
+        }
+
+        // Standard validation path for large signals or when fast path conditions not met
         // Check null and empty using common method
         validateNotNullOrEmpty(signal, parameterName);
+
+        // Check minimum length (wavelet transform requires at least 2 samples)
+        if (signal.length < 2) {
+            throw new InvalidSignalException("Signal must have at least 2 samples for wavelet transform, but has " + signal.length);
+        }
 
         // Check power of two
         if (!isPowerOfTwo(signal.length)) {
