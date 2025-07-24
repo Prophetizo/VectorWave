@@ -40,7 +40,8 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
     private int bufferHead = 0;
     private int samplesInBuffer = 0;
-    private int samplesSinceLastWindow = 0;
+    private long totalSamplesProcessed = 0;
+    private long lastWindowStart = 0;
 
     /**
      * Creates a sliding window transform with specified overlap.
@@ -119,13 +120,13 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
             samplesInBuffer++;
         }
 
-        samplesSinceLastWindow++;
+        totalSamplesProcessed++;
         statistics.addSamples(1);
 
         // Check if we have enough samples and it's time for a new window
-        if (samplesInBuffer >= windowSize && samplesSinceLastWindow >= hopSize) {
+        if (samplesInBuffer >= windowSize && (totalSamplesProcessed - lastWindowStart) >= windowSize) {
             processWindow();
-            samplesSinceLastWindow = 0;
+            lastWindowStart += hopSize;
         }
     }
 
@@ -135,7 +136,8 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
         try {
             // Extract window from circular buffer
             double[] window = new double[windowSize];
-            int readPos = (bufferHead - samplesInBuffer + circularBuffer.length) % circularBuffer.length;
+            // Calculate the start position of the current window
+            int readPos = (bufferHead - windowSize + circularBuffer.length) % circularBuffer.length;
 
             for (int i = 0; i < windowSize; i++) {
                 window[i] = circularBuffer[(readPos + i) % circularBuffer.length];
@@ -165,9 +167,10 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
             return;
         }
 
-        // Process final window if we have enough samples
-        if (samplesInBuffer >= windowSize) {
+        // Process any remaining full windows based on hop size
+        while (lastWindowStart + windowSize <= totalSamplesProcessed && samplesInBuffer >= windowSize) {
             processWindow();
+            lastWindowStart += hopSize;
         }
     }
 
