@@ -124,9 +124,14 @@ class SlidingWindowTransformTest {
             transform.process(data);
             transform.flush(); // Ensure all windows are processed
             
+            // Wait a bit for async processing to complete
+            Thread.sleep(100);
+            
             // Verify we got at least some results
             // The exact number depends on implementation details of buffering and flushing
-            assertTrue(results.size() >= 1); // At least one window should be processed
+            assertFalse(results.isEmpty(), 
+                String.format("Expected at least 1 result for windowSize=%d, overlap=%.2f, dataSize=%d, hopSize=%d, but got %d",
+                    windowSize, overlapFactor, dataSize, (int)(windowSize * (1 - overlapFactor)), results.size())); // At least one window should be processed
         }
     }
 
@@ -144,9 +149,15 @@ class SlidingWindowTransformTest {
                 transform.process(Math.cos(2 * Math.PI * i / 8.0));
             }
             
-            // With window size 32 and 50% overlap, after 64 samples we should have at least 1 window
-            // Single sample processing might buffer differently than batch processing
-            assertTrue(results.size() >= 1, "Expected at least 1 window, but got " + results.size());
+            // Flush to ensure all windows are processed
+            transform.flush();
+            
+            // Wait a bit for async processing to complete
+            Thread.sleep(100);
+            
+            // Should have produced at least 2 windows
+            assertTrue(results.size() >= 2, 
+                String.format("Expected at least 2 windows but got %d (windowSize=32, 50%% overlap, 64 samples)", results.size()));
         }
     }
 
