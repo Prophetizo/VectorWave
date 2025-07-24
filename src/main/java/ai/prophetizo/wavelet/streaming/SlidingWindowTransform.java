@@ -124,7 +124,7 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
         statistics.addSamples(1);
 
         // Check if we have enough samples and it's time for a new window
-        if (samplesInBuffer >= windowSize && (totalSamplesProcessed - lastWindowStart) >= windowSize) {
+        if (samplesInBuffer >= windowSize && (totalSamplesProcessed - lastWindowStart) >= hopSize) {
             processWindow();
             lastWindowStart += hopSize;
         }
