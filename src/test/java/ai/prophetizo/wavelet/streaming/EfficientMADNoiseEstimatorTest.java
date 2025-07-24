@@ -197,8 +197,7 @@ class EfficientMADNoiseEstimatorTest {
         // For streaming with many small batches, efficient should be faster
         // But for small datasets, the overhead might make it slower
         // So we just verify both complete successfully
-        System.out.println(String.format("Performance comparison - Efficient: %d ms, Original: %d ms",
-            efficientTime / 1_000_000, originalTime / 1_000_000));
+        // Performance results: Efficient: efficientTime/1_000_000 ms, Original: originalTime/1_000_000 ms
         
         // Results should be similar
         double efficientEstimate = efficient.getCurrentNoiseLevel();

@@ -38,13 +38,17 @@ public class OverlapBuffer {
     /**
      * Creates an overlap buffer with specified parameters.
      * 
-     * @param blockSize size of each processing block (must be power of 2)
+     * <p>Note: While the overlap buffer itself can work with any block size,
+     * if you're using this with wavelet transforms, the block size should be
+     * a power of 2 to satisfy wavelet transform requirements.</p>
+     * 
+     * @param blockSize size of each processing block (must be positive)
      * @param overlapFactor overlap factor (0.0 to 0.95)
      * @param windowFunction window function for overlap regions
      */
     public OverlapBuffer(int blockSize, double overlapFactor, WindowFunction windowFunction) {
-        if (blockSize <= 0 || !ValidationUtils.isPowerOfTwo(blockSize)) {
-            throw new IllegalArgumentException("Block size must be a positive power of 2");
+        if (blockSize <= 0) {
+            throw new IllegalArgumentException("Block size must be positive");
         }
         if (overlapFactor < 0.0 || overlapFactor >= 1.0) {
             throw new IllegalArgumentException("Overlap factor must be in [0, 1)");

@@ -14,6 +14,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
 import ai.prophetizo.wavelet.internal.VectorOps;
 import ai.prophetizo.wavelet.memory.MemoryPool;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Arrays;
 import java.util.concurrent.SubmissionPublisher;
@@ -149,6 +150,11 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
     
     private StreamingDenoiser(Builder builder) {
         super();
+        
+        // Validate block size for wavelet transforms
+        if (!ValidationUtils.isPowerOfTwo(builder.blockSize)) {
+            throw new IllegalArgumentException("Block size must be a power of 2 for wavelet transforms");
+        }
         
         this.wavelet = builder.wavelet;
         this.boundaryMode = BoundaryMode.PERIODIC; // Default for streaming
