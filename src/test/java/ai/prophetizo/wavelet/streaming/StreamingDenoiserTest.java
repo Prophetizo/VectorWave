@@ -395,6 +395,93 @@ class StreamingDenoiserTest {
         }
     }
     
+    @Test
+    void testSharedMemoryPoolUsage() throws Exception {
+        SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
+        int initialUsers = manager.getActiveUserCount();
+        
+        // Create multiple denoisers using shared pool
+        StreamingDenoiser denoiser1 = new StreamingDenoiser.Builder()
+            .wavelet(new Haar())
+            .blockSize(128)
+            .useSharedMemoryPool(true)
+            .build();
+            
+        StreamingDenoiser denoiser2 = new StreamingDenoiser.Builder()
+            .wavelet(Daubechies.DB4)
+            .blockSize(256)
+            .useSharedMemoryPool(true)
+            .build();
+        
+        assertEquals(initialUsers + 2, manager.getActiveUserCount(), 
+            "Should track active users correctly");
+        
+        // Process some data
+        for (int i = 0; i < 64; i++) {
+            denoiser1.process(Math.sin(i * 0.1));
+            denoiser2.process(Math.cos(i * 0.1));
+        }
+        
+        // Close denoisers
+        denoiser1.close();
+        assertEquals(initialUsers + 1, manager.getActiveUserCount(), 
+            "Should decrement user count on close");
+        
+        denoiser2.close();
+        assertEquals(initialUsers, manager.getActiveUserCount(), 
+            "Should return to initial user count");
+    }
+    
+    @Test
+    void testDedicatedMemoryPoolOption() throws Exception {
+        // Create denoiser with dedicated pool
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(128)
+                .useSharedMemoryPool(false)
+                .build()) {
+            
+            SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
+            int userCount = manager.getActiveUserCount();
+            
+            // Process some data
+            for (int i = 0; i < 128; i++) {
+                denoiser.process(Math.sin(i * 0.1));
+            }
+            
+            denoiser.flush();
+            
+            // User count should not change for dedicated pool
+            assertEquals(userCount, manager.getActiveUserCount(), 
+                "Dedicated pool should not affect shared pool user count");
+        }
+    }
+    
+    @Test
+    void testConstructorFailureCleanup() throws Exception {
+        // Get initial state
+        SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
+        int initialUserCount = manager.getActiveUserCount();
+        
+        // Create a custom wavelet that will cause construction to fail
+        // by having an invalid block size
+        try {
+            new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(127) // Not a power of 2, will fail validation
+                .useSharedMemoryPool(true)
+                .build();
+                
+            fail("Should have thrown exception for invalid block size");
+        } catch (IllegalArgumentException expected) {
+            // Expected exception
+        }
+        
+        // Verify shared pool user count is restored
+        assertEquals(initialUserCount, manager.getActiveUserCount(), 
+            "Shared pool user count should be restored after constructor failure");
+    }
+    
     // Helper methods
     
     private static double[] generateNoisySignal(int length, double noiseLevel) {

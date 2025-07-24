@@ -56,11 +56,12 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
     private final NoiseEstimator noiseEstimator;
     private final StreamingThresholdAdapter thresholdAdapter;
     private final OverlapBuffer overlapBuffer;
-    private final MemoryPool memoryPool;
+    private MemoryPool memoryPool;
+    private boolean usingSharedPool;
     
     // Buffers
     private final double[] inputBuffer;
-    private final double[] processingBuffer;
+    private double[] processingBuffer;
     private int inputPosition;
     
     // State
@@ -81,6 +82,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         private OverlapBuffer.WindowFunction windowFunction = OverlapBuffer.WindowFunction.HANN;
         private double attackTime = 10.0;
         private double releaseTime = 50.0;
+        private boolean useSharedMemoryPool = true;
         
         public Builder wavelet(Wavelet wavelet) {
             this.wavelet = wavelet;
@@ -132,6 +134,11 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             return this;
         }
         
+        public Builder useSharedMemoryPool(boolean useShared) {
+            this.useSharedMemoryPool = useShared;
+            return this;
+        }
+        
         public StreamingDenoiser build() {
             if (wavelet == null) {
                 throw new InvalidArgumentException("Wavelet must be specified");
@@ -151,22 +158,58 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         this.thresholdType = builder.thresholdType;
         this.adaptiveThreshold = builder.adaptiveThreshold;
         
-        // Create components
-        TransformConfig config = TransformConfig.builder()
-                .boundaryMode(BoundaryMode.PERIODIC)
-                .build();
-        this.transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC, config);
+        // Initialize processing buffer to null
+        this.processingBuffer = null;
         
-        this.noiseEstimator = new MADNoiseEstimator(blockSize * 4, 0.95);
-        this.thresholdAdapter = new StreamingThresholdAdapter(
-            builder.attackTime, builder.releaseTime, 0.0, Double.MAX_VALUE);
-        this.overlapBuffer = new OverlapBuffer(blockSize, builder.overlapFactor, builder.windowFunction);
-        this.memoryPool = new MemoryPool();
+        MemoryPool tempPool = null;
+        boolean tempUsingSharedPool = false;
         
-        // Allocate buffers
-        this.inputBuffer = new double[blockSize];
-        this.processingBuffer = memoryPool.borrowArray(blockSize);
-        this.inputPosition = 0;
+        try {
+            // Create components
+            TransformConfig config = TransformConfig.builder()
+                    .boundaryMode(BoundaryMode.PERIODIC)
+                    .build();
+            this.transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC, config);
+            
+            this.noiseEstimator = new MADNoiseEstimator(blockSize * 4, 0.95);
+            this.thresholdAdapter = new StreamingThresholdAdapter(
+                builder.attackTime, builder.releaseTime, 0.0, Double.MAX_VALUE);
+            this.overlapBuffer = new OverlapBuffer(blockSize, builder.overlapFactor, builder.windowFunction);
+            
+            // Use shared or dedicated memory pool based on configuration
+            if (builder.useSharedMemoryPool) {
+                tempPool = SharedMemoryPoolManager.getInstance().getSharedPool();
+                tempUsingSharedPool = true;
+            } else {
+                tempPool = new MemoryPool();
+                tempUsingSharedPool = false;
+            }
+            
+            // Allocate buffers
+            this.inputBuffer = new double[blockSize];
+            
+            // Borrow processing buffer - this is the risky operation
+            double[] tempBuffer = tempPool.borrowArray(blockSize);
+            
+            // Only assign fields after all allocations succeed
+            this.memoryPool = tempPool;
+            this.usingSharedPool = tempUsingSharedPool;
+            this.processingBuffer = tempBuffer;
+            this.inputPosition = 0;
+            
+        } catch (Exception e) {
+            // Clean up any borrowed resources
+            if (this.processingBuffer != null && tempPool != null) {
+                tempPool.returnArray(this.processingBuffer);
+            }
+            
+            // Release shared pool if we acquired it
+            if (tempUsingSharedPool) {
+                SharedMemoryPoolManager.getInstance().releaseUser();
+            }
+            
+            throw e;
+        }
     }
     
     public void process(double sample) {
@@ -325,9 +368,21 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
     public void close() {
         if (isClosed.compareAndSet(false, true)) {
             flush();
-            memoryPool.returnArray(processingBuffer);
-            // Clear all pooled arrays to release memory
-            memoryPool.clear();
+            
+            // Return processing buffer if it was allocated
+            if (processingBuffer != null && memoryPool != null) {
+                memoryPool.returnArray(processingBuffer);
+            }
+            
+            // Handle cleanup based on pool type
+            if (usingSharedPool) {
+                // Notify the manager that we're done using the shared pool
+                SharedMemoryPoolManager.getInstance().releaseUser();
+            } else if (memoryPool != null) {
+                // Clear the dedicated pool
+                memoryPool.clear();
+            }
+            
             super.close();
         }
     }
