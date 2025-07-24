@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @since 1.6.0
  */
-public class StreamingDenoiser extends SubmissionPublisher<double[]> 
+public final class StreamingDenoiser extends SubmissionPublisher<double[]> 
         implements AutoCloseable {
     
     // Configuration
