@@ -158,7 +158,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         this.thresholdType = builder.thresholdType;
         this.adaptiveThreshold = builder.adaptiveThreshold;
         
-        // Initialize processing buffer to null
+        // Initialize processing buffer to null for exception safety during construction
         this.processingBuffer = null;
         
         MemoryPool tempPool = null;
