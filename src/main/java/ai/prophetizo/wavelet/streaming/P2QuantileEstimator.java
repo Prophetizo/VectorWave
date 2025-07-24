@@ -19,9 +19,29 @@ package ai.prophetizo.wavelet.streaming;
  */
 public class P2QuantileEstimator {
     
-    // The P² algorithm uses 5 markers to estimate quantiles. These markers represent
-    // specific positions in the data distribution and are adjusted dynamically as new
-    // observations are added. This is a core parameter of the algorithm.
+    /**
+     * Number of markers used in the P² algorithm.
+     * 
+     * <p>The P² algorithm uses exactly 5 markers to maintain its quantile estimate:
+     * <ul>
+     *   <li>Marker 0: Minimum value seen so far</li>
+     *   <li>Marker 1: p/2 quantile estimate</li>
+     *   <li>Marker 2: p quantile estimate (the target quantile)</li>
+     *   <li>Marker 3: (1+p)/2 quantile estimate</li>
+     *   <li>Marker 4: Maximum value seen so far</li>
+     * </ul>
+     * 
+     * <p>This specific arrangement of 5 markers enables the algorithm to:
+     * <ul>
+     *   <li>Track the full range of data (min/max)</li>
+     *   <li>Maintain the target quantile estimate</li>
+     *   <li>Use parabolic interpolation between adjacent markers</li>
+     *   <li>Achieve O(1) space and time complexity</li>
+     * </ul>
+     * 
+     * <p>The number 5 is fundamental to the algorithm and cannot be changed
+     * without redesigning the entire approach.</p>
+     */
     private static final int MARKERS = 5;
     
     // Marker positions (indices)
