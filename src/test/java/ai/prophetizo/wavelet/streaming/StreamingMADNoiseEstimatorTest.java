@@ -50,7 +50,8 @@ class StreamingMADNoiseEstimatorTest {
         
         double finalEstimate = estimator.getCurrentNoiseLevel();
         // With smoothing and P2 estimation, the final estimate may be higher
-        // For std=0.15, expect roughly 0.15 * 0.6745 * 1.4826 ≈ 0.15
+        // For std=0.15, expect roughly 0.15 * 0.6745 * 1.4826 ≈ 0.1499
+        // The test allows for a wider range due to smoothing and P2 estimation variability.
         assertTrue(finalEstimate > 0.08 && finalEstimate < 0.22,
             "Final estimate should converge to expected range: " + finalEstimate);
     }
