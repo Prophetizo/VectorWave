@@ -340,6 +340,12 @@ public final class ScalarOps {
      */
     public static double[] convolveAndDownsamplePeriodic(double[] signal, double[] filter,
                                                          int signalLength, int filterLength) {
+        if (signal == null) {
+            throw new IllegalArgumentException("Signal cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
         double[] output = new double[signalLength / 2];
         convolveAndDownsamplePeriodic(signal, filter, output);
         return output;
@@ -351,6 +357,12 @@ public final class ScalarOps {
      */
     public static double[] convolveAndDownsampleZeroPadding(double[] signal, double[] filter,
                                                             int signalLength, int filterLength) {
+        if (signal == null) {
+            throw new IllegalArgumentException("Signal cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
         double[] output = new double[signalLength / 2];
         convolveAndDownsampleDirect(signal, filter, output);
         return output;
@@ -362,6 +374,12 @@ public final class ScalarOps {
      */
     public static double[] upsampleAndConvolvePeriodic(double[] coeffs, double[] filter,
                                                        int coeffsLength, int filterLength) {
+        if (coeffs == null) {
+            throw new IllegalArgumentException("Coefficients cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
         double[] output = new double[coeffsLength * 2];
         upsampleAndConvolvePeriodic(coeffs, filter, output);
         return output;
@@ -373,6 +391,12 @@ public final class ScalarOps {
      */
     public static double[] upsampleAndConvolveZeroPadding(double[] coeffs, double[] filter,
                                                           int coeffsLength, int filterLength) {
+        if (coeffs == null) {
+            throw new IllegalArgumentException("Coefficients cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
         double[] output = new double[coeffsLength * 2];
         upsampleAndConvolveDirect(coeffs, filter, output);
         return output;

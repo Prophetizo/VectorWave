@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.internal.VectorOps;
 import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
+import ai.prophetizo.wavelet.internal.VectorOpsARM;
 
 /**
  * Factory for creating optimal wavelet operation implementations.
@@ -25,8 +26,11 @@ public final class WaveletOpsFactory {
     private static final WaveletOps SCALAR_OPS = new ScalarWaveletOps();
     private static final WaveletOps VECTOR_OPS = new VectorWaveletOps();
     private static final WaveletOps OPTIMIZED_VECTOR_OPS = new OptimizedVectorWaveletOps();
-    // Flag to check if Vector API is available
+    private static final WaveletOps ARM_OPS = new ARMWaveletOps();
+    // Platform detection
     private static final boolean VECTOR_API_AVAILABLE = checkVectorApiAvailable();
+    private static final boolean IS_ARM_PLATFORM = VectorOpsARM.isARMPlatform();
+    private static final boolean IS_APPLE_SILICON = VectorOpsARM.isAppleSilicon();
 
     private WaveletOpsFactory() {
         // Factory class
@@ -42,6 +46,11 @@ public final class WaveletOpsFactory {
         if (config != null && config.isForceScalarOperations()) {
             return SCALAR_OPS;
         }
+        
+        // Use ARM-optimized operations on Apple Silicon
+        if (IS_APPLE_SILICON && VECTOR_API_AVAILABLE) {
+            return ARM_OPS;
+        }
 
         return VECTOR_API_AVAILABLE ? OPTIMIZED_VECTOR_OPS : SCALAR_OPS;
     }
@@ -52,6 +61,11 @@ public final class WaveletOpsFactory {
      * @return optimal implementation
      */
     public static WaveletOps createOptimal() {
+        // Use ARM-optimized operations on Apple Silicon
+        if (IS_APPLE_SILICON && VECTOR_API_AVAILABLE) {
+            return ARM_OPS;
+        }
+        
         return VECTOR_API_AVAILABLE ? OPTIMIZED_VECTOR_OPS : SCALAR_OPS;
     }
 
@@ -80,6 +94,9 @@ public final class WaveletOpsFactory {
         sb.append("  - Scalar: Always available\n");
         if (VECTOR_API_AVAILABLE) {
             sb.append("  - Vector: ").append(VectorOps.getVectorInfo()).append("\n");
+            if (IS_APPLE_SILICON) {
+                sb.append("  - ARM Optimized: Available for Apple Silicon\n");
+            }
         } else {
             sb.append("  - Vector: Not available (requires --add-modules jdk.incubator.vector)\n");
         }
@@ -213,6 +230,46 @@ public final class WaveletOpsFactory {
         @Override
         public String getImplementationType() {
             return "Optimized " + VectorOpsOptimized.getVectorInfo();
+        }
+    }
+    
+    /**
+     * ARM-optimized implementation of wavelet operations.
+     */
+    private static class ARMWaveletOps implements WaveletOps {
+        @Override
+        public double[] convolveAndDownsample(double[] signal, double[] filter,
+                                              int signalLength, int filterLength,
+                                              BoundaryMode mode) {
+            return switch (mode) {
+                case PERIODIC -> VectorOpsARM.convolveAndDownsampleARM(
+                        signal, filter, signalLength, filterLength);
+                case ZERO_PADDING -> VectorOps.convolveAndDownsampleZeroPadding(
+                        signal, filter, signalLength, filterLength);
+                default -> throw new UnsupportedOperationException(
+                        "Boundary mode " + mode + " is not yet implemented");
+            };
+        }
+
+        @Override
+        public double[] upsampleAndConvolve(double[] signal, double[] filter,
+                                            int signalLength, int filterLength,
+                                            BoundaryMode mode) {
+            // For now, fall back to regular vector ops for upsampling
+            // TODO: Implement ARM-specific upsampling
+            return switch (mode) {
+                case PERIODIC -> VectorOps.upsampleAndConvolvePeriodic(
+                        signal, filter, signalLength, filterLength);
+                case ZERO_PADDING -> VectorOps.upsampleAndConvolveZeroPadding(
+                        signal, filter, signalLength, filterLength);
+                default -> throw new UnsupportedOperationException(
+                        "Boundary mode " + mode + " is not yet implemented");
+            };
+        }
+
+        @Override
+        public String getImplementationType() {
+            return "ARM Optimized (Apple Silicon)";
         }
     }
 }

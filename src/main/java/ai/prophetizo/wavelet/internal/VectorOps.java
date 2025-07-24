@@ -33,9 +33,19 @@ public final class VectorOps {
     // Vector species for different data widths
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final int VECTOR_LENGTH = SPECIES.length();
+    
+    // Platform detection
+    private static final boolean IS_ARM = System.getProperty("os.arch").contains("aarch64") || 
+                                         System.getProperty("os.arch").contains("arm");
+    private static final boolean IS_APPLE_SILICON = IS_ARM && 
+                                                    System.getProperty("os.name").toLowerCase().contains("mac");
 
-    // Minimum signal length to use vectorization
-    private static final int MIN_VECTOR_LENGTH = VECTOR_LENGTH * 4;
+    // Minimum signal length to use vectorization - adjusted for platform
+    // ARM/Apple Silicon has smaller vectors (128-bit) so lower threshold
+    private static final int MIN_VECTOR_LENGTH = IS_ARM ? VECTOR_LENGTH * 2 : VECTOR_LENGTH * 4;
+    
+    // Cache line size for blocking optimizations
+    private static final int CACHE_LINE_SIZE = 64;
 
     private VectorOps() {
         // Utility class
@@ -43,8 +53,13 @@ public final class VectorOps {
 
     /**
      * Checks if Vector API is available and beneficial for the given signal length.
+     * Takes into account platform-specific characteristics.
      */
     public static boolean isVectorizedOperationBeneficial(int signalLength) {
+        // For Apple Silicon with 128-bit vectors, be more aggressive about using SIMD
+        if (IS_APPLE_SILICON && VECTOR_LENGTH == 2) {
+            return signalLength >= 8; // Just 4x vector length
+        }
         return signalLength >= MIN_VECTOR_LENGTH && VECTOR_LENGTH > 1;
     }
 
@@ -81,14 +96,16 @@ public final class VectorOps {
                 // Broadcast filter coefficient
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
 
-                // Load signal values (with proper indexing for downsampling)
-                double[] signalValues = new double[VECTOR_LENGTH];
+                // Load signal values directly using gather for better performance
+                // Create index array for gather operation
+                int[] indices = new int[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    int idx = (2 * (i + v) + k) & (signalLength - 1); // Periodic boundary
-                    signalValues[v] = signal[idx];
+                    indices[v] = (2 * (i + v) + k) & (signalLength - 1); // Periodic boundary
                 }
-
-                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
+                
+                // Use fromArray with computed indices - more efficient than temporary array
+                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, 
+                    indices, 0);
                 result = result.add(filterVec.mul(signalVec));
             }
 
@@ -131,14 +148,33 @@ public final class VectorOps {
             for (int k = 0; k < filterLength; k++) {
                 DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
 
-                // Load signal values with bounds checking
-                double[] signalValues = new double[VECTOR_LENGTH];
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    int idx = 2 * (i + v) + k;
-                    signalValues[v] = (idx < signalLength) ? signal[idx] : 0.0;
+                // More efficient approach: load contiguous data when possible
+                int baseIdx = 2 * i + k;
+                DoubleVector signalVec;
+                
+                if (baseIdx + 2 * VECTOR_LENGTH <= signalLength) {
+                    // Fast path: all indices are valid, load with stride
+                    if (VECTOR_LENGTH == 2) {
+                        // For ARM/Apple Silicon with 2-element vectors
+                        signalVec = DoubleVector.fromArray(SPECIES, 
+                            new double[]{signal[baseIdx], signal[baseIdx + 2]}, 0);
+                    } else {
+                        // General case - still need temp array but try to minimize overhead
+                        double[] temp = new double[VECTOR_LENGTH];
+                        for (int v = 0; v < VECTOR_LENGTH; v++) {
+                            temp[v] = signal[baseIdx + 2 * v];
+                        }
+                        signalVec = DoubleVector.fromArray(SPECIES, temp, 0);
+                    }
+                } else {
+                    // Slow path: need bounds checking
+                    double[] temp = new double[VECTOR_LENGTH];
+                    for (int v = 0; v < VECTOR_LENGTH; v++) {
+                        int idx = baseIdx + 2 * v;
+                        temp[v] = (idx < signalLength) ? signal[idx] : 0.0;
+                    }
+                    signalVec = DoubleVector.fromArray(SPECIES, temp, 0);
                 }
-
-                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalValues, 0);
                 result = result.add(filterVec.mul(signalVec));
             }
 
@@ -259,6 +295,14 @@ public final class VectorOps {
      */
     public static double[] upsampleAndConvolveZeroPadding(
             double[] coeffs, double[] filter, int coeffsLength, int filterLength) {
+        
+        // Null checks
+        if (coeffs == null) {
+            throw new IllegalArgumentException("Coefficients cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
 
         int outputLength = coeffsLength * 2;
         double[] output = new double[outputLength];
@@ -328,8 +372,11 @@ public final class VectorOps {
      * Get information about the Vector API implementation.
      */
     public static String getVectorInfo() {
-        return String.format("Vector API: Species=%s, Length=%d, Enabled=%b",
-                SPECIES, VECTOR_LENGTH, VECTOR_LENGTH > 1);
+        String platform = IS_APPLE_SILICON ? "Apple Silicon" : 
+                         IS_ARM ? "ARM" : 
+                         System.getProperty("os.arch");
+        return String.format("Vector API: Species=%s, Length=%d, Platform=%s, Enabled=%b",
+                SPECIES, VECTOR_LENGTH, platform, VECTOR_LENGTH > 1);
     }
 
     /**
