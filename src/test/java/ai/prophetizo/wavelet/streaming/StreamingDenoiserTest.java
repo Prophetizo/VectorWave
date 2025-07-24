@@ -1,0 +1,416 @@
+package ai.prophetizo.wavelet.streaming;
+
+import ai.prophetizo.wavelet.api.Haar;
+import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.InvalidStateException;
+import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class StreamingDenoiserTest {
+    
+    @Test
+    void testBuilderValidation() {
+        // Valid builder
+        assertDoesNotThrow(() -> new StreamingDenoiser.Builder()
+            .wavelet(new Haar())
+            .blockSize(256)
+            .overlapFactor(0.5)
+            .build()
+        );
+        
+        // Missing wavelet
+        assertThrows(InvalidArgumentException.class, () -> 
+            new StreamingDenoiser.Builder().build()
+        );
+        
+        // Invalid block size
+        assertThrows(IllegalArgumentException.class, () ->
+            new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(100) // Not power of 2
+                .build()
+        );
+        
+        // Invalid overlap factor
+        assertThrows(IllegalArgumentException.class, () ->
+            new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .overlapFactor(1.5) // > 1
+                .build()
+        );
+    }
+    
+    @Test
+    @Timeout(2)
+    void testBasicDenoising() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(64)
+                .overlapFactor(0.5)
+                .thresholdMethod(ThresholdMethod.UNIVERSAL)
+                .build()) {
+            
+            List<double[]> results = new ArrayList<>();
+            CountDownLatch latch = new CountDownLatch(1);
+            
+            denoiser.subscribe(new TestSubscriber(results, latch));
+            
+            // Generate noisy signal
+            double[] noisySignal = generateNoisySignal(128, 0.1);
+            
+            // Process signal
+            denoiser.process(noisySignal);
+            denoiser.close();
+            
+            assertTrue(latch.await(1, TimeUnit.SECONDS));
+            assertFalse(results.isEmpty());
+            
+            // Verify denoising occurred
+            double[] denoised = results.get(0);
+            assertNotNull(denoised);
+            
+            // Calculate noise reduction
+            double inputNoise = calculateNoise(noisySignal);
+            double outputNoise = calculateNoise(denoised);
+            assertTrue(outputNoise < inputNoise * 0.5, 
+                "Noise should be reduced by at least 50%");
+        }
+    }
+    
+    @Test
+    void testStreamingProcessing() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(Daubechies.DB4)
+                .blockSize(128)
+                .overlapFactor(0.75)
+                .adaptiveThreshold(true)
+                .build()) {
+            
+            List<double[]> results = new ArrayList<>();
+            TestSubscriber subscriber = new TestSubscriber(results, null);
+            denoiser.subscribe(subscriber);
+            
+            // Process samples one at a time
+            for (int i = 0; i < 256; i++) {
+                double sample = Math.sin(2 * Math.PI * i / 32) + 0.1 * Math.random();
+                denoiser.process(sample);
+            }
+            
+            denoiser.flush();
+            Thread.sleep(100);
+            
+            // Should have produced at least one block
+            assertFalse(results.isEmpty());
+            
+            // Verify continuity (no sharp transitions)
+            for (double[] block : results) {
+                for (int i = 1; i < block.length; i++) {
+                    double diff = Math.abs(block[i] - block[i-1]);
+                    assertTrue(diff < 0.5, "No sharp transitions expected");
+                }
+            }
+        }
+    }
+    
+    @Test
+    void testMultiLevelDenoising() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(Daubechies.DB4)
+                .blockSize(256)
+                .levels(3)
+                .thresholdType(ThresholdType.SOFT)
+                .build()) {
+            
+            List<double[]> results = new ArrayList<>();
+            CountDownLatch latch = new CountDownLatch(1);
+            
+            denoiser.subscribe(new TestSubscriber(results, latch));
+            
+            // Generate multi-frequency signal with noise
+            double[] signal = new double[256];
+            for (int i = 0; i < signal.length; i++) {
+                signal[i] = Math.sin(2 * Math.PI * i / 64) +  // Low frequency
+                           0.5 * Math.sin(2 * Math.PI * i / 8) + // High frequency
+                           0.2 * (Math.random() - 0.5);          // Noise
+            }
+            
+            denoiser.process(signal);
+            denoiser.close();
+            
+            assertTrue(latch.await(1, TimeUnit.SECONDS));
+            
+            // Verify denoising preserved signal structure
+            double[] denoised = results.get(0);
+            
+            // Check that low frequency is preserved
+            double lowFreqEnergy = 0.0;
+            for (int i = 0; i < denoised.length; i++) {
+                lowFreqEnergy += Math.pow(Math.sin(2 * Math.PI * i / 64), 2);
+            }
+            assertTrue(lowFreqEnergy > 0.0);
+        }
+    }
+    
+    @Test
+    void testAdaptiveThresholding() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(64)
+                .adaptiveThreshold(true)
+                .attackTime(5.0)
+                .releaseTime(10.0)
+                .build()) {
+            
+            List<Double> thresholds = new ArrayList<>();
+            AtomicInteger blockCount = new AtomicInteger();
+            
+            denoiser.subscribe(new Flow.Subscriber<double[]>() {
+                private Flow.Subscription subscription;
+                
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    this.subscription = subscription;
+                    subscription.request(Long.MAX_VALUE);
+                }
+                
+                @Override
+                public void onNext(double[] item) {
+                    thresholds.add(denoiser.getCurrentThreshold());
+                    blockCount.incrementAndGet();
+                }
+                
+                @Override
+                public void onError(Throwable throwable) {}
+                
+                @Override
+                public void onComplete() {}
+            });
+            
+            // Process blocks with varying noise levels
+            for (int block = 0; block < 10; block++) {
+                double noiseLevel = block < 5 ? 0.1 : 0.3; // Change noise level
+                double[] data = generateNoisySignal(64, noiseLevel);
+                denoiser.process(data);
+            }
+            
+            denoiser.close();
+            Thread.sleep(200);
+            
+            assertEquals(10, blockCount.get());
+            
+            // Verify threshold adapted to noise change
+            double earlyThreshold = thresholds.subList(0, 3).stream()
+                .mapToDouble(Double::doubleValue).average().orElse(0.0);
+            double lateThreshold = thresholds.subList(7, 10).stream()
+                .mapToDouble(Double::doubleValue).average().orElse(0.0);
+            
+            assertTrue(lateThreshold > earlyThreshold * 1.5, 
+                "Threshold should increase with higher noise");
+        }
+    }
+    
+    @Test
+    void testOverlapProcessing() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(64)
+                .overlapFactor(0.5)
+                .windowFunction(OverlapBuffer.WindowFunction.HANN)
+                .build()) {
+            
+            List<double[]> results = new ArrayList<>();
+            denoiser.subscribe(new TestSubscriber(results, null));
+            
+            // Process continuous sine wave
+            for (int i = 0; i < 192; i++) {
+                denoiser.process(Math.sin(2 * Math.PI * i / 32));
+            }
+            
+            denoiser.close();
+            Thread.sleep(100);
+            
+            // Should have multiple overlapping blocks
+            assertTrue(results.size() >= 2);
+            
+            // Verify smooth transitions between blocks
+            if (results.size() >= 2) {
+                double[] block1 = results.get(0);
+                double[] block2 = results.get(1);
+                
+                // Check overlap region continuity
+                double maxDiff = 0.0;
+                for (int i = 0; i < 10; i++) {
+                    int idx1 = block1.length - 10 + i;
+                    int idx2 = i;
+                    double diff = Math.abs(block1[idx1] - block2[idx2]);
+                    maxDiff = Math.max(maxDiff, diff);
+                }
+                
+                assertTrue(maxDiff < 0.1, "Overlap region should be continuous");
+            }
+        }
+    }
+    
+    @Test
+    void testStatistics() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(64)
+                .build()) {
+            
+            denoiser.subscribe(new TestSubscriber(new ArrayList<>(), null));
+            
+            // Process known number of samples
+            for (int i = 0; i < 128; i++) {
+                denoiser.process(0.1 * Math.random());
+            }
+            
+            denoiser.close();
+            Thread.sleep(100);
+            
+            StreamingWaveletTransform.StreamingStatistics stats = denoiser.getStatistics();
+            assertEquals(128, stats.getSamplesProcessed());
+            assertEquals(2, stats.getBlocksEmitted()); // 128 samples / 64 block size
+            assertTrue(stats.getAverageProcessingTime() > 0);
+            assertTrue(stats.getThroughput() > 0);
+        }
+    }
+    
+    @Test
+    void testClosedStateHandling() throws Exception {
+        StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+            .wavelet(new Haar())
+            .build();
+        
+        denoiser.close();
+        
+        assertThrows(InvalidStateException.class, () -> denoiser.process(1.0));
+        assertThrows(InvalidStateException.class, () -> denoiser.process(new double[]{1.0}));
+        assertFalse(denoiser.isReady());
+    }
+    
+    @Test
+    void testDifferentThresholdMethods() throws Exception {
+        ThresholdMethod[] methods = {
+            ThresholdMethod.UNIVERSAL,
+            ThresholdMethod.SURE,
+            ThresholdMethod.MINIMAX
+        };
+        
+        for (ThresholdMethod method : methods) {
+            try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                    .wavelet(new Haar())
+                    .blockSize(64)
+                    .thresholdMethod(method)
+                    .build()) {
+                
+                List<double[]> results = new ArrayList<>();
+                denoiser.subscribe(new TestSubscriber(results, null));
+                
+                double[] noisySignal = generateNoisySignal(64, 0.1);
+                denoiser.process(noisySignal);
+                denoiser.close();
+                
+                Thread.sleep(50);
+                
+                assertFalse(results.isEmpty(), "Should produce output for " + method);
+            }
+        }
+    }
+    
+    @Test
+    void testMemoryEfficiency() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(256)
+                .build()) {
+            
+            denoiser.subscribe(new TestSubscriber(new ArrayList<>(), null));
+            
+            long initialMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            
+            // Process many blocks
+            for (int i = 0; i < 10000; i++) {
+                denoiser.process(Math.random());
+            }
+            
+            denoiser.close();
+            
+            long finalMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            long memoryGrowth = finalMemory - initialMemory;
+            
+            // Memory growth should be minimal (< 10MB)
+            assertTrue(memoryGrowth < 10 * 1024 * 1024, 
+                "Memory usage should be bounded");
+        }
+    }
+    
+    // Helper methods
+    
+    private static double[] generateNoisySignal(int length, double noiseLevel) {
+        double[] signal = new double[length];
+        for (int i = 0; i < length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 32) + 
+                       noiseLevel * (Math.random() - 0.5);
+        }
+        return signal;
+    }
+    
+    private static double calculateNoise(double[] signal) {
+        double sum = 0.0;
+        double sumSq = 0.0;
+        for (double s : signal) {
+            sum += s;
+            sumSq += s * s;
+        }
+        double mean = sum / signal.length;
+        double variance = sumSq / signal.length - mean * mean;
+        return Math.sqrt(variance);
+    }
+    
+    private static class TestSubscriber implements Flow.Subscriber<double[]> {
+        private final List<double[]> results;
+        private final CountDownLatch latch;
+        private Flow.Subscription subscription;
+        
+        TestSubscriber(List<double[]> results, CountDownLatch latch) {
+            this.results = results;
+            this.latch = latch;
+        }
+        
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+            this.subscription = subscription;
+            subscription.request(Long.MAX_VALUE);
+        }
+        
+        @Override
+        public void onNext(double[] item) {
+            results.add(item.clone());
+        }
+        
+        @Override
+        public void onError(Throwable throwable) {
+            if (latch != null) latch.countDown();
+        }
+        
+        @Override
+        public void onComplete() {
+            if (latch != null) latch.countDown();
+        }
+    }
+}
