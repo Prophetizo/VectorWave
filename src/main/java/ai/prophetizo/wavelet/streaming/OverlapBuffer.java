@@ -38,9 +38,11 @@ public class OverlapBuffer {
     /**
      * Creates an overlap buffer with specified parameters.
      * 
-     * <p>Note: While the overlap buffer itself can work with any block size,
-     * if you're using this with wavelet transforms, the block size should be
-     * a power of 2 to satisfy wavelet transform requirements.</p>
+     * <p>The overlap buffer can work with any positive block size. However,
+     * when using this buffer with wavelet transforms (e.g., in StreamingDenoiser),
+     * the block size must be a power of 2 to satisfy wavelet transform requirements.
+     * The power-of-2 validation is enforced by the wavelet transform components,
+     * not by this buffer.</p>
      * 
      * @param blockSize size of each processing block (must be positive)
      * @param overlapFactor overlap factor (0.0 to 0.95)

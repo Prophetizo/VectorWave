@@ -206,4 +206,21 @@ public final class ValidationUtils {
                     "Next power of two would be 2^31, which cannot be represented as a positive int.");
         }
     }
+
+    /**
+     * Validates that a block size is a power of two, as required for wavelet transforms.
+     * This method provides a centralized validation with consistent error messaging
+     * for streaming wavelet components.
+     *
+     * @param blockSize the block size to validate
+     * @param componentName the name of the component for error messages (e.g., "StreamingDenoiser")
+     * @throws InvalidArgumentException if the block size is not a power of two
+     */
+    public static void validateBlockSizeForWavelet(int blockSize, String componentName) {
+        if (!isPowerOfTwo(blockSize)) {
+            throw new InvalidArgumentException(
+                String.format("%s requires block size to be a power of 2, got: %d", 
+                    componentName, blockSize));
+        }
+    }
 }

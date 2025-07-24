@@ -63,9 +63,7 @@ class StreamingWaveletTransformImpl extends SubmissionPublisher<TransformResult>
         if (boundaryMode == null) {
             throw new InvalidArgumentException("Boundary mode cannot be null");
         }
-        if (!ValidationUtils.isPowerOfTwo(blockSize)) {
-            throw new InvalidArgumentException("Block size must be a power of 2, got: " + blockSize);
-        }
+        ValidationUtils.validateBlockSizeForWavelet(blockSize, "StreamingWaveletTransform");
         if (blockSize < 16) {
             throw new InvalidArgumentException("Block size must be at least 16, got: " + blockSize);
         }

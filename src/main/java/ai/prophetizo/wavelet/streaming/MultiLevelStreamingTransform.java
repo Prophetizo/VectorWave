@@ -63,9 +63,7 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
         if (boundaryMode == null) {
             throw new InvalidArgumentException("Boundary mode cannot be null");
         }
-        if (!ValidationUtils.isPowerOfTwo(blockSize)) {
-            throw new InvalidArgumentException("Block size must be a power of 2");
-        }
+        ValidationUtils.validateBlockSizeForWavelet(blockSize, "MultiLevelStreamingTransform");
         if (levels < 1) {
             throw new InvalidArgumentException("Levels must be at least 1");
         }

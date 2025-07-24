@@ -38,7 +38,7 @@ class StreamingDenoiserTest {
         );
         
         // Invalid block size
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(InvalidArgumentException.class, () ->
             new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(100) // Not power of 2
@@ -473,7 +473,7 @@ class StreamingDenoiserTest {
                 .build();
                 
             fail("Should have thrown exception for invalid block size");
-        } catch (IllegalArgumentException expected) {
+        } catch (InvalidArgumentException expected) {
             // Expected exception
         }
         

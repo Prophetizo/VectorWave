@@ -152,9 +152,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         super();
         
         // Validate block size for wavelet transforms
-        if (!ValidationUtils.isPowerOfTwo(builder.blockSize)) {
-            throw new IllegalArgumentException("Block size must be a power of 2 for wavelet transforms");
-        }
+        ValidationUtils.validateBlockSizeForWavelet(builder.blockSize, "StreamingDenoiser");
         
         this.wavelet = builder.wavelet;
         this.boundaryMode = BoundaryMode.PERIODIC; // Default for streaming
@@ -249,8 +247,8 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             // Copy input to processing buffer
             System.arraycopy(inputBuffer, 0, processingBuffer, 0, blockSize);
             
-            // Work in-place on processing buffer to avoid extra allocation
-            double[] denoised = processingBuffer;
+            // Process the signal - transforms will allocate new arrays as needed
+            double[] denoised;
             
             if (levels == 1) {
                 // Transform
@@ -277,7 +275,6 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
                     denoisedDetail
                 );
                 
-                // Perform proper inverse transform
                 denoised = transform.inverse(denoisedResult);
             } else {
                 // For multi-level denoising, perform multi-level decomposition
