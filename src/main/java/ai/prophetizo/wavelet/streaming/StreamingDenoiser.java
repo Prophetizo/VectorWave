@@ -243,8 +243,8 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             // Copy input to processing buffer
             System.arraycopy(inputBuffer, 0, processingBuffer, 0, blockSize);
             
-            // Simple single-level denoising for now
-            double[] denoised = Arrays.copyOf(processingBuffer, blockSize);
+            // Work in-place on processing buffer to avoid extra allocation
+            double[] denoised = processingBuffer;
             
             if (levels == 1) {
                 // Transform

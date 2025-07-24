@@ -9,6 +9,11 @@ package ai.prophetizo.wavelet.streaming;
  * 
  * <p>Based on the paper "The P² Algorithm for Dynamic Calculation of
  * Quantiles and Histograms Without Storing Observations" by Jain & Chlamtac.</p>
+ * 
+ * <p><b>Thread Safety:</b> This class is NOT thread-safe. If multiple threads need to
+ * update the estimator concurrently, external synchronization is required. For best
+ * performance in multi-threaded scenarios, consider using separate instances per thread
+ * and combining results, or wrapping access with appropriate synchronization.</p>
  *
  * @since 1.6.0
  */
