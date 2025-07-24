@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.streaming;
 
+import ai.prophetizo.wavelet.util.ValidationUtils;
+
 /**
  * Manages overlapping buffers for smooth block transitions in streaming processing.
  * 
@@ -41,7 +43,7 @@ public class OverlapBuffer {
      * @param windowFunction window function for overlap regions
      */
     public OverlapBuffer(int blockSize, double overlapFactor, WindowFunction windowFunction) {
-        if (blockSize <= 0 || (blockSize & (blockSize - 1)) != 0) {
+        if (blockSize <= 0 || !ValidationUtils.isPowerOfTwo(blockSize)) {
             throw new IllegalArgumentException("Block size must be a positive power of 2");
         }
         if (overlapFactor < 0.0 || overlapFactor >= 1.0) {
