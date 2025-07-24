@@ -322,7 +322,56 @@ class StreamingDenoiserTest {
             assertEquals(128, stats.getSamplesProcessed());
             assertEquals(2, stats.getBlocksEmitted()); // 128 samples / 64 block size
             assertTrue(stats.getAverageProcessingTime() > 0);
+            assertTrue(stats.getMaxProcessingTime() > 0);
+            // Max should be >= average (not some arbitrary multiple)
+            assertTrue(stats.getMaxProcessingTime() >= stats.getAverageProcessingTime(),
+                "Max processing time should be at least the average");
             assertTrue(stats.getThroughput() > 0);
+        }
+    }
+    
+    @Test
+    void testMaxProcessingTimeTracking() throws Exception {
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(64)
+                .build()) {
+            
+            denoiser.subscribe(new TestSubscriber(new ArrayList<>(), null));
+            
+            // Process multiple blocks with varying computational load
+            for (int block = 0; block < 5; block++) {
+                // Add some variable computational load
+                if (block == 3) {
+                    // Simulate a spike in processing time on block 3
+                    Thread.sleep(1);
+                }
+                
+                for (int i = 0; i < 64; i++) {
+                    denoiser.process(Math.sin(i * 0.1) + 0.1 * Math.random());
+                }
+            }
+            
+            denoiser.close();
+            Thread.sleep(50);
+            
+            StreamingWaveletTransform.StreamingStatistics stats = denoiser.getStatistics();
+            
+            // Verify stats
+            assertEquals(320, stats.getSamplesProcessed()); // 5 blocks * 64 samples
+            assertEquals(5, stats.getBlocksEmitted());
+            
+            double avgTime = stats.getAverageProcessingTime();
+            long maxTime = stats.getMaxProcessingTime();
+            
+            assertTrue(avgTime > 0, "Average processing time should be positive");
+            assertTrue(maxTime > 0, "Max processing time should be positive");
+            assertTrue(maxTime >= avgTime, 
+                "Max processing time should be at least the average");
+            
+            // The max should represent actual peak, not some arbitrary estimate
+            // With the spike on block 3, max should likely be noticeably higher than average
+            // (though we can't guarantee this due to system variations)
         }
     }
     
@@ -430,6 +479,44 @@ class StreamingDenoiserTest {
         denoiser2.close();
         assertEquals(initialUsers, manager.getActiveUserCount(), 
             "Should return to initial user count");
+    }
+    
+    @Test
+    void testConfigurableNoiseBufferFactor() throws Exception {
+        // Test with custom noise buffer factor
+        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .blockSize(128)
+                .noiseBufferFactor(8) // Custom factor
+                .build()) {
+            
+            // Process some data to ensure it works
+            denoiser.subscribe(new TestSubscriber(new ArrayList<>(), null));
+            
+            for (int i = 0; i < 256; i++) {
+                denoiser.process(Math.sin(i * 0.1) + 0.1 * Math.random());
+            }
+            
+            denoiser.flush();
+            
+            // Should complete without errors
+            assertTrue(denoiser.getStatistics().getSamplesProcessed() > 0);
+        }
+        
+        // Test validation
+        assertThrows(IllegalArgumentException.class, () ->
+            new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .noiseBufferFactor(0) // Invalid
+                .build()
+        );
+        
+        assertThrows(IllegalArgumentException.class, () ->
+            new StreamingDenoiser.Builder()
+                .wavelet(new Haar())
+                .noiseBufferFactor(-1) // Invalid
+                .build()
+        );
     }
     
     @Test

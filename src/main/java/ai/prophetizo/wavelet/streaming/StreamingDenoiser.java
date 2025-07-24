@@ -43,6 +43,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class StreamingDenoiser extends SubmissionPublisher<double[]> 
         implements AutoCloseable {
     
+    /**
+     * Default factor for noise estimator buffer size relative to block size.
+     * The noise estimator needs a larger buffer to get accurate statistics.
+     */
+    private static final int DEFAULT_NOISE_BUFFER_FACTOR = 4;
+    
     // Configuration
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -84,6 +90,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         private double attackTime = 10.0;
         private double releaseTime = 50.0;
         private boolean useSharedMemoryPool = true;
+        private int noiseBufferFactor = DEFAULT_NOISE_BUFFER_FACTOR;
         
         public Builder wavelet(Wavelet wavelet) {
             this.wavelet = wavelet;
@@ -140,6 +147,21 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             return this;
         }
         
+        /**
+         * Sets the noise estimator buffer size factor.
+         * The noise estimator will use a buffer of size blockSize * factor.
+         * 
+         * @param factor multiplication factor for noise buffer size (must be positive)
+         * @return this builder
+         */
+        public Builder noiseBufferFactor(int factor) {
+            if (factor <= 0) {
+                throw new IllegalArgumentException("Noise buffer factor must be positive");
+            }
+            this.noiseBufferFactor = factor;
+            return this;
+        }
+        
         public StreamingDenoiser build() {
             if (wavelet == null) {
                 throw new InvalidArgumentException("Wavelet must be specified");
@@ -175,7 +197,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
                     .build();
             this.transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC, config);
             
-            this.noiseEstimator = new MADNoiseEstimator(blockSize * 4, 0.95);
+            this.noiseEstimator = new MADNoiseEstimator(blockSize * builder.noiseBufferFactor, 0.95);
             this.thresholdAdapter = new StreamingThresholdAdapter(
                 builder.attackTime, builder.releaseTime, 0.0, Double.MAX_VALUE);
             this.overlapBuffer = new OverlapBuffer(blockSize, builder.overlapFactor, builder.windowFunction);
@@ -428,6 +450,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         private final AtomicLong samplesProcessed = new AtomicLong();
         private final AtomicLong blocksEmitted = new AtomicLong();
         private final AtomicLong totalProcessingTime = new AtomicLong();
+        private final AtomicLong maxProcessingTime = new AtomicLong();
         private final AtomicLong overruns = new AtomicLong();
         
         void addSamples(int count) {
@@ -440,6 +463,14 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         
         void recordProcessingTime(long nanos) {
             totalProcessingTime.addAndGet(nanos);
+            // Update max processing time using atomic compare-and-set
+            long currentMax;
+            do {
+                currentMax = maxProcessingTime.get();
+                if (nanos <= currentMax) {
+                    break;
+                }
+            } while (!maxProcessingTime.compareAndSet(currentMax, nanos));
         }
         
         @Override
@@ -460,8 +491,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         
         @Override
         public long getMaxProcessingTime() {
-            // For simplicity, return average * 2 as estimate
-            return (long)(getAverageProcessingTime() * 2);
+            return maxProcessingTime.get();
         }
         
         @Override

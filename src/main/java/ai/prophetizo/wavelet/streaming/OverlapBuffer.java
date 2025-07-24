@@ -63,7 +63,8 @@ public class OverlapBuffer {
         
         this.previousBlock = new double[blockSize];
         this.currentBlock = new double[blockSize];
-        this.window = createWindow(blockSize, windowFunction);
+        // Only create window for overlap region, not entire block
+        this.window = createWindow(overlapSize, windowFunction);
         this.overlapRegion = new double[overlapSize];
         this.hasHistory = false;
     }
@@ -94,7 +95,8 @@ public class OverlapBuffer {
         
         // Handle overlap region with cross-fade
         for (int i = 0; i < overlapSize; i++) {
-            double fadeOut = window[blockSize - overlapSize + i];
+            // Window is now sized for overlap region only
+            double fadeOut = window[i];
             double fadeIn = 1.0 - fadeOut;
             output[i] = previousBlock[blockSize - overlapSize + i] * fadeOut + 
                        currentBlock[i] * fadeIn;

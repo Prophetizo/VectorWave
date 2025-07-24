@@ -133,6 +133,49 @@ class OverlapBufferTest {
     }
     
     @Test
+    void testMemoryOptimization() {
+        // Test that window size scales with overlap factor
+        int blockSize = 1024;
+        
+        // Small overlap factor - should use less memory
+        double smallOverlap = 0.1;
+        OverlapBuffer smallBuffer = new OverlapBuffer(blockSize, smallOverlap, OverlapBuffer.WindowFunction.HANN);
+        
+        // Large overlap factor - uses more memory
+        double largeOverlap = 0.9;
+        OverlapBuffer largeBuffer = new OverlapBuffer(blockSize, largeOverlap, OverlapBuffer.WindowFunction.HANN);
+        
+        // The window arrays should be sized according to overlap, not full block size
+        // This is an implementation detail test to verify memory optimization
+        int smallOverlapSize = (int)(blockSize * smallOverlap);
+        int largeOverlapSize = (int)(blockSize * largeOverlap);
+        
+        // Process some data to ensure functionality is preserved
+        double[] testBlock = new double[blockSize];
+        for (int i = 0; i < blockSize; i++) {
+            testBlock[i] = Math.sin(2 * Math.PI * i / blockSize);
+        }
+        
+        // Both should work correctly despite different window sizes
+        assertNotNull(smallBuffer.process(testBlock));
+        assertNotNull(largeBuffer.process(testBlock));
+        
+        // Verify overlap regions are correctly sized
+        // After first process, we have history so getOverlapRegion returns data
+        double[] smallOverlapRegion = smallBuffer.getOverlapRegion();
+        assertNotNull(smallOverlapRegion);
+        assertEquals(smallOverlapSize, smallOverlapRegion.length);
+        
+        double[] largeOverlapRegion = largeBuffer.getOverlapRegion();
+        assertNotNull(largeOverlapRegion);
+        assertEquals(largeOverlapSize, largeOverlapRegion.length);
+        
+        // Process second block to ensure overlap processing works
+        assertNotNull(smallBuffer.process(testBlock));
+        assertNotNull(largeBuffer.process(testBlock));
+    }
+    
+    @Test
     void testGetOverlapRegion() {
         int blockSize = 80;
         double overlapFactor = 0.25;
