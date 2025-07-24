@@ -218,12 +218,14 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
                 // Apply thresholding
                 double[] denoisedDetail = applyThreshold(result.detailCoeffs(), threshold);
                 
-                // Simple reconstruction: just use the denoised coefficients
-                // In a real implementation, we'd do proper inverse transform
-                System.arraycopy(result.approximationCoeffs(), 0, denoised, 0, 
-                    Math.min(result.approximationCoeffs().length, blockSize/2));
-                System.arraycopy(denoisedDetail, 0, denoised, blockSize/2, 
-                    Math.min(denoisedDetail.length, blockSize/2));
+                // Create a new TransformResult with denoised coefficients
+                TransformResult denoisedResult = TransformResult.create(
+                    result.approximationCoeffs(), 
+                    denoisedDetail
+                );
+                
+                // Perform proper inverse transform
+                denoised = transform.inverse(denoisedResult);
             } else {
                 // For multi-level, just do simple thresholding on the signal itself
                 double threshold = 0.1;  // Simple fixed threshold
@@ -246,22 +248,6 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
         }
     }
     
-    private double[] manualInverseTransform(double[] approx, double[] detail) {
-        // For now, just concatenate the coefficients
-        // A real implementation would use the inverse transform,
-        // but we're working around not being able to create TransformResult
-        double[] coeffs = new double[approx.length + detail.length];
-        System.arraycopy(approx, 0, coeffs, 0, approx.length);
-        System.arraycopy(detail, 0, coeffs, approx.length, detail.length);
-        
-        // Apply inverse transform
-        TransformResult tempResult = transform.forward(coeffs);
-        
-        // For denoising, we'll just return the input length portion
-        double[] result = new double[blockSize];
-        System.arraycopy(coeffs, 0, result, 0, Math.min(coeffs.length, blockSize));
-        return result;
-    }
     
     private double[] applyThreshold(double[] coefficients, double threshold) {
         if (VectorOps.isVectorizedOperationBeneficial(coefficients.length)) {
