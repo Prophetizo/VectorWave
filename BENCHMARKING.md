@@ -14,7 +14,10 @@ Run all benchmarks:
 - Java 21+
 - Maven 3.6+
 - Sufficient heap memory (4GB+ recommended)
-- For SIMD benchmarks: CPU with AVX2/AVX512 support
+- For SIMD benchmarks: 
+  - x86: CPU with AVX2/AVX512 support
+  - ARM: NEON support (standard on modern ARM)
+  - Apple Silicon: Automatic optimization for M-series chips
 - Vector API is automatically enabled via Maven configuration
 
 ## Available Benchmarks
@@ -32,7 +35,7 @@ Compares scalar vs SIMD-optimized operations across different signal sizes.
 - Boundary modes: PERIODIC, ZERO_PADDING
 - Measures: Performance difference between scalar and vector operations
 - Includes financial signal benchmarks
-- **Note**: Minimal SIMD overhead for small signals (<256 samples)
+- **Note**: Platform-adaptive thresholds - Apple Silicon benefits from SIMD with signals ≥ 8 elements
 
 ### 2. Signal Size Scaling
 
@@ -72,7 +75,20 @@ Measures the overhead of input validation.
 - Various validation scenarios
 - Measures validation overhead in nanoseconds
 
-### 5. Quick Performance Test
+### 5. Batch Validation Performance
+
+Measures batch validation efficiency.
+
+```bash
+./jmh-runner.sh BatchValidationBenchmark
+```
+
+**Parameters:**
+- Batch sizes: 10, 100, 1000 signals
+- Signal sizes: 256, 1024, 4096
+- Measures: Throughput of batch validation
+
+### 6. Quick Performance Test
 
 A lightweight benchmark for quick performance checks.
 
@@ -84,7 +100,7 @@ A lightweight benchmark for quick performance checks.
 - Limited iterations for fast results
 - Good for regression testing
 
-### 6. Vector Optimization Comparison
+### 7. Vector Optimization Comparison
 
 Compares original VectorOps vs optimized VectorOps implementations.
 
@@ -97,9 +113,8 @@ Compares original VectorOps vs optimized VectorOps implementations.
 - Filter lengths: 4, 8 (DB2 and DB4)
 - Measures: Performance of convolution, combined transforms, and Haar optimization
 - Uses 3 forks for statistical reliability
-- **Note**: Clean implementation with obsolete comments removed
 
-### 7. Real-Time Application Benchmarks
+### 8. Real-Time Application Benchmarks
 
 Measures performance for real-time use cases like audio processing and financial tick data.
 
@@ -113,7 +128,7 @@ Measures performance for real-time use cases like audio processing and financial
 - Scenarios: Audio processing, financial tick batches, sensor data filtering
 - Includes real-time denoising benchmarks
 
-### 8. Latency-Focused Benchmarks
+### 9. Latency-Focused Benchmarks
 
 Detailed latency analysis for real-time constraints.
 
@@ -129,7 +144,7 @@ Detailed latency analysis for real-time constraints.
 - **Recent Results**: Haar ~107 ns/op, DB2 ~193 ns/op, DB4 ~294 ns/op (64 samples)
 - **Thread Safety**: Fixed indexing collision with AtomicInteger
 
-### 9. Cache Prefetch Optimization Benchmarks
+### 10. Cache Prefetch Optimization Benchmarks
 
 Measures the impact of cache prefetching optimizations on large signal processing.
 
@@ -144,6 +159,46 @@ Measures the impact of cache prefetching optimizations on large signal processin
 - Measures: Impact of cache-friendly access patterns
 - Includes: Multi-level transform prefetch benefits
 - Baseline: Random access pattern to show cache miss impact
+
+### 11. Small Signal Optimization
+
+Focused benchmarks for very small signals common in real-time applications.
+
+```bash
+./jmh-runner.sh SmallSignalBenchmark
+```
+
+**Parameters:**
+- Signal sizes: 8, 16, 32, 64, 128 samples
+- Wavelets: Haar, DB2, DB4
+- Measures: Optimizations for small buffer processing
+- Platform-specific: Apple Silicon optimizations for 8-element signals
+
+### 12. Phase 4 Optimization Benchmarks
+
+Measures advanced optimization strategies.
+
+```bash
+./jmh-runner.sh Phase4OptimizationBenchmark
+```
+
+**Parameters:**
+- Various optimization techniques
+- Memory pooling efficiency
+- Cache-aware transformations
+
+### 13. General Optimization Benchmarks
+
+Comprehensive optimization comparison.
+
+```bash
+./jmh-runner.sh OptimizationBenchmark
+```
+
+**Parameters:**
+- Full optimization suite comparison
+- Scalar vs SIMD vs cache-aware
+- Memory allocation patterns
 
 ## JMH Parameters
 

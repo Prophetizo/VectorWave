@@ -117,7 +117,7 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 - Multi-scale volatility analysis
 - Financial time series analysis
 
-**Run**: `java -cp target/classes ai.prophetizo.demo.MultiLevelDemo`
+**Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.MultiLevelDemo`
 
 ### 8. DenoisingDemo
 
@@ -131,23 +131,9 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 - Financial data denoising
 - Performance benchmarks
 
-**Run**: `java -cp target/classes ai.prophetizo.demo.DenoisingDemo`
+**Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.DenoisingDemo`
 
-### 9. StreamingDemo
-
-**Purpose**: Real-time streaming transforms
-
-**What it covers**:
-
-- Block-based streaming
-- Sliding window analysis
-- Real-time audio simulation
-- Financial tick data streaming
-- Backpressure handling
-
-**Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDemo`
-
-### 10. ScalarVsVectorDemo
+### 9. ScalarVsVectorDemo
 
 **Purpose**: Understanding scalar vs SIMD/vector optimization paths
 
@@ -160,6 +146,20 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 - Configuration validation and best practices
 
 **Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.ScalarVsVectorDemo`
+
+### Additional Demos (Main Package)
+
+**FinancialOptimizationDemo** (`ai.prophetizo.FinancialOptimizationDemo`)
+- High-frequency trading signal analysis
+- Market microstructure noise filtering
+- Real-time volatility estimation
+- Optimized for financial time series
+
+**OptimizationDemo** (`ai.prophetizo.OptimizationDemo`)
+- Comprehensive optimization showcase
+- Platform-specific optimizations
+- Memory and performance tuning
+- Best practices for production use
 
 ## Demo Categories by Use Case
 
@@ -181,8 +181,8 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 ### Real-time Applications
 
-- StreamingDemo - Streaming transforms
 - MemoryEfficiencyDemo - Low-latency patterns
+- ScalarVsVectorDemo - SIMD optimization control
 
 ### Algorithm Selection
 
@@ -238,6 +238,8 @@ try {
 - Performance measurements may vary based on hardware
 - SIMD optimizations require Java 21+ with Vector API support
 - Some demos create temporary data for visualization
+- StreamingDemo is located in the test directory for testing streaming functionality
+- Platform-specific optimizations (Apple Silicon, ARM, x86) are automatically detected
 
 ## Further Reading
 
