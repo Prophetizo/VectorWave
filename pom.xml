@@ -124,6 +124,7 @@
                                 <rule>
                                     <element>CLASS</element>
                                     <excludes>
+                                        <!-- Demo and main classes (intentionally excluded) -->
                                         <exclude>**/Main</exclude>
                                         <exclude>**/*Benchmark</exclude>
                                         <exclude>**/*Demo</exclude>
@@ -131,16 +132,17 @@
                                         <exclude>ai.prophetizo.FinancialOptimizationDemo</exclude>
                                         <exclude>ai.prophetizo.OptimizationDemo</exclude>
                                         <exclude>ai.prophetizo.demo.**</exclude>
-                                        <exclude>ai.prophetizo.wavelet.streaming.**</exclude>
-                                        <exclude>ai.prophetizo.wavelet.memory.**</exclude>
-                                        <exclude>ai.prophetizo.wavelet.internal.VectorOps</exclude>
-                                        <exclude>ai.prophetizo.wavelet.WaveletOpsFactory**</exclude>
-                                        <exclude>ai.prophetizo.wavelet.exception.InvalidStateException</exclude>
-                                        <exclude>ai.prophetizo.wavelet.api.*</exclude>
-                                        <exclude>ai.prophetizo.wavelet.util.NullChecks</exclude>
-                                        <exclude>ai.prophetizo.wavelet.util.WaveletValidationUtils</exclude>
-                                        <exclude>ai.prophetizo.wavelet.ImmutableTransformResult</exclude>
-                                        <exclude>ai.prophetizo.wavelet.PaddedTransformResult</exclude>
+                                        
+                                        <!-- Abstract interfaces (minimal code to test) -->
+                                        <exclude>ai.prophetizo.wavelet.api.Wavelet</exclude>
+                                        <exclude>ai.prophetizo.wavelet.api.DiscreteWavelet</exclude>
+                                        <exclude>ai.prophetizo.wavelet.api.ContinuousWavelet</exclude>
+                                        <exclude>ai.prophetizo.wavelet.api.BiorthogonalWavelet</exclude>
+                                        
+                                        <!-- Inner classes (already excluded above, but be explicit) -->
+                                        <exclude>ai.prophetizo.wavelet.streaming.StreamingWaveletTransform</exclude>
+                                        <exclude>ai.prophetizo.wavelet.streaming.SlidingWindowTransform.WindowedTransformResult</exclude>
+                                        
                                     </excludes>
                                     <limits>
                                         <limit>
