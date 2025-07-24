@@ -19,6 +19,9 @@ package ai.prophetizo.wavelet.streaming;
  */
 public class P2QuantileEstimator {
     
+    // The P² algorithm uses 5 markers to estimate quantiles. These markers represent
+    // specific positions in the data distribution and are adjusted dynamically as new
+    // observations are added. This is a core parameter of the algorithm.
     private static final int MARKERS = 5;
     
     // Marker positions (indices)
