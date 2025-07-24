@@ -122,7 +122,8 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
             throw InvalidStateException.closed("Transform");
         }
 
-        inputBuffer[inputPosition++] = sample;
+        inputBuffer[inputPosition] = sample;
+        inputPosition++;
         statistics.addSamples(1);
 
         if (inputPosition >= blockSize) {

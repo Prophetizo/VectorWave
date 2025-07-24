@@ -302,6 +302,9 @@ class MultiLevelStreamingTransformTest {
             // Close to ensure all data is processed
             transform.close();
             
+            // Wait for async processing to complete
+            Thread.sleep(100);
+            
             // Should have processed some blocks
             assertTrue(results.size() >= 1);
             
