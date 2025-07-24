@@ -10,6 +10,20 @@ package ai.prophetizo.wavelet.streaming;
  * <p>Based on the paper "The P² Algorithm for Dynamic Calculation of
  * Quantiles and Histograms Without Storing Observations" by Jain & Chlamtac.</p>
  *
+ * <p><b>Algorithm Details:</b> The P² algorithm uses exactly 5 markers to maintain 
+ * its quantile estimate:</p>
+ * <ul>
+ *   <li>Marker 0: Minimum value seen so far</li>
+ *   <li>Marker 1: p/2 quantile estimate</li>
+ *   <li>Marker 2: p quantile estimate (the target quantile)</li>
+ *   <li>Marker 3: (1+p)/2 quantile estimate</li>
+ *   <li>Marker 4: Maximum value seen so far</li>
+ * </ul>
+ *
+ * <p>This arrangement enables the algorithm to track the full data range, maintain
+ * the target quantile estimate, and use parabolic interpolation between adjacent
+ * markers while achieving O(1) space and time complexity.</p>
+ *
  * <p><b>Thread Safety:</b> This class is NOT thread-safe. If multiple threads need to
  * update the estimator concurrently, external synchronization is required. For best
  * performance in multi-threaded scenarios, consider using separate instances per thread
@@ -20,27 +34,7 @@ package ai.prophetizo.wavelet.streaming;
 public class P2QuantileEstimator {
 
     /**
-     * Number of markers used in the P² algorithm.
-     *
-     * <p>The P² algorithm uses exactly 5 markers to maintain its quantile estimate:
-     * <ul>
-     *   <li>Marker 0: Minimum value seen so far</li>
-     *   <li>Marker 1: p/2 quantile estimate</li>
-     *   <li>Marker 2: p quantile estimate (the target quantile)</li>
-     *   <li>Marker 3: (1+p)/2 quantile estimate</li>
-     *   <li>Marker 4: Maximum value seen so far</li>
-     * </ul>
-     *
-     * <p>This specific arrangement of 5 markers enables the algorithm to:
-     * <ul>
-     *   <li>Track the full range of data (min/max)</li>
-     *   <li>Maintain the target quantile estimate</li>
-     *   <li>Use parabolic interpolation between adjacent markers</li>
-     *   <li>Achieve O(1) space and time complexity</li>
-     * </ul>
-     *
-     * <p>The number 5 is fundamental to the algorithm and cannot be changed
-     * without redesigning the entire approach.</p>
+     * Number of markers used in the P² algorithm (fixed at 5).
      */
     private static final int MARKERS = 5;
 

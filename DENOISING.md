@@ -299,7 +299,10 @@ marketDataFeed.subscribe(price -> {
    ```
 
 2. **Window Caching**:
-   - Windows are automatically cached
+   - Windows are automatically cached with LRU eviction
+   - Default cache size: 100 windows
+   - Configure via system property: `-Dai.prophetizo.wavelet.windowCacheSize=200`
+   - Monitor cache: `OverlapBuffer.getWindowCacheSize()`
    - Clear cache if memory constrained: `OverlapBuffer.clearWindowCache()`
 
 ### Performance Optimization

@@ -2,6 +2,8 @@ package ai.prophetizo.wavelet.streaming;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
+import java.util.Collections;
 
 /**
  * Manages overlapping buffers for smooth block transitions in streaming processing.
@@ -13,9 +15,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class OverlapBuffer {
 
-    // Cache for pre-computed windows to reduce allocation overhead
-    private static final Map<WindowKey, double[]> WINDOW_CACHE = new ConcurrentHashMap<>();
-    private static final int MAX_CACHE_SIZE = 100; // Limit cache size to prevent unbounded growth
+    // Default cache size - can be overridden via system property
+    private static final int DEFAULT_CACHE_SIZE = 100;
+    private static final int MAX_CACHE_SIZE = Integer.getInteger(
+            "ai.prophetizo.wavelet.windowCacheSize", DEFAULT_CACHE_SIZE);
+    
+    // Thread-safe LRU cache for pre-computed windows
+    private static final Map<WindowKey, double[]> WINDOW_CACHE = Collections.synchronizedMap(
+            new LinkedHashMap<WindowKey, double[]>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<WindowKey, double[]> eldest) {
+                    return size() > MAX_CACHE_SIZE;
+                }
+            });
 
     private final int blockSize;
     private final int overlapSize;
@@ -215,6 +227,7 @@ public class OverlapBuffer {
     /**
      * Gets a cached window or creates and caches a new one.
      * This reduces allocation overhead when creating many buffers with the same parameters.
+     * Uses LRU eviction when cache size exceeds the limit.
      */
     private static double[] getCachedWindow(int length, WindowFunction type) {
         WindowKey key = new WindowKey(length, type);
@@ -229,10 +242,8 @@ public class OverlapBuffer {
         // Create new window
         double[] newWindow = createWindow(length, type);
         
-        // Cache it if cache isn't too large
-        if (WINDOW_CACHE.size() < MAX_CACHE_SIZE) {
-            WINDOW_CACHE.put(key, newWindow.clone());
-        }
+        // Cache it - LRU eviction happens automatically if needed
+        WINDOW_CACHE.put(key, newWindow.clone());
         
         return newWindow;
     }
@@ -268,5 +279,23 @@ public class OverlapBuffer {
      */
     public static void clearWindowCache() {
         WINDOW_CACHE.clear();
+    }
+    
+    /**
+     * Gets the current window cache size.
+     * 
+     * @return number of cached windows
+     */
+    public static int getWindowCacheSize() {
+        return WINDOW_CACHE.size();
+    }
+    
+    /**
+     * Gets the maximum window cache size.
+     * 
+     * @return maximum cache size (configurable via system property)
+     */
+    public static int getMaxWindowCacheSize() {
+        return MAX_CACHE_SIZE;
     }
 }
