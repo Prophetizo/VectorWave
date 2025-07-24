@@ -43,6 +43,7 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
     private int inputPosition = 0;
+    private final Object processLock = new Object();
 
     /**
      * Creates a multi-level streaming transform.
@@ -111,8 +112,10 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
             throw InvalidStateException.closed("Transform");
         }
 
-        for (double sample : data) {
-            process(sample);
+        synchronized (processLock) {
+            for (double sample : data) {
+                processSingleSample(sample);
+            }
         }
     }
 
@@ -122,7 +125,14 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
             throw InvalidStateException.closed("Transform");
         }
 
-        inputBuffer[inputPosition++] = sample;
+        synchronized (processLock) {
+            processSingleSample(sample);
+        }
+    }
+    
+    private void processSingleSample(double sample) {
+        inputBuffer[inputPosition] = sample;
+        inputPosition++;
         statistics.addSamples(1);
 
         if (inputPosition >= blockSize) {
@@ -155,14 +165,16 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
 
     @Override
     public void flush() {
-        if (isClosed.get() || inputPosition == 0) {
-            return;
-        }
+        synchronized (processLock) {
+            if (isClosed.get() || inputPosition == 0) {
+                return;
+            }
 
-        // Pad remaining data with zeros
-        Arrays.fill(inputBuffer, inputPosition, blockSize, 0.0);
-        processBlock();
-        inputPosition = 0;
+            // Pad remaining data with zeros
+            Arrays.fill(inputBuffer, inputPosition, blockSize, 0.0);
+            processBlock();
+            inputPosition = 0;
+        }
     }
 
     @Override

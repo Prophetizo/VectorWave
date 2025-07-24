@@ -143,6 +143,12 @@
                                         <exclude>ai.prophetizo.wavelet.streaming.StreamingWaveletTransform</exclude>
                                         <exclude>ai.prophetizo.wavelet.streaming.SlidingWindowTransform.WindowedTransformResult</exclude>
                                         
+                                        <!-- GatherScatterOps - vector paths never executed since gather/scatter not universally supported -->
+                                        <exclude>ai.prophetizo.wavelet.internal.GatherScatterOps</exclude>
+                                        
+                                        <!-- Additional demo class -->
+                                        <exclude>ai.prophetizo.wavelet.demo.OptimizationDemo</exclude>
+                                        
                                     </excludes>
                                     <limits>
                                         <limit>

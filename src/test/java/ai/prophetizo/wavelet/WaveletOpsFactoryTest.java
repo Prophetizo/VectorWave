@@ -434,6 +434,66 @@ class WaveletOpsFactoryTest {
     }
     
     @Test
+    void testARMWaveletOps() throws Exception {
+        // Use reflection to test ARMWaveletOps directly
+        Class<?> armOpsClass = null;
+        try {
+            armOpsClass = Class.forName(
+                "ai.prophetizo.wavelet.WaveletOpsFactory$ARMWaveletOps");
+        } catch (ClassNotFoundException e) {
+            // Skip if ARM ops not available
+            return;
+        }
+        
+        Constructor<?> constructor = armOpsClass.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        WaveletOpsFactory.WaveletOps armOps = 
+            (WaveletOpsFactory.WaveletOps) constructor.newInstance();
+        
+        // Test getImplementationType
+        String implType = armOps.getImplementationType();
+        assertNotNull(implType);
+        assertTrue(implType.contains("ARM"));
+        
+        // Test operations
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        double[] filter = {0.5, 0.5};
+        
+        // Test PERIODIC mode
+        double[] result = armOps.convolveAndDownsample(
+            signal, filter, 8, 2, BoundaryMode.PERIODIC);
+        assertNotNull(result);
+        assertEquals(4, result.length);
+        
+        result = armOps.upsampleAndConvolve(
+            signal, filter, 8, 2, BoundaryMode.PERIODIC);
+        assertNotNull(result);
+        assertEquals(16, result.length);
+        
+        // Test ZERO_PADDING mode (falls back to VectorOps)
+        result = armOps.convolveAndDownsample(
+            signal, filter, 8, 2, BoundaryMode.ZERO_PADDING);
+        assertNotNull(result);
+        assertEquals(4, result.length);
+        
+        result = armOps.upsampleAndConvolve(
+            signal, filter, 8, 2, BoundaryMode.ZERO_PADDING);
+        assertNotNull(result);
+        assertEquals(16, result.length);
+        
+        // Test unsupported mode
+        assertThrows(UnsupportedOperationException.class, () ->
+            armOps.convolveAndDownsample(
+                signal, filter, 8, 2, BoundaryMode.SYMMETRIC)
+        );
+        
+        assertThrows(UnsupportedOperationException.class, () ->
+            armOps.upsampleAndConvolve(
+                signal, filter, 8, 2, BoundaryMode.SYMMETRIC)
+        );
+    }
+    
+    @Test
     void testFactorySelection() {
         // Test that factory makes appropriate selections
         String available = WaveletOpsFactory.getAvailableImplementations();

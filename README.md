@@ -11,16 +11,31 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 - **Type-Safe API**: Sealed interface hierarchy ensures compile-time wavelet validation
 - **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
-- **Boundary Modes**: Supports periodic and zero-padding boundary handling
-- **Performance**: Optimized for small signals (<1024 samples) with integrated performance enhancements for financial time series analysis
-- **SIMD/Vector API Support**: Optional hardware acceleration with configurable scalar/SIMD paths
+- **Flexible Padding Strategies**: 
+  - Periodic, Zero, Symmetric, and Reflect padding modes
+  - Strategy pattern for custom padding implementations
+- **Performance Optimizations**: 
+  - SIMD/Vector API support with platform-specific optimizations (x86, ARM, Apple Silicon)
+  - Cache-aware operations for improved memory access patterns
+  - Memory pooling (standard and SIMD-aligned) for reduced GC pressure
+  - Specialized kernels for common operations
+  - Minimum signal threshold: 8 elements for Apple Silicon, varies by platform
 - **Mathematical Verification**: Built-in coefficient verification for all wavelets with documented sources
-- **Advanced Features**:
+- **Advanced Signal Processing**:
+  - Wavelet denoising with multiple threshold methods (Universal, SURE, Minimax)
+  - Multi-level wavelet decomposition and reconstruction
+  - Level-dependent analysis and thresholding
+- **Streaming and Real-time Support**:
+  - Reactive streams using Java Flow API
+  - Sliding window transforms for continuous data
+  - Multi-level streaming transforms
+- **Parallel Processing**:
+  - Fork-join based parallel engine for batch processing
+  - Configurable parallelism with work-stealing
+- **Production-Ready Features**:
   - Custom exception hierarchy for precise error handling
-  - Memory pooling for reduced GC pressure
-  - Streaming/real-time transform support
-  - Multi-level wavelet decomposition
   - Thread-safe operations with atomic indexing
+  - Comprehensive validation framework
 
 ## Requirements
 
@@ -29,17 +44,27 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
 
 ### SIMD/Vector API Support
 
-VectorWave includes optional SIMD optimizations using Java's Vector API (incubator module). These optimizations are automatically enabled when available and provide performance improvements on compatible hardware.
+VectorWave includes advanced SIMD optimizations using Java's Vector API (incubator module) with multiple implementation variants:
+
+**Implementation Variants**:
+- **VectorOps**: Base SIMD implementation
+- **VectorOpsOptimized**: Enhanced version with additional optimizations
+- **VectorOpsARM**: ARM-specific optimizations for Apple Silicon
+- **VectorOpsPooled**: Memory-pooled variant for reduced allocation overhead
 
 **Configuration Options**:
-- **Auto-detection** (default): System automatically chooses optimal path
+- **Auto-detection** (default): System automatically chooses optimal path based on hardware
 - **Force Scalar**: Use `TransformConfig.forceScalar(true)` for debugging or compatibility
 - **Force SIMD**: Use `TransformConfig.forceSIMD(true)` for maximum performance
 
 **Performance Characteristics**:
-- Minimal overhead for small signals (<256 samples)
-- Performance benefits increase with signal size
+- Platform-adaptive thresholds:
+  - Apple Silicon (M-series): Benefits from vectors with signals ≥ 8 elements
+  - x86 (AVX2/AVX512): Benefits from vectors with signals ≥ 16-32 elements
+  - ARM (general): Benefits from vectors with signals ≥ 8 elements
+- 2-8x speedup on compatible hardware for larger signals
 - Thread-safe with atomic indexing to prevent collisions
+- Automatic fallback to scalar operations when beneficial
 
 **Note**: When building the project, you may see warnings about "using incubating module(s)". This is expected and does not affect functionality. The Vector API is an incubating feature that will be finalized in a future JDK release.
 
@@ -63,10 +88,15 @@ java -cp target/classes ai.prophetizo.Main
 java -cp target/classes ai.prophetizo.demo.BasicUsageDemo
 java -cp target/classes ai.prophetizo.demo.WaveletSelectionGuideDemo
 java -cp target/classes ai.prophetizo.demo.PerformanceOptimizationDemo
-java -cp target/classes ai.prophetizo.demo.ScalarVsVectorDemo
+java -cp target/classes ai.prophetizo.demo.BoundaryModesDemo
+java -cp target/classes ai.prophetizo.demo.SignalAnalysisDemo
+java -cp target/classes ai.prophetizo.demo.MemoryEfficiencyDemo
+java -cp target/classes ai.prophetizo.demo.FinancialOptimizationDemo
 
-# For demos requiring Vector API support
+# Demos requiring Vector API support
 java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.ScalarVsVectorDemo
+java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.DenoisingDemo
+java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.MultiLevelDemo
 ```
 
 See [Demo Suite Documentation](src/main/java/ai/prophetizo/demo/README.md) for the complete list of available demos.
@@ -103,6 +133,58 @@ TransformConfig config = TransformConfig.builder()
     .boundaryMode(BoundaryMode.PERIODIC)
     .build();
 transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, config);
+```
+
+### Advanced Usage
+
+#### Wavelet Denoising
+
+```java
+import ai.prophetizo.wavelet.denoising.*;
+
+WaveletDenoiser denoiser = new WaveletDenoiser(new Daubechies.DB4());
+double[] denoised = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
+
+// With custom threshold
+double[] denoised = denoiser.denoiseFixed(noisySignal, 0.5, ThresholdType.SOFT);
+```
+
+#### Multi-Level Decomposition
+
+```java
+import ai.prophetizo.wavelet.MultiLevelWaveletTransform;
+
+MultiLevelWaveletTransform mlTransform = new MultiLevelWaveletTransform(
+    new Daubechies.DB4(), 
+    BoundaryMode.PERIODIC
+);
+MultiLevelTransformResult mlResult = mlTransform.decompose(signal, 3); // 3 levels
+double[] reconstructed = mlTransform.reconstruct(mlResult);
+```
+
+#### Streaming Transforms
+
+```java
+import ai.prophetizo.wavelet.streaming.*;
+
+StreamingWaveletTransform streamTransform = new StreamingWaveletTransformImpl(
+    new Haar(), 
+    BoundaryMode.PERIODIC
+);
+// Process data as it arrives
+streamTransform.getInputPublisher().submit(dataChunk);
+```
+
+#### Parallel Batch Processing
+
+```java
+import ai.prophetizo.wavelet.concurrent.*;
+
+ParallelWaveletEngine engine = new ParallelWaveletEngine(
+    new Daubechies.DB4(), 
+    4 // number of threads
+);
+List<TransformResult> results = engine.transformBatch(signals);
 ```
 
 ### Wavelet Registry
@@ -180,28 +262,69 @@ Wavelet (sealed interface)
 - **Wavelet Interfaces**: Type-safe hierarchy for different wavelet families
 - **WaveletRegistry**: Central registry for wavelet discovery and creation
 - **TransformResult**: Immutable container for transform coefficients
-- **ScalarOps**: Core mathematical operations
+- **WaveletDenoiser**: Signal denoising with various threshold methods
+- **MultiLevelWaveletTransform**: Multi-level decomposition and reconstruction
+- **StreamingWaveletTransform**: Real-time streaming transforms
+- **ParallelWaveletEngine**: Parallel batch processing
+- **Memory Management**: MemoryPool and AlignedMemoryPool for efficient memory usage
+- **Operation Implementations**:
+  - **ScalarOps**: Core mathematical operations
+  - **VectorOps**: SIMD-optimized operations with platform variants
+  - **CacheAwareOps**: Cache-optimized operations
+  - **SpecializedKernels**: Optimized kernels for specific operations
 
 ### Package Structure
 
 ```
 ai.prophetizo.wavelet/
-├── api/                    # Public API interfaces
-│   ├── Wavelet            # Base wavelet interface
-│   ├── DiscreteWavelet    # Discrete wavelets base
-│   ├── OrthogonalWavelet  # Orthogonal wavelets
-│   ├── BiorthogonalWavelet# Biorthogonal wavelets
-│   ├── ContinuousWavelet  # Continuous wavelets
-│   ├── WaveletType        # Wavelet categorization
-│   ├── WaveletRegistry    # Wavelet discovery
-│   ├── BoundaryMode       # Boundary handling
+├── api/                     # Public API interfaces
+│   ├── Wavelet             # Base wavelet interface
+│   ├── DiscreteWavelet     # Discrete wavelets base
+│   ├── OrthogonalWavelet   # Orthogonal wavelets
+│   ├── BiorthogonalWavelet # Biorthogonal wavelets
+│   ├── ContinuousWavelet   # Continuous wavelets
+│   ├── WaveletType         # Wavelet categorization
+│   ├── WaveletRegistry     # Wavelet discovery
+│   ├── BoundaryMode        # Boundary handling
 │   └── [Wavelet implementations]
-├── internal/               # Internal implementation
-│   └── ScalarOps          # Core operations
-├── util/                   # Utilities
-│   ├── ValidationUtils    # Input validation
-│   └── BatchValidation    # Batch validation
-└── exception/             # Custom exceptions
+├── concurrent/              # Parallel processing
+│   └── ParallelWaveletEngine
+├── config/                  # Configuration
+│   └── TransformConfig     # Transform configuration
+├── denoising/               # Signal denoising
+│   ├── WaveletDenoiser     # Main denoising class
+│   ├── ThresholdMethod     # Threshold selection methods
+│   └── ThresholdType       # Soft/hard thresholding
+├── internal/                # Internal implementation
+│   ├── ScalarOps           # Core scalar operations
+│   ├── VectorOps           # SIMD operations (base)
+│   ├── VectorOpsOptimized  # Enhanced SIMD
+│   ├── VectorOpsARM        # ARM-specific SIMD
+│   ├── VectorOpsPooled     # Pooled SIMD
+│   ├── CacheAwareOps       # Cache-optimized ops
+│   ├── SpecializedKernels  # Optimized kernels
+│   ├── GatherScatterOps    # Gather/scatter ops
+│   ├── PrefetchOptimizer   # Prefetch optimization
+│   ├── SoATransform        # Structure of Arrays
+│   └── ArrayPool           # Array pooling
+├── memory/                  # Memory management
+│   ├── MemoryPool          # Basic memory pool
+│   └── AlignedMemoryPool   # SIMD-aligned pool
+├── padding/                 # Padding strategies
+│   ├── PaddingStrategy     # Strategy interface
+│   ├── PeriodicPaddingStrategy
+│   ├── ZeroPaddingStrategy
+│   ├── SymmetricPaddingStrategy
+│   └── ReflectPaddingStrategy
+├── streaming/               # Streaming support
+│   ├── StreamingWaveletTransform
+│   ├── StreamingWaveletTransformImpl
+│   ├── SlidingWindowTransform
+│   └── MultiLevelStreamingTransform
+├── util/                    # Utilities
+│   ├── ValidationUtils     # Input validation
+│   └── BatchValidation     # Batch validation
+└── exception/              # Custom exceptions
 ```
 
 ## Testing
@@ -236,9 +359,15 @@ The project includes GitHub Actions workflows for:
 
 ## Documentation
 
-- [BENCHMARKING.md](BENCHMARKING.md) - Detailed benchmarking guide
+- [BENCHMARKING.md](BENCHMARKING.md) - Detailed benchmarking guide and performance analysis
 - [ADDING_WAVELETS.md](ADDING_WAVELETS.md) - Guide for adding new wavelet types
 - [CLAUDE.md](CLAUDE.md) - Development guidelines for AI assistants
+- [WAVELET_PROPERTIES.md](WAVELET_PROPERTIES.md) - Mathematical properties and sources for all wavelets
+- [IMPROVEMENTS.md](IMPROVEMENTS.md) - Planned improvements and feature roadmap
+- [OPTIMIZATIONS.md](OPTIMIZATIONS.md) - Detailed optimization strategies
+- [PERFORMANCE_SUMMARY.md](PERFORMANCE_SUMMARY.md) - Performance benchmark results
+- [SIMD_OPTIMIZATION_ANALYSIS.md](SIMD_OPTIMIZATION_ANALYSIS.md) - SIMD optimization analysis
+- [STREAMING_FINANCIAL_ANALYSIS.md](STREAMING_FINANCIAL_ANALYSIS.md) - Streaming for financial data
 - JavaDoc - Run `mvn javadoc:javadoc` to generate API documentation
 
 ## Contributing
@@ -253,11 +382,6 @@ The project includes GitHub Actions workflows for:
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-## Documentation
-
-- [WAVELET_PROPERTIES.md](WAVELET_PROPERTIES.md) - Detailed mathematical properties and sources for all wavelets
-- [BENCHMARKING.md](BENCHMARKING.md) - Comprehensive benchmarking guide and performance tuning
-- [CLAUDE.md](CLAUDE.md) - Codebase guidance for AI assistants
 
 ## Acknowledgments
 
