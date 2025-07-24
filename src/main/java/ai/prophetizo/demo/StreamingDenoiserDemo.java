@@ -28,6 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class StreamingDenoiserDemo {
 
+    // Performance simulation constants
+    private static final double REALTIME_SPEED_MULTIPLIER = 0.25; // Process 4x faster than real-time
+    private static final double OVERLAP_FACTOR = 0.75; // 75% overlap
+    private static final double HOP_SIZE_FACTOR = 1.0 - OVERLAP_FACTOR; // 25% hop size
+
     public static void main(String[] args) throws Exception {
         System.out.println("==================================================");
         System.out.println("         VectorWave Streaming Denoiser Demo       ");
@@ -60,7 +65,7 @@ public class StreamingDenoiserDemo {
         try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
                 .blockSize(blockSize)
-                .overlapFactor(0.75)
+                .overlapFactor(OVERLAP_FACTOR)
                 .levels(2)
                 .thresholdMethod(ThresholdMethod.UNIVERSAL)
                 .thresholdType(ThresholdType.SOFT)
@@ -73,7 +78,7 @@ public class StreamingDenoiserDemo {
             System.out.print("Configuration:\n");
             System.out.printf("  Sample rate: %d Hz\n", sampleRate);
             System.out.printf("  Block size: %d samples (%.1f ms)\n", blockSize, blockDuration);
-            System.out.printf("  Overlap: 75%% (%.1f ms hop)\n", blockDuration * 0.25);
+            System.out.printf("  Overlap: %.0f%% (%.1f ms hop)\n", OVERLAP_FACTOR * 100, blockDuration * HOP_SIZE_FACTOR);
             System.out.print("  Wavelet: Daubechies DB4\n");
             System.out.print("  Levels: 2\n\n");
 
@@ -130,7 +135,7 @@ public class StreamingDenoiserDemo {
                 denoiser.process(audioBlock);
 
                 // Simulate real-time constraint
-                Thread.sleep((long) (blockDuration * 0.25)); // Process 4x real-time
+                Thread.sleep((long) (blockDuration * REALTIME_SPEED_MULTIPLIER));
             }
 
             long endTime = System.nanoTime();

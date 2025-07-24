@@ -78,6 +78,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         // Validate block size for wavelet transforms
         ValidationUtils.validateBlockSizeForWavelet(builder.blockSize, "StreamingDenoiser");
 
+        // Initialize configuration fields
         this.wavelet = builder.wavelet;
         this.boundaryMode = BoundaryMode.PERIODIC; // Default for streaming
         this.blockSize = builder.blockSize;
@@ -85,62 +86,90 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         this.thresholdMethod = builder.thresholdMethod;
         this.thresholdType = builder.thresholdType;
         this.adaptiveThreshold = builder.adaptiveThreshold;
+        this.inputPosition = 0;
 
-        // IMPORTANT: processingBuffer is explicitly set to null here and assigned later
-        // in the try block. This ensures that if construction fails after memory allocation,
-        // the catch block can correctly identify whether cleanup is needed based on whether
-        // processingBuffer is still null (allocation failed) or has been assigned (allocation succeeded).
-        this.processingBuffer = null;
+        // Initialize resources using helper method
+        ResourceBundle resources = initializeResources(builder);
+        
+        // Assign successfully initialized resources
+        this.transform = resources.transform;
+        this.noiseEstimator = resources.noiseEstimator;
+        this.thresholdAdapter = resources.thresholdAdapter;
+        this.overlapBuffer = resources.overlapBuffer;
+        this.inputBuffer = resources.inputBuffer;
+        this.processingBuffer = resources.processingBuffer;
+        this.memoryPool = resources.memoryPool;
+        this.usingSharedPool = resources.usingSharedPool;
+    }
 
-        MemoryPool tempPool = null;
-        boolean tempUsingSharedPool = false;
-        double[] tempBuffer = null;
+    /**
+     * Helper class to bundle resources during initialization.
+     */
+    private static class ResourceBundle {
+        WaveletTransform transform;
+        NoiseEstimator noiseEstimator;
+        StreamingThresholdAdapter thresholdAdapter;
+        OverlapBuffer overlapBuffer;
+        double[] inputBuffer;
+        double[] processingBuffer;
+        MemoryPool memoryPool;
+        boolean usingSharedPool;
+    }
+
+    /**
+     * Initializes all resources required by the StreamingDenoiser.
+     * This method handles resource allocation with proper cleanup on failure.
+     * 
+     * @param builder the configuration builder
+     * @return bundle of initialized resources
+     * @throws RuntimeException if initialization fails
+     */
+    private static ResourceBundle initializeResources(Builder builder) {
+        ResourceBundle resources = new ResourceBundle();
+        boolean sharedPoolAcquired = false;
 
         try {
-            // Create components
+            // Create transform components
             TransformConfig config = TransformConfig.builder()
                     .boundaryMode(BoundaryMode.PERIODIC)
                     .build();
-            this.transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC, config);
+            resources.transform = new WaveletTransform(builder.wavelet, BoundaryMode.PERIODIC, config);
 
-            this.noiseEstimator = new MADNoiseEstimator(blockSize * builder.noiseBufferFactor, 0.95);
-            this.thresholdAdapter = new StreamingThresholdAdapter(
+            // Create processing components
+            resources.noiseEstimator = new MADNoiseEstimator(
+                    builder.blockSize * builder.noiseBufferFactor, 0.95);
+            resources.thresholdAdapter = new StreamingThresholdAdapter(
                     builder.attackTime, builder.releaseTime, 0.0, Double.MAX_VALUE);
-            this.overlapBuffer = new OverlapBuffer(blockSize, builder.overlapFactor, builder.windowFunction);
+            resources.overlapBuffer = new OverlapBuffer(
+                    builder.blockSize, builder.overlapFactor, builder.windowFunction);
 
-            // Use shared or dedicated memory pool based on configuration
+            // Setup memory pool
             if (builder.useSharedMemoryPool) {
-                tempPool = SharedMemoryPoolManager.getInstance().getSharedPool();
-                tempUsingSharedPool = true;
+                resources.memoryPool = SharedMemoryPoolManager.getInstance().getSharedPool();
+                resources.usingSharedPool = true;
+                sharedPoolAcquired = true;
             } else {
-                tempPool = new MemoryPool();
-                tempUsingSharedPool = false;
+                resources.memoryPool = new MemoryPool();
+                resources.usingSharedPool = false;
             }
 
             // Allocate buffers
-            this.inputBuffer = new double[blockSize];
+            resources.inputBuffer = new double[builder.blockSize];
+            resources.processingBuffer = resources.memoryPool.borrowArray(builder.blockSize);
 
-            // Borrow processing buffer - this is the risky operation
-            tempBuffer = tempPool.borrowArray(blockSize);
-
-            // Only assign fields after all allocations succeed
-            this.memoryPool = tempPool;
-            this.usingSharedPool = tempUsingSharedPool;
-            this.processingBuffer = tempBuffer;
-            this.inputPosition = 0;
+            return resources;
 
         } catch (Exception e) {
-            // Clean up any borrowed resources
-            if (tempBuffer != null && tempPool != null) {
-                tempPool.returnArray(tempBuffer);
+            // Clean up any allocated resources
+            if (resources.processingBuffer != null && resources.memoryPool != null) {
+                resources.memoryPool.returnArray(resources.processingBuffer);
             }
 
-            // Release shared pool if we acquired it
-            if (tempUsingSharedPool) {
+            if (sharedPoolAcquired) {
                 SharedMemoryPoolManager.getInstance().releaseUser();
             }
 
-            throw e;
+            throw new RuntimeException("Failed to initialize StreamingDenoiser resources", e);
         }
     }
 

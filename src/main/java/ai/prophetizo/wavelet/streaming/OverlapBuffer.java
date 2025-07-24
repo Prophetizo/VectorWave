@@ -20,9 +20,13 @@ public class OverlapBuffer {
     private static final int MAX_CACHE_SIZE = Integer.getInteger(
             "ai.prophetizo.wavelet.windowCacheSize", DEFAULT_CACHE_SIZE);
     
+    // LinkedHashMap configuration constants
+    private static final int INITIAL_CAPACITY = 16;
+    private static final float LOAD_FACTOR = 0.75f;
+    
     // Thread-safe LRU cache for pre-computed windows
     private static final Map<WindowKey, double[]> WINDOW_CACHE = Collections.synchronizedMap(
-            new LinkedHashMap<WindowKey, double[]>(16, 0.75f, true) {
+            new LinkedHashMap<WindowKey, double[]>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<WindowKey, double[]> eldest) {
                     return size() > MAX_CACHE_SIZE;

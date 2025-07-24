@@ -8,11 +8,29 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StreamingMADNoiseEstimatorTest {
     
+    // Test data sizes
+    private static final int LARGE_DATA_SIZE = 1000;
+    private static final int SMALL_DATA_SIZE = 100;
+    
+    // Noise parameters
+    private static final double NOISE_MEAN = 0.0;
+    private static final double NOISE_STD_LOW = 0.1;
+    private static final double NOISE_STD_HIGH = 0.15;
+    
+    // Test parameters
+    private static final int PERFORMANCE_ITERATIONS = 100;
+    private static final int WARMUP_ITERATIONS = 50;
+    private static final double DECAY_FACTOR = 0.9;
+    
+    // Outlier parameters
+    private static final int OUTLIER_START_INDEX = 90;
+    private static final double OUTLIER_VALUE = 10.0;
+    
     private StreamingMADNoiseEstimator estimator;
     
     @BeforeEach
     void setUp() {
-        estimator = new StreamingMADNoiseEstimator(0.9);
+        estimator = new StreamingMADNoiseEstimator(DECAY_FACTOR);
     }
     
     @Test
@@ -26,7 +44,7 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testNoiseEstimation() {
         // Generate Gaussian noise
-        double[] noise = generateGaussianNoise(1000, 0.0, 0.1);
+        double[] noise = generateGaussianNoise(LARGE_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
         
         double estimate = estimator.estimateNoise(noise);
         
@@ -41,10 +59,10 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testStreamingUpdates() {
         // Process data in small chunks to test streaming behavior
-        double targetStd = 0.15;
+        double targetStd = NOISE_STD_HIGH;
         
         for (int i = 0; i < 20; i++) {
-            double[] batch = generateGaussianNoise(50, 0.0, targetStd);
+            double[] batch = generateGaussianNoise(SMALL_DATA_SIZE / 2, NOISE_MEAN, targetStd);
             estimator.updateEstimate(batch);
         }
         
@@ -59,7 +77,7 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testThresholdCalculation() {
         // Set known noise level
-        double[] noise = generateGaussianNoise(100, 0.0, 0.1);
+        double[] noise = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
         estimator.estimateNoise(noise);
         
         // Test different threshold methods
@@ -79,7 +97,7 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testReset() {
         // Add data
-        double[] noise = generateGaussianNoise(100, 0.0, 0.1);
+        double[] noise = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
         estimator.estimateNoise(noise);
         
         assertTrue(estimator.getCurrentNoiseLevel() > 0);
@@ -104,13 +122,13 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testRobustnessToOutliers() {
         // Generate noise with outliers
-        double[] noise = generateGaussianNoise(90, 0.0, 0.1);
+        double[] noise = generateGaussianNoise(OUTLIER_START_INDEX, NOISE_MEAN, NOISE_STD_LOW);
         
         // Add outliers
-        double[] withOutliers = new double[100];
-        System.arraycopy(noise, 0, withOutliers, 0, 90);
-        for (int i = 90; i < 100; i++) {
-            withOutliers[i] = (i % 2 == 0) ? 5.0 : -5.0; // Large outliers
+        double[] withOutliers = new double[SMALL_DATA_SIZE];
+        System.arraycopy(noise, 0, withOutliers, 0, OUTLIER_START_INDEX);
+        for (int i = OUTLIER_START_INDEX; i < SMALL_DATA_SIZE; i++) {
+            withOutliers[i] = (i % 2 == 0) ? OUTLIER_VALUE / 2 : -OUTLIER_VALUE / 2; // Large outliers
         }
         
         double estimate = estimator.estimateNoise(withOutliers);
@@ -123,11 +141,11 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testComparisonWithBufferedVersion() {
         // Compare with original MADNoiseEstimator for same data
-        MADNoiseEstimator bufferedEstimator = new MADNoiseEstimator(1000, 0.9);
-        StreamingMADNoiseEstimator streamingEstimator = new StreamingMADNoiseEstimator(0.9);
+        MADNoiseEstimator bufferedEstimator = new MADNoiseEstimator(LARGE_DATA_SIZE, DECAY_FACTOR);
+        StreamingMADNoiseEstimator streamingEstimator = new StreamingMADNoiseEstimator(DECAY_FACTOR);
         
         // Generate test data
-        double[] testData = generateGaussianNoise(1000, 0.0, 0.1);
+        double[] testData = generateGaussianNoise(LARGE_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
         
         // Process same data
         bufferedEstimator.estimateNoise(testData);
@@ -146,14 +164,14 @@ class StreamingMADNoiseEstimatorTest {
     @Test
     void testPerformance() {
         // This test demonstrates the performance advantage
-        int iterations = 100;
-        int dataSize = 1000;
+        int iterations = PERFORMANCE_ITERATIONS;
+        int dataSize = LARGE_DATA_SIZE;
         
         // Warmup phase to ensure JIT compilation
         StreamingMADNoiseEstimator warmupStreaming = new StreamingMADNoiseEstimator();
-        MADNoiseEstimator warmupBuffered = new MADNoiseEstimator(dataSize, 0.9);
-        for (int i = 0; i < 50; i++) {
-            double[] data = generateGaussianNoise(dataSize, 0.0, 0.1);
+        MADNoiseEstimator warmupBuffered = new MADNoiseEstimator(dataSize, DECAY_FACTOR);
+        for (int i = 0; i < WARMUP_ITERATIONS; i++) {
+            double[] data = generateGaussianNoise(dataSize, NOISE_MEAN, NOISE_STD_LOW);
             warmupStreaming.updateEstimate(data);
             warmupBuffered.updateEstimate(data);
         }
@@ -164,16 +182,16 @@ class StreamingMADNoiseEstimatorTest {
         // Time streaming version
         long streamingStart = System.nanoTime();
         for (int i = 0; i < iterations; i++) {
-            double[] data = generateGaussianNoise(dataSize, 0.0, 0.1);
+            double[] data = generateGaussianNoise(dataSize, NOISE_MEAN, NOISE_STD_LOW);
             estimator.updateEstimate(data);
         }
         long streamingTime = System.nanoTime() - streamingStart;
         
         // Time buffered version
-        MADNoiseEstimator buffered = new MADNoiseEstimator(dataSize, 0.9);
+        MADNoiseEstimator buffered = new MADNoiseEstimator(dataSize, DECAY_FACTOR);
         long bufferedStart = System.nanoTime();
         for (int i = 0; i < iterations; i++) {
-            double[] data = generateGaussianNoise(dataSize, 0.0, 0.1);
+            double[] data = generateGaussianNoise(dataSize, NOISE_MEAN, NOISE_STD_LOW);
             buffered.updateEstimate(data);
         }
         long bufferedTime = System.nanoTime() - bufferedStart;

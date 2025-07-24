@@ -123,6 +123,8 @@ public class P2QuantileEstimator {
         count++;
 
         // Find cell k such that q[k] <= x < q[k+1]
+        // Note: With only 5 markers, linear search is optimal. Binary search would
+        // add complexity without meaningful performance benefit for such a small array.
         int k;
         if (x < q[0]) {
             q[0] = x;
