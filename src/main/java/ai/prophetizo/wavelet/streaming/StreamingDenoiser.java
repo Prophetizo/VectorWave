@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.streaming;
 
+import ai.prophetizo.wavelet.MultiLevelTransformResult;
+import ai.prophetizo.wavelet.MultiLevelWaveletTransform;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
@@ -42,6 +44,7 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
     
     // Configuration
     private final Wavelet wavelet;
+    private final BoundaryMode boundaryMode;
     private final int blockSize;
     private final int levels;
     private final ThresholdMethod thresholdMethod;
@@ -141,6 +144,7 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
         super();
         
         this.wavelet = builder.wavelet;
+        this.boundaryMode = BoundaryMode.PERIODIC; // Default for streaming
         this.blockSize = builder.blockSize;
         this.levels = builder.levels;
         this.thresholdMethod = builder.thresholdMethod;
@@ -227,9 +231,44 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
                 // Perform proper inverse transform
                 denoised = transform.inverse(denoisedResult);
             } else {
-                // For multi-level, just do simple thresholding on the signal itself
-                double threshold = 0.1;  // Simple fixed threshold
-                denoised = applyThreshold(processingBuffer, threshold);
+                // For multi-level denoising, perform multi-level decomposition
+                MultiLevelWaveletTransform multiTransform = new MultiLevelWaveletTransform(
+                    wavelet, boundaryMode, TransformConfig.builder().build());
+                
+                // Perform multi-level decomposition
+                MultiLevelTransformResult multiResult = multiTransform.decompose(processingBuffer, levels);
+                
+                // Update noise estimate from finest detail level
+                noiseEstimator.updateEstimate(multiResult.detailsAtLevel(1));
+                
+                // Calculate threshold
+                double threshold = noiseEstimator.getThreshold(thresholdMethod);
+                
+                // Adapt threshold if enabled
+                if (adaptiveThreshold) {
+                    thresholdAdapter.setTargetThreshold(threshold);
+                    threshold = thresholdAdapter.adaptThreshold();
+                }
+                
+                // Reconstruct level by level with thresholding
+                double[] current = multiResult.finalApproximation();
+                
+                // Reconstruct from coarsest to finest level
+                for (int level = levels; level >= 1; level--) {
+                    double[] details = multiResult.detailsAtLevel(level);
+                    
+                    // Apply level-dependent threshold scaling (finer levels get higher threshold)
+                    double levelThreshold = threshold * Math.pow(1.2, level - 1);
+                    double[] denoisedDetails = applyThreshold(details, levelThreshold);
+                    
+                    // Create single-level result
+                    TransformResult levelResult = TransformResult.create(current, denoisedDetails);
+                    
+                    // Apply inverse transform
+                    current = transform.inverse(levelResult);
+                }
+                
+                denoised = current;
             }
             
             // Apply overlap processing
@@ -287,7 +326,8 @@ public class StreamingDenoiser extends SubmissionPublisher<double[]>
         if (isClosed.compareAndSet(false, true)) {
             flush();
             memoryPool.returnArray(processingBuffer);
-            // MemoryPool doesn't have close method
+            // Clear all pooled arrays to release memory
+            memoryPool.clear();
             super.close();
         }
     }
