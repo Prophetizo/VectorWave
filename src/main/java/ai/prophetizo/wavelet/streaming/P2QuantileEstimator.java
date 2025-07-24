@@ -125,6 +125,9 @@ public class P2QuantileEstimator {
             return;
         }
 
+        // Increment count early to maintain consistent state
+        count++;
+
         // Find cell k such that q[k] <= x < q[k+1]
         int k;
         if (x < q[0]) {
@@ -173,8 +176,6 @@ public class P2QuantileEstimator {
                 n[i] += dInt;
             }
         }
-
-        count++;
     }
 
     /**

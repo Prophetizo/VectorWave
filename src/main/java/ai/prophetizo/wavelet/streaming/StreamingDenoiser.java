@@ -91,6 +91,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
 
         MemoryPool tempPool = null;
         boolean tempUsingSharedPool = false;
+        double[] tempBuffer = null;
 
         try {
             // Create components
@@ -117,7 +118,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             this.inputBuffer = new double[blockSize];
 
             // Borrow processing buffer - this is the risky operation
-            double[] tempBuffer = tempPool.borrowArray(blockSize);
+            tempBuffer = tempPool.borrowArray(blockSize);
 
             // Only assign fields after all allocations succeed
             this.memoryPool = tempPool;
@@ -127,8 +128,8 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
 
         } catch (Exception e) {
             // Clean up any borrowed resources
-            if (this.processingBuffer != null && tempPool != null) {
-                tempPool.returnArray(this.processingBuffer);
+            if (tempBuffer != null && tempPool != null) {
+                tempPool.returnArray(tempBuffer);
             }
 
             // Release shared pool if we acquired it
@@ -376,6 +377,9 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         }
 
         public Builder overlapFactor(double overlapFactor) {
+            if (overlapFactor < 0.0 || overlapFactor >= 1.0) {
+                throw new IllegalArgumentException("Overlap factor must be in [0, 1)");
+            }
             this.overlapFactor = overlapFactor;
             return this;
         }

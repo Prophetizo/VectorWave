@@ -1,5 +1,8 @@
 package ai.prophetizo.wavelet.streaming;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Manages overlapping buffers for smooth block transitions in streaming processing.
  *
@@ -9,6 +12,10 @@ package ai.prophetizo.wavelet.streaming;
  * @since 1.6.0
  */
 public class OverlapBuffer {
+
+    // Cache for pre-computed windows to reduce allocation overhead
+    private static final Map<WindowKey, double[]> WINDOW_CACHE = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_SIZE = 100; // Limit cache size to prevent unbounded growth
 
     private final int blockSize;
     private final int overlapSize;
@@ -51,8 +58,8 @@ public class OverlapBuffer {
 
         this.previousBlock = new double[blockSize];
         this.currentBlock = new double[blockSize];
-        // Only create window for overlap region, not entire block
-        this.window = createWindow(overlapSize, windowFunction);
+        // Use cached window if available, otherwise create and cache it
+        this.window = getCachedWindow(overlapSize, windowFunction);
         this.overlapRegion = new double[overlapSize];
         this.hasHistory = false;
     }
@@ -203,5 +210,63 @@ public class OverlapBuffer {
         HANN,
         TUKEY,
         HAMMING
+    }
+
+    /**
+     * Gets a cached window or creates and caches a new one.
+     * This reduces allocation overhead when creating many buffers with the same parameters.
+     */
+    private static double[] getCachedWindow(int length, WindowFunction type) {
+        WindowKey key = new WindowKey(length, type);
+        
+        // Check cache first
+        double[] cachedWindow = WINDOW_CACHE.get(key);
+        if (cachedWindow != null) {
+            // Return a copy to prevent external modification
+            return cachedWindow.clone();
+        }
+        
+        // Create new window
+        double[] newWindow = createWindow(length, type);
+        
+        // Cache it if cache isn't too large
+        if (WINDOW_CACHE.size() < MAX_CACHE_SIZE) {
+            WINDOW_CACHE.put(key, newWindow.clone());
+        }
+        
+        return newWindow;
+    }
+
+    /**
+     * Key for window cache lookup.
+     */
+    private static class WindowKey {
+        private final int length;
+        private final WindowFunction type;
+        
+        WindowKey(int length, WindowFunction type) {
+            this.length = length;
+            this.type = type;
+        }
+        
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            WindowKey windowKey = (WindowKey) o;
+            return length == windowKey.length && type == windowKey.type;
+        }
+        
+        @Override
+        public int hashCode() {
+            return 31 * length + type.hashCode();
+        }
+    }
+
+    /**
+     * Clears the window cache. Useful for memory-constrained environments.
+     */
+    public static void clearWindowCache() {
+        WINDOW_CACHE.clear();
     }
 }
