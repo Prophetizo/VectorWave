@@ -150,12 +150,14 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 ### Additional Demos (Main Package)
 
 **FinancialOptimizationDemo** (`ai.prophetizo.FinancialOptimizationDemo`)
+
 - High-frequency trading signal analysis
 - Market microstructure noise filtering
 - Real-time volatility estimation
 - Optimized for financial time series
 
 **OptimizationDemo** (`ai.prophetizo.OptimizationDemo`)
+
 - Comprehensive optimization showcase
 - Platform-specific optimizations
 - Memory and performance tuning

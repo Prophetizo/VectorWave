@@ -42,8 +42,8 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
     private final double[] inputBuffer;
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
-    private int inputPosition = 0;
     private final Object processLock = new Object();
+    private int inputPosition = 0;
 
     /**
      * Creates a multi-level streaming transform.
@@ -127,7 +127,7 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
             processSingleSample(sample);
         }
     }
-    
+
     private void processSingleSample(double sample) {
         inputBuffer[inputPosition] = sample;
         inputPosition++;
