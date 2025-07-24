@@ -86,7 +86,10 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
         this.thresholdType = builder.thresholdType;
         this.adaptiveThreshold = builder.adaptiveThreshold;
 
-        // Initialize processing buffer to null for exception safety during construction
+        // IMPORTANT: processingBuffer is explicitly set to null here and assigned later
+        // in the try block. This ensures that if construction fails after memory allocation,
+        // the catch block can correctly identify whether cleanup is needed based on whether
+        // processingBuffer is still null (allocation failed) or has been assigned (allocation succeeded).
         this.processingBuffer = null;
 
         MemoryPool tempPool = null;
