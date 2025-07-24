@@ -224,10 +224,15 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
                 double[] current = multiResult.finalApproximation();
 
                 // Reconstruct from coarsest to finest level
+                // Note: In wavelet notation, higher level numbers represent coarser details
+                // Level 1 = finest details (high frequency), Level N = coarsest details (low frequency)
                 for (int level = levels; level >= 1; level--) {
                     double[] details = multiResult.detailsAtLevel(level);
 
-                    // Apply level-dependent threshold scaling (finer levels get higher threshold)
+                    // Apply level-dependent threshold scaling
+                    // Higher levels (coarser details) get higher thresholds
+                    // level=1: threshold * 1.2^0 = threshold (finest details, lowest threshold)
+                    // level=N: threshold * 1.2^(N-1) (coarsest details, highest threshold)
                     double levelThreshold = threshold * Math.pow(1.2, level - 1);
                     double[] denoisedDetails = applyThreshold(details, levelThreshold);
 
