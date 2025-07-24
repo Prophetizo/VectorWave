@@ -133,7 +133,7 @@ public class OverlapBuffer {
 
         // Handle overlap region with cross-fade
         for (int i = 0; i < overlapSize; i++) {
-            // Window is now sized for overlap region only
+            // Window is sized for overlap region to optimize memory usage
             double fadeOut = window[i];
             double fadeIn = 1.0 - fadeOut;
             output[i] = previousBlock[blockSize - overlapSize + i] * fadeOut +
