@@ -93,10 +93,14 @@ class StreamingDenoiserMathValidationTest {
     }
     
     private static final double EPSILON = 1e-10;
-    private static final double SNR_IMPROVEMENT_THRESHOLD = -5.0; // Allow up to 5dB degradation for streaming  
+    private static final double SNR_IMPROVEMENT_THRESHOLD = -5.0; 
+    // The SNR improvement threshold of -5.0 dB allows for up to 5 dB degradation in signal quality.
+    // This threshold is specific to streaming scenarios, where real-time performance is prioritized over 
+    // achieving the highest possible signal quality. Streaming denoising involves overlap-add windowing 
+    // and block-based processing, which can inherently reduce SNR compared to batch processing.
+    // The -5.0 dB threshold was chosen based on testing and benchmarks, ensuring that the trade-off 
+    // between quality and performance remains acceptable for most real-time applications.
     private static final double STREAMING_VS_BATCH_TOLERANCE = 10.0; // 10dB tolerance between batch and streaming
-    // Note: Streaming denoising trades off some quality for real-time performance.
-    // The overlap-add windowing and block-based processing can reduce SNR compared to batch processing.
     
     @Test
     @DisplayName("SNR improvement validation")
