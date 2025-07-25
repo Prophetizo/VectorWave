@@ -23,10 +23,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class StreamingDenoiserTest {
     
     // Test constants
-    // Block 3 is chosen for the processing spike because:
-    // 1. It's after initial JIT warmup (blocks 0-2) but before the final block
-    // 2. This provides a realistic scenario where processing has stabilized before the spike
-    // 3. It allows verification that max processing time tracking captures mid-stream variations
+    /**
+     * Block index used to simulate a processing spike in performance tests.
+     * Block 3 is chosen because:
+     * <ul>
+     *   <li>It's after initial JIT warmup (blocks 0-2) but before the final block</li>
+     *   <li>This provides a realistic scenario where processing has stabilized before the spike</li>
+     *   <li>It allows verification that max processing time tracking captures mid-stream variations</li>
+     * </ul>
+     */
     private static final int SPIKE_BLOCK_INDEX = 3;
     
     @Test

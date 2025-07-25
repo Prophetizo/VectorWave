@@ -128,14 +128,15 @@ public class P2QuantileEstimator {
         // 2. Linear search has better cache locality and no branch misprediction penalty
         // 3. The simple loop is more likely to be optimized by the JIT compiler
         // For arrays this small, simplicity and predictability outweigh algorithmic complexity.
+        int markerCellIndex;
         if (x < q[0]) {
             q[0] = x;
-            int markerCellIndex = 0;
+            markerCellIndex = 0;
         } else if (x >= q[MARKERS - 1]) {
             q[MARKERS - 1] = x;
-            int markerCellIndex = MARKERS - 2;
+            markerCellIndex = MARKERS - 2;
         } else {
-            int markerCellIndex = 0;
+            markerCellIndex = 0;
             for (int i = 1; i < MARKERS; i++) {
                 if (x < q[i]) {
                     markerCellIndex = i - 1;
