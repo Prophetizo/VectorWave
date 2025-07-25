@@ -16,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +75,7 @@ class SlidingWindowTransformTest {
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) { // 50% overlap
             
             CountDownLatch latch = new CountDownLatch(3); // Expect 3 windows
-            List<TransformResult> results = new ArrayList<>();
+            List<TransformResult> results = new CopyOnWriteArrayList<>();
             TestSubscriber subscriber = new TestSubscriber(results, latch);
             
             transform.subscribe(subscriber);
