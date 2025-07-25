@@ -309,7 +309,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
                     // Higher levels (coarser details) get higher thresholds to preserve signal structure.
                     // This is standard in wavelet denoising: be aggressive with fine-scale noise (level 1)
                     // but conservative with coarse-scale features that represent actual signal content.
-                    // level 1: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(1-1) = threshold * 1.2^0 = threshold (no scaling)
+                    // level 1: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(1-1) = threshold * 1.2^0 = threshold (baseline, no scaling)
                     // level 2: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(2-1) = threshold * 1.2^1 = threshold * 1.2
                     // level 3: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(3-1) = threshold * 1.2^2 = threshold * 1.44
                     // level N: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(N-1) (highest scaling for coarsest details)
