@@ -14,6 +14,48 @@ import java.util.concurrent.Flow;
 
 public class StreamingDenoiserBenchmark {
     
+    // Adapter class for backward compatibility
+    private static class StreamingDenoiser {
+        static class Builder {
+            private StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
+            
+            Builder wavelet(Wavelet wavelet) {
+                configBuilder.wavelet(wavelet);
+                return this;
+            }
+            
+            Builder blockSize(int blockSize) {
+                configBuilder.blockSize(blockSize);
+                return this;
+            }
+            
+            Builder overlapFactor(double overlapFactor) {
+                configBuilder.overlapFactor(overlapFactor);
+                return this;
+            }
+            
+            Builder thresholdMethod(ThresholdMethod method) {
+                configBuilder.thresholdMethod(method);
+                return this;
+            }
+            
+            Builder thresholdType(ThresholdType type) {
+                configBuilder.thresholdType(type);
+                return this;
+            }
+            
+            Builder useSharedMemoryPool(boolean useShared) {
+                configBuilder.useSharedMemoryPool(useShared);
+                return this;
+            }
+            
+            StreamingDenoiserStrategy build() {
+                return StreamingDenoiserFactory.create(
+                    StreamingDenoiserFactory.Implementation.FAST, configBuilder.build());
+            }
+        }
+    }
+    
     public static void main(String[] args) throws Exception {
         int signalSize = 128;
         int warmupRuns = 1000;
@@ -119,7 +161,7 @@ public class StreamingDenoiserBenchmark {
     private static double[] processWithStreamingDenoiser(Wavelet wavelet, double[] signal) 
             throws Exception {
         
-        StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
             .wavelet(wavelet)
             .blockSize(128)  // Process entire signal as one block
             .overlapFactor(0.0)  // No overlap for this test

@@ -5,7 +5,10 @@ import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
 import ai.prophetizo.wavelet.streaming.OverlapBuffer;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiser;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
+import ai.prophetizo.wavelet.streaming.FastStreamingDenoiser;
 import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform.StreamingStatistics;
 
 import java.util.ArrayList;
@@ -27,6 +30,70 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ul>
  */
 public class StreamingDenoiserDemo {
+    
+    // For backward compatibility with demo - use FastStreamingDenoiser
+    private static class StreamingDenoiser {
+        static class Builder {
+            private StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
+            
+            Builder wavelet(ai.prophetizo.wavelet.api.Wavelet wavelet) {
+                configBuilder.wavelet(wavelet);
+                return this;
+            }
+            
+            Builder blockSize(int blockSize) {
+                configBuilder.blockSize(blockSize);
+                return this;
+            }
+            
+            Builder overlapFactor(double overlapFactor) {
+                configBuilder.overlapFactor(overlapFactor);
+                return this;
+            }
+            
+            Builder levels(int levels) {
+                configBuilder.levels(levels);
+                return this;
+            }
+            
+            Builder thresholdMethod(ThresholdMethod method) {
+                configBuilder.thresholdMethod(method);
+                return this;
+            }
+            
+            Builder thresholdType(ThresholdType type) {
+                configBuilder.thresholdType(type);
+                return this;
+            }
+            
+            Builder adaptiveThreshold(boolean adaptive) {
+                configBuilder.adaptiveThreshold(adaptive);
+                return this;
+            }
+            
+            Builder attackTime(double attackTime) {
+                configBuilder.attackTime(attackTime);
+                return this;
+            }
+            
+            Builder releaseTime(double releaseTime) {
+                configBuilder.releaseTime(releaseTime);
+                return this;
+            }
+            
+            Builder windowFunction(OverlapBuffer.WindowFunction windowFunction) {
+                // Ignored for compatibility - window function is fixed per implementation
+                return this;
+            }
+            
+            StreamingDenoiserStrategy build() {
+                StreamingDenoiserConfig config = configBuilder.build();
+                // Use FAST implementation for demo compatibility
+                return StreamingDenoiserFactory.create(
+                    StreamingDenoiserFactory.Implementation.FAST, config);
+            }
+        }
+    }
 
     // Performance simulation constants
     private static final double REALTIME_SPEED_MULTIPLIER = 0.25; // Process 4x faster than real-time
@@ -62,18 +129,20 @@ public class StreamingDenoiserDemo {
         int blockSize = 512;
         double blockDuration = blockSize * 1000.0 / sampleRate;
 
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
                 .wavelet(Daubechies.DB4)
                 .blockSize(blockSize)
                 .overlapFactor(OVERLAP_FACTOR)
                 .levels(2)
                 .thresholdMethod(ThresholdMethod.UNIVERSAL)
                 .thresholdType(ThresholdType.SOFT)
-                .windowFunction(OverlapBuffer.WindowFunction.HANN)
                 .adaptiveThreshold(true)
                 .attackTime(5.0)
                 .releaseTime(20.0)
-                .build()) {
+                .build();
+        
+        try (StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(
+                StreamingDenoiserFactory.Implementation.FAST, config)) {
 
             System.out.print("Configuration:\n");
             System.out.printf("  Sample rate: %d Hz\n", sampleRate);
@@ -170,7 +239,7 @@ public class StreamingDenoiserDemo {
         // Smaller blocks for lower latency in HFT scenarios
         int blockSize = 64;
 
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar()) // Simple wavelet for fast processing
                 .blockSize(blockSize)
                 .overlapFactor(0.5)
@@ -269,7 +338,7 @@ public class StreamingDenoiserDemo {
         System.out.println("3. Adaptive Threshold Demonstration");
         System.out.println("-----------------------------------");
 
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
                 .blockSize(128)
                 .overlapFactor(0.5)
@@ -362,7 +431,7 @@ public class StreamingDenoiserDemo {
         for (Object[] config : configs) {
             String name = (String) config[0];
 
-            try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+            try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                     .wavelet((ai.prophetizo.wavelet.api.Wavelet) config[1])
                     .blockSize(256)
                     .overlapFactor(0.5)
@@ -430,7 +499,7 @@ public class StreamingDenoiserDemo {
         int blockSize = 256;
 
         // Create denoiser for each channel
-        List<StreamingDenoiser> denoisers = new ArrayList<>();
+        List<StreamingDenoiserStrategy> denoisers = new ArrayList<>();
         for (int ch = 0; ch < channels; ch++) {
             denoisers.add(new StreamingDenoiser.Builder()
                     .wavelet(Daubechies.DB4)
@@ -497,7 +566,7 @@ public class StreamingDenoiserDemo {
             }
 
             // Close all channels
-            for (StreamingDenoiser denoiser : denoisers) {
+            for (StreamingDenoiserStrategy denoiser : denoisers) {
                 denoiser.close();
             }
 
@@ -520,7 +589,7 @@ public class StreamingDenoiserDemo {
 
         } finally {
             // Ensure cleanup
-            for (StreamingDenoiser denoiser : denoisers) {
+            for (StreamingDenoiserStrategy denoiser : denoisers) {
                 if (denoiser.isReady()) {
                     denoiser.close();
                 }

@@ -35,10 +35,11 @@ class OverlapBufferCacheTest {
         new OverlapBuffer(128, 0.5, OverlapBuffer.WindowFunction.HANN);
         new OverlapBuffer(256, 0.5, OverlapBuffer.WindowFunction.HANN);
         new OverlapBuffer(128, 0.5, OverlapBuffer.WindowFunction.HAMMING);
-        new OverlapBuffer(128, 0.75, OverlapBuffer.WindowFunction.HANN);
+        new OverlapBuffer(128, 0.75, OverlapBuffer.WindowFunction.HANN); // Same window as first (128, HANN)
         
-        // Each unique combination should be cached
-        assertEquals(4, OverlapBuffer.getWindowCacheSize());
+        // Only unique (length, type) combinations are cached
+        // The overlap factor doesn't affect the window itself
+        assertEquals(3, OverlapBuffer.getWindowCacheSize());
     }
     
     @Test

@@ -22,6 +22,80 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StreamingDenoiserTest {
     
+    // Adapter class to maintain backward compatibility with existing tests
+    private static class StreamingDenoiser {
+        static class Builder {
+            private StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
+            
+            Builder wavelet(ai.prophetizo.wavelet.api.Wavelet wavelet) {
+                configBuilder.wavelet(wavelet);
+                return this;
+            }
+            
+            Builder blockSize(int blockSize) {
+                configBuilder.blockSize(blockSize);
+                return this;
+            }
+            
+            Builder overlapFactor(double overlapFactor) {
+                configBuilder.overlapFactor(overlapFactor);
+                return this;
+            }
+            
+            Builder levels(int levels) {
+                configBuilder.levels(levels);
+                return this;
+            }
+            
+            Builder thresholdMethod(ThresholdMethod method) {
+                configBuilder.thresholdMethod(method);
+                return this;
+            }
+            
+            Builder thresholdType(ThresholdType type) {
+                configBuilder.thresholdType(type);
+                return this;
+            }
+            
+            Builder adaptiveThreshold(boolean adaptive) {
+                configBuilder.adaptiveThreshold(adaptive);
+                return this;
+            }
+            
+            Builder attackTime(double attackTime) {
+                configBuilder.attackTime(attackTime);
+                return this;
+            }
+            
+            Builder releaseTime(double releaseTime) {
+                configBuilder.releaseTime(releaseTime);
+                return this;
+            }
+            
+            Builder windowFunction(OverlapBuffer.WindowFunction windowFunction) {
+                // Ignored for compatibility
+                return this;
+            }
+            
+            Builder useSharedMemoryPool(boolean useShared) {
+                configBuilder.useSharedMemoryPool(useShared);
+                return this;
+            }
+            
+            Builder noiseBufferFactor(int factor) {
+                configBuilder.noiseBufferFactor(factor);
+                return this;
+            }
+            
+            StreamingDenoiserStrategy build() {
+                StreamingDenoiserConfig config = configBuilder.build();
+                // Use FAST implementation for tests
+                return StreamingDenoiserFactory.create(
+                    StreamingDenoiserFactory.Implementation.FAST, config);
+            }
+        }
+    }
+    
     // Test constants
     /**
      * Block index (3) for simulating processing spike - chosen after JIT warmup (blocks 0-2) 
@@ -45,7 +119,7 @@ class StreamingDenoiserTest {
         );
         
         // Invalid block size
-        assertThrows(InvalidArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
             new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(100) // Not power of 2
@@ -64,7 +138,7 @@ class StreamingDenoiserTest {
     @Test
     @Timeout(2)
     void testBasicDenoising() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(64)
                 .overlapFactor(0.5)
@@ -108,7 +182,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testStreamingProcessing() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
                 .blockSize(128)
                 .overlapFactor(0.75)
@@ -151,7 +225,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testMultiLevelDenoising() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
                 .blockSize(256)
                 .levels(3)
@@ -190,7 +264,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testAdaptiveThresholding() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(64)
                 .adaptiveThreshold(true)
@@ -285,7 +359,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testOverlapProcessing() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(64)
                 .overlapFactor(0.5)
@@ -332,7 +406,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testStatistics() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(64)
                 .build()) {
@@ -364,7 +438,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testMaxProcessingTimeTracking() throws Exception {
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(64)
                 .build()) {
@@ -444,7 +518,7 @@ class StreamingDenoiserTest {
     
     @Test
     void testClosedStateHandling() throws Exception {
-        StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
             .wavelet(new Haar())
             .build();
         
@@ -464,7 +538,7 @@ class StreamingDenoiserTest {
         };
         
         for (ThresholdMethod method : methods) {
-            try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+            try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                     .wavelet(new Haar())
                     .blockSize(64)
                     .thresholdMethod(method)
@@ -492,7 +566,7 @@ class StreamingDenoiserTest {
         // This test verifies that the streaming denoiser uses bounded memory
         // regardless of how much data is processed (O(1) memory complexity)
         
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(256)
                 .useSharedMemoryPool(false) // Use dedicated pool for isolation
@@ -562,13 +636,13 @@ class StreamingDenoiserTest {
         int initialUsers = manager.getActiveUserCount();
         
         // Create multiple denoisers using shared pool
-        StreamingDenoiser denoiser1 = new StreamingDenoiser.Builder()
+        StreamingDenoiserStrategy denoiser1 = new StreamingDenoiser.Builder()
             .wavelet(new Haar())
             .blockSize(128)
             .useSharedMemoryPool(true)
             .build();
             
-        StreamingDenoiser denoiser2 = new StreamingDenoiser.Builder()
+        StreamingDenoiserStrategy denoiser2 = new StreamingDenoiser.Builder()
             .wavelet(Daubechies.DB4)
             .blockSize(256)
             .useSharedMemoryPool(true)
@@ -596,7 +670,7 @@ class StreamingDenoiserTest {
     @Test
     void testConfigurableNoiseBufferFactor() throws Exception {
         // Test with custom noise buffer factor
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(128)
                 .noiseBufferFactor(8) // Custom factor
@@ -634,7 +708,7 @@ class StreamingDenoiserTest {
     @Test
     void testDedicatedMemoryPoolOption() throws Exception {
         // Create denoiser with dedicated pool
-        try (StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(128)
                 .useSharedMemoryPool(false)
@@ -672,7 +746,7 @@ class StreamingDenoiserTest {
                 .build();
                 
             fail("Should have thrown exception for invalid block size");
-        } catch (InvalidArgumentException expected) {
+        } catch (IllegalArgumentException expected) {
             // Expected exception
         }
         

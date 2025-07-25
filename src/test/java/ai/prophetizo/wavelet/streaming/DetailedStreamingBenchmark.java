@@ -10,6 +10,48 @@ import java.util.concurrent.Flow;
 
 public class DetailedStreamingBenchmark {
     
+    // Adapter class for backward compatibility
+    private static class StreamingDenoiser {
+        static class Builder {
+            private StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
+            
+            Builder wavelet(ai.prophetizo.wavelet.api.Wavelet wavelet) {
+                configBuilder.wavelet(wavelet);
+                return this;
+            }
+            
+            Builder blockSize(int blockSize) {
+                configBuilder.blockSize(blockSize);
+                return this;
+            }
+            
+            Builder overlapFactor(double overlapFactor) {
+                configBuilder.overlapFactor(overlapFactor);
+                return this;
+            }
+            
+            Builder thresholdMethod(ThresholdMethod method) {
+                configBuilder.thresholdMethod(method);
+                return this;
+            }
+            
+            Builder thresholdType(ThresholdType type) {
+                configBuilder.thresholdType(type);
+                return this;
+            }
+            
+            Builder useSharedMemoryPool(boolean useShared) {
+                configBuilder.useSharedMemoryPool(useShared);
+                return this;
+            }
+            
+            StreamingDenoiserStrategy build() {
+                return StreamingDenoiserFactory.create(
+                    StreamingDenoiserFactory.Implementation.FAST, configBuilder.build());
+            }
+        }
+    }
+    
     public static void main(String[] args) throws Exception {
         int signalSize = 128;
         int warmupRuns = 1000;
@@ -117,7 +159,7 @@ public class DetailedStreamingBenchmark {
         // Test with shared memory pool
         long startTime = System.nanoTime();
         for (int i = 0; i < measurementRuns; i++) {
-            StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+            StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(signalSize)
                 .useSharedMemoryPool(true)
@@ -129,7 +171,7 @@ public class DetailedStreamingBenchmark {
         // Test without shared memory pool
         startTime = System.nanoTime();
         for (int i = 0; i < measurementRuns; i++) {
-            StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+            StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
                 .blockSize(signalSize)
                 .useSharedMemoryPool(false)
@@ -176,7 +218,7 @@ public class DetailedStreamingBenchmark {
         }
         
         // Test with Flow API
-        StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+        StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
             .wavelet(new Haar())
             .blockSize(signalSize)
             .overlapFactor(0.0)

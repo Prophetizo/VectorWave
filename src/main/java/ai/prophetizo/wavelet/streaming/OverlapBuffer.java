@@ -10,6 +10,14 @@ import java.util.Collections;
  *
  * <p>This class handles the overlap-add method for processing streaming signals
  * in blocks while maintaining continuity across block boundaries.</p>
+ * 
+ * <p>The overlap-add method works as follows:
+ * <ol>
+ *   <li>Each input block is windowed before processing</li>
+ *   <li>Overlapping portions of consecutive blocks are summed</li>
+ *   <li>The hop size (non-overlapping portion) determines the output size</li>
+ * </ol>
+ * </p>
  *
  * @since 1.6.0
  */
@@ -49,12 +57,8 @@ public class OverlapBuffer {
     private final int overlapSize;
     private final int hopSize;
     private final WindowFunction windowFunction;
-
-    // Buffers for overlap processing
-    private final double[] previousBlock;
-    private final double[] currentBlock;
     private final double[] window;
-    private final double[] overlapRegion;
+    private final double[] overlapAddBuffer;
 
     private boolean hasHistory;
 
@@ -88,11 +92,11 @@ public class OverlapBuffer {
         this.hopSize = blockSize - overlapSize;
         this.windowFunction = windowFunction;
 
-        this.previousBlock = new double[blockSize];
-        this.currentBlock = new double[blockSize];
-        // Use cached window if available, otherwise create and cache it
-        this.window = getCachedWindow(overlapSize, windowFunction);
-        this.overlapRegion = new double[overlapSize];
+        // Get full-sized window for the block
+        this.window = getCachedWindow(blockSize, windowFunction);
+        
+        // Buffer for storing overlapping portion from previous block
+        this.overlapAddBuffer = new double[overlapSize];
         this.hasHistory = false;
     }
 
@@ -108,8 +112,9 @@ public class OverlapBuffer {
                 break;
 
             case HANN:
+                // Use periodic Hann window for perfect COLA at 50% overlap
                 for (int i = 0; i < length; i++) {
-                    window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (length - 1)));
+                    window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / length));
                 }
                 break;
 
@@ -134,8 +139,9 @@ public class OverlapBuffer {
                 break;
 
             case HAMMING:
+                // Use periodic Hamming window
                 for (int i = 0; i < length; i++) {
-                    window[i] = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (length - 1));
+                    window[i] = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / length);
                 }
                 break;
 
@@ -147,44 +153,73 @@ public class OverlapBuffer {
     }
 
     /**
-     * Processes a block with overlap handling.
+     * Processes a block with overlap-add handling.
+     * 
+     * <p>For streaming applications, this method returns only the non-overlapping
+     * portion (hop size) of the processed block to avoid data duplication.</p>
      *
      * @param input input block (must be blockSize length)
-     * @return processed block with smooth transitions
+     * @return processed block of hopSize length (except for first block which returns full size)
      */
     public double[] process(double[] input) {
         if (input.length != blockSize) {
             throw new IllegalArgumentException("Input must be exactly blockSize");
         }
 
-        // Copy input to current block
-        System.arraycopy(input, 0, currentBlock, 0, blockSize);
+        // Special handling for rectangular windows - no overlap-add needed
+        if (windowFunction == WindowFunction.RECTANGULAR) {
+            if (!hasHistory) {
+                hasHistory = true;
+                return input.clone(); // Return full first block
+            }
+            // For subsequent blocks, just return the hop portion
+            double[] output = new double[hopSize];
+            System.arraycopy(input, 0, output, 0, hopSize);
+            return output;
+        }
 
+        // Normal overlap-add processing for other window types
         if (!hasHistory) {
-            // First block - no overlap to handle
+            // First block - return the full block and save overlap portion
             hasHistory = true;
-            System.arraycopy(currentBlock, 0, previousBlock, 0, blockSize);
-            return currentBlock.clone();
+            
+            // Apply window to the full block
+            double[] processed = new double[blockSize];
+            for (int i = 0; i < blockSize; i++) {
+                processed[i] = input[i] * window[i];
+            }
+            
+            // Save the overlap portion (already windowed) for next iteration
+            if (overlapSize > 0) {
+                System.arraycopy(processed, hopSize, overlapAddBuffer, 0, overlapSize);
+            }
+            
+            return processed;
         }
 
-        // Apply window to overlapping regions
-        double[] output = new double[blockSize];
-
-        // Handle overlap region with cross-fade
+        // For subsequent blocks, perform overlap-add
+        double[] output = new double[hopSize];
+        
+        // Apply window to current block
+        double[] windowed = new double[blockSize];
+        for (int i = 0; i < blockSize; i++) {
+            windowed[i] = input[i] * window[i];
+        }
+        
+        // Overlap-add: combine the saved overlap portion with the beginning of current block
+        // For properly designed windows (Hann, Hamming), the overlapping windows should sum to ~1.0
         for (int i = 0; i < overlapSize; i++) {
-            // Window is sized for overlap region to optimize memory usage
-            double fadeOut = window[i];
-            double fadeIn = 1.0 - fadeOut;
-            output[i] = previousBlock[blockSize - overlapSize + i] * fadeOut +
-                    currentBlock[i] * fadeIn;
+            windowed[i] += overlapAddBuffer[i];
         }
-
-        // Copy non-overlapping portion
-        System.arraycopy(currentBlock, overlapSize, output, overlapSize, hopSize);
-
-        // Save current block for next iteration
-        System.arraycopy(currentBlock, 0, previousBlock, 0, blockSize);
-
+        
+        // Extract the hop-size portion as output
+        System.arraycopy(windowed, 0, output, 0, hopSize);
+        
+        // Save the new overlap portion (already windowed) for next iteration
+        if (overlapSize > 0) {
+            System.arraycopy(windowed, hopSize, overlapAddBuffer, 0, overlapSize);
+        }
+        
         return output;
     }
 
@@ -199,16 +234,15 @@ public class OverlapBuffer {
     }
 
     /**
-     * Gets the overlap region from the previous block.
+     * Gets the overlap buffer contents (for testing/debugging).
      *
-     * @return overlap region or null if no history
+     * @return copy of overlap buffer or null if no history
      */
-    public double[] getOverlapRegion() {
-        if (!hasHistory) {
+    public double[] getOverlapBuffer() {
+        if (!hasHistory || overlapSize == 0) {
             return null;
         }
-        System.arraycopy(previousBlock, blockSize - overlapSize, overlapRegion, 0, overlapSize);
-        return overlapRegion.clone();
+        return overlapAddBuffer.clone();
     }
 
     /**
@@ -216,8 +250,9 @@ public class OverlapBuffer {
      */
     public void reset() {
         hasHistory = false;
-        java.util.Arrays.fill(previousBlock, 0.0);
-        java.util.Arrays.fill(currentBlock, 0.0);
+        if (overlapSize > 0) {
+            java.util.Arrays.fill(overlapAddBuffer, 0.0);
+        }
     }
 
     /**
