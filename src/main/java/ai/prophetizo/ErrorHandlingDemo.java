@@ -90,7 +90,7 @@ public class ErrorHandlingDemo {
         System.out.println("========================================");
         
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         
         // Test cases that will generate different types of exceptions
         Object[][] testCases = {
@@ -124,7 +124,7 @@ public class ErrorHandlingDemo {
         System.out.println("Original signal: " + Arrays.toString(originalSignal));
         
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         WaveletTransform transform = factory.create(new Haar());
         
         // Strategy 1: Pad to next power of 2
@@ -236,7 +236,7 @@ public class ErrorHandlingDemo {
             logger.info("Attempting wavelet transform on signal with length: " + invalidSignal.length);
             
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(new Haar());
             
             TransformResult result = transform.forward(invalidSignal);
@@ -294,7 +294,7 @@ public class ErrorHandlingDemo {
                 
                 try {
                     WaveletTransform transform = new WaveletTransformFactory()
-                            .withBoundaryMode(mode)
+                            .boundaryMode(mode)
                             .create(wavelet);
                     
                     TransformResult result = transform.forward(testSignal);
@@ -410,7 +410,7 @@ public class ErrorHandlingDemo {
         int successCount = 0;
         
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         WaveletTransform transform = factory.create(wavelet);
         
         for (int i = 0; i < signals.length; i++) {
