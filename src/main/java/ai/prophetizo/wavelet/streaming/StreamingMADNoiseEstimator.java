@@ -24,6 +24,18 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  * insight is that we maintain O(1) memory across all blocks processed, making this
  * suitable for infinite streams.</p>
  *
+ * <p><b>Implementation Detail:</b> MAD calculation requires median of |x - median(x)|,
+ * so we need median(x) first. This necessitates two passes over the input coefficients:
+ * <ol>
+ *   <li>First pass to update the value median estimator</li>
+ *   <li>Second pass to calculate deviations and update the deviation median estimator</li>
+ * </ol>
+ * This does NOT violate O(1) memory complexity - we're iterating over the input array twice,
+ * not storing it. The P² estimators maintain only 5 values each, regardless of how many
+ * coefficients we've processed. The input array is provided by the caller and would exist
+ * anyway. For streaming, we maintain running estimates across blocks with O(1) memory,
+ * while each block requires two passes over its coefficients.</p>
+ *
  * @since 1.6.0
  */
 public class StreamingMADNoiseEstimator implements NoiseEstimator {
@@ -85,14 +97,8 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
             return;
         }
 
-        // Two-pass approach over input array is necessary for MAD calculation:
-        // 1. MAD requires median of |x - median(x)|, so we need median(x) first
-        // 2. This does NOT violate O(1) memory - we're iterating over the input array twice,
-        //    not storing it. The P² estimators maintain only 5 values each, regardless of
-        //    how many coefficients we've processed
-        // 3. The input array is provided by the caller and would exist anyway
-        // 4. For streaming: we maintain running estimates across blocks with O(1) memory,
-        //    while each block requires two passes over its coefficients
+        // Two-pass approach: first compute median, then compute deviations
+        // (See class documentation for detailed explanation)
 
         // First pass: update value median estimator
         for (double coeff : newCoefficients) {

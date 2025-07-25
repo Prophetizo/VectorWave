@@ -65,11 +65,11 @@ public final class SharedMemoryPoolManager {
      * @return the shared memory pool
      */
     public MemoryPool getSharedPool() {
-        synchronized (poolLock) {
-            // Increment user count atomically with pool access
-            activeUsers.incrementAndGet();
-            return sharedPool;
-        }
+        // No synchronization needed here - activeUsers is already atomic
+        // and the pool itself is thread-safe. This avoids contention on
+        // the common path of getting the pool reference.
+        activeUsers.incrementAndGet();
+        return sharedPool;
     }
 
     /**
