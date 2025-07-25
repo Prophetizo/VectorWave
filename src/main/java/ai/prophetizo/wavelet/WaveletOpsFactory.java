@@ -105,16 +105,60 @@ public final class WaveletOpsFactory {
 
     /**
      * Operations interface for wavelet transforms.
+     * 
+     * <p>This interface defines the core mathematical operations required for
+     * wavelet decomposition and reconstruction. Implementations may use
+     * scalar operations, SIMD vectorization, or platform-specific optimizations.</p>
+     * 
+     * <p>The factory automatically selects the optimal implementation based on:</p>
+     * <ul>
+     *   <li>Hardware capabilities (AVX2, AVX512, ARM NEON)</li>
+     *   <li>Signal size (SIMD benefits vary by data size)</li>
+     *   <li>Platform (special optimizations for Apple Silicon)</li>
+     * </ul>
      */
     public interface WaveletOps {
+        /**
+         * Performs convolution followed by downsampling (decimation by 2).
+         * 
+         * <p>This operation is used in the forward wavelet transform to compute
+         * approximation and detail coefficients. The convolution handles boundary
+         * conditions according to the specified mode.</p>
+         * 
+         * @param signal the input signal
+         * @param filter the wavelet filter coefficients
+         * @param signalLength the length of the input signal
+         * @param filterLength the length of the filter
+         * @param mode the boundary handling mode
+         * @return the convolved and downsampled result
+         */
         double[] convolveAndDownsample(double[] signal, double[] filter,
                                        int signalLength, int filterLength,
                                        BoundaryMode mode);
 
+        /**
+         * Performs upsampling (zero insertion) followed by convolution.
+         * 
+         * <p>This operation is used in the inverse wavelet transform to reconstruct
+         * the signal from approximation and detail coefficients. Zeros are inserted
+         * between samples before convolution.</p>
+         * 
+         * @param signal the input coefficients
+         * @param filter the wavelet filter coefficients
+         * @param signalLength the length of the input signal
+         * @param filterLength the length of the filter
+         * @param mode the boundary handling mode
+         * @return the upsampled and convolved result
+         */
         double[] upsampleAndConvolve(double[] signal, double[] filter,
                                      int signalLength, int filterLength,
                                      BoundaryMode mode);
 
+        /**
+         * Returns a description of the implementation type.
+         * 
+         * @return implementation type (e.g., "Scalar", "SIMD-AVX2", "ARM-NEON")
+         */
         String getImplementationType();
     }
 

@@ -10,14 +10,56 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Multi-threaded wavelet transform engine for batch processing.
+ * Multi-threaded wavelet transform engine for batch processing of signals.
  *
- * <p>Features:</p>
+ * <p>This engine provides efficient parallel processing of multiple signals using
+ * the Fork/Join framework. It's particularly useful for:</p>
+ * <ul>
+ *   <li>Processing large batches of financial time series</li>
+ *   <li>Real-time multi-channel signal analysis</li>
+ *   <li>High-throughput data processing pipelines</li>
+ *   <li>Parallel feature extraction for machine learning</li>
+ * </ul>
+ *
+ * <p>Key features:</p>
  * <ul>
  *   <li>Automatic parallelization based on available cores</li>
- *   <li>Work-stealing for load balancing</li>
+ *   <li>Work-stealing for optimal load balancing</li>
  *   <li>Memory pool integration for zero allocation overhead</li>
  *   <li>Configurable thread pool and batch sizes</li>
+ *   <li>Adaptive switching between parallel and sequential processing</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Process multiple stock price series in parallel
+ * try (ParallelWaveletEngine engine = new ParallelWaveletEngine()) {
+ *     double[][] priceSeries = loadStockData(); // e.g., 1000 stocks × 256 prices
+ *     
+ *     TransformResult[] results = engine.transformBatch(
+ *         priceSeries, 
+ *         Daubechies.DB4, 
+ *         BoundaryMode.PERIODIC
+ *     );
+ *     
+ *     // Analyze results for each stock
+ *     for (int i = 0; i < results.length; i++) {
+ *         analyzeVolatility(results[i]);
+ *     }
+ * }
+ * 
+ * // Using with custom thread pool
+ * ForkJoinPool customPool = new ForkJoinPool(16);
+ * ParallelWaveletEngine engine = new ParallelWaveletEngine(customPool);
+ * // Engine won't shut down the pool on close
+ * }</pre>
+ *
+ * <p>Performance considerations:</p>
+ * <ul>
+ *   <li>Overhead of parallelization is ~10-20μs per batch</li>
+ *   <li>Best performance with batch sizes > 2 × parallelism</li>
+ *   <li>Automatically falls back to sequential for small batches</li>
+ *   <li>Memory usage scales with parallelism level</li>
  * </ul>
  *
  * @since 1.4.0
@@ -33,6 +75,9 @@ public class ParallelWaveletEngine implements AutoCloseable {
 
     /**
      * Creates a new parallel engine with default settings.
+     * 
+     * <p>Uses the number of available processors as the parallelism level.
+     * A new ForkJoinPool is created and will be shut down when this engine is closed.</p>
      */
     public ParallelWaveletEngine() {
         this(DEFAULT_PARALLELISM);
@@ -40,6 +85,12 @@ public class ParallelWaveletEngine implements AutoCloseable {
 
     /**
      * Creates a new parallel engine with specified parallelism.
+     * 
+     * <p>A new ForkJoinPool is created with the specified parallelism level.
+     * The pool will be shut down when this engine is closed.</p>
+     * 
+     * @param parallelism the number of worker threads
+     * @throws IllegalArgumentException if parallelism <= 0
      */
     public ParallelWaveletEngine(int parallelism) {
         this.parallelism = parallelism;

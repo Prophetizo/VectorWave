@@ -6,8 +6,52 @@ import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
- * Immutable configuration for wavelet transform.
- * Uses builder pattern for flexible construction.
+ * Immutable configuration for wavelet transform operations.
+ * 
+ * <p>This class provides fine-grained control over wavelet transform behavior,
+ * including performance optimizations, boundary handling, and decomposition limits.
+ * It uses the builder pattern for flexible, readable construction.</p>
+ * 
+ * <p>Key configuration options:</p>
+ * <ul>
+ *   <li><b>Boundary Mode</b>: How to handle signal boundaries during convolution</li>
+ *   <li><b>Optimization Path</b>: Force scalar or SIMD operations, or auto-detect</li>
+ *   <li><b>Decomposition Levels</b>: Maximum allowed levels for multi-level transforms</li>
+ * </ul>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Auto-detect optimal path (recommended)
+ * TransformConfig autoConfig = TransformConfig.defaultConfig();
+ * 
+ * // Force scalar operations for debugging
+ * TransformConfig scalarConfig = TransformConfig.builder()
+ *     .forceScalar(true)
+ *     .boundaryMode(BoundaryMode.ZERO_PADDING)
+ *     .build();
+ * 
+ * // Force SIMD for maximum performance
+ * TransformConfig simdConfig = TransformConfig.builder()
+ *     .forceSIMD(true)
+ *     .maxDecompositionLevels(5)
+ *     .build();
+ * 
+ * // Use with transform
+ * WaveletTransform transform = new WaveletTransform(
+ *     Daubechies.DB4, 
+ *     BoundaryMode.PERIODIC, 
+ *     simdConfig
+ * );
+ * }</pre>
+ * 
+ * <p>Performance notes:</p>
+ * <ul>
+ *   <li>Auto-detection usually provides optimal performance</li>
+ *   <li>Force scalar for consistent behavior across platforms</li>
+ *   <li>Force SIMD when you know your data size benefits from vectorization</li>
+ * </ul>
+ * 
+ * @since 1.3.0
  */
 public final class TransformConfig {
 
