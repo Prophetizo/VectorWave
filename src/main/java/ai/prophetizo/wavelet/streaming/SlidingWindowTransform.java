@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>The overlap factor determines the time resolution vs computational cost trade-off.
  * An overlap of 0.5 (50%) is common, while 0.75 (75%) provides smoother results.</p>
  *
- * @since 1.5.0
+ * @since 1.0.0
  */
 public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
         implements StreamingWaveletTransform {

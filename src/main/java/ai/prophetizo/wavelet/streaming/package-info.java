@@ -143,6 +143,6 @@
  *   <li>Array recycling: Reuse arrays across processing blocks</li>
  * </ul>
  *
- * @since 1.0
+ * @since 1.0.0
  */
 package ai.prophetizo.wavelet.streaming;

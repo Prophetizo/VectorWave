@@ -31,7 +31,7 @@ import ai.prophetizo.wavelet.internal.VectorOps;
  * double[] denoised = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
  * }</pre>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public class WaveletDenoiser {
 

@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * - Increased memory usage (~26 KB vs 20 KB)
  * - Same algorithmic latency
  *
- * @since 1.7.0
+ * @since 1.0.0
  */
 public final class QualityStreamingDenoiser extends SubmissionPublisher<double[]>
         implements StreamingDenoiserStrategy {

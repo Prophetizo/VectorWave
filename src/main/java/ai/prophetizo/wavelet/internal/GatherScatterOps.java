@@ -14,7 +14,7 @@ import java.nio.ByteOrder;
  * access non-contiguous memory locations due to downsampling and
  * boundary wrapping.</p>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public final class GatherScatterOps {
 

@@ -21,7 +21,7 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  *
  * @see P2QuantileEstimator
  * @see MADNoiseEstimator
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class StreamingMADNoiseEstimator implements NoiseEstimator {
 

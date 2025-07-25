@@ -84,7 +84,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * @see StreamingDenoiserConfig
  * @see FastStreamingDenoiser
  * @see QualityStreamingDenoiser
- * @since 1.8.0
+ * @since 1.0.0
  */
 public final class StreamingDenoiserFactory {
 

@@ -15,7 +15,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *
  * <p>Example: {@code [1, 2, 3, 4]} padded to length 8 becomes {@code [1, 2, 3, 4, 3, 2, 1, 2]}</p>
  *
- * @since 1.2.0
+ * @since 1.0.0
  */
 public record ReflectPaddingStrategy() implements PaddingStrategy {
 

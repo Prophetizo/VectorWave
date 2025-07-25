@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>The maximum number of arrays per size can be configured via the system property:
  * {@code -Dai.prophetizo.wavelet.sharedPool.maxArraysPerSize=20} (default: 20)</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public final class SharedMemoryPoolManager {
 

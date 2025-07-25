@@ -62,7 +62,7 @@ import java.util.concurrent.*;
  *   <li>Memory usage scales with parallelism level</li>
  * </ul>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public class ParallelWaveletEngine implements AutoCloseable {
 

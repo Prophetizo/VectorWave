@@ -15,7 +15,7 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Reduce GC pressure in high-throughput scenarios</li>
  * </ul>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public final class VectorOpsPooled {
 

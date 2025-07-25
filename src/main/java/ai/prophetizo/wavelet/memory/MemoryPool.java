@@ -49,7 +49,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *   <li>Minimal overhead (~10ns) for borrow/return operations</li>
  * </ul>
  * 
- * @since 1.2.0
+ * @since 1.0.0
  */
 public class MemoryPool {
 

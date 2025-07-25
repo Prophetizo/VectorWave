@@ -16,7 +16,7 @@ package ai.prophetizo.wavelet.internal;
  * or hardware if not beneficial. The implementation gracefully degrades on
  * platforms without prefetch support.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public final class PrefetchOptimizer {
 

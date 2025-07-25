@@ -29,7 +29,7 @@ package ai.prophetizo.wavelet.streaming;
  * performance in multi-threaded scenarios, consider using separate instances per thread
  * and combining results, or wrapping access with appropriate synchronization.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class P2QuantileEstimator {
 

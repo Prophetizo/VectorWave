@@ -38,6 +38,6 @@
  * 
  * @see ai.prophetizo.wavelet.WaveletTransformFactory
  * @see ai.prophetizo.wavelet.api.BoundaryMode
- * @since 1.0
+ * @since 1.0.0
  */
 package ai.prophetizo.wavelet.config;

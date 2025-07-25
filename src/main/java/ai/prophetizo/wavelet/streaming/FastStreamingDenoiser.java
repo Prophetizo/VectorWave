@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>SNR degradation: -4.5 to -10.5 dB (vs batch processing)</li>
  * </ul>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
         implements StreamingDenoiserStrategy {

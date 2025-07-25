@@ -9,7 +9,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * non-power-of-2 signal lengths. It allows the inverse transform to restore
  * the original signal dimensions.</p>
  *
- * @since 1.2.0
+ * @since 1.0.0
  */
 final class PaddedTransformResult implements TransformResult {
 

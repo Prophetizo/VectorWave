@@ -7,7 +7,7 @@ package ai.prophetizo.wavelet.streaming;
  * attack and release times, preventing abrupt changes that could cause
  * artifacts in the denoised signal.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class StreamingThresholdAdapter {
 

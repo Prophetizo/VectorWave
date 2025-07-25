@@ -8,7 +8,7 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  * <p>Implementations provide adaptive noise estimation suitable for
  * non-stationary signals in real-time applications.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public interface NoiseEstimator {
 

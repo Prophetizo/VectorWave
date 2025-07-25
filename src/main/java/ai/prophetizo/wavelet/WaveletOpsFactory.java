@@ -18,7 +18,7 @@ import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
  *   <li>Configuration preferences</li>
  * </ul>
  *
- * @since 1.3.0
+ * @since 1.0.0
  */
 public final class WaveletOpsFactory {
 

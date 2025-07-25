@@ -61,6 +61,6 @@
  * {@link ai.prophetizo.wavelet.api.WaveletRegistry}.</p>
  * 
  * @see ai.prophetizo.wavelet
- * @since 1.0
+ * @since 1.0.0
  */
 package ai.prophetizo.wavelet.api;

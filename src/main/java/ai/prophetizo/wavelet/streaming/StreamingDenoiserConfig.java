@@ -11,7 +11,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * <p>This class encapsulates all configuration parameters that can be used
  * by different {@link StreamingDenoiserStrategy} implementations.</p>
  *
- * @since 1.8.0
+ * @since 1.0.0
  */
 public final class StreamingDenoiserConfig {
 

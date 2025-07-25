@@ -14,7 +14,7 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Specialized boundary handling</li>
  * </ul>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public final class SpecializedKernels {
 

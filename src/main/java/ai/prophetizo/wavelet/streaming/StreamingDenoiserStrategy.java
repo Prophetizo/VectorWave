@@ -84,7 +84,7 @@ import java.util.concurrent.Flow.Publisher;
  * @see StreamingDenoiserConfig
  * @see FastStreamingDenoiser
  * @see QualityStreamingDenoiser
- * @since 1.8.0
+ * @since 1.0.0
  */
 public interface StreamingDenoiserStrategy extends Publisher<double[]>, AutoCloseable {
 

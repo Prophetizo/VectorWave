@@ -11,7 +11,7 @@ import java.util.Arrays;
  * which is less sensitive to outliers than standard deviation. It maintains
  * a sliding window of coefficients for adaptive estimation.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class MADNoiseEstimator implements NoiseEstimator {
 

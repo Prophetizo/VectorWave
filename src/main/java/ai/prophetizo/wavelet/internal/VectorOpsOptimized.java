@@ -17,7 +17,7 @@ import java.util.Arrays;
  *   <li>Cache-aware processing</li>
  * </ul>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public final class VectorOpsOptimized {
 

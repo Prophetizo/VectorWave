@@ -17,7 +17,7 @@ import java.util.Map;
  * </ol>
  * </p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class OverlapBuffer {
 

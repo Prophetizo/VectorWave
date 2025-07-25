@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  *   <li>Memory constraints (pooling, cache-aware blocking)</li>
  * </ul>
  *
- * @since 1.4.0
+ * @since 1.0.0
  */
 public class OptimizedTransformEngine {
 

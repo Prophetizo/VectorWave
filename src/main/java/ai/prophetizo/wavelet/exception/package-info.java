@@ -51,6 +51,6 @@
  * detailed error messages to help diagnose issues quickly.</p>
  * 
  * @see ai.prophetizo.wavelet.util.ValidationUtils
- * @since 1.0
+ * @since 1.0.0
  */
 package ai.prophetizo.wavelet.exception;

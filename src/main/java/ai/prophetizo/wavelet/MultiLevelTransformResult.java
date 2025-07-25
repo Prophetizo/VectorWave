@@ -17,7 +17,7 @@ package ai.prophetizo.wavelet;
  *   <li>Level N: Coarsest scale details (lowest frequencies)</li>
  * </ul>
  *
- * @since 1.1.0
+ * @since 1.0.0
  */
 public sealed interface MultiLevelTransformResult permits MultiLevelTransformResultImpl {
 
@@ -122,7 +122,7 @@ public sealed interface MultiLevelTransformResult permits MultiLevelTransformRes
      * <p>Implementations should ensure this operation is thread-safe and
      * does not affect the correctness of subsequent operations.</p>
      *
-     * @since 1.2.0
+     * @since 1.0.0
      */
     default void clearCache() {
         // Default implementation does nothing
@@ -136,7 +136,7 @@ public sealed interface MultiLevelTransformResult permits MultiLevelTransformRes
      * when to call {@code clearCache()}.</p>
      *
      * @return approximate cache memory usage in bytes, or 0 if no cache
-     * @since 1.2.0
+     * @since 1.0.0
      */
     default long getCacheMemoryUsage() {
         return 0; // Default: no cache

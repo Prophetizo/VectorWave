@@ -8,7 +8,7 @@ package ai.prophetizo.wavelet.streaming;
  * or when external synchronization is used, prefer the unsynchronized
  * P2QuantileEstimator for better performance.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class SynchronizedP2QuantileEstimator {
 

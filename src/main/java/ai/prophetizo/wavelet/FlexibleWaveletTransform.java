@@ -44,7 +44,7 @@ import java.util.Objects;
  * double[] reconstructed = transform.inverse(result);
  * }</pre>
  *
- * @since 1.2.0
+ * @since 1.0.0
  */
 public class FlexibleWaveletTransform {
 

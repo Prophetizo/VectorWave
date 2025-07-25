@@ -10,7 +10,7 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  * It maintains two P² estimators - one for the median of absolute values and
  * one for the median of absolute deviations.</p>
  *
- * @since 1.6.0
+ * @since 1.0.0
  */
 public class EfficientMADNoiseEstimator implements NoiseEstimator {
 
