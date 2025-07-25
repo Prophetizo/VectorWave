@@ -52,22 +52,9 @@ public final class SharedMemoryPoolManager {
      * <p>This method increments the active user count for monitoring. Users must
      * call {@link #releaseUser()} when they are done using the pool.</p>
      *
-     * <p><b>Important:</b> The pool should not be cleared while there are active users.
-     * The {@link #clearIfUnused()} method checks for active users, but there is a small
-     * window between getting the pool and using it where clearing could theoretically occur.
-     * In practice, this is not an issue because:</p>
-     * <ul>
-     *   <li>clearIfUnused() is typically only called during shutdown</li>
-     *   <li>The pool itself is thread-safe for concurrent operations</li>
-     *   <li>Clearing the pool only affects future allocations, not existing arrays</li>
-     * </ul>
-     *
      * @return the shared memory pool
      */
     public MemoryPool getSharedPool() {
-        // No synchronization needed here - activeUsers is already atomic
-        // and the pool itself is thread-safe. This avoids contention on
-        // the common path of getting the pool reference.
         activeUsers.incrementAndGet();
         return sharedPool;
     }

@@ -10,32 +10,17 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  * It uses two P² quantile estimators to track the median of values and
  * the median of absolute deviations.</p>
  *
- * <p>Compared to the buffer-based MADNoiseEstimator, this version:
+ * <p>Key characteristics:
  * <ul>
- *   <li>Has O(1) memory usage for the estimators (not counting input arrays)</li>
- *   <li>Uses constant memory regardless of total samples processed</li>
- *   <li>Provides continuous estimates without buffer delays</li>
- *   <li>Requires two passes over each input block (inherent to MAD calculation)</li>
+ *   <li>O(1) memory complexity - uses only 10 values total (5 per P² estimator)</li>
+ *   <li>Suitable for infinite streams - no buffer limits</li>
+ *   <li>Continuous estimates - no buffer delays</li>
+ *   <li>Two-pass processing per block - inherent to MAD algorithm</li>
  * </ul>
  * </p>
  *
- * <p><b>Design Note:</b> The two-pass requirement over each block is not a limitation
- * of the streaming approach but a fundamental requirement of MAD calculation. The key
- * insight is that we maintain O(1) memory across all blocks processed, making this
- * suitable for infinite streams.</p>
- *
- * <p><b>Implementation Detail:</b> MAD calculation requires median of |x - median(x)|,
- * so we need median(x) first. This necessitates two passes over the input coefficients:
- * <ol>
- *   <li>First pass to update the value median estimator</li>
- *   <li>Second pass to calculate deviations and update the deviation median estimator</li>
- * </ol>
- * This does NOT violate O(1) memory complexity - we're iterating over the input array twice,
- * not storing it. The P² estimators maintain only 5 values each, regardless of how many
- * coefficients we've processed. The input array is provided by the caller and would exist
- * anyway. For streaming, we maintain running estimates across blocks with O(1) memory,
- * while each block requires two passes over its coefficients.</p>
- *
+ * @see P2QuantileEstimator
+ * @see MADNoiseEstimator
  * @since 1.6.0
  */
 public class StreamingMADNoiseEstimator implements NoiseEstimator {
@@ -91,6 +76,21 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
         return getCurrentNoiseLevel();
     }
 
+    /**
+     * Updates the noise estimate with new wavelet coefficients.
+     *
+     * <p><b>Implementation note:</b> MAD calculation requires median of |x - median(x)|,
+     * necessitating two passes over the input:
+     * <ol>
+     *   <li>First pass: Update value median estimator to get median(x)</li>
+     *   <li>Second pass: Calculate |x - median(x)| and update deviation median estimator</li>
+     * </ol>
+     * This maintains O(1) memory complexity as we only iterate over the input array
+     * (provided by caller), not store it. The P² estimators use fixed memory (5 values each)
+     * regardless of total samples processed.</p>
+     *
+     * @param newCoefficients wavelet detail coefficients for noise estimation
+     */
     @Override
     public void updateEstimate(double[] newCoefficients) {
         if (newCoefficients == null || newCoefficients.length == 0) {
@@ -98,7 +98,6 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
         }
 
         // Two-pass approach: first compute median, then compute deviations
-        // (See class documentation for detailed explanation)
 
         // First pass: update value median estimator
         for (double coeff : newCoefficients) {

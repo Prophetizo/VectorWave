@@ -93,19 +93,20 @@ class StreamingDenoiserMathValidationTest {
     }
     
     private static final double EPSILON = 1e-10;
-    private static final double SNR_IMPROVEMENT_THRESHOLD = -5.0; 
-    // The SNR improvement threshold of -5.0 dB allows for up to 5 dB degradation in signal quality.
-    // This threshold is specific to streaming scenarios, where real-time performance is prioritized over 
-    // achieving the highest possible signal quality. Streaming denoising involves overlap-add windowing 
-    // and block-based processing, which can inherently reduce SNR compared to batch processing.
-    // The -5.0 dB threshold was chosen based on testing and benchmarks, ensuring that the trade-off 
-    // between quality and performance remains acceptable for most real-time applications.
-    // Based on benchmarks and testing:
-    // - Fast streaming: -4.5 to -10.5 dB vs batch (average -7.0 dB)
-    // - Quality streaming: -0.5 to -5.5 dB vs batch (average -3.0 dB)
-    // Setting tolerance to 8.0 dB to allow for worst-case Fast streaming while
-    // still catching severe quality issues
-    private static final double STREAMING_VS_BATCH_TOLERANCE = 8.0; // 8dB tolerance between batch and streaming
+    
+    // SNR_IMPROVEMENT_THRESHOLD: Tests streaming output vs noisy input
+    // -5.0 dB means streaming can have SNR up to 5 dB worse than the noisy input
+    // and still pass. This accounts for windowing artifacts while ensuring the
+    // denoiser still provides some benefit (removes some noise).
+    private static final double SNR_IMPROVEMENT_THRESHOLD = -5.0;
+    
+    // STREAMING_VS_BATCH_TOLERANCE: Tests streaming vs batch processing difference
+    // This is a different comparison - streaming will always be worse than batch,
+    // but we want to ensure it's not TOO much worse. Based on benchmarks:
+    // - Fast streaming: 4.5-10.5 dB worse than batch (average 7.0 dB)
+    // - Quality streaming: 0.5-5.5 dB worse than batch (average 3.0 dB)
+    // 8.0 dB tolerance accommodates Fast streaming while catching severe issues.
+    private static final double STREAMING_VS_BATCH_TOLERANCE = 8.0;
     
     @Test
     @DisplayName("SNR improvement validation")
