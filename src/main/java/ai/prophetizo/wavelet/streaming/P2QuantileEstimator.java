@@ -123,8 +123,11 @@ public class P2QuantileEstimator {
         count++;
 
         // Find marker cell index such that q[markerCellIndex] <= x < q[markerCellIndex+1]
-        // Note: With only 5 markers, linear search is optimal. Binary search would
-        // add complexity without meaningful performance benefit for such a small array.
+        // Note: With only 5 markers, linear search is optimal for several reasons:
+        // 1. Binary search overhead (3 comparisons worst-case) exceeds linear search (4 comparisons worst-case)
+        // 2. Linear search has better cache locality and no branch misprediction penalty
+        // 3. The simple loop is more likely to be optimized by the JIT compiler
+        // For arrays this small, simplicity and predictability outweigh algorithmic complexity.
         int markerCellIndex;
         if (x < q[0]) {
             q[0] = x;

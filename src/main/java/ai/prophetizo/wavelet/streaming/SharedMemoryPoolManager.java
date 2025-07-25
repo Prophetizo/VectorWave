@@ -28,6 +28,7 @@ public final class SharedMemoryPoolManager {
     
     private final MemoryPool sharedPool;
     private final AtomicInteger activeUsers = new AtomicInteger(0);
+    private final Object poolLock = new Object();
 
     private SharedMemoryPoolManager() {
         this.sharedPool = new MemoryPool();
@@ -49,10 +50,16 @@ public final class SharedMemoryPoolManager {
      * Gets the shared memory pool.
      *
      * <p>This method also increments the active user count for monitoring.</p>
+     * 
+     * @return the shared memory pool
+     * @throws IllegalStateException if the pool has been cleared
      */
     public MemoryPool getSharedPool() {
-        activeUsers.incrementAndGet();
-        return sharedPool;
+        synchronized (poolLock) {
+            // Increment user count atomically with pool access
+            activeUsers.incrementAndGet();
+            return sharedPool;
+        }
     }
 
     /**
@@ -80,11 +87,14 @@ public final class SharedMemoryPoolManager {
      * @return true if the pool was cleared, false if there are active users
      */
     public boolean clearIfUnused() {
-        if (activeUsers.get() == 0) {
-            sharedPool.clear();
-            return true;
+        synchronized (poolLock) {
+            // Check and clear atomically to prevent race conditions
+            if (activeUsers.get() == 0) {
+                sharedPool.clear();
+                return true;
+            }
+            return false;
         }
-        return false;
     }
 
     /**

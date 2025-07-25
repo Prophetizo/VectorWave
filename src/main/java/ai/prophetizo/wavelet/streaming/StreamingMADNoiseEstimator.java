@@ -79,6 +79,13 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
             return;
         }
 
+        // Two-pass approach is necessary and efficient for streaming MAD estimation:
+        // 1. We must know the median before calculating deviations (fundamental to MAD)
+        // 2. The P² algorithm maintains running estimates with O(1) memory
+        // 3. For typical block sizes (64-512 samples), two passes are negligible
+        // 4. Alternative single-pass approaches would require buffering all values,
+        //    defeating the purpose of O(1) streaming estimation
+        
         // First pass: update value median estimator
         for (double coeff : newCoefficients) {
             valueMedianEstimator.update(coeff);

@@ -166,8 +166,13 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
 
             return resources;
 
-        } catch (InvalidArgumentException e) {
-            // Re-throw validation exceptions as-is
+        } catch (InvalidArgumentException | IllegalArgumentException e) {
+            // Re-throw validation exceptions as-is (don't wrap)
+            // These indicate programming errors that should be fixed by the caller
+            throw e;
+        } catch (InvalidStateException e) {
+            // Re-throw state exceptions as-is
+            // These indicate environmental issues (e.g., resources unavailable)
             throw e;
         } catch (OutOfMemoryError e) {
             // Clean up and provide specific memory error context
@@ -175,7 +180,7 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
             throw new RuntimeException("Insufficient memory to initialize StreamingDenoiser with block size " + 
                     builder.blockSize + ". Consider reducing block size or using shared memory pool.", e);
         } catch (Exception e) {
-            // Clean up and provide initialization context
+            // Clean up and wrap unexpected exceptions with context
             cleanupResources(resources, sharedPoolAcquired);
             
             String errorContext = String.format(
@@ -301,9 +306,11 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
                     double[] details = multiResult.detailsAtLevel(level);
 
                     // Apply level-dependent threshold scaling
-                    // Higher levels (coarser details) get higher thresholds
-                    // level=1: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^0 = threshold (finest details, lowest threshold)
-                    // level=N: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(N-1) (coarsest details, highest threshold)
+                    // Higher levels (coarser details) get higher thresholds by using (level - 1) as the exponent:
+                    // level 1: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(1-1) = threshold * 1.2^0 = threshold (no scaling)
+                    // level 2: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(2-1) = threshold * 1.2^1 = threshold * 1.2
+                    // level 3: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(3-1) = threshold * 1.2^2 = threshold * 1.44
+                    // level N: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(N-1) (highest scaling for coarsest details)
                     double levelThreshold = threshold * Math.pow(LEVEL_THRESHOLD_SCALE_FACTOR, level - 1);
                     double[] denoisedDetails = applyThreshold(details, levelThreshold);
 
