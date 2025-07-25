@@ -4,8 +4,8 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.internal.VectorOps;
-import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
 import ai.prophetizo.wavelet.internal.VectorOpsARM;
+import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
 
 /**
  * Factory for creating optimal wavelet operation implementations.
@@ -46,7 +46,7 @@ public final class WaveletOpsFactory {
         if (config != null && config.isForceScalarOperations()) {
             return SCALAR_OPS;
         }
-        
+
         // Use ARM-optimized operations on Apple Silicon
         if (IS_APPLE_SILICON && VECTOR_API_AVAILABLE) {
             return ARM_OPS;
@@ -65,7 +65,7 @@ public final class WaveletOpsFactory {
         if (IS_APPLE_SILICON && VECTOR_API_AVAILABLE) {
             return ARM_OPS;
         }
-        
+
         return VECTOR_API_AVAILABLE ? OPTIMIZED_VECTOR_OPS : SCALAR_OPS;
     }
 
@@ -232,7 +232,7 @@ public final class WaveletOpsFactory {
             return "Optimized " + VectorOpsOptimized.getVectorInfo();
         }
     }
-    
+
     /**
      * ARM-optimized implementation of wavelet operations.
      */

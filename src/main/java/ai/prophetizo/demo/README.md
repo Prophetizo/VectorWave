@@ -133,7 +133,37 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 **Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.DenoisingDemo`
 
-### 9. ScalarVsVectorDemo
+### 9. StreamingDenoiserDemo
+
+**Purpose**: Real-time streaming denoising with dual implementations
+
+**What it covers**:
+
+- Fast vs Quality implementation comparison
+- Real-time audio signal denoising
+- Financial data stream cleaning
+- Adaptive threshold adjustment
+- Multi-channel stream processing
+- Performance metrics and latency analysis
+
+**Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDenoiserDemo`
+
+### 10. StreamingDenoiserFactoryDemo
+
+**Purpose**: Factory pattern for streaming denoiser selection
+
+**What it covers**:
+
+- Manual implementation selection (FAST/QUALITY)
+- Automatic implementation selection
+- Performance profile comparison
+- Configuration-based optimization
+- Real-time capability assessment
+- Memory usage analysis
+
+**Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDenoiserFactoryDemo`
+
+### 11. ScalarVsVectorDemo
 
 **Purpose**: Understanding scalar vs SIMD/vector optimization paths
 
@@ -150,12 +180,14 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 ### Additional Demos (Main Package)
 
 **FinancialOptimizationDemo** (`ai.prophetizo.FinancialOptimizationDemo`)
+
 - High-frequency trading signal analysis
 - Market microstructure noise filtering
 - Real-time volatility estimation
 - Optimized for financial time series
 
 **OptimizationDemo** (`ai.prophetizo.OptimizationDemo`)
+
 - Comprehensive optimization showcase
 - Platform-specific optimizations
 - Memory and performance tuning
@@ -181,6 +213,8 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 ### Real-time Applications
 
+- StreamingDenoiserDemo - Real-time stream processing
+- StreamingDenoiserFactoryDemo - Implementation selection
 - MemoryEfficiencyDemo - Low-latency patterns
 - ScalarVsVectorDemo - SIMD optimization control
 
@@ -204,12 +238,12 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 ```java
 // Using factory
 WaveletTransform transform = new WaveletTransformFactory()
-    .boundaryMode(BoundaryMode.PERIODIC)
-    .create(Daubechies.DB4);
+                .boundaryMode(BoundaryMode.PERIODIC)
+                .create(Daubechies.DB4);
 
 // Direct instantiation
 WaveletTransform transform = new WaveletTransform(
-    new Haar(), BoundaryMode.ZERO_PADDING);
+        new Haar(), BoundaryMode.ZERO_PADDING);
 ```
 
 ### Basic Transform
@@ -225,10 +259,12 @@ double[] reconstructed = transform.inverse(result);
 ```java
 MemoryPool pool = new MemoryPool();
 double[] buffer = pool.borrowArray(size);
-try {
-    // Use buffer
-} finally {
-    pool.returnArray(buffer);
+try{
+        // Use buffer
+        }finally{
+        pool.
+
+returnArray(buffer);
 }
 ```
 

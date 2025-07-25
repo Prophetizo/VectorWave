@@ -2,8 +2,18 @@ package ai.prophetizo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
+import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Demonstrates the VectorWave library with various wavelet types.
@@ -29,6 +39,9 @@ public class Main {
 
         // Demonstrate multi-level decomposition
         demonstrateMultiLevelDecomposition();
+
+        // Demonstrate streaming denoiser
+        demonstrateStreamingDenoiser();
     }
 
     private static void demonstrateOrthogonalWavelets(double[] signal, WaveletTransformFactory factory) {
@@ -151,5 +164,130 @@ public class Main {
         System.out.println("\nDenoising by removing finest scale:");
         double[] denoised = mwt.reconstructFromLevel(result, 2);
         System.out.println("   Denoised signal preserves main trends while removing noise");
+    }
+
+    private static void demonstrateStreamingDenoiser() {
+        System.out.println("\n\nSTREAMING DENOISER");
+        System.out.println("==================");
+        System.out.println("Real-time denoising with dual implementations\n");
+
+        try {
+            // Generate a noisy signal
+            int signalLength = 1024;
+            double[] noisySignal = new double[signalLength];
+            for (int i = 0; i < signalLength; i++) {
+                // Clean signal: sine wave
+                double clean = Math.sin(2 * Math.PI * i / 64.0);
+                // Add noise
+                double noise = 0.2 * (Math.random() - 0.5);
+                noisySignal[i] = clean + noise;
+            }
+
+            // Configuration for streaming denoiser
+            StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
+                    .wavelet(Daubechies.DB4)
+                    .blockSize(256)
+                    .thresholdMethod(WaveletDenoiser.ThresholdMethod.UNIVERSAL)
+                    .build();
+
+            // Demonstrate FAST implementation
+            System.out.println("1. FAST Implementation (Real-time optimized):");
+            demonstrateStreamingImplementation(
+                    StreamingDenoiserFactory.Implementation.FAST,
+                    config,
+                    noisySignal
+            );
+
+            // Demonstrate QUALITY implementation
+            System.out.println("\n2. QUALITY Implementation (SNR optimized):");
+            demonstrateStreamingImplementation(
+                    StreamingDenoiserFactory.Implementation.QUALITY,
+                    config,
+                    noisySignal
+            );
+
+            // Demonstrate AUTO selection
+            System.out.println("\n3. AUTO Implementation (Factory selects based on config):");
+            StreamingDenoiserConfig autoConfig = new StreamingDenoiserConfig.Builder()
+                    .wavelet(new Haar())
+                    .blockSize(128)  // Small block size will trigger FAST selection
+                    .build();
+
+            StreamingDenoiserStrategy autoDenoiser = StreamingDenoiserFactory.create(autoConfig);
+            StreamingDenoiserStrategy.PerformanceProfile profile = autoDenoiser.getPerformanceProfile();
+            System.out.println("   Factory selected: " + (profile.expectedLatencyMicros() < 1.0 ? "FAST" : "QUALITY"));
+            System.out.println("   Expected latency: " + String.format("%.2f", profile.expectedLatencyMicros()) + " µs/sample");
+            System.out.println("   Real-time capable: " + profile.isRealTimeCapable());
+            autoDenoiser.close();
+
+        } catch (Exception e) {
+            System.err.println("Error in streaming denoiser demo: " + e.getMessage());
+        }
+    }
+
+    private static void demonstrateStreamingImplementation(
+            StreamingDenoiserFactory.Implementation impl,
+            StreamingDenoiserConfig config,
+            double[] noisySignal) throws Exception {
+
+        StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(impl, config);
+
+        // Get performance profile
+        StreamingDenoiserStrategy.PerformanceProfile profile = denoiser.getPerformanceProfile();
+        System.out.println("   Expected latency: " + String.format("%.2f", profile.expectedLatencyMicros()) + " µs/sample");
+        System.out.println("   Expected SNR improvement: " + String.format("%.1f", profile.expectedSNRImprovement()) + " dB");
+        System.out.println("   Memory usage: " + (profile.memoryUsageBytes() / 1024) + " KB");
+        System.out.println("   Real-time capable: " + profile.isRealTimeCapable());
+
+        // Process the signal
+        List<double[]> results = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        denoiser.subscribe(new Flow.Subscriber<double[]>() {
+            Flow.Subscription subscription;
+
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(double[] item) {
+                results.add(item);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        });
+
+        // Process in chunks to simulate streaming
+        long startTime = System.nanoTime();
+        int chunkSize = 64;
+        for (int i = 0; i < noisySignal.length; i += chunkSize) {
+            int end = Math.min(i + chunkSize, noisySignal.length);
+            double[] chunk = Arrays.copyOfRange(noisySignal, i, end);
+            denoiser.process(chunk);
+        }
+        denoiser.close();
+
+        latch.await(1, TimeUnit.SECONDS);
+        long elapsedNanos = System.nanoTime() - startTime;
+
+        // Report actual performance
+        StreamingWaveletTransform.StreamingStatistics stats = denoiser.getStatistics();
+        System.out.println("   Actual performance:");
+        System.out.println("     - Samples processed: " + stats.getSamplesProcessed());
+        System.out.println("     - Blocks emitted: " + stats.getBlocksEmitted());
+        System.out.println("     - Average processing time: " + String.format("%.3f", stats.getAverageProcessingTime()) + " ms/block");
+        System.out.println("     - Total time: " + String.format("%.2f", elapsedNanos / 1_000_000.0) + " ms");
+        System.out.println("     - Throughput: " + String.format("%.2f", noisySignal.length / (elapsedNanos / 1_000_000_000.0)) + " samples/sec");
     }
 }

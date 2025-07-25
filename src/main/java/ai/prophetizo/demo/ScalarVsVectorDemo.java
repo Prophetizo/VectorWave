@@ -2,14 +2,17 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.api.Haar;
+import ai.prophetizo.wavelet.api.Symlet;
 import ai.prophetizo.wavelet.config.TransformConfig;
 
 import java.util.Arrays;
 
 /**
  * Demonstrates how to force scalar vs vector (SIMD) optimization paths.
- * 
+ *
  * <p>This demo shows:
  * <ul>
  *   <li>How to explicitly force scalar operations</li>
@@ -53,8 +56,8 @@ public class ScalarVsVectorDemo {
 
         // Create transform with scalar-only config
         WaveletTransform transform = new WaveletTransform(
-                Daubechies.DB4, 
-                BoundaryMode.PERIODIC, 
+                Daubechies.DB4,
+                BoundaryMode.PERIODIC,
                 scalarConfig
         );
 
@@ -82,8 +85,8 @@ public class ScalarVsVectorDemo {
 
         // Create transform with SIMD-forced config
         WaveletTransform transform = new WaveletTransform(
-                new Haar(), 
-                BoundaryMode.ZERO_PADDING, 
+                new Haar(),
+                BoundaryMode.ZERO_PADDING,
                 simdConfig
         );
 
@@ -110,14 +113,14 @@ public class ScalarVsVectorDemo {
 
         // Method 1: Using config with constructor
         WaveletTransform transform1 = new WaveletTransform(
-                Symlet.SYM4, 
-                BoundaryMode.PERIODIC, 
+                Symlet.SYM4,
+                BoundaryMode.PERIODIC,
                 autoConfig
         );
 
         // Method 2: Using default constructor (same as auto-detect)
         WaveletTransform transform2 = new WaveletTransform(
-                Symlet.SYM4, 
+                Symlet.SYM4,
                 BoundaryMode.PERIODIC
         );
 
@@ -126,7 +129,7 @@ public class ScalarVsVectorDemo {
         TransformResult result2 = transform2.forward(signal);
 
         System.out.println("Both transforms use auto-detection");
-        System.out.println("Results are identical: " + 
+        System.out.println("Results are identical: " +
                 Arrays.equals(result1.approximationCoeffs(), result2.approximationCoeffs()));
         System.out.println();
     }
@@ -190,11 +193,11 @@ public class ScalarVsVectorDemo {
 
         System.out.printf("Signal size: %d samples\n", signalSize);
         System.out.printf("Iterations: %d\n\n", iterations);
-        System.out.printf("Scalar forced: %.2f ms (%.2f µs/transform)\n", 
+        System.out.printf("Scalar forced: %.2f ms (%.2f µs/transform)\n",
                 scalarTime / 1e6, scalarTime / (iterations * 1e3));
-        System.out.printf("SIMD forced:   %.2f ms (%.2f µs/transform)\n", 
+        System.out.printf("SIMD forced:   %.2f ms (%.2f µs/transform)\n",
                 simdTime / 1e6, simdTime / (iterations * 1e3));
-        System.out.printf("Auto-detect:   %.2f ms (%.2f µs/transform)\n", 
+        System.out.printf("Auto-detect:   %.2f ms (%.2f µs/transform)\n",
                 autoTime / 1e6, autoTime / (iterations * 1e3));
 
         System.out.println("\nNote: Performance will vary based on:");
@@ -256,8 +259,8 @@ public class ScalarVsVectorDemo {
     private static double[] createTestSignal(int length) {
         double[] signal = new double[length];
         for (int i = 0; i < length; i++) {
-            signal[i] = Math.sin(2 * Math.PI * i / 32.0) + 
-                       0.5 * Math.cos(2 * Math.PI * i / 16.0);
+            signal[i] = Math.sin(2 * Math.PI * i / 32.0) +
+                    0.5 * Math.cos(2 * Math.PI * i / 16.0);
         }
         return signal;
     }

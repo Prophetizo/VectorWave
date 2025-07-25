@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +62,7 @@ public class SlidingWindowTransform extends SubmissionPublisher<TransformResult>
         if (boundaryMode == null) {
             throw new InvalidArgumentException("Boundary mode cannot be null");
         }
-        if (windowSize < 16 || (windowSize & (windowSize - 1)) != 0) {
+        if (windowSize < 16 || !ValidationUtils.isPowerOfTwo(windowSize)) {
             throw new InvalidArgumentException(
                     "Window size must be a power of 2 and at least 16");
         }

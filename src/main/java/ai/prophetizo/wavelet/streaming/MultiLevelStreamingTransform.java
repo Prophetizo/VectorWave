@@ -42,8 +42,8 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
     private final double[] inputBuffer;
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
-    private int inputPosition = 0;
     private final Object processLock = new Object();
+    private int inputPosition = 0;
 
     /**
      * Creates a multi-level streaming transform.
@@ -63,9 +63,7 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
         if (boundaryMode == null) {
             throw new InvalidArgumentException("Boundary mode cannot be null");
         }
-        if (!ValidationUtils.isPowerOfTwo(blockSize)) {
-            throw new InvalidArgumentException("Block size must be a power of 2");
-        }
+        ValidationUtils.validateBlockSizeForWavelet(blockSize, "MultiLevelStreamingTransform");
         if (levels < 1) {
             throw new InvalidArgumentException("Levels must be at least 1");
         }
@@ -129,7 +127,7 @@ class MultiLevelStreamingTransform extends SubmissionPublisher<TransformResult>
             processSingleSample(sample);
         }
     }
-    
+
     private void processSingleSample(double sample) {
         inputBuffer[inputPosition] = sample;
         inputPosition++;
