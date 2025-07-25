@@ -24,13 +24,8 @@ class StreamingDenoiserTest {
     
     // Test constants
     /**
-     * Block index used to simulate a processing spike in performance tests.
-     * Block 3 is chosen because:
-     * <ul>
-     *   <li>It's after initial JIT warmup (blocks 0-2) but before the final block</li>
-     *   <li>This provides a realistic scenario where processing has stabilized before the spike</li>
-     *   <li>It allows verification that max processing time tracking captures mid-stream variations</li>
-     * </ul>
+     * Block index (3) for simulating processing spike - chosen after JIT warmup (blocks 0-2) 
+     * to capture realistic mid-stream performance variations.
      */
     private static final int SPIKE_BLOCK_INDEX = 3;
     

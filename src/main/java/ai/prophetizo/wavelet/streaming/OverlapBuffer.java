@@ -25,7 +25,15 @@ public class OverlapBuffer {
     private static final float LOAD_FACTOR = 0.75f;
     
     // Thread-safe LRU cache for pre-computed windows
-    // Note: We use explicit synchronization to ensure atomicity of put-and-evict operations
+    // Design choice: We use LinkedHashMap with explicit synchronization rather than:
+    // 1. Collections.synchronizedMap - doesn't make put-and-evict atomic, same issue we're solving
+    // 2. ConcurrentHashMap - doesn't support LRU eviction, would require complex custom implementation
+    // 
+    // This approach gives us:
+    // - True LRU eviction with the accessOrder=true parameter
+    // - Atomic put-and-evict operations via synchronized blocks
+    // - Simple, maintainable code that's easy to reason about
+    // - Consistent performance characteristics
     private static final Map<WindowKey, double[]> WINDOW_CACHE = new LinkedHashMap<WindowKey, double[]>(
             INITIAL_CAPACITY, LOAD_FACTOR, true) {
         @Override
