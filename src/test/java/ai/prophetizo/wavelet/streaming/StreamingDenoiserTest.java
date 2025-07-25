@@ -98,11 +98,8 @@ class StreamingDenoiserTest {
     
     // Test constants
     /**
-     * Block index (3) for simulating a processing spike. This index is chosen because
-     * blocks 0-2 are typically executed during the JIT (Just-In-Time) compilation warmup
-     * period, where the JVM optimizes code execution. By selecting block 3, we ensure
-     * that the test captures performance characteristics after the warmup phase, 
-     * reflecting realistic mid-stream performance variations.
+     * Block index (3) for simulating a processing spike. Chosen after JIT warmup
+     * to ensure consistent performance measurement.
      */
     private static final int SPIKE_BLOCK_INDEX = 3;
     
