@@ -402,6 +402,85 @@ ai.prophetizo.wavelet/
 └── exception/              # Custom exceptions
 ```
 
+## API Stability Policy
+
+VectorWave follows [Semantic Versioning](https://semver.org/) to provide clear expectations about API stability and changes.
+
+### Versioning Scheme
+
+- **Major versions** (e.g., 1.0.0 → 2.0.0): May contain breaking changes to public APIs
+- **Minor versions** (e.g., 1.0.0 → 1.1.0): Add new functionality without breaking existing APIs
+- **Patch versions** (e.g., 1.0.0 → 1.0.1): Bug fixes and performance improvements only
+
+### API Stability Guarantees
+
+#### Public API (`ai.prophetizo.wavelet.api` package)
+- **Stable**: All interfaces and classes in the public API package are considered stable once released
+- **Backward Compatibility**: Minor and patch versions maintain full backward compatibility
+- **Breaking Changes**: Only introduced in major versions with advance notice
+
+#### Specific Components
+- **Wavelet Interfaces**: The sealed interface hierarchy (`Wavelet`, `DiscreteWavelet`, etc.) is considered core API
+- **Transform Classes**: `WaveletTransform`, `WaveletTransformFactory`, and `TransformResult` are stable
+- **Registry**: `WaveletRegistry` methods and wavelet discovery functionality are stable
+- **Enums**: `BoundaryMode`, `WaveletType` - additions are non-breaking, removals require major version
+
+#### Internal Implementation (`ai.prophetizo.wavelet.internal` package)
+- **No Guarantees**: Internal packages may change in any version
+- **Not for Direct Use**: Applications should only use public API interfaces
+
+### Pre-Release Policy
+
+#### SNAPSHOT Versions (Current: 1.0-SNAPSHOT)
+- **Active Development**: APIs may change frequently during development
+- **No Stability Guarantees**: Breaking changes may occur without notice
+- **Testing Encouraged**: Feedback welcome, but expect potential compatibility issues
+
+#### Release Candidates (RC)
+- **API Freeze**: Public API is frozen, only critical bug fixes allowed
+- **Migration Guide**: Provided for any breaking changes from previous major version
+
+### Deprecation Policy
+
+#### Process
+1. **Deprecation Notice**: Deprecated APIs marked with `@Deprecated` annotation and JavaDoc
+2. **Alternative Provided**: Replacement functionality documented in deprecation notice
+3. **Minimum Support**: Deprecated APIs supported for at least one major version cycle
+4. **Removal Timeline**: Removed in next major version after deprecation period
+
+#### Example Timeline
+```
+v1.0.0: Feature X introduced
+v1.2.0: Feature X deprecated (Feature Y introduced as replacement)  
+v2.0.0: Feature X removed
+```
+
+### Change Communication
+
+- **Release Notes**: Detailed change log for each version
+- **Migration Guides**: Step-by-step guides for major version upgrades
+- **GitHub Issues**: Breaking changes discussed in advance via GitHub issues
+- **Documentation Updates**: README and JavaDoc updated with each release
+
+### Performance Guarantees
+
+- **Algorithmic Complexity**: Core transform algorithms maintain same computational complexity
+- **Performance Regressions**: Significant performance decreases (>20%) considered breaking changes
+- **Benchmarking**: Comprehensive JMH benchmarks ensure performance consistency
+
+### Mathematical Correctness
+
+- **Wavelet Coefficients**: Mathematical correctness of wavelet implementations guaranteed
+- **Transform Accuracy**: Numerical precision maintained within documented tolerances
+- **Algorithm Changes**: Updates to improve accuracy are not considered breaking if within tolerance
+
+### Current Status
+
+**Version 1.0-SNAPSHOT**: Pre-release development phase
+- API may change based on user feedback and testing
+- Production use not recommended until stable 1.0.0 release
+- Major API decisions still being finalized
+
 ## Testing
 
 ### Running Tests
