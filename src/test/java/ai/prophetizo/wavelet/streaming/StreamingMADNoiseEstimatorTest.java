@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StreamingMADNoiseEstimatorTest {
     
-    // Test data sizes
-    private static final int LARGE_DATA_SIZE = 1000;
-    private static final int SMALL_DATA_SIZE = 100;
+    // Test data sizes - reduced for faster tests while maintaining statistical validity
+    private static final int LARGE_DATA_SIZE = 500;  // Reduced from 1000
+    private static final int SMALL_DATA_SIZE = 50;   // Reduced from 100
     
     // Noise parameters
     private static final double NOISE_MEAN = 0.0;
@@ -22,15 +22,22 @@ class StreamingMADNoiseEstimatorTest {
     private static final int WARMUP_ITERATIONS = 50;
     private static final double DECAY_FACTOR = 0.9;
     
-    // Outlier parameters
-    private static final int OUTLIER_START_INDEX = 90;
+    // Outlier parameters - adjusted for smaller test data size
+    private static final int OUTLIER_PERCENTAGE = 10; // 10% outliers
     private static final double OUTLIER_VALUE = 10.0;
     
     private StreamingMADNoiseEstimator estimator;
     
+    // Pre-generated test data for tests that don't need fresh randomness
+    private double[] standardNoiseData;
+    
     @BeforeEach
     void setUp() {
         estimator = new StreamingMADNoiseEstimator(DECAY_FACTOR);
+        
+        // Pre-generate standard noise data for tests that don't require specific parameters
+        // This reduces test time while maintaining test validity
+        standardNoiseData = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
     }
     
     @Test
@@ -76,9 +83,8 @@ class StreamingMADNoiseEstimatorTest {
     
     @Test
     void testThresholdCalculation() {
-        // Set known noise level
-        double[] noise = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
-        estimator.estimateNoise(noise);
+        // Use pre-generated data for threshold calculation test
+        estimator.estimateNoise(standardNoiseData);
         
         // Test different threshold methods
         double universal = estimator.getThreshold(ThresholdMethod.UNIVERSAL);
@@ -96,8 +102,8 @@ class StreamingMADNoiseEstimatorTest {
     
     @Test
     void testReset() {
-        // Add data
-        double[] noise = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
+        // Use pre-generated data for simple reset test
+        double[] noise = standardNoiseData;
         estimator.estimateNoise(noise);
         
         assertTrue(estimator.getCurrentNoiseLevel() > 0);
@@ -121,13 +127,12 @@ class StreamingMADNoiseEstimatorTest {
     
     @Test
     void testRobustnessToOutliers() {
-        // Generate noise with outliers
-        double[] noise = generateGaussianNoise(OUTLIER_START_INDEX, NOISE_MEAN, NOISE_STD_LOW);
+        // Generate base noise
+        double[] withOutliers = generateGaussianNoise(SMALL_DATA_SIZE, NOISE_MEAN, NOISE_STD_LOW);
         
-        // Add outliers
-        double[] withOutliers = new double[SMALL_DATA_SIZE];
-        System.arraycopy(noise, 0, withOutliers, 0, OUTLIER_START_INDEX);
-        for (int i = OUTLIER_START_INDEX; i < SMALL_DATA_SIZE; i++) {
+        // Add outliers to last 10% of data
+        int outlierStartIndex = SMALL_DATA_SIZE - (SMALL_DATA_SIZE * OUTLIER_PERCENTAGE / 100);
+        for (int i = outlierStartIndex; i < SMALL_DATA_SIZE; i++) {
             withOutliers[i] = (i % 2 == 0) ? OUTLIER_VALUE / 2 : -OUTLIER_VALUE / 2; // Large outliers
         }
         

@@ -94,18 +94,24 @@ class StreamingDenoiserMathValidationTest {
     
     private static final double EPSILON = 1e-10;
     
-    // SNR_IMPROVEMENT_THRESHOLD: Tests streaming output vs noisy input
-    // -5.0 dB means streaming can have SNR up to 5 dB worse than the noisy input
-    // and still pass. This accounts for windowing artifacts while ensuring the
-    // denoiser still provides some benefit (removes some noise).
+    /**
+     * Maximum acceptable SNR degradation for streaming denoising vs the noisy input.
+     * -5.0 dB means streaming can have SNR up to 5 dB worse than the noisy input
+     * and still pass. This accounts for windowing artifacts while ensuring the
+     * denoiser still provides some benefit (removes some noise).
+     */
     private static final double SNR_IMPROVEMENT_THRESHOLD = -5.0;
     
-    // STREAMING_VS_BATCH_TOLERANCE: Tests streaming vs batch processing difference
-    // This is a different comparison - streaming will always be worse than batch,
-    // but we want to ensure it's not TOO much worse. Based on benchmarks:
-    // - Fast streaming: 4.5-10.5 dB worse than batch (average 7.0 dB)
-    // - Quality streaming: 0.5-5.5 dB worse than batch (average 3.0 dB)
-    // 8.0 dB tolerance accommodates Fast streaming while catching severe issues.
+    /**
+     * Maximum acceptable SNR difference between streaming and batch processing.
+     * This is a different comparison - streaming will always be worse than batch,
+     * but we want to ensure it's not TOO much worse. Based on benchmarks:
+     * <ul>
+     *   <li>Fast streaming: 4.5-10.5 dB worse than batch (average 7.0 dB)</li>
+     *   <li>Quality streaming: 0.5-5.5 dB worse than batch (average 3.0 dB)</li>
+     * </ul>
+     * 8.0 dB tolerance accommodates Fast streaming while catching severe issues.
+     */
     private static final double STREAMING_VS_BATCH_TOLERANCE = 8.0;
     
     @Test

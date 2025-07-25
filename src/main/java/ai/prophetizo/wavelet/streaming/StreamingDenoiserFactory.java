@@ -110,17 +110,21 @@ public final class StreamingDenoiserFactory {
             throw new InvalidArgumentException("Configuration must be specified");
         }
 
-        Implementation selected = implementation;
+        // Resolve AUTO to a concrete implementation
+        Implementation selected = (implementation == Implementation.AUTO) 
+            ? selectImplementation(config) 
+            : implementation;
 
-        // Auto-select implementation based on configuration
-        if (implementation == Implementation.AUTO) {
-            selected = selectImplementation(config);
+        // Defensive check to ensure AUTO was resolved
+        if (selected == Implementation.AUTO) {
+            // This should never happen, but provide a sensible default
+            selected = Implementation.FAST;
         }
 
         return switch (selected) {
             case FAST -> new FastStreamingDenoiser(config);
             case QUALITY -> new QualityStreamingDenoiser(config);
-            case AUTO -> throw new IllegalStateException("AUTO should have been resolved");
+            case AUTO -> new FastStreamingDenoiser(config); // Defensive default
         };
     }
 
