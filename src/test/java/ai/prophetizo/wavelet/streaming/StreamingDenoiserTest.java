@@ -105,7 +105,6 @@ class StreamingDenoiserTest {
     
     @Test
     void testBuilderValidation() {
-        // Valid builder
         assertDoesNotThrow(() -> new StreamingDenoiser.Builder()
             .wavelet(new Haar())
             .blockSize(256)
