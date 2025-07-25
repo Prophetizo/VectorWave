@@ -36,12 +36,16 @@ public class Main {
         demonstrateBiorthogonalWavelets(signal, factory);
         demonstrateContinuousWavelets(signal, factory);
         demonstrateWaveletRegistry();
-
+      
         // Demonstrate multi-level decomposition
         demonstrateMultiLevelDecomposition();
 
         // Demonstrate streaming denoiser
         demonstrateStreamingDenoiser();
+        
+        // Point users to comprehensive error handling examples
+        System.out.println("\n\nFor comprehensive error handling examples, run:");
+        System.out.println("java -cp target/classes ai.prophetizo.ErrorHandlingDemo");
     }
 
     private static void demonstrateOrthogonalWavelets(double[] signal, WaveletTransformFactory factory) {
