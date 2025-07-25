@@ -5,43 +5,85 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 /**
  * Factory for creating streaming denoiser implementations.
  * 
- * <p>This factory allows easy selection of the appropriate denoiser implementation
- * based on specific use case requirements:</p>
+ * <p>This factory provides a centralized way to create streaming denoiser instances,
+ * supporting both manual and automatic implementation selection based on use case
+ * requirements. The factory pattern enables easy switching between implementations
+ * without changing client code.</p>
  * 
+ * <h3>Implementation Selection</h3>
+ * <p>The factory supports three selection modes:</p>
  * <ul>
- *   <li><b>FAST</b>: Optimized for real-time processing with minimal latency</li>
- *   <li><b>QUALITY</b>: Optimized for better denoising quality at the cost of performance</li>
- *   <li><b>AUTO</b>: Automatically selects based on configuration parameters</li>
+ *   <li><b>FAST</b>: Forces the fast implementation for strict real-time requirements</li>
+ *   <li><b>QUALITY</b>: Forces the quality implementation for best denoising results</li>
+ *   <li><b>AUTO</b>: Intelligently selects based on configuration parameters</li>
  * </ul>
  * 
- * <h3>Example Usage:</h3>
+ * <h3>Automatic Selection Logic</h3>
+ * <p>When using AUTO mode, the factory considers:</p>
+ * <ul>
+ *   <li>Overlap factor and adaptive threshold combination</li>
+ *   <li>Block size (smaller blocks favor FAST)</li>
+ *   <li>Real-time capability requirements</li>
+ * </ul>
+ * 
+ * <h3>Usage Examples</h3>
  * <pre>{@code
- * // Real-time audio processing
- * StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(
- *     Implementation.FAST,
- *     new StreamingDenoiserConfig.Builder()
- *         .wavelet(Daubechies.DB4)
- *         .blockSize(256)
- *         .overlapFactor(0.5)
- *         .build()
- * );
+ * // Example 1: Real-time audio processing (48 kHz)
+ * StreamingDenoiserConfig audioConfig = new StreamingDenoiserConfig.Builder()
+ *     .wavelet(Daubechies.DB4)
+ *     .blockSize(256)        // ~5.3ms latency at 48 kHz
+ *     .overlapFactor(0.5)    // 50% overlap for smoothness
+ *     .adaptiveThreshold(true)
+ *     .build();
  * 
- * // High-quality offline processing
- * StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(
- *     Implementation.QUALITY,
- *     new StreamingDenoiserConfig.Builder()
- *         .wavelet(Symlet.SYM8)
- *         .blockSize(512)
- *         .overlapFactor(0.75)
- *         .build()
- * );
+ * StreamingDenoiserStrategy audioDenoiser = StreamingDenoiserFactory.create(
+ *     Implementation.FAST, audioConfig);
  * 
- * // Let the factory decide based on configuration
- * StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(
- *     Implementation.AUTO,
- *     config
- * );
+ * // Example 2: High-quality scientific signal processing
+ * StreamingDenoiserConfig sciConfig = new StreamingDenoiserConfig.Builder()
+ *     .wavelet(Symlet.SYM8)
+ *     .blockSize(1024)       // Larger block for better frequency resolution
+ *     .overlapFactor(0.75)   // High overlap for quality
+ *     .levels(4)             // Multi-level decomposition
+ *     .thresholdMethod(ThresholdMethod.SURE)
+ *     .build();
+ * 
+ * StreamingDenoiserStrategy sciDenoiser = StreamingDenoiserFactory.create(
+ *     Implementation.QUALITY, sciConfig);
+ * 
+ * // Example 3: Let factory choose based on requirements
+ * StreamingDenoiserConfig autoConfig = new StreamingDenoiserConfig.Builder()
+ *     .wavelet(new Haar())
+ *     .blockSize(128)        // Small block size
+ *     .overlapFactor(0.0)    // No overlap
+ *     .build();
+ * 
+ * // Factory will choose FAST due to small block size
+ * StreamingDenoiserStrategy autoDenoiser = StreamingDenoiserFactory.create(autoConfig);
  * }</pre>
+ * 
+ * <h3>Performance Profiling</h3>
+ * <p>The factory can provide expected performance characteristics without creating instances:</p>
+ * <pre>{@code
+ * PerformanceProfile profile = StreamingDenoiserFactory.getExpectedPerformance(
+ *     Implementation.QUALITY, config);
+ * 
+ * System.out.println("Expected latency: " + profile.expectedLatencyMicros() + " µs/sample");
+ * System.out.println("Real-time capable: " + profile.isRealTimeCapable());
+ * }</pre>
+ * 
+ * <h3>Best Practices</h3>
+ * <ul>
+ *   <li>Use AUTO mode unless you have specific requirements</li>
+ *   <li>Always close denoisers when done or use try-with-resources</li>
+ *   <li>Consider memory pool settings for multiple instances</li>
+ *   <li>Profile your specific use case for optimal configuration</li>
+ * </ul>
+ * 
+ * @see StreamingDenoiserStrategy
+ * @see StreamingDenoiserConfig
+ * @see FastStreamingDenoiser
+ * @see QualityStreamingDenoiser
  * 
  * @since 1.8.0
  */

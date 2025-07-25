@@ -34,6 +34,8 @@ VectorWave is a comprehensive Fast Wavelet Transform (FWT) library supporting mu
 - **Zero dependencies**: Pure Java implementation
 - **Performance-first design**: Multiple optimization paths (scalar, SIMD, cache-aware)
 - **Memory efficiency**: Object pooling and aligned memory allocation
+- **Streaming support**: Real-time processing with bounded memory usage
+- **Flexible performance**: Dual implementations for different use cases
 
 ### Wavelet Type Hierarchy
 
@@ -81,6 +83,10 @@ Wavelet (sealed base interface)
    - **WaveletDenoiser** (`wavelet/denoising/`): Signal denoising with multiple threshold methods
    - **MultiLevelWaveletTransform**: Multi-level decomposition and reconstruction
    - **StreamingWaveletTransform** (`wavelet/streaming/`): Real-time streaming support
+   - **StreamingDenoiser** (`wavelet/streaming/`): Dual-implementation streaming denoiser
+     - `FastStreamingDenoiser`: < 1 µs/sample latency for real-time
+     - `QualityStreamingDenoiser`: Better SNR with overlapping transforms
+     - Factory pattern with automatic implementation selection
    - **ParallelWaveletEngine** (`wavelet/concurrent/`): Parallel batch processing
    - **Memory Pools** (`wavelet/memory/`): Efficient memory management
    - **Padding Strategies** (`wavelet/padding/`): Flexible boundary handling
@@ -96,6 +102,10 @@ Wavelet (sealed base interface)
   - Apple Silicon: Benefits from SIMD with signals ≥ 8 elements
   - x86 (AVX2/AVX512): Benefits from SIMD with signals ≥ 16-32 elements
   - ARM (general): Benefits from SIMD with signals ≥ 8 elements
+- Streaming denoiser performance characteristics:
+  - Fast implementation: 0.35-0.70 µs/sample, always real-time capable
+  - Quality implementation: 0.2-11.4 µs/sample, real-time only without overlap
+  - Automatic selection based on configuration parameters
 
 ### Adding New Wavelets
 

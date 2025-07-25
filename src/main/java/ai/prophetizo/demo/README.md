@@ -133,7 +133,37 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 **Run**: `java -cp target/classes --add-modules jdk.incubator.vector ai.prophetizo.demo.DenoisingDemo`
 
-### 9. ScalarVsVectorDemo
+### 9. StreamingDenoiserDemo
+
+**Purpose**: Real-time streaming denoising with dual implementations
+
+**What it covers**:
+
+- Fast vs Quality implementation comparison
+- Real-time audio signal denoising
+- Financial data stream cleaning
+- Adaptive threshold adjustment
+- Multi-channel stream processing
+- Performance metrics and latency analysis
+
+**Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDenoiserDemo`
+
+### 10. StreamingDenoiserFactoryDemo
+
+**Purpose**: Factory pattern for streaming denoiser selection
+
+**What it covers**:
+
+- Manual implementation selection (FAST/QUALITY)
+- Automatic implementation selection
+- Performance profile comparison
+- Configuration-based optimization
+- Real-time capability assessment
+- Memory usage analysis
+
+**Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDenoiserFactoryDemo`
+
+### 11. ScalarVsVectorDemo
 
 **Purpose**: Understanding scalar vs SIMD/vector optimization paths
 
@@ -183,6 +213,8 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 ### Real-time Applications
 
+- StreamingDenoiserDemo - Real-time stream processing
+- StreamingDenoiserFactoryDemo - Implementation selection
 - MemoryEfficiencyDemo - Low-latency patterns
 - ScalarVsVectorDemo - SIMD optimization control
 
