@@ -122,28 +122,28 @@ public class P2QuantileEstimator {
         // Increment count early to maintain consistent state
         count++;
 
-        // Find cell k such that q[k] <= x < q[k+1]
+        // Find marker cell index such that q[markerCellIndex] <= x < q[markerCellIndex+1]
         // Note: With only 5 markers, linear search is optimal. Binary search would
         // add complexity without meaningful performance benefit for such a small array.
-        int k;
+        int markerCellIndex;
         if (x < q[0]) {
             q[0] = x;
-            k = 0;
+            markerCellIndex = 0;
         } else if (x >= q[MARKERS - 1]) {
             q[MARKERS - 1] = x;
-            k = MARKERS - 2;
+            markerCellIndex = MARKERS - 2;
         } else {
-            k = 0;
+            markerCellIndex = 0;
             for (int i = 1; i < MARKERS; i++) {
                 if (x < q[i]) {
-                    k = i - 1;
+                    markerCellIndex = i - 1;
                     break;
                 }
             }
         }
 
-        // Increment positions of markers k+1 to 4
-        for (int i = k + 1; i < MARKERS; i++) {
+        // Increment positions of markers markerCellIndex+1 to 4
+        for (int i = markerCellIndex + 1; i < MARKERS; i++) {
             n[i]++;
         }
 

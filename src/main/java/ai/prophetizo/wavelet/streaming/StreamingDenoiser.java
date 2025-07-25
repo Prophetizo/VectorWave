@@ -47,6 +47,13 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
      * The noise estimator needs a larger buffer to get accurate statistics.
      */
     private static final int DEFAULT_NOISE_BUFFER_FACTOR = 4;
+    
+    /**
+     * Scale factor for level-dependent threshold adjustment.
+     * Higher decomposition levels (coarser details) get scaled thresholds.
+     * For level L: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(L-1)
+     */
+    private static final double LEVEL_THRESHOLD_SCALE_FACTOR = 1.2;
 
     // Configuration
     private final Wavelet wavelet;
@@ -159,17 +166,48 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
 
             return resources;
 
+        } catch (InvalidArgumentException e) {
+            // Re-throw validation exceptions as-is
+            throw e;
+        } catch (OutOfMemoryError e) {
+            // Clean up and provide specific memory error context
+            cleanupResources(resources, sharedPoolAcquired);
+            throw new RuntimeException("Insufficient memory to initialize StreamingDenoiser with block size " + 
+                    builder.blockSize + ". Consider reducing block size or using shared memory pool.", e);
         } catch (Exception e) {
-            // Clean up any allocated resources
-            if (resources.processingBuffer != null && resources.memoryPool != null) {
+            // Clean up and provide initialization context
+            cleanupResources(resources, sharedPoolAcquired);
+            
+            String errorContext = String.format(
+                "Failed to initialize StreamingDenoiser (wavelet=%s, blockSize=%d, levels=%d, sharedPool=%s)",
+                builder.wavelet != null ? builder.wavelet.name() : "null",
+                builder.blockSize,
+                builder.levels,
+                builder.useSharedMemoryPool
+            );
+            
+            throw new RuntimeException(errorContext, e);
+        }
+    }
+    
+    /**
+     * Cleans up allocated resources during failed initialization.
+     */
+    private static void cleanupResources(ResourceBundle resources, boolean sharedPoolAcquired) {
+        if (resources.processingBuffer != null && resources.memoryPool != null) {
+            try {
                 resources.memoryPool.returnArray(resources.processingBuffer);
+            } catch (Exception ignored) {
+                // Best effort cleanup - don't mask original exception
             }
+        }
 
-            if (sharedPoolAcquired) {
+        if (sharedPoolAcquired) {
+            try {
                 SharedMemoryPoolManager.getInstance().releaseUser();
+            } catch (Exception ignored) {
+                // Best effort cleanup - don't mask original exception
             }
-
-            throw new RuntimeException("Failed to initialize StreamingDenoiser resources", e);
         }
     }
 
@@ -264,9 +302,9 @@ public final class StreamingDenoiser extends SubmissionPublisher<double[]>
 
                     // Apply level-dependent threshold scaling
                     // Higher levels (coarser details) get higher thresholds
-                    // level=1: threshold * 1.2^0 = threshold (finest details, lowest threshold)
-                    // level=N: threshold * 1.2^(N-1) (coarsest details, highest threshold)
-                    double levelThreshold = threshold * Math.pow(1.2, level - 1);
+                    // level=1: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^0 = threshold (finest details, lowest threshold)
+                    // level=N: threshold * LEVEL_THRESHOLD_SCALE_FACTOR^(N-1) (coarsest details, highest threshold)
+                    double levelThreshold = threshold * Math.pow(LEVEL_THRESHOLD_SCALE_FACTOR, level - 1);
                     double[] denoisedDetails = applyThreshold(details, levelThreshold);
 
                     // Create single-level result
