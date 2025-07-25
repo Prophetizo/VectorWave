@@ -25,13 +25,17 @@ public class OverlapBuffer {
     private static final float LOAD_FACTOR = 0.75f;
     
     // Thread-safe LRU cache for pre-computed windows
-    private static final Map<WindowKey, double[]> WINDOW_CACHE = Collections.synchronizedMap(
-            new LinkedHashMap<WindowKey, double[]>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
-                @Override
-                protected boolean removeEldestEntry(Map.Entry<WindowKey, double[]> eldest) {
-                    return size() > MAX_CACHE_SIZE;
-                }
-            });
+    // Note: We use explicit synchronization to ensure atomicity of put-and-evict operations
+    private static final Map<WindowKey, double[]> WINDOW_CACHE = new LinkedHashMap<WindowKey, double[]>(
+            INITIAL_CAPACITY, LOAD_FACTOR, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<WindowKey, double[]> eldest) {
+            return size() > MAX_CACHE_SIZE;
+        }
+    };
+    
+    // Lock for cache operations to ensure thread safety
+    private static final Object CACHE_LOCK = new Object();
 
     private final int blockSize;
     private final int overlapSize;
@@ -241,17 +245,26 @@ public class OverlapBuffer {
         WindowKey key = new WindowKey(length, type);
         
         // Check cache first
-        double[] cachedWindow = WINDOW_CACHE.get(key);
-        if (cachedWindow != null) {
-            // Return a copy to prevent external modification
-            return cachedWindow.clone();
+        synchronized (CACHE_LOCK) {
+            double[] cachedWindow = WINDOW_CACHE.get(key);
+            if (cachedWindow != null) {
+                // Return a copy to prevent external modification
+                return cachedWindow.clone();
+            }
         }
         
-        // Create new window
+        // Create new window outside of synchronized block to minimize lock time
         double[] newWindow = createWindow(length, type);
         
         // Cache it - LRU eviction happens automatically if needed
-        WINDOW_CACHE.put(key, newWindow.clone());
+        synchronized (CACHE_LOCK) {
+            // Double-check in case another thread cached it while we were creating
+            double[] existing = WINDOW_CACHE.get(key);
+            if (existing != null) {
+                return existing.clone();
+            }
+            WINDOW_CACHE.put(key, newWindow.clone());
+        }
         
         return newWindow;
     }
@@ -286,7 +299,9 @@ public class OverlapBuffer {
      * Clears the window cache. Useful for memory-constrained environments.
      */
     public static void clearWindowCache() {
-        WINDOW_CACHE.clear();
+        synchronized (CACHE_LOCK) {
+            WINDOW_CACHE.clear();
+        }
     }
     
     /**
@@ -295,7 +310,9 @@ public class OverlapBuffer {
      * @return number of cached windows
      */
     public static int getWindowCacheSize() {
-        return WINDOW_CACHE.size();
+        synchronized (CACHE_LOCK) {
+            return WINDOW_CACHE.size();
+        }
     }
     
     /**

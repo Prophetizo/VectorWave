@@ -12,11 +12,17 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  *
  * <p>Compared to the buffer-based MADNoiseEstimator, this version:
  * <ul>
- *   <li>Has O(1) update time instead of O(n log n)</li>
- *   <li>Uses constant memory regardless of window size</li>
+ *   <li>Has O(1) memory usage for the estimators (not counting input arrays)</li>
+ *   <li>Uses constant memory regardless of total samples processed</li>
  *   <li>Provides continuous estimates without buffer delays</li>
+ *   <li>Requires two passes over each input block (inherent to MAD calculation)</li>
  * </ul>
  * </p>
+ * 
+ * <p><b>Design Note:</b> The two-pass requirement over each block is not a limitation
+ * of the streaming approach but a fundamental requirement of MAD calculation. The key
+ * insight is that we maintain O(1) memory across all blocks processed, making this
+ * suitable for infinite streams.</p>
  *
  * @since 1.6.0
  */
@@ -79,12 +85,14 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
             return;
         }
 
-        // Two-pass approach is necessary and efficient for streaming MAD estimation:
-        // 1. We must know the median before calculating deviations (fundamental to MAD)
-        // 2. The P² algorithm maintains running estimates with O(1) memory
-        // 3. For typical block sizes (64-512 samples), two passes are negligible
-        // 4. Alternative single-pass approaches would require buffering all values,
-        //    defeating the purpose of O(1) streaming estimation
+        // Two-pass approach over input array is necessary for MAD calculation:
+        // 1. MAD requires median of |x - median(x)|, so we need median(x) first
+        // 2. This does NOT violate O(1) memory - we're iterating over the input array twice,
+        //    not storing it. The P² estimators maintain only 5 values each, regardless of
+        //    how many coefficients we've processed
+        // 3. The input array is provided by the caller and would exist anyway
+        // 4. For streaming: we maintain running estimates across blocks with O(1) memory,
+        //    while each block requires two passes over its coefficients
         
         // First pass: update value median estimator
         for (double coeff : newCoefficients) {

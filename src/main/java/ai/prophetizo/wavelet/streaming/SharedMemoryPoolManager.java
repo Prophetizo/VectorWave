@@ -49,10 +49,20 @@ public final class SharedMemoryPoolManager {
     /**
      * Gets the shared memory pool.
      *
-     * <p>This method also increments the active user count for monitoring.</p>
+     * <p>This method increments the active user count for monitoring. Users must
+     * call {@link #releaseUser()} when they are done using the pool.</p>
+     * 
+     * <p><b>Important:</b> The pool should not be cleared while there are active users.
+     * The {@link #clearIfUnused()} method checks for active users, but there is a small
+     * window between getting the pool and using it where clearing could theoretically occur.
+     * In practice, this is not an issue because:</p>
+     * <ul>
+     *   <li>clearIfUnused() is typically only called during shutdown</li>
+     *   <li>The pool itself is thread-safe for concurrent operations</li>
+     *   <li>Clearing the pool only affects future allocations, not existing arrays</li>
+     * </ul>
      * 
      * @return the shared memory pool
-     * @throws IllegalStateException if the pool has been cleared
      */
     public MemoryPool getSharedPool() {
         synchronized (poolLock) {
@@ -81,8 +91,13 @@ public final class SharedMemoryPoolManager {
     /**
      * Clears the shared pool if there are no active users.
      *
-     * <p>This can be called during application shutdown or when
-     * memory needs to be reclaimed.</p>
+     * <p>This method is intended for use during application shutdown or when
+     * memory needs to be reclaimed. It should not be called during normal
+     * operation while components may be actively using the pool.</p>
+     * 
+     * <p>Note: Clearing the pool only affects future allocations. Arrays that
+     * have already been borrowed from the pool remain valid and can still be
+     * returned to the pool (though they will be discarded).</p>
      *
      * @return true if the pool was cleared, false if there are active users
      */
