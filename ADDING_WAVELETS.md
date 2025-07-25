@@ -218,7 +218,25 @@ static {
 }
 ```
 
-### 4. Add Tests
+### 4. Consider Optimization Paths
+
+For optimal performance, consider implementing specialized optimizations:
+
+1. **SIMD Optimizations**: If your wavelet has specific patterns, add optimized paths in `VectorOps`
+2. **Cache-aware Operations**: For wavelets with large filters, consider cache-aware implementations
+3. **Specialized Kernels**: Add wavelet-specific kernels in `SpecializedKernels` for common operations
+
+Example:
+```java
+// In SpecializedKernels.java
+public static class MeyerKernel {
+    public static double[] optimizedTransform(double[] signal, Meyer wavelet) {
+        // Optimized implementation specific to Meyer wavelet
+    }
+}
+```
+
+### 5. Add Tests
 
 Create comprehensive tests for your wavelet:
 
@@ -241,7 +259,7 @@ void testMeyerWaveletProperties() {
 }
 ```
 
-### 5. Update Documentation
+### 6. Update Documentation
 
 - Add your wavelet to the README.md features list
 - Update any relevant examples
@@ -263,6 +281,9 @@ When implementing wavelets, you'll need the filter coefficients. Good sources in
 3. **Perfect Reconstruction**: Test that forward + inverse transform preserves the signal
 4. **Memory Efficiency**: Clone arrays when returning to ensure immutability
 5. **Documentation**: Include references to the source of coefficients
+6. **Thread Safety**: Ensure your wavelet implementation is thread-safe (typically by being immutable)
+7. **Validation**: Implement proper coefficient verification in `verifyCoefficients()`
+8. **Performance**: Consider platform-specific optimizations, especially for Apple Silicon and ARM
 
 ## Common Pitfalls
 
@@ -273,28 +294,88 @@ When implementing wavelets, you'll need the filter coefficients. Good sources in
 
 ## Testing Your Wavelet
 
-Use the provided test utilities:
+Use the provided test utilities and follow the existing test patterns:
 
 ```java
 // Test perfect reconstruction
-WaveletAssertions.assertPerfectReconstruction(signal, reconstructed, tolerance);
+double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+WaveletTransform transform = new WaveletTransform(myWavelet, BoundaryMode.PERIODIC);
+TransformResult result = transform.forward(signal);
+double[] reconstructed = transform.inverse(result);
+assertArrayEquals(signal, reconstructed, 1e-10);
 
-// Test energy preservation (Parseval's theorem)
-WaveletAssertions.assertEnergyPreserved(signal, result, tolerance);
+// Test coefficient verification
+Wavelet wavelet = new MyWavelet();
+boolean valid = wavelet.verifyCoefficients();
+assertTrue(valid, "Wavelet coefficients should be valid");
 
-// Test with standard signals
-double[] constant = WaveletTestUtils.createConstantSignal(64, 5.0);
-double[] linear = WaveletTestUtils.createLinearSignal(64);
-double[] sinusoidal = WaveletTestUtils.createSinusoidalSignal(64, 0.1);
+// Test with different boundary modes
+for (BoundaryMode mode : BoundaryMode.values()) {
+    transform = new WaveletTransform(myWavelet, mode);
+    // Test transform
+}
+
+// Test with various signal sizes
+int[] sizes = {8, 16, 32, 64, 128, 256, 512, 1024};
+for (int size : sizes) {
+    double[] testSignal = new double[size];
+    // Initialize and test
+}
+```
+
+### Performance Testing
+
+Add benchmarks for your wavelet:
+
+```java
+@Benchmark
+public TransformResult benchmarkMyWavelet(BenchmarkState state) {
+    return state.transform.forward(state.signal);
+}
+```
+
+## Integration with VectorWave Features
+
+Ensure your wavelet works with all VectorWave features:
+
+### Multi-Level Transforms
+```java
+MultiLevelWaveletTransform mlTransform = new MultiLevelWaveletTransform(
+    new MyWavelet(), 
+    BoundaryMode.PERIODIC
+);
+MultiLevelTransformResult result = mlTransform.decompose(signal, 3);
+```
+
+### Denoising
+```java
+WaveletDenoiser denoiser = new WaveletDenoiser(new MyWavelet());
+double[] denoised = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
+```
+
+### Streaming Support
+```java
+StreamingWaveletTransform stream = new StreamingWaveletTransformImpl(
+    new MyWavelet(), 
+    BoundaryMode.PERIODIC
+);
+```
+
+### Parallel Processing
+```java
+ParallelWaveletEngine engine = new ParallelWaveletEngine(new MyWavelet(), 4);
+List<TransformResult> results = engine.transformBatch(signals);
 ```
 
 ## Contributing
 
 When contributing a new wavelet:
 
-1. Ensure all tests pass
-2. Include benchmark results
-3. Provide references for coefficient sources
-4. Update this documentation if needed
+1. Ensure all tests pass: `mvn test`
+2. Check code coverage: `mvn clean test jacoco:report`
+3. Include benchmark results comparing to existing wavelets
+4. Provide references for coefficient sources
+5. Update README.md to include your wavelet in the features list
+6. Consider adding a demo showcasing your wavelet's use cases
 
 For questions or assistance, please open an issue on the project repository.
