@@ -15,11 +15,10 @@ public class StreamingThresholdAdapter {
     private final double releaseTime; // Time to decrease threshold (in blocks)
     private final double minThreshold;
     private final double maxThreshold;
-
-    private double currentThreshold;
-    private double targetThreshold;
     private final double attackRate;
     private final double releaseRate;
+    private double currentThreshold;
+    private double targetThreshold;
 
     /**
      * Creates a threshold adapter with default settings.

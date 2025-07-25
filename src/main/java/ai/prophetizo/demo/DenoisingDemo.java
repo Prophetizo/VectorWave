@@ -6,7 +6,10 @@ import ai.prophetizo.wavelet.api.Symlet;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
-import ai.prophetizo.wavelet.streaming.*;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
+import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +43,7 @@ public class DenoisingDemo {
 
         // Demo 5: Performance comparison
         demonstratePerformance();
-        
+
         // Demo 6: Streaming vs Batch denoising
         demonstrateStreamingVsBatch();
     }
@@ -337,20 +340,20 @@ public class DenoisingDemo {
         }
         return Math.sqrt(sum / (2 * (signal.length - 1)));
     }
-    
+
     private static void demonstrateStreamingVsBatch() {
         System.out.println("6. Streaming vs Batch Denoising Comparison");
         System.out.println("------------------------------------------");
         System.out.println("Comparing batch processing with real-time streaming approaches\n");
-        
+
         // Generate a longer signal for meaningful comparison
         int length = 2048;
         double[] cleanSignal = generateComplexSignal(length);
         double[] noisySignal = addNoise(cleanSignal, 0.3, 789);
-        
+
         System.out.printf("Signal length: %d samples\n", length);
         System.out.printf("Input SNR: %.2f dB\n\n", calculateSNR(cleanSignal, noisySignal));
-        
+
         try {
             // 1. Batch denoising (reference)
             System.out.println("Batch Denoising (Traditional):");
@@ -358,55 +361,55 @@ public class DenoisingDemo {
             WaveletDenoiser batchDenoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
             double[] batchDenoised = batchDenoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
             long batchTime = System.nanoTime() - startTime;
-            
+
             double batchSNR = calculateSNR(cleanSignal, batchDenoised);
             System.out.printf("  - SNR improvement: %.2f dB\n", batchSNR - calculateSNR(cleanSignal, noisySignal));
             System.out.printf("  - Processing time: %.3f ms\n", batchTime / 1_000_000.0);
-            System.out.printf("  - Latency: Full signal buffering required\n\n");
-            
+            System.out.print("  - Latency: Full signal buffering required\n\n");
+
             // 2. Fast streaming denoising
             System.out.println("Fast Streaming Denoising (Real-time):");
             StreamingDenoiserConfig fastConfig = new StreamingDenoiserConfig.Builder()
-                .wavelet(Daubechies.DB4)
-                .blockSize(256)
-                .thresholdMethod(ThresholdMethod.UNIVERSAL)
-                .build();
-                
+                    .wavelet(Daubechies.DB4)
+                    .blockSize(256)
+                    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+                    .build();
+
             double[] fastDenoised = processStreamingDenoiser(
-                StreamingDenoiserFactory.Implementation.FAST,
-                fastConfig,
-                noisySignal
+                    StreamingDenoiserFactory.Implementation.FAST,
+                    fastConfig,
+                    noisySignal
             );
-            
+
             double fastSNR = calculateSNR(cleanSignal, fastDenoised);
-            System.out.printf("  - SNR improvement: %.2f dB (%.2f dB vs batch)\n", 
-                fastSNR - calculateSNR(cleanSignal, noisySignal),
-                fastSNR - batchSNR);
+            System.out.printf("  - SNR improvement: %.2f dB (%.2f dB vs batch)\n",
+                    fastSNR - calculateSNR(cleanSignal, noisySignal),
+                    fastSNR - batchSNR);
             System.out.printf("  - Latency: ~256 samples (%.1f ms at 48kHz)\n", 256 / 48.0);
-            System.out.printf("  - Real-time capable: YES\n\n");
-            
+            System.out.print("  - Real-time capable: YES\n\n");
+
             // 3. Quality streaming denoising
             System.out.println("Quality Streaming Denoising (High SNR):");
             StreamingDenoiserConfig qualityConfig = new StreamingDenoiserConfig.Builder()
-                .wavelet(Daubechies.DB4)
-                .blockSize(512)
-                .overlapFactor(0.5)
-                .thresholdMethod(ThresholdMethod.UNIVERSAL)
-                .build();
-                
+                    .wavelet(Daubechies.DB4)
+                    .blockSize(512)
+                    .overlapFactor(0.5)
+                    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+                    .build();
+
             double[] qualityDenoised = processStreamingDenoiser(
-                StreamingDenoiserFactory.Implementation.QUALITY,
-                qualityConfig,
-                noisySignal
+                    StreamingDenoiserFactory.Implementation.QUALITY,
+                    qualityConfig,
+                    noisySignal
             );
-            
+
             double qualitySNR = calculateSNR(cleanSignal, qualityDenoised);
-            System.out.printf("  - SNR improvement: %.2f dB (%.2f dB vs batch)\n", 
-                qualitySNR - calculateSNR(cleanSignal, noisySignal),
-                qualitySNR - batchSNR);
+            System.out.printf("  - SNR improvement: %.2f dB (%.2f dB vs batch)\n",
+                    qualitySNR - calculateSNR(cleanSignal, noisySignal),
+                    qualitySNR - batchSNR);
             System.out.printf("  - Latency: ~768 samples with 50%% overlap (%.1f ms at 48kHz)\n", 768 / 48.0);
-            System.out.printf("  - Real-time capable: Depends on processing power\n\n");
-            
+            System.out.print("  - Real-time capable: Depends on processing power\n\n");
+
             // Summary
             System.out.println("Summary:");
             System.out.println("  - Batch: Best SNR but requires full signal buffering");
@@ -414,60 +417,60 @@ public class DenoisingDemo {
             System.out.println("  - Quality Streaming: Better SNR than Fast, moderate latency");
             System.out.println("  - Choose based on your latency vs quality requirements");
             System.out.println();
-            
+
         } catch (Exception e) {
             System.err.println("Error in streaming comparison: " + e.getMessage());
         }
     }
-    
+
     private static double[] processStreamingDenoiser(
             StreamingDenoiserFactory.Implementation impl,
             StreamingDenoiserConfig config,
             double[] signal) throws Exception {
-            
+
         StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(impl, config);
         List<double[]> results = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        
+
         denoiser.subscribe(new Flow.Subscriber<double[]>() {
             Flow.Subscription subscription;
-            
+
             @Override
             public void onSubscribe(Flow.Subscription subscription) {
                 this.subscription = subscription;
                 subscription.request(Long.MAX_VALUE);
             }
-            
+
             @Override
             public void onNext(double[] item) {
                 results.add(item);
             }
-            
+
             @Override
             public void onError(Throwable throwable) {
                 latch.countDown();
             }
-            
+
             @Override
             public void onComplete() {
                 latch.countDown();
             }
         });
-        
+
         // Process the signal
         long startTime = System.nanoTime();
         denoiser.process(signal);
         denoiser.close();
-        
+
         latch.await(1, TimeUnit.SECONDS);
         long processingTime = System.nanoTime() - startTime;
-        
+
         // Get performance stats
         StreamingWaveletTransform.StreamingStatistics stats = denoiser.getStatistics();
         System.out.printf("  - Processing time: %.3f ms\n", processingTime / 1_000_000.0);
         System.out.printf("  - Throughput: %.1f ksamples/sec\n", stats.getThroughput() / 1000);
         System.out.printf("  - Blocks processed: %d\n", stats.getBlocksEmitted());
-        
+
         // Reconstruct the full signal
         double[] output = new double[signal.length];
         int pos = 0;
@@ -475,7 +478,7 @@ public class DenoisingDemo {
             System.arraycopy(block, 0, output, pos, Math.min(block.length, output.length - pos));
             pos += block.length;
         }
-        
+
         return output;
     }
 }

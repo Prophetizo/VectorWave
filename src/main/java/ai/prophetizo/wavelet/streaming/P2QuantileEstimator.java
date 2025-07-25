@@ -10,7 +10,7 @@ package ai.prophetizo.wavelet.streaming;
  * <p>Based on the paper "The P² Algorithm for Dynamic Calculation of
  * Quantiles and Histograms Without Storing Observations" by Jain & Chlamtac.</p>
  *
- * <p><b>Algorithm Details:</b> The P² algorithm uses exactly 5 markers to maintain 
+ * <p><b>Algorithm Details:</b> The P² algorithm uses exactly 5 markers to maintain
  * its quantile estimate:</p>
  * <ul>
  *   <li>Marker 0: Minimum value seen so far</li>

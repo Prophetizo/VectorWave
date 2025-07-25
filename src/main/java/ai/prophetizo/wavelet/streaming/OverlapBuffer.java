@@ -1,16 +1,14 @@
 package ai.prophetizo.wavelet.streaming;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.LinkedHashMap;
-import java.util.Collections;
+import java.util.Map;
 
 /**
  * Manages overlapping buffers for smooth block transitions in streaming processing.
  *
  * <p>This class handles the overlap-add method for processing streaming signals
  * in blocks while maintaining continuity across block boundaries.</p>
- * 
+ *
  * <p>The overlap-add method works as follows:
  * <ol>
  *   <li>Each input block is windowed before processing</li>
@@ -27,16 +25,11 @@ public class OverlapBuffer {
     private static final int DEFAULT_CACHE_SIZE = 100;
     private static final int MAX_CACHE_SIZE = Integer.getInteger(
             "ai.prophetizo.wavelet.windowCacheSize", DEFAULT_CACHE_SIZE);
-    
-    // LinkedHashMap configuration constants
-    private static final int INITIAL_CAPACITY = 16;
-    private static final float LOAD_FACTOR = 0.75f;
-    
     // Thread-safe LRU cache for pre-computed windows
     // Design choice: We use LinkedHashMap with explicit synchronization rather than:
     // 1. Collections.synchronizedMap - doesn't make put-and-evict atomic, same issue we're solving
     // 2. ConcurrentHashMap - doesn't support LRU eviction, would require complex custom implementation
-    // 
+    //
     // This approach gives us:
     // - True LRU eviction with the accessOrder=true parameter
     // - Atomic put-and-evict operations via synchronized blocks
@@ -49,7 +42,9 @@ public class OverlapBuffer {
             return size() > MAX_CACHE_SIZE;
         }
     };
-    
+    // LinkedHashMap configuration constants
+    private static final int INITIAL_CAPACITY = 16;
+    private static final float LOAD_FACTOR = 0.75f;
     // Lock for cache operations to ensure thread safety
     private static final Object CACHE_LOCK = new Object();
 
@@ -67,8 +62,8 @@ public class OverlapBuffer {
      *
      * <p>The overlap buffer itself can work with any positive block size and does not
      * require power-of-2 sizes. Non-power-of-2 block sizes work correctly for general
-     * signal processing applications. However, when using this buffer with wavelet 
-     * transforms (e.g., in StreamingDenoiser), the block size must be a power of 2 
+     * signal processing applications. However, when using this buffer with wavelet
+     * transforms (e.g., in StreamingDenoiser), the block size must be a power of 2
      * to satisfy wavelet transform requirements.</p>
      *
      * <p>The power-of-2 validation is enforced by the wavelet transform components,
@@ -94,7 +89,7 @@ public class OverlapBuffer {
 
         // Get full-sized window for the block
         this.window = getCachedWindow(blockSize, windowFunction);
-        
+
         // Buffer for storing overlapping portion from previous block
         this.overlapAddBuffer = new double[overlapSize];
         this.hasHistory = false;
@@ -153,8 +148,70 @@ public class OverlapBuffer {
     }
 
     /**
+     * Gets a cached window or creates and caches a new one.
+     * This reduces allocation overhead when creating many buffers with the same parameters.
+     * Uses LRU eviction when cache size exceeds the limit.
+     */
+    private static double[] getCachedWindow(int length, WindowFunction type) {
+        WindowKey key = new WindowKey(length, type);
+
+        // Check cache first
+        synchronized (CACHE_LOCK) {
+            double[] cachedWindow = WINDOW_CACHE.get(key);
+            if (cachedWindow != null) {
+                // Return a copy to prevent external modification
+                return cachedWindow.clone();
+            }
+        }
+
+        // Create new window outside of synchronized block to minimize lock time
+        double[] newWindow = createWindow(length, type);
+
+        // Cache it - LRU eviction happens automatically if needed
+        synchronized (CACHE_LOCK) {
+            // Double-check in case another thread cached it while we were creating
+            double[] existing = WINDOW_CACHE.get(key);
+            if (existing != null) {
+                return existing.clone();
+            }
+            WINDOW_CACHE.put(key, newWindow.clone());
+        }
+
+        return newWindow;
+    }
+
+    /**
+     * Clears the window cache. Useful for memory-constrained environments.
+     */
+    public static void clearWindowCache() {
+        synchronized (CACHE_LOCK) {
+            WINDOW_CACHE.clear();
+        }
+    }
+
+    /**
+     * Gets the current window cache size.
+     *
+     * @return number of cached windows
+     */
+    public static int getWindowCacheSize() {
+        synchronized (CACHE_LOCK) {
+            return WINDOW_CACHE.size();
+        }
+    }
+
+    /**
+     * Gets the maximum window cache size.
+     *
+     * @return maximum cache size (configurable via system property)
+     */
+    public static int getMaxWindowCacheSize() {
+        return MAX_CACHE_SIZE;
+    }
+
+    /**
      * Processes a block with overlap-add handling.
-     * 
+     *
      * <p>For streaming applications, this method returns only the non-overlapping
      * portion (hop size) of the processed block to avoid data duplication.</p>
      *
@@ -182,44 +239,44 @@ public class OverlapBuffer {
         if (!hasHistory) {
             // First block - return the full block and save overlap portion
             hasHistory = true;
-            
+
             // Apply window to the full block
             double[] processed = new double[blockSize];
             for (int i = 0; i < blockSize; i++) {
                 processed[i] = input[i] * window[i];
             }
-            
+
             // Save the overlap portion (already windowed) for next iteration
             if (overlapSize > 0) {
                 System.arraycopy(processed, hopSize, overlapAddBuffer, 0, overlapSize);
             }
-            
+
             return processed;
         }
 
         // For subsequent blocks, perform overlap-add
         double[] output = new double[hopSize];
-        
+
         // Apply window to current block
         double[] windowed = new double[blockSize];
         for (int i = 0; i < blockSize; i++) {
             windowed[i] = input[i] * window[i];
         }
-        
+
         // Overlap-add: combine the saved overlap portion with the beginning of current block
         // For properly designed windows (Hann, Hamming), the overlapping windows should sum to ~1.0
         for (int i = 0; i < overlapSize; i++) {
             windowed[i] += overlapAddBuffer[i];
         }
-        
+
         // Extract the hop-size portion as output
         System.arraycopy(windowed, 0, output, 0, hopSize);
-        
+
         // Save the new overlap portion (already windowed) for next iteration
         if (overlapSize > 0) {
             System.arraycopy(windowed, hopSize, overlapAddBuffer, 0, overlapSize);
         }
-        
+
         return output;
     }
 
@@ -280,50 +337,17 @@ public class OverlapBuffer {
     }
 
     /**
-     * Gets a cached window or creates and caches a new one.
-     * This reduces allocation overhead when creating many buffers with the same parameters.
-     * Uses LRU eviction when cache size exceeds the limit.
-     */
-    private static double[] getCachedWindow(int length, WindowFunction type) {
-        WindowKey key = new WindowKey(length, type);
-        
-        // Check cache first
-        synchronized (CACHE_LOCK) {
-            double[] cachedWindow = WINDOW_CACHE.get(key);
-            if (cachedWindow != null) {
-                // Return a copy to prevent external modification
-                return cachedWindow.clone();
-            }
-        }
-        
-        // Create new window outside of synchronized block to minimize lock time
-        double[] newWindow = createWindow(length, type);
-        
-        // Cache it - LRU eviction happens automatically if needed
-        synchronized (CACHE_LOCK) {
-            // Double-check in case another thread cached it while we were creating
-            double[] existing = WINDOW_CACHE.get(key);
-            if (existing != null) {
-                return existing.clone();
-            }
-            WINDOW_CACHE.put(key, newWindow.clone());
-        }
-        
-        return newWindow;
-    }
-
-    /**
      * Key for window cache lookup.
      */
     private static class WindowKey {
         private final int length;
         private final WindowFunction type;
-        
+
         WindowKey(int length, WindowFunction type) {
             this.length = length;
             this.type = type;
         }
-        
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -331,39 +355,10 @@ public class OverlapBuffer {
             WindowKey windowKey = (WindowKey) o;
             return length == windowKey.length && type == windowKey.type;
         }
-        
+
         @Override
         public int hashCode() {
             return 31 * length + type.hashCode();
         }
-    }
-
-    /**
-     * Clears the window cache. Useful for memory-constrained environments.
-     */
-    public static void clearWindowCache() {
-        synchronized (CACHE_LOCK) {
-            WINDOW_CACHE.clear();
-        }
-    }
-    
-    /**
-     * Gets the current window cache size.
-     * 
-     * @return number of cached windows
-     */
-    public static int getWindowCacheSize() {
-        synchronized (CACHE_LOCK) {
-            return WINDOW_CACHE.size();
-        }
-    }
-    
-    /**
-     * Gets the maximum window cache size.
-     * 
-     * @return maximum cache size (configurable via system property)
-     */
-    public static int getMaxWindowCacheSize() {
-        return MAX_CACHE_SIZE;
     }
 }

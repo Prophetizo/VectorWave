@@ -5,10 +5,9 @@ import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
 import ai.prophetizo.wavelet.streaming.OverlapBuffer;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
 import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
-import ai.prophetizo.wavelet.streaming.FastStreamingDenoiser;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
 import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform.StreamingStatistics;
 
 import java.util.ArrayList;
@@ -30,70 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ul>
  */
 public class StreamingDenoiserDemo {
-    
-    // For backward compatibility with demo - use FastStreamingDenoiser
-    private static class StreamingDenoiser {
-        static class Builder {
-            private StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
-            
-            Builder wavelet(ai.prophetizo.wavelet.api.Wavelet wavelet) {
-                configBuilder.wavelet(wavelet);
-                return this;
-            }
-            
-            Builder blockSize(int blockSize) {
-                configBuilder.blockSize(blockSize);
-                return this;
-            }
-            
-            Builder overlapFactor(double overlapFactor) {
-                configBuilder.overlapFactor(overlapFactor);
-                return this;
-            }
-            
-            Builder levels(int levels) {
-                configBuilder.levels(levels);
-                return this;
-            }
-            
-            Builder thresholdMethod(ThresholdMethod method) {
-                configBuilder.thresholdMethod(method);
-                return this;
-            }
-            
-            Builder thresholdType(ThresholdType type) {
-                configBuilder.thresholdType(type);
-                return this;
-            }
-            
-            Builder adaptiveThreshold(boolean adaptive) {
-                configBuilder.adaptiveThreshold(adaptive);
-                return this;
-            }
-            
-            Builder attackTime(double attackTime) {
-                configBuilder.attackTime(attackTime);
-                return this;
-            }
-            
-            Builder releaseTime(double releaseTime) {
-                configBuilder.releaseTime(releaseTime);
-                return this;
-            }
-            
-            Builder windowFunction(OverlapBuffer.WindowFunction windowFunction) {
-                // Ignored for compatibility - window function is fixed per implementation
-                return this;
-            }
-            
-            StreamingDenoiserStrategy build() {
-                StreamingDenoiserConfig config = configBuilder.build();
-                // Use FAST implementation for demo compatibility
-                return StreamingDenoiserFactory.create(
-                    StreamingDenoiserFactory.Implementation.FAST, config);
-            }
-        }
-    }
 
     // Performance simulation constants
     private static final double REALTIME_SPEED_MULTIPLIER = 0.25; // Process 4x faster than real-time
@@ -140,7 +75,7 @@ public class StreamingDenoiserDemo {
                 .attackTime(5.0)
                 .releaseTime(20.0)
                 .build();
-        
+
         try (StreamingDenoiserStrategy denoiser = StreamingDenoiserFactory.create(
                 StreamingDenoiserFactory.Implementation.FAST, config)) {
 
@@ -612,5 +547,69 @@ public class StreamingDenoiserDemo {
         int n = prices.size() - 1;
         double mean = sum / n;
         return Math.sqrt(sumSq / n - mean * mean);
+    }
+
+    // For backward compatibility with demo - use FastStreamingDenoiser
+    private static class StreamingDenoiser {
+        static class Builder {
+            private final StreamingDenoiserConfig.Builder configBuilder = new StreamingDenoiserConfig.Builder();
+
+            Builder wavelet(ai.prophetizo.wavelet.api.Wavelet wavelet) {
+                configBuilder.wavelet(wavelet);
+                return this;
+            }
+
+            Builder blockSize(int blockSize) {
+                configBuilder.blockSize(blockSize);
+                return this;
+            }
+
+            Builder overlapFactor(double overlapFactor) {
+                configBuilder.overlapFactor(overlapFactor);
+                return this;
+            }
+
+            Builder levels(int levels) {
+                configBuilder.levels(levels);
+                return this;
+            }
+
+            Builder thresholdMethod(ThresholdMethod method) {
+                configBuilder.thresholdMethod(method);
+                return this;
+            }
+
+            Builder thresholdType(ThresholdType type) {
+                configBuilder.thresholdType(type);
+                return this;
+            }
+
+            Builder adaptiveThreshold(boolean adaptive) {
+                configBuilder.adaptiveThreshold(adaptive);
+                return this;
+            }
+
+            Builder attackTime(double attackTime) {
+                configBuilder.attackTime(attackTime);
+                return this;
+            }
+
+            Builder releaseTime(double releaseTime) {
+                configBuilder.releaseTime(releaseTime);
+                return this;
+            }
+
+            Builder windowFunction(OverlapBuffer.WindowFunction windowFunction) {
+                // Ignored for compatibility - window function is fixed per implementation
+                return this;
+            }
+
+            StreamingDenoiserStrategy build() {
+                StreamingDenoiserConfig config = configBuilder.build();
+                // Use FAST implementation for demo compatibility
+                return StreamingDenoiserFactory.create(
+                        StreamingDenoiserFactory.Implementation.FAST, config);
+            }
+        }
     }
 }

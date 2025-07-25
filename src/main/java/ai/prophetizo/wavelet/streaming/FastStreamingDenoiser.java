@@ -56,7 +56,7 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
      * The noise estimator needs a larger buffer to get accurate statistics.
      */
     private static final int DEFAULT_NOISE_BUFFER_FACTOR = 4;
-    
+
     /**
      * Scale factor for level-dependent threshold adjustment.
      * Higher decomposition levels (coarser details) get scaled thresholds.
@@ -85,7 +85,7 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
     private final MemoryPool memoryPool;
     private final boolean usingSharedPool;
-    private double[] processingBuffer;
+    private final double[] processingBuffer;
     private int inputPosition;
     private volatile double currentThreshold = 0.0;
 
@@ -110,7 +110,7 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
 
         // Initialize resources using helper method
         ResourceBundle resources = initializeResources(config);
-        
+
         // Assign successfully initialized resources
         this.transform = resources.transform;
         this.noiseEstimator = resources.noiseEstimator;
@@ -140,23 +140,9 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
     }
 
     /**
-     * Helper class to bundle resources during initialization.
-     */
-    private static class ResourceBundle {
-        WaveletTransform transform;
-        NoiseEstimator noiseEstimator;
-        StreamingThresholdAdapter thresholdAdapter;
-        OverlapBuffer overlapBuffer;
-        double[] inputBuffer;
-        double[] processingBuffer;
-        MemoryPool memoryPool;
-        boolean usingSharedPool;
-    }
-
-    /**
      * Initializes all resources required by the StreamingDenoiser.
      * This method handles resource allocation with proper cleanup on failure.
-     * 
+     *
      * @param builder the configuration builder
      * @return bundle of initialized resources
      * @throws RuntimeException if initialization fails
@@ -207,24 +193,24 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
         } catch (OutOfMemoryError e) {
             // Clean up and provide specific memory error context
             cleanupResources(resources, sharedPoolAcquired);
-            throw new RuntimeException("Insufficient memory to initialize StreamingDenoiser with block size " + 
+            throw new RuntimeException("Insufficient memory to initialize StreamingDenoiser with block size " +
                     config.getBlockSize() + ". Consider reducing block size or using shared memory pool.", e);
         } catch (Exception e) {
             // Clean up and wrap unexpected exceptions with context
             cleanupResources(resources, sharedPoolAcquired);
-            
+
             String errorContext = String.format(
-                "Failed to initialize StreamingDenoiser (wavelet=%s, blockSize=%d, levels=%d, sharedPool=%s)",
-                config.getWavelet() != null ? config.getWavelet().name() : "null",
-                config.getBlockSize(),
-                config.getLevels(),
-                config.isUseSharedMemoryPool()
+                    "Failed to initialize StreamingDenoiser (wavelet=%s, blockSize=%d, levels=%d, sharedPool=%s)",
+                    config.getWavelet() != null ? config.getWavelet().name() : "null",
+                    config.getBlockSize(),
+                    config.getLevels(),
+                    config.isUseSharedMemoryPool()
             );
-            
+
             throw new RuntimeException(errorContext, e);
         }
     }
-    
+
     /**
      * Cleans up allocated resources during failed initialization.
      */
@@ -295,10 +281,10 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
                     thresholdAdapter.setTargetThreshold(threshold);
                     threshold = thresholdAdapter.adaptThreshold();
                 }
-                
+
                 // Store current threshold for monitoring
                 currentThreshold = threshold;
-                
+
                 // Store current threshold for monitoring
                 currentThreshold = threshold;
 
@@ -331,7 +317,7 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
                     thresholdAdapter.setTargetThreshold(threshold);
                     threshold = thresholdAdapter.adaptThreshold();
                 }
-                
+
                 // Store current threshold for monitoring
                 currentThreshold = threshold;
 
@@ -465,6 +451,55 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
      */
     public double getCurrentThreshold() {
         return currentThreshold;
+    }
+
+    /**
+     * Gets the hop size for this denoiser.
+     */
+    public int getHopSize() {
+        return overlapBuffer != null ? overlapBuffer.getHopSize() : blockSize;
+    }
+
+    @Override
+    public PerformanceProfile getPerformanceProfile() {
+        return new PerformanceProfile() {
+            @Override
+            public double expectedLatencyMicros() {
+                // Based on benchmarks: 0.35-0.70 µs per sample
+                return 0.70;
+            }
+
+            @Override
+            public double expectedSNRImprovement() {
+                // Negative improvement due to streaming trade-offs
+                return -7.0; // Average -4.5 to -10.5 dB
+            }
+
+            @Override
+            public long memoryUsageBytes() {
+                // ~20-22 KB per instance
+                return 22 * 1024;
+            }
+
+            @Override
+            public boolean isRealTimeCapable() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Helper class to bundle resources during initialization.
+     */
+    private static class ResourceBundle {
+        WaveletTransform transform;
+        NoiseEstimator noiseEstimator;
+        StreamingThresholdAdapter thresholdAdapter;
+        OverlapBuffer overlapBuffer;
+        double[] inputBuffer;
+        double[] processingBuffer;
+        MemoryPool memoryPool;
+        boolean usingSharedPool;
     }
 
     /**
@@ -627,40 +662,5 @@ public final class FastStreamingDenoiser extends SubmissionPublisher<double[]>
         public long getOverruns() {
             return overruns.get();
         }
-    }
-    
-    /**
-     * Gets the hop size for this denoiser.
-     */
-    public int getHopSize() {
-        return overlapBuffer != null ? overlapBuffer.getHopSize() : blockSize;
-    }
-    
-    @Override
-    public PerformanceProfile getPerformanceProfile() {
-        return new PerformanceProfile() {
-            @Override
-            public double expectedLatencyMicros() {
-                // Based on benchmarks: 0.35-0.70 µs per sample
-                return 0.70;
-            }
-            
-            @Override
-            public double expectedSNRImprovement() {
-                // Negative improvement due to streaming trade-offs
-                return -7.0; // Average -4.5 to -10.5 dB
-            }
-            
-            @Override
-            public long memoryUsageBytes() {
-                // ~20-22 KB per instance
-                return 22 * 1024;
-            }
-            
-            @Override
-            public boolean isRealTimeCapable() {
-                return true;
-            }
-        };
     }
 }

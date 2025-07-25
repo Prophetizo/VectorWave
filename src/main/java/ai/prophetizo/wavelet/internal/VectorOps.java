@@ -37,7 +37,7 @@ public final class VectorOps {
             System.getProperty("os.arch").contains("arm");
     private static final boolean IS_APPLE_SILICON = IS_ARM &&
             System.getProperty("os.name").toLowerCase().contains("mac");
-    
+
     private static final int VECTOR_LENGTH = SPECIES.length();
     // Minimum signal length to use vectorization - adjusted for platform
     // ARM/Apple Silicon has smaller vectors (128-bit) so lower threshold

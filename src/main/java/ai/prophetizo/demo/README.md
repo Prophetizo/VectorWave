@@ -238,12 +238,12 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 ```java
 // Using factory
 WaveletTransform transform = new WaveletTransformFactory()
-    .boundaryMode(BoundaryMode.PERIODIC)
-    .create(Daubechies.DB4);
+                .boundaryMode(BoundaryMode.PERIODIC)
+                .create(Daubechies.DB4);
 
 // Direct instantiation
 WaveletTransform transform = new WaveletTransform(
-    new Haar(), BoundaryMode.ZERO_PADDING);
+        new Haar(), BoundaryMode.ZERO_PADDING);
 ```
 
 ### Basic Transform
@@ -259,10 +259,12 @@ double[] reconstructed = transform.inverse(result);
 ```java
 MemoryPool pool = new MemoryPool();
 double[] buffer = pool.borrowArray(size);
-try {
-    // Use buffer
-} finally {
-    pool.returnArray(buffer);
+try{
+        // Use buffer
+        }finally{
+        pool.
+
+returnArray(buffer);
 }
 ```
 

@@ -18,7 +18,7 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
  *   <li>Requires two passes over each input block (inherent to MAD calculation)</li>
  * </ul>
  * </p>
- * 
+ *
  * <p><b>Design Note:</b> The two-pass requirement over each block is not a limitation
  * of the streaming approach but a fundamental requirement of MAD calculation. The key
  * insight is that we maintain O(1) memory across all blocks processed, making this
@@ -93,7 +93,7 @@ public class StreamingMADNoiseEstimator implements NoiseEstimator {
         // 3. The input array is provided by the caller and would exist anyway
         // 4. For streaming: we maintain running estimates across blocks with O(1) memory,
         //    while each block requires two passes over its coefficients
-        
+
         // First pass: update value median estimator
         for (double coeff : newCoefficients) {
             valueMedianEstimator.update(coeff);
