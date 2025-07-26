@@ -354,7 +354,7 @@ public class StreamingDemo {
         StreamingWaveletTransform transform = StreamingWaveletTransform.createMultiLevel(
             Daubechies.DB4,
             BoundaryMode.PERIODIC,
-            512,  // Block size must be >= 2^8 = 256 for 7 levels (actually need double)
+            512,  // Block size must be >= 2^7 = 128 for 7 levels, using 512 for better performance
             7     // Exactly 7 decomposition levels
         );
         

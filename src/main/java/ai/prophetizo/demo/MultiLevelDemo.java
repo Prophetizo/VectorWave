@@ -142,7 +142,7 @@ public class MultiLevelDemo {
      */
     private static void demonstrate7LevelDecomposition() {
         // Generate a signal with sufficient length for 7 levels
-        int signalLength = 512;  // 2^9, supports up to 8 levels (we need 7)
+        int signalLength = 512;  // 2^9, supports up to 9 levels (we need 7)
         double[] signal = new double[signalLength];
         
         // Create a multi-frequency signal
