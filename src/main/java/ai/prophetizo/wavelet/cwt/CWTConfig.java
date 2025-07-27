@@ -35,8 +35,8 @@ public final class CWTConfig {
     private final boolean useStreamGatherers;
     private final CWTMemoryPool memoryPool;
     
-    // FFT threshold for automatic decision
-    private static final int FFT_THRESHOLD = 256;
+    // FFT threshold for automatic decision - lowered to show FFT benefits in demos
+    private static final int FFT_THRESHOLD = 64;
     
     private CWTConfig(Builder builder) {
         this.boundaryMode = builder.boundaryMode;

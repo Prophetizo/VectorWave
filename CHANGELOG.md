@@ -4,11 +4,39 @@ This document summarizes the architectural improvements made to ensure consisten
 
 ## Recent Updates (2025)
 
+### Continuous Wavelet Transform (CWT) Implementation
+1. **FFT-Accelerated CWT**: Complete O(n log n) CWT implementation using Cooley-Tukey FFT
+   - Replaced inefficient O(n²) DFT with proper FFT algorithm
+   - FFTAcceleratedCWT class with comprehensive conjugate-based IFFT
+   - Platform-adaptive optimization thresholds and caching
+   
+2. **Financial Wavelets**: Specialized wavelets for market analysis
+   - **PaulWavelet**: Optimal for detecting market volatility and trends
+   - **ShannonWavelet**: Frequency analysis with excellent localization
+   - **DOGWavelet**: Difference of Gaussians for edge detection in price data
+   - **FinancialWaveletAnalyzer**: High-level API for market crash detection
+
+3. **Gaussian Derivative Wavelets**: Feature detection capabilities
+   - Orders 1-8 for edge, ridge, and inflection point detection
+   - **GaussianDerivativeWavelet(2)**: Mexican Hat wavelet for blob detection
+   - Automatic registration in WaveletRegistry as "gaus1", "gaus2", etc.
+
+4. **Platform-Adaptive Cache Configuration**: 
+   - Auto-detection of Apple Silicon (128KB L1, 4MB L2) vs x86 (32KB L1, 256KB L2)
+   - Configurable via system properties: `ai.prophetizo.cache.l1.size`, etc.
+   - **CacheAwareOps.CacheConfig**: Flexible cache parameter tuning
+
+5. **Enhanced Documentation**: Comprehensive Javadoc improvements
+   - Detailed algorithm explanations with complexity analysis
+   - Usage examples and mathematical background
+   - Performance characteristics and optimization guidance
+
 ### Performance and Bug Fixes
 1. **Thread Safety**: Fixed thread indexing collision in LatencyBenchmark using AtomicInteger
 2. **Streaming Transforms**: Resolved infinite loop issue in StreamingWaveletTransformTest
 3. **Code Cleanup**: Removed obsolete comments in VectorOptimizationBenchmark
 4. **SIMD Control**: Added TransformConfig for explicit scalar/SIMD path control
+5. **Test Determinism**: Replaced Math.random() with seeded Random for reproducible tests
 
 ### New Features
 1. **ScalarVsVectorDemo**: Demonstrates optimization path control and validation
@@ -17,10 +45,24 @@ This document summarizes the architectural improvements made to ensure consisten
 4. **Multi-level Decomposition**: Efficient multi-resolution analysis
 
 ### Performance Characteristics
+
+#### Discrete Wavelet Transform (DWT)
 - Haar wavelet: ~107 ns/op for 64-sample signals
 - DB2 wavelet: ~193 ns/op for 64-sample signals  
 - DB4 wavelet: ~294 ns/op for 64-sample signals
 - Minimal SIMD overhead for small signals (<256 samples)
+
+#### Continuous Wavelet Transform (CWT)
+- **FFT-Accelerated**: O(n log n) complexity vs O(n²) direct convolution
+- **Performance scaling**: FFT shows significant advantage for signals >1024 samples
+- **Apple Silicon optimization**: Leverages 128KB L1 and 4MB L2 cache sizes
+- **Memory efficiency**: Platform-adaptive block sizes for optimal cache utilization
+- **Real-time capable**: Sub-millisecond processing for moderate signal sizes
+
+#### Cache Performance
+- **Auto-detection**: Platform-specific cache sizes (Apple Silicon vs x86)
+- **Configurable**: System properties for custom cache tuning
+- **Block optimization**: Optimal blocking based on L1/L2 cache hierarchy
 
 ## 1. Standardized Builder Method Naming
 
