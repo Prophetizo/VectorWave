@@ -282,21 +282,32 @@ class CWTVectorOpsTest {
         
         // When - process signal in chunks
         int numChunks = testSignal.length / hopSize;
+        boolean hasProcessedAtLeastOneWindow = false;
+        
         for (int i = 0; i < numChunks; i++) {
             int start = i * hopSize;
             int end = Math.min(start + hopSize, testSignal.length);
             double[] chunk = new double[end - start];
             System.arraycopy(testSignal, start, chunk, 0, chunk.length);
             
+            // Check readiness before processing
+            boolean wasReady = context.isReady();
+            
             double[][] chunkResult = vectorOps.processStreamingChunk(
                 context, chunk, testWavelet);
             
             // Then
-            assertNotNull(chunkResult);
-            if (context.isReady()) {
+            if (wasReady || (i >= 1 && chunk.length == hopSize)) {
+                // Should be ready after first full window
+                assertNotNull(chunkResult, "Should return result when enough data available");
                 assertEquals(scales.length, chunkResult.length);
+                hasProcessedAtLeastOneWindow = true;
+            } else {
+                assertNull(chunkResult, "Should return null when not enough data available (chunk " + i + ")");
             }
         }
+        
+        assertTrue(hasProcessedAtLeastOneWindow, "Should have processed at least one window");
     }
     
     @Test

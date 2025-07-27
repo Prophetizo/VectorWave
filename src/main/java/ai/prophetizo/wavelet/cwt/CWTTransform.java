@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
+import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 
 /**
  * Main engine for Continuous Wavelet Transform computation.
@@ -18,6 +19,7 @@ public final class CWTTransform {
     private final ContinuousWavelet wavelet;
     private final CWTConfig config;
     private final CWTVectorOps vectorOps;
+    private final FFTAcceleratedCWT fftAccelerator;
     
     /**
      * Creates a CWT transform with default configuration.
@@ -45,6 +47,7 @@ public final class CWTTransform {
         this.wavelet = wavelet;
         this.config = config;
         this.vectorOps = new CWTVectorOps();
+        this.fftAccelerator = new FFTAcceleratedCWT();
     }
     
     /**
@@ -310,48 +313,33 @@ public final class CWTTransform {
     }
     
     /**
-     * Simple FFT implementation (placeholder - in production would use optimized library).
+     * FFT implementation using the optimized FFTAcceleratedCWT.
      */
     private Complex[] fft(double[] x) {
-        int n = x.length;
-        Complex[] X = new Complex[n];
+        // Convert to FFTAcceleratedCWT.Complex array
+        FFTAcceleratedCWT.Complex[] result = fftAccelerator.fft(x);
         
-        // Simple DFT for now - would be replaced with proper FFT
-        for (int k = 0; k < n; k++) {
-            double sumReal = 0;
-            double sumImag = 0;
-            
-            for (int t = 0; t < n; t++) {
-                double angle = -2 * Math.PI * t * k / n;
-                sumReal += x[t] * Math.cos(angle);
-                sumImag += x[t] * Math.sin(angle);
-            }
-            
-            X[k] = new Complex(sumReal, sumImag);
+        // Convert back to internal Complex type
+        Complex[] X = new Complex[result.length];
+        for (int i = 0; i < result.length; i++) {
+            X[i] = new Complex(result[i].real, result[i].imag);
         }
         
         return X;
     }
     
     /**
-     * Simple inverse FFT implementation.
+     * Inverse FFT implementation using the optimized FFTAcceleratedCWT.
      */
     private double[] ifft(Complex[] X) {
-        int n = X.length;
-        double[] x = new double[n];
-        
-        for (int t = 0; t < n; t++) {
-            double sum = 0;
-            
-            for (int k = 0; k < n; k++) {
-                double angle = 2 * Math.PI * t * k / n;
-                sum += X[k].real * Math.cos(angle) - X[k].imag * Math.sin(angle);
-            }
-            
-            x[t] = sum / n;
+        // Convert to FFTAcceleratedCWT.Complex array
+        FFTAcceleratedCWT.Complex[] fftComplex = new FFTAcceleratedCWT.Complex[X.length];
+        for (int i = 0; i < X.length; i++) {
+            fftComplex[i] = new FFTAcceleratedCWT.Complex(X[i].real, X[i].imag);
         }
         
-        return x;
+        // Use the optimized inverse FFT
+        return fftAccelerator.ifft(fftComplex);
     }
     
     /**

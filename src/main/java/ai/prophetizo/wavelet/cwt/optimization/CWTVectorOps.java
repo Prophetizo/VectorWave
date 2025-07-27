@@ -453,6 +453,11 @@ public final class CWTVectorOps {
     
     /**
      * Process a chunk in streaming mode.
+     * 
+     * @param context streaming context containing buffer and parameters
+     * @param chunk data chunk to process
+     * @param wavelet wavelet coefficients
+     * @return CWT coefficients for all scales if enough data is available, null otherwise
      */
     public double[][] processStreamingChunk(StreamingContext context, 
                                           double[] chunk, double[] wavelet) {
@@ -470,7 +475,7 @@ public final class CWTVectorOps {
             return result;
         }
         
-        return new double[0][0]; // Return empty array instead of null
+        return null; // Not enough data yet
     }
     
     /**

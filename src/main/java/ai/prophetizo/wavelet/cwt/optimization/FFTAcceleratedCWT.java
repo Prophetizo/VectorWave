@@ -197,7 +197,7 @@ public final class FFTAcceleratedCWT {
         }
         
         if (!isPowerOfTwo(n)) {
-            throw new IllegalArgumentException("FFT size must be power of 2");
+            throw new IllegalArgumentException("FFT size must be power of 2, got: " + n);
         }
         
         // Bit reversal
@@ -376,25 +376,41 @@ public final class FFTAcceleratedCWT {
         
         int halfSupport = (int)(4 * scale * wavelet.bandwidth());
         
-        if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
-            for (int i = -halfSupport; i <= halfSupport; i++) {
-                int idx = (i + length) % length;
-                double t = i / scale;
-                double real = complexWavelet.psi(t);
-                double imag = complexWavelet.psiImaginary(t);
-                samples[idx] = new Complex(real, imag);
-            }
-        } else {
-            // For real wavelets, imaginary part is zero
-            for (int i = -halfSupport; i <= halfSupport; i++) {
-                int idx = (i + length) % length;
-                double t = i / scale;
-                samples[idx] = new Complex(wavelet.psi(t), 0);
-            }
+        for (int i = -halfSupport; i <= halfSupport; i++) {
+            int idx = (i + length) % length;
+            double t = i / scale;
+            samples[idx] = evaluateComplexWavelet(wavelet, t);
         }
         
         // FFT the wavelet
         return fftComplex(samples);
+    }
+    
+    /**
+     * Evaluates a wavelet at a given point, handling both real and complex wavelets.
+     * This helper method provides a unified interface for evaluating any continuous wavelet
+     * as a complex number, simplifying code that needs to handle both real and complex wavelets.
+     * 
+     * @param wavelet the wavelet to evaluate
+     * @param t the time/position parameter
+     * @return Complex value of the wavelet at point t
+     */
+    public static Complex evaluateAsComplex(ContinuousWavelet wavelet, double t) {
+        if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
+            double real = complexWavelet.psi(t);
+            double imag = complexWavelet.psiImaginary(t);
+            return new Complex(real, imag);
+        } else {
+            // For real wavelets, imaginary part is zero
+            return new Complex(wavelet.psi(t), 0);
+        }
+    }
+    
+    /**
+     * Helper method for internal use.
+     */
+    private Complex evaluateComplexWavelet(ContinuousWavelet wavelet, double t) {
+        return evaluateAsComplex(wavelet, t);
     }
     
     /**

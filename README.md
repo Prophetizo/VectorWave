@@ -1,6 +1,6 @@
 # VectorWave
 
-High-performance Fast Wavelet Transform (FWT) library for Java 21+ with comprehensive wavelet family support and SIMD optimizations.
+High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehensive wavelet family support and SIMD optimizations.
 
 ## Features
 
