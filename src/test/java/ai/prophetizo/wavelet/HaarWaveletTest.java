@@ -288,4 +288,11 @@ class HaarWaveletTest extends BaseWaveletTest {
         assertEquals("Haar", haar.name());
         assertEquals(2, haar.lowPassDecomposition().length, "Haar wavelet should have length 2");
     }
+    
+    @Test
+    @DisplayName("Haar coefficients satisfy mathematical properties")
+    void testCoefficientVerification() {
+        assertTrue(haar.verifyCoefficients(), 
+            "Haar coefficients should satisfy all mathematical properties");
+    }
 }

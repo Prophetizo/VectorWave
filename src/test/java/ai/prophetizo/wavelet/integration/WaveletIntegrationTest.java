@@ -133,7 +133,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
     @DisplayName("Should work correctly with different boundary modes")
     void testBoundaryModeIntegration(BoundaryMode mode) {
         WaveletTransform transform = factory
-            .withBoundaryMode(mode)
+            .boundaryMode(mode)
             .create(new Haar());
         
         // Use a signal that would show boundary effects
