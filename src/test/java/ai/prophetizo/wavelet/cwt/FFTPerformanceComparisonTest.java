@@ -16,7 +16,7 @@ class FFTPerformanceComparisonTest {
         // Given
         MorletWavelet wavelet = new MorletWavelet();
         CWTConfig config = CWTConfig.builder()
-            .withFFTEnabled(true)
+            .enableFFT(true)
             .build();
         CWTTransform transform = new CWTTransform(wavelet, config);
         
@@ -38,7 +38,7 @@ class FFTPerformanceComparisonTest {
             
             // Time the transform
             long startTime = System.nanoTime();
-            CWTResult result = transform.analyzeFFT(signal, scales);
+            CWTResult result = transform.analyze(signal, scales);
             long endTime = System.nanoTime();
             
             double timeMs = (endTime - startTime) / 1_000_000.0;
@@ -66,10 +66,10 @@ class FFTPerformanceComparisonTest {
         // Given
         MorletWavelet wavelet = new MorletWavelet();
         CWTConfig configDirect = CWTConfig.builder()
-            .withFFTEnabled(false)
+            .enableFFT(false)
             .build();
         CWTConfig configFFT = CWTConfig.builder()
-            .withFFTEnabled(true)
+            .enableFFT(true)
             .build();
             
         CWTTransform transformDirect = new CWTTransform(wavelet, configDirect);
@@ -84,7 +84,7 @@ class FFTPerformanceComparisonTest {
         
         // When
         CWTResult resultDirect = transformDirect.analyze(signal, scales);
-        CWTResult resultFFT = transformFFT.analyzeFFT(signal, scales);
+        CWTResult resultFFT = transformFFT.analyze(signal, scales);
         
         // Then - results should be very close
         double[][] coeffDirect = resultDirect.getCoefficients();
