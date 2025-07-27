@@ -10,6 +10,7 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
   - Continuous: Morlet wavelet (with discretization support)
 - **Type-Safe API**: Sealed interface hierarchy ensures compile-time wavelet validation
 - **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
+- **Platform Detection**: Centralized platform detection for optimized performance across different architectures
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
 - **Boundary Modes**: Supports periodic and zero-padding boundary handling
 - **Performance**: Optimized scalar implementation with comprehensive benchmarking
@@ -176,6 +177,39 @@ The project maintains >80% code coverage with comprehensive tests for:
 - Boundary conditions
 - Error handling
 - Edge cases
+
+## Platform Detection
+
+VectorWave includes a centralized platform detection utility that optimizes performance based on your system architecture:
+
+### Usage
+
+```java
+import ai.prophetizo.wavelet.util.PlatformDetection;
+
+// Check platform type
+boolean isAppleSilicon = PlatformDetection.isAppleSilicon();
+boolean isX86_64 = PlatformDetection.isX86_64();
+boolean isARM64 = PlatformDetection.isARM64();
+
+// Get optimization hints
+int simdThreshold = PlatformDetection.getRecommendedSIMDThreshold();
+boolean hasAVX2 = PlatformDetection.hasAVX2Support();
+String hints = PlatformDetection.getPlatformOptimizationHints();
+```
+
+### Supported Platforms
+
+- **Apple Silicon**: M1, M2, M3 Macs (ARM64 + macOS)
+- **x86-64**: Intel/AMD processors on Windows, Linux, macOS
+- **ARM64**: ARM processors on Linux and other Unix systems
+
+### Benefits
+
+- **Testable**: Mock system properties for comprehensive testing
+- **Maintainable**: Centralized platform-specific logic
+- **Optimized**: Platform-specific recommendations for SIMD thresholds
+- **Extensible**: Easy to add new platform detection patterns
 
 ## Continuous Integration
 
