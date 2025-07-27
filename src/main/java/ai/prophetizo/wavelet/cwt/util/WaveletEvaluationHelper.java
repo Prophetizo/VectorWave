@@ -25,9 +25,14 @@ public class WaveletEvaluationHelper {
         double[] magnitudes = new double[points.length];
         
         for (int i = 0; i < points.length; i++) {
-            // Use the helper method instead of instanceof checks
-            FFTAcceleratedCWT.Complex value = FFTAcceleratedCWT.evaluateAsComplex(wavelet, points[i]);
-            magnitudes[i] = value.magnitude();
+            // Evaluate wavelet directly, handling complex wavelets
+            if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
+                double real = complexWavelet.psi(points[i]);
+                double imag = complexWavelet.psiImaginary(points[i]);
+                magnitudes[i] = Math.sqrt(real * real + imag * imag);
+            } else {
+                magnitudes[i] = Math.abs(wavelet.psi(points[i]));
+            }
         }
         
         return magnitudes;
@@ -45,9 +50,16 @@ public class WaveletEvaluationHelper {
         double[] phases = new double[points.length];
         
         for (int i = 0; i < points.length; i++) {
-            // Use the helper method for unified handling
-            FFTAcceleratedCWT.Complex value = FFTAcceleratedCWT.evaluateAsComplex(wavelet, points[i]);
-            phases[i] = value.phase();
+            // Evaluate phase directly, handling complex wavelets
+            if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
+                double real = complexWavelet.psi(points[i]);
+                double imag = complexWavelet.psiImaginary(points[i]);
+                phases[i] = Math.atan2(imag, real);
+            } else {
+                // Real wavelets have phase 0 or π depending on sign
+                double value = wavelet.psi(points[i]);
+                phases[i] = value >= 0 ? 0.0 : Math.PI;
+            }
         }
         
         return phases;
@@ -61,7 +73,11 @@ public class WaveletEvaluationHelper {
      * @return true if the wavelet has non-zero imaginary part at t
      */
     public static boolean hasImaginaryComponent(ContinuousWavelet wavelet, double t) {
-        FFTAcceleratedCWT.Complex value = FFTAcceleratedCWT.evaluateAsComplex(wavelet, t);
-        return Math.abs(value.imag) > 1e-10;
+        if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
+            double imag = complexWavelet.psiImaginary(t);
+            return Math.abs(imag) > 1e-10;
+        } else {
+            return false; // Real wavelets have no imaginary component
+        }
     }
 }

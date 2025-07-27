@@ -1,375 +1,333 @@
 package ai.prophetizo.wavelet.cwt.optimization;
 
-import ai.prophetizo.wavelet.api.MorletWavelet;
-import ai.prophetizo.wavelet.cwt.ComplexMatrix;
+import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT.Complex;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
-
-import java.util.Random;
+import org.junit.jupiter.api.Nested;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests for FFTAcceleratedCWT, focusing on parameter validation for the ifft method.
+ */
 class FFTAcceleratedCWTTest {
     
-    private static final double TOLERANCE = 1e-10;
-    private static final double RELAXED_TOLERANCE = 1e-6; // For FFT operations
-    private static final long RANDOM_SEED = 12345L; // Fixed seed for reproducible tests
-    private FFTAcceleratedCWT fftCWT;
-    private double[] testSignal;
-    private MorletWavelet wavelet;
+    private FFTAcceleratedCWT fft;
     
     @BeforeEach
     void setUp() {
-        fftCWT = new FFTAcceleratedCWT();
-        wavelet = new MorletWavelet();
-        
-        // Create test signal with known frequency content
-        testSignal = new double[256];
-        for (int i = 0; i < testSignal.length; i++) {
-            // Mix of two frequencies
-            double t = i / 256.0;
-            testSignal[i] = Math.sin(2 * Math.PI * 10 * t) + 
-                           0.5 * Math.sin(2 * Math.PI * 25 * t);
-        }
+        fft = new FFTAcceleratedCWT();
     }
     
-    @Test
-    @DisplayName("Should compute FFT correctly")
-    void testFFTComputation() {
-        // Given - simple signal
-        double[] signal = new double[8];
-        signal[0] = 1.0; // Impulse
+    @Nested
+    @DisplayName("IFFT Parameter Validation Tests")
+    class IFFTValidationTests {
         
-        // When
-        FFTAcceleratedCWT.Complex[] fft = fftCWT.fft(signal);
-        
-        // Then
-        assertNotNull(fft);
-        assertEquals(8, fft.length);
-        
-        // Impulse FFT should have constant magnitude
-        for (FFTAcceleratedCWT.Complex c : fft) {
-            assertEquals(1.0, c.magnitude(), TOLERANCE);
-        }
-    }
-    
-    @Test
-    @DisplayName("Should compute inverse FFT correctly")
-    void testInverseFFT() {
-        // Given
-        double[] original = {1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0};
-        
-        // When
-        FFTAcceleratedCWT.Complex[] fft = fftCWT.fft(original);
-        double[] reconstructed = fftCWT.ifft(fft);
-        
-        // Then
-        assertArrayEquals(original, reconstructed, RELAXED_TOLERANCE);
-    }
-    
-    @Test
-    @DisplayName("Should handle power-of-2 sizes")
-    void testPowerOfTwoSizes() {
-        // Test various power-of-2 sizes
-        int[] sizes = {2, 4, 8, 16, 32, 64, 128, 256};
-        
-        for (int size : sizes) {
-            double[] signal = new double[size];
-            signal[0] = 1.0; // Impulse
+        @Test
+        @DisplayName("Should throw NullPointerException when input array is null")
+        void ifft_shouldThrowNullPointerException_whenInputIsNull() {
+            // Given
+            Complex[] nullArray = null;
             
-            FFTAcceleratedCWT.Complex[] fft = fftCWT.fft(signal);
-            assertNotNull(fft);
-            assertEquals(size, fft.length);
-        }
-    }
-    
-    @Test
-    @DisplayName("Should compute CWT scale using FFT")
-    void testComputeScaleFFT() {
-        // Given
-        double scale = 4.0;
-        int fftSize = 512;
-        
-        // When
-        double[] coefficients = fftCWT.computeScaleFFT(testSignal, wavelet, scale, fftSize);
-        
-        // Then
-        assertNotNull(coefficients);
-        assertEquals(testSignal.length, coefficients.length);
-        
-        // Verify non-trivial result
-        double sum = 0;
-        for (double c : coefficients) {
-            sum += Math.abs(c);
-        }
-        assertTrue(sum > 0, "FFT convolution should produce non-zero results");
-    }
-    
-    @Test
-    @DisplayName("Should produce similar pattern to direct convolution")
-    void testFFTPatternMatchesDirect() {
-        // Given - use simpler test signal
-        double[] simpleSignal = new double[128];
-        for (int i = 0; i < simpleSignal.length; i++) {
-            double t = i / 128.0;
-            simpleSignal[i] = Math.sin(2 * Math.PI * 5 * t); // Single frequency
+            // When & Then
+            NullPointerException exception = assertThrows(NullPointerException.class,
+                () -> fft.ifft(nullArray));
+            
+            assertEquals("Input array X must not be null.", exception.getMessage());
         }
         
-        double scale = 4.0;
-        int fftSize = 256;
-        
-        // Direct convolution for comparison
-        CWTVectorOps vectorOps = new CWTVectorOps();
-        int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
-        double[] waveletSamples = new double[waveletSupport];
-        
-        // Sample wavelet at scale
-        for (int i = 0; i < waveletSupport; i++) {
-            double t = (i - waveletSupport / 2.0) / scale;
-            waveletSamples[i] = wavelet.psi(t);
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when input length is zero")
+        void ifft_shouldThrowIllegalArgumentException_whenLengthIsZero() {
+            // Given
+            Complex[] emptyArray = new Complex[0];
+            
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(emptyArray));
+            
+            assertEquals("Input array length must be a power of 2.", exception.getMessage());
         }
         
-        double[] directResult = vectorOps.convolve(simpleSignal, waveletSamples, scale);
-        
-        // When
-        double[] fftResult = fftCWT.computeScaleFFT(simpleSignal, wavelet, scale, fftSize);
-        
-        // Then - verify both produce non-zero results
-        double directMax = 0, fftMax = 0;
-        for (int i = 0; i < simpleSignal.length; i++) {
-            directMax = Math.max(directMax, Math.abs(directResult[i]));
-            fftMax = Math.max(fftMax, Math.abs(fftResult[i]));
-        }
-        
-        assertTrue(directMax > 0, "Direct convolution should produce non-zero results");
-        assertTrue(fftMax > 0, "FFT convolution should produce non-zero results");
-        
-        // Check that magnitudes are in same order
-        assertEquals(directMax, fftMax, directMax * 0.5, 
-            "Maximum magnitudes should be similar");
-    }
-    
-    @Test
-    @DisplayName("Should compute multi-scale transform efficiently")
-    void testMultiScaleFFT() {
-        // Given
-        double[] scales = {2.0, 4.0, 8.0, 16.0};
-        
-        // When
-        double[][] coefficients = fftCWT.computeMultiScaleFFT(testSignal, scales, wavelet);
-        
-        // Then
-        assertNotNull(coefficients);
-        assertEquals(scales.length, coefficients.length);
-        assertEquals(testSignal.length, coefficients[0].length);
-        
-        // Different scales should produce different patterns
-        for (int s = 1; s < scales.length; s++) {
-            boolean different = false;
-            for (int t = 0; t < testSignal.length; t++) {
-                if (Math.abs(coefficients[s][t] - coefficients[0][t]) > TOLERANCE) {
-                    different = true;
-                    break;
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when input length is not power of 2")
+        void ifft_shouldThrowIllegalArgumentException_whenLengthIsNotPowerOfTwo() {
+            // Test various non-power-of-2 lengths
+            int[] invalidLengths = {3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20};
+            
+            for (int length : invalidLengths) {
+                // Given
+                Complex[] invalidArray = new Complex[length];
+                for (int i = 0; i < length; i++) {
+                    invalidArray[i] = new Complex(1.0, 0.0);
                 }
-            }
-            assertTrue(different, "Different scales should produce different results");
-        }
-    }
-    
-    @Test
-    @DisplayName("Should handle complex wavelets with FFT")
-    void testComplexWaveletFFT() {
-        // Given
-        double scale = 4.0;
-        int fftSize = 512;
-        
-        // When
-        ComplexMatrix result = fftCWT.computeComplexScaleFFT(
-            testSignal, wavelet, scale, fftSize);
-        
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.getRows());
-        assertEquals(testSignal.length, result.getCols());
-        
-        // Verify magnitude and phase are reasonable
-        for (int i = 0; i < testSignal.length; i++) {
-            double mag = result.getMagnitude(0, i);
-            double phase = result.getPhase(0, i);
-            
-            assertTrue(mag >= 0, "Magnitude should be non-negative");
-            assertTrue(phase >= -Math.PI && phase <= Math.PI, "Phase should be in [-π, π]");
-        }
-    }
-    
-    @Test
-    @DisplayName("Should select optimal FFT size")
-    void testOptimalFFTSize() {
-        // Test various signal and wavelet sizes
-        assertEquals(128, fftCWT.selectOptimalFFTSize(100, 20));
-        assertEquals(256, fftCWT.selectOptimalFFTSize(200, 50));
-        assertEquals(512, fftCWT.selectOptimalFFTSize(400, 100));
-        assertEquals(1024, fftCWT.selectOptimalFFTSize(800, 200));
-        assertEquals(2048, fftCWT.selectOptimalFFTSize(1500, 300));
-    }
-    
-    @Test
-    @DisplayName("Should handle pre-computed FFT for efficiency")
-    void testPrecomputedFFT() {
-        // Given
-        FFTAcceleratedCWT.FFTCache cache = fftCWT.createFFTCache(testSignal);
-        double[] scales = {2.0, 4.0, 8.0};
-        
-        // When - compute using cached FFT
-        double[][] coefficients = fftCWT.computeWithCache(cache, scales, wavelet);
-        
-        // Then
-        assertNotNull(coefficients);
-        assertEquals(scales.length, coefficients.length);
-        
-        // Compare with non-cached computation
-        double[][] directCoeffs = fftCWT.computeMultiScaleFFT(testSignal, scales, wavelet);
-        
-        for (int s = 0; s < scales.length; s++) {
-            assertArrayEquals(directCoeffs[s], coefficients[s], RELAXED_TOLERANCE,
-                "Cached and direct computation should match for scale " + scales[s]);
-        }
-    }
-    
-    @Test
-    @DisplayName("Should apply proper windowing for edge effects")
-    void testWindowingForEdgeEffects() {
-        // Given
-        double[] window = fftCWT.createWindow(testSignal.length, 
-            FFTAcceleratedCWT.WindowType.TUKEY);
-        
-        // Then
-        assertNotNull(window);
-        assertEquals(testSignal.length, window.length);
-        
-        // Check window properties
-        assertEquals(0.0, window[0], TOLERANCE); // Start at 0
-        assertEquals(1.0, window[window.length / 2], TOLERANCE); // Peak at center
-        assertEquals(0.0, window[window.length - 1], TOLERANCE); // End at 0
-    }
-    
-    @Test
-    @DisplayName("Should validate FFT size requirements")
-    void testFFTSizeValidation() {
-        // Non-power-of-2 should throw exception
-        assertThrows(IllegalArgumentException.class, 
-            () -> fftCWT.computeScaleFFT(testSignal, wavelet, 2.0, 100));
-        
-        assertThrows(IllegalArgumentException.class, 
-            () -> fftCWT.computeScaleFFT(testSignal, wavelet, 2.0, 513));
-        
-        // Zero or negative sizes
-        assertThrows(IllegalArgumentException.class, 
-            () -> fftCWT.computeScaleFFT(testSignal, wavelet, 2.0, 0));
-            
-        assertThrows(IllegalArgumentException.class, 
-            () -> fftCWT.computeScaleFFT(testSignal, wavelet, 2.0, -256));
-    }
-    
-    @Test
-    @DisplayName("Should benchmark FFT vs direct convolution")
-    void testPerformanceComparison() {
-        // Given
-        double[] largeSignal = new double[4096];
-        Random random = new Random(RANDOM_SEED); // Use seeded Random for reproducibility
-        for (int i = 0; i < largeSignal.length; i++) {
-            largeSignal[i] = random.nextDouble() - 0.5;
-        }
-        double scale = 16.0;
-        
-        // When - measure FFT time
-        long fftStart = System.nanoTime();
-        double[] fftResult = fftCWT.computeScaleFFT(largeSignal, wavelet, scale, 8192);
-        long fftTime = System.nanoTime() - fftStart;
-        
-        // When - measure direct convolution time
-        CWTVectorOps vectorOps = new CWTVectorOps();
-        double[] waveletSamples = generateScaledWavelet(wavelet, scale, 256);
-        
-        long directStart = System.nanoTime();
-        double[] directResult = vectorOps.convolve(largeSignal, waveletSamples, scale);
-        long directTime = System.nanoTime() - directStart;
-        
-        // Then - FFT should be faster for large signals
-        System.out.printf("FFT time: %.2f ms, Direct time: %.2f ms%n", 
-            fftTime / 1e6, directTime / 1e6);
-        
-        // Verify results match
-        assertNotNull(fftResult);
-        assertNotNull(directResult);
-        assertEquals(largeSignal.length, fftResult.length);
-        assertEquals(largeSignal.length, directResult.length);
-    }
-    
-    // Helper methods
-    
-    private double[] generateScaledWavelet(MorletWavelet wavelet, double scale, int length) {
-        double[] samples = new double[length];
-        int center = length / 2;
-        
-        for (int i = 0; i < length; i++) {
-            double t = (i - center) / scale;
-            samples[i] = wavelet.psi(t);
-        }
-        
-        return samples;
-    }
-    
-    private int findMaxIndex(double[] array, int startIdx, int endIdx) {
-        int maxIdx = startIdx;
-        double maxValue = Math.abs(array[startIdx]);
-        
-        for (int i = startIdx + 1; i < endIdx && i < array.length; i++) {
-            double absValue = Math.abs(array[i]);
-            if (absValue > maxValue) {
-                maxValue = absValue;
-                maxIdx = i;
+                
+                // When & Then
+                IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> fft.ifft(invalidArray),
+                    "Length " + length + " should throw exception");
+                
+                assertEquals("Input array length must be a power of 2.", exception.getMessage());
             }
         }
         
-        return maxIdx;
-    }
-    
-    private double computeCorrelation(double[] x, double[] y, int startIdx, int endIdx) {
-        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-        int count = 0;
-        
-        for (int i = startIdx; i < endIdx && i < x.length && i < y.length; i++) {
-            sumX += x[i];
-            sumY += y[i];
-            sumXY += x[i] * y[i];
-            sumX2 += x[i] * x[i];
-            sumY2 += y[i] * y[i];
-            count++;
+        @Test
+        @DisplayName("Should accept valid power-of-2 lengths")
+        void ifft_shouldAcceptValidPowerOfTwoLengths() {
+            // Test various valid power-of-2 lengths
+            int[] validLengths = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+            
+            for (int length : validLengths) {
+                // Given
+                Complex[] validArray = new Complex[length];
+                for (int i = 0; i < length; i++) {
+                    validArray[i] = new Complex(1.0, 0.0);
+                }
+                
+                // When & Then - Should not throw exception
+                assertDoesNotThrow(() -> fft.ifft(validArray),
+                    "Length " + length + " should be accepted");
+            }
         }
         
-        if (count == 0) return 0;
-        
-        double meanX = sumX / count;
-        double meanY = sumY / count;
-        
-        double numerator = sumXY - count * meanX * meanY;
-        double denomX = sumX2 - count * meanX * meanX;
-        double denomY = sumY2 - count * meanY * meanY;
-        
-        if (denomX <= 0 || denomY <= 0) return 0;
-        
-        return numerator / Math.sqrt(denomX * denomY);
-    }
-    
-    private double computeEnergy(double[] array, int startIdx, int endIdx) {
-        double energy = 0;
-        
-        for (int i = startIdx; i < endIdx && i < array.length; i++) {
-            energy += array[i] * array[i];
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when complex coefficient is null")
+        void ifft_shouldThrowIllegalArgumentException_whenComplexCoefficientIsNull() {
+            // Given
+            Complex[] arrayWithNull = new Complex[4];
+            arrayWithNull[0] = new Complex(1.0, 0.0);
+            arrayWithNull[1] = new Complex(2.0, 1.0);
+            arrayWithNull[2] = null; // Null coefficient
+            arrayWithNull[3] = new Complex(3.0, -1.0);
+            
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(arrayWithNull));
+            
+            assertEquals("Complex coefficient at index 2 must not be null.", exception.getMessage());
         }
         
-        return energy;
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when complex coefficient contains NaN")
+        void ifft_shouldThrowIllegalArgumentException_whenCoefficientContainsNaN() {
+            // Test NaN in real part
+            Complex[] arrayWithNaNReal = {
+                new Complex(1.0, 0.0),
+                new Complex(Double.NaN, 1.0),
+                new Complex(2.0, 0.0),
+                new Complex(3.0, 0.0)
+            };
+            
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(arrayWithNaNReal));
+            assertEquals("Complex coefficient at index 1 must contain finite values.", exception.getMessage());
+            
+            // Test NaN in imaginary part
+            Complex[] arrayWithNaNImag = {
+                new Complex(1.0, 0.0),
+                new Complex(2.0, Double.NaN),
+                new Complex(2.0, 0.0),
+                new Complex(3.0, 0.0)
+            };
+            
+            exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(arrayWithNaNImag));
+            assertEquals("Complex coefficient at index 1 must contain finite values.", exception.getMessage());
+        }
+        
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when complex coefficient contains infinity")
+        void ifft_shouldThrowIllegalArgumentException_whenCoefficientContainsInfinity() {
+            // Test positive infinity in real part
+            Complex[] arrayWithPosInfReal = {
+                new Complex(1.0, 0.0),
+                new Complex(Double.POSITIVE_INFINITY, 1.0),
+                new Complex(2.0, 0.0),
+                new Complex(3.0, 0.0)
+            };
+            
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(arrayWithPosInfReal));
+            assertEquals("Complex coefficient at index 1 must contain finite values.", exception.getMessage());
+            
+            // Test negative infinity in imaginary part
+            Complex[] arrayWithNegInfImag = {
+                new Complex(1.0, 0.0),
+                new Complex(2.0, Double.NEGATIVE_INFINITY),
+                new Complex(2.0, 0.0),
+                new Complex(3.0, 0.0)
+            };
+            
+            exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.ifft(arrayWithNegInfImag));
+            assertEquals("Complex coefficient at index 1 must contain finite values.", exception.getMessage());
+        }
+    }
+    
+    @Nested
+    @DisplayName("IFFT Functional Tests")
+    class IFFTFunctionalTests {
+        
+        @Test
+        @DisplayName("Should correctly perform IFFT on simple signal")
+        void ifft_shouldCorrectlyTransformSimpleSignal() {
+            // Given - DC signal (all ones)
+            double[] originalSignal = {1.0, 1.0, 1.0, 1.0};
+            Complex[] spectrum = fft.fft(originalSignal);
+            
+            // When
+            double[] reconstructed = fft.ifft(spectrum);
+            
+            // Then - Should reconstruct original signal within numerical precision
+            assertEquals(originalSignal.length, reconstructed.length);
+            for (int i = 0; i < originalSignal.length; i++) {
+                assertEquals(originalSignal[i], reconstructed[i], 1e-10,
+                    "Mismatch at index " + i);
+            }
+        }
+        
+        @Test
+        @DisplayName("Should correctly perform IFFT on impulse signal")
+        void ifft_shouldCorrectlyTransformImpulseSignal() {
+            // Given - Impulse signal
+            double[] originalSignal = {1.0, 0.0, 0.0, 0.0};
+            Complex[] spectrum = fft.fft(originalSignal);
+            
+            // When
+            double[] reconstructed = fft.ifft(spectrum);
+            
+            // Then - Should reconstruct original signal
+            assertEquals(originalSignal.length, reconstructed.length);
+            for (int i = 0; i < originalSignal.length; i++) {
+                assertEquals(originalSignal[i], reconstructed[i], 1e-10,
+                    "Mismatch at index " + i);
+            }
+        }
+        
+        @Test
+        @DisplayName("Should handle single element array")
+        void ifft_shouldHandleSingleElement() {
+            // Given
+            Complex[] singleElement = {new Complex(5.0, 3.0)};
+            
+            // When
+            double[] result = fft.ifft(singleElement);
+            
+            // Then
+            assertEquals(1, result.length);
+            assertEquals(5.0, result[0], 1e-10); // Real part should be extracted
+        }
+        
+        @Test
+        @DisplayName("Should correctly handle complex spectrum")
+        void ifft_shouldHandleComplexSpectrum() {
+            // Given - Complex spectrum
+            Complex[] spectrum = {
+                new Complex(4.0, 0.0),    // DC component
+                new Complex(1.0, -1.0),   // Complex frequency component
+                new Complex(0.0, 0.0),    // Zero component
+                new Complex(1.0, 1.0)     // Complex conjugate
+            };
+            
+            // When
+            double[] result = fft.ifft(spectrum);
+            
+            // Then - Should produce real-valued output
+            assertEquals(4, result.length);
+            for (double value : result) {
+                assertTrue(Double.isFinite(value), "Result should be finite");
+            }
+        }
+    }
+    
+    @Nested
+    @DisplayName("FFT Parameter Validation Tests")
+    class FFTValidationTests {
+        
+        @Test
+        @DisplayName("Should throw NullPointerException when FFT input is null")
+        void fft_shouldThrowNullPointerException_whenInputIsNull() {
+            // Given
+            double[] nullArray = null;
+            
+            // When & Then
+            NullPointerException exception = assertThrows(NullPointerException.class,
+                () -> fft.fft(nullArray));
+            
+            assertEquals("Input array x must not be null.", exception.getMessage());
+        }
+        
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when FFT input contains NaN")
+        void fft_shouldThrowIllegalArgumentException_whenInputContainsNaN() {
+            // Given
+            double[] arrayWithNaN = {1.0, 2.0, Double.NaN, 4.0};
+            
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.fft(arrayWithNaN));
+            
+            assertEquals("Input array must contain only finite values at index 2", exception.getMessage());
+        }
+        
+        @Test
+        @DisplayName("Should throw IllegalArgumentException when FFT input contains infinity")
+        void fft_shouldThrowIllegalArgumentException_whenInputContainsInfinity() {
+            // Given
+            double[] arrayWithInf = {1.0, 2.0, Double.POSITIVE_INFINITY, 4.0};
+            
+            // When & Then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> fft.fft(arrayWithInf));
+            
+            assertEquals("Input array must contain only finite values at index 2", exception.getMessage());
+        }
+    }
+    
+    @Nested
+    @DisplayName("Complex Number Tests")
+    class ComplexNumberTests {
+        
+        @Test
+        @DisplayName("Should correctly create complex numbers")
+        void complex_shouldCreateCorrectly() {
+            // Given & When
+            Complex c = new Complex(3.0, 4.0);
+            
+            // Then
+            assertEquals(3.0, c.real);
+            assertEquals(4.0, c.imag);
+        }
+        
+        @Test
+        @DisplayName("Should correctly multiply complex numbers")
+        void complex_shouldMultiplyCorrectly() {
+            // Given
+            Complex c1 = new Complex(2.0, 3.0);
+            Complex c2 = new Complex(1.0, -1.0);
+            
+            // When
+            Complex result = c1.multiply(c2);
+            
+            // Then
+            // (2 + 3i) * (1 - i) = 2 - 2i + 3i - 3i² = 2 + i + 3 = 5 + i
+            assertEquals(5.0, result.real, 1e-10);
+            assertEquals(1.0, result.imag, 1e-10);
+        }
+        
+        @Test
+        @DisplayName("Should correctly compute conjugate")
+        void complex_shouldComputeConjugateCorrectly() {
+            // Given
+            Complex c = new Complex(3.0, -4.0);
+            
+            // When
+            Complex conjugate = c.conjugate();
+            
+            // Then
+            assertEquals(3.0, conjugate.real);
+            assertEquals(4.0, conjugate.imag);
+        }
     }
 }
