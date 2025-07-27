@@ -54,7 +54,11 @@ public class MultiLevelDemo {
         MultiLevelTransformResult adaptive = mwt.decomposeAdaptive(prices, 0.01);
         System.out.println("Adaptive levels: " + adaptive.levels());
 
-        // 6. Multi-scale volatility analysis
+        // 6. Specific 7-level decomposition example
+        System.out.println("\n7-Level Decomposition (as requested):");
+        demonstrate7LevelDecomposition();
+
+        // 7. Multi-scale volatility analysis
         System.out.println("\nVolatility at different time scales:");
         analyzeVolatilityByScale(fullResult);
 
@@ -131,5 +135,52 @@ public class MultiLevelDemo {
             System.out.printf("Scale %3d samples (~%3d time units): volatility = %.4f\n",
                     scale, scale, volatility);
         }
+    }
+
+    /**
+     * Demonstrates specific 7-level decomposition as requested.
+     */
+    private static void demonstrate7LevelDecomposition() {
+        // Generate a signal with sufficient length for 7 levels
+        int signalLength = 512;  // 2^9, supports up to 9 levels (we need 7)
+        double[] signal = new double[signalLength];
+        
+        // Create a multi-frequency signal
+        for (int i = 0; i < signalLength; i++) {
+            double t = i / 512.0;
+            signal[i] = Math.sin(2 * Math.PI * 2 * t)    // Low frequency
+                      + 0.5 * Math.sin(2 * Math.PI * 8 * t)  // Medium frequency
+                      + 0.25 * Math.sin(2 * Math.PI * 32 * t) // High frequency
+                      + 0.1 * (Math.random() - 0.5);          // Noise
+        }
+        
+        // Create transform with DB4 wavelet
+        MultiLevelWaveletTransform mwt = new MultiLevelWaveletTransform(Daubechies.DB4);
+        
+        // Decompose into exactly 7 levels
+        MultiLevelTransformResult result = mwt.decompose(signal, 7);
+        
+        System.out.println("  Signal length: " + signalLength);
+        System.out.println("  Decomposition levels: " + result.levels());
+        System.out.println("\n  Level details:");
+        
+        // Show details for each level
+        for (int level = 1; level <= 7; level++) {
+            double[] details = result.detailsAtLevel(level);
+            double energy = result.detailEnergyAtLevel(level);
+            System.out.printf("    Level %d: %3d coefficients, energy=%.6f\n", 
+                              level, details.length, energy);
+        }
+        
+        // Show final approximation
+        double[] approximation = result.finalApproximation();
+        System.out.printf("    Final approximation: %d coefficients\n", approximation.length);
+        
+        // Demonstrate reconstruction from different levels
+        System.out.println("\n  Reconstruction examples:");
+        double[] denoised1 = mwt.reconstructFromLevel(result, 1);  // Remove finest details
+        double[] denoised3 = mwt.reconstructFromLevel(result, 3);  // Remove 3 finest levels
+        System.out.println("    - Removing level 1 details: preserves lower frequencies");
+        System.out.println("    - Removing levels 1-3: stronger denoising effect");
     }
 }
