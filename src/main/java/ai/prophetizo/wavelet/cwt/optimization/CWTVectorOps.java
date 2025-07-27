@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.cwt.optimization;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.*;
 import java.util.stream.IntStream;
 
@@ -20,9 +21,7 @@ public final class CWTVectorOps {
     private static final int VECTOR_LENGTH = SPECIES.length();
     
     // Platform detection
-    private static final boolean IS_APPLE_SILICON = 
-        System.getProperty("os.arch").equals("aarch64") && 
-        System.getProperty("os.name").toLowerCase().contains("mac");
+    private static final boolean IS_APPLE_SILICON = PlatformDetector.isAppleSilicon();
     
     private static final boolean HAS_AVX512 = SPECIES.length() >= 8;
     private static final boolean HAS_AVX2 = SPECIES.length() >= 4;

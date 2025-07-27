@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.*;
 
 import java.lang.management.ManagementFactory;
@@ -59,75 +60,16 @@ public final class CacheAwareOps {
          * Creates default configuration for the current platform.
          */
         public static CacheConfig detectOrDefault() {
+            PlatformDetector.CacheInfo cacheInfo = PlatformDetector.getCacheInfo();
             return new CacheConfig(
-                detectL1CacheSize(),
-                detectL2CacheSize(), 
-                detectCacheLineSize()
+                cacheInfo.l1DataCacheSize(),
+                cacheInfo.l2CacheSize(),
+                cacheInfo.cacheLineSize()
             );
         }
         
-        private static int detectL1CacheSize() {
-            // Try system properties first
-            String l1Prop = System.getProperty("ai.prophetizo.cache.l1.size");
-            if (l1Prop != null) {
-                try {
-                    return Integer.parseInt(l1Prop);
-                } catch (NumberFormatException ignored) {}
-            }
-            
-            // Platform-specific detection
-            String arch = System.getProperty("os.arch", "").toLowerCase();
-            String osName = System.getProperty("os.name", "").toLowerCase();
-            
-            if (arch.contains("aarch64") && osName.contains("mac")) {
-                // Apple Silicon - larger L1 caches
-                return 128 * 1024; // 128KB L1 data cache
-            } else if (arch.contains("amd64") || arch.contains("x86_64")) {
-                // x86-64 - typical values
-                return 32 * 1024; // 32KB L1 data cache
-            }
-            
-            // Conservative default
-            return 32 * 1024;
-        }
-        
-        private static int detectL2CacheSize() {
-            // Try system properties first
-            String l2Prop = System.getProperty("ai.prophetizo.cache.l2.size");
-            if (l2Prop != null) {
-                try {
-                    return Integer.parseInt(l2Prop);
-                } catch (NumberFormatException ignored) {}
-            }
-            
-            // Platform-specific detection
-            String arch = System.getProperty("os.arch", "").toLowerCase();
-            String osName = System.getProperty("os.name", "").toLowerCase();
-            
-            if (arch.contains("aarch64") && osName.contains("mac")) {
-                // Apple Silicon - larger L2 caches per core
-                return 4 * 1024 * 1024; // 4MB L2 cache
-            } else if (arch.contains("amd64") || arch.contains("x86_64")) {
-                // x86-64 - typical values
-                return 256 * 1024; // 256KB L2 cache
-            }
-            
-            // Conservative default
-            return 256 * 1024;
-        }
-        
-        private static int detectCacheLineSize() {
-            // Try system properties first
-            String lineProp = System.getProperty("ai.prophetizo.cache.line.size");
-            if (lineProp != null) {
-                try {
-                    return Integer.parseInt(lineProp);
-                } catch (NumberFormatException ignored) {}
-            }
-            
-            // Standard cache line size for modern architectures
-            return 64;
-        }
+        // Platform detection methods removed - now using PlatformDetector utility class
+        // This improves maintainability and enables better testing of platform-specific behavior
     }
     
     // Default cache configuration (lazy-initialized)

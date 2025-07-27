@@ -11,6 +11,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class CWTTransformTest {
     
     private static final double TOLERANCE = 1e-10;
+    
+    /**
+     * Relative tolerance for normalization factor tests (10%).
+     * This tolerance accounts for:
+     * 1. Numerical integration errors that accumulate differently at different scales
+     * 2. Boundary effects that can introduce small variations
+     * 3. Signal frequency content that may not perfectly align with wavelet center frequency
+     */
+    private static final double NORMALIZATION_TOLERANCE = 0.1;
     private CWTTransform transform;
     private MorletWavelet wavelet;
     private double[] testSignal;
@@ -208,17 +217,10 @@ class CWTTransformTest {
                 double expectedRatio = scaleFactor;
                 double actualRatio = unnormCoeffs[s][t] / normCoeffs[s][t];
                 
-                // Allow tolerance for numerical differences
-                // We use a relative tolerance of 10% because:
-                // 1. Numerical integration errors accumulate differently at different scales
-                // 2. Boundary effects can introduce small variations
-                // 3. The chirp signal has varying frequency content that may not perfectly
-                //    align with the wavelet's center frequency at all scales
-                //
-                // We also check that the normalized coefficient is not too small to avoid
+                // Check that the normalized coefficient is not too small to avoid
                 // numerical instability when computing the ratio
-                if (normCoeffs[s][t] > 1e-10) { // Avoid division by very small numbers
-                    assertEquals(expectedRatio, actualRatio, expectedRatio * 0.1,
+                if (normCoeffs[s][t] > TOLERANCE) { // Avoid division by very small numbers
+                    assertEquals(expectedRatio, actualRatio, expectedRatio * NORMALIZATION_TOLERANCE,
                         "Normalization factor incorrect at scale " + scales[s] + ", time " + t);
                 }
             }
