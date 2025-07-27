@@ -225,7 +225,8 @@ class CWTTransformTest {
                 double actualRatio = unnormCoeffs[s][t] / normCoeffs[s][t];
                 
                 // Check that the normalized coefficient is not too small to avoid
-                // numerical instability when computing the ratio
+                // numerical instability when computing the ratio, as dividing by very
+                // small numbers can amplify errors and lead to inaccurate results.
                 if (normCoeffs[s][t] > NUMERICAL_STABILITY_THRESHOLD) { // Avoid division by very small numbers
                     assertEquals(expectedRatio, actualRatio, expectedRatio * NORMALIZATION_TOLERANCE,
                         "Normalization factor incorrect at scale " + scales[s] + ", time " + t);
