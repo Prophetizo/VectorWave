@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
 import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
+import java.util.stream.IntStream;
 
 /**
  * Main engine for Continuous Wavelet Transform computation.
@@ -97,8 +98,9 @@ public final class CWTTransform {
             coefficients = new double[scales.length][signal.length];
         }
         
-        // Use optimized multi-scale computation
-        double[][] computedCoeffs = vectorOps.computeMultiScale(signal, scales, wavelet);
+        // Use optimized multi-scale computation with parallel processing if enabled
+        boolean useParallel = config.isUseStructuredConcurrency();
+        double[][] computedCoeffs = vectorOps.computeMultiScale(signal, scales, wavelet, useParallel);
         
         // Copy results to allocated array
         for (int i = 0; i < scales.length; i++) {
@@ -187,33 +189,50 @@ public final class CWTTransform {
         
         double[][] coefficients = new double[numScales][signalLength];
         
-        for (int s = 0; s < numScales; s++) {
-            double scale = scales[s];
-            double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
-            
-            // Generate scaled wavelet
-            double[] scaledWavelet = generateScaledWavelet(scale, fftSize);
-            
-            // FFT of wavelet
-            Complex[] waveletFFT = fft(scaledWavelet);
-            
-            // Multiply in frequency domain (convolution theorem)
-            Complex[] product = new Complex[fftSize];
-            for (int i = 0; i < fftSize; i++) {
-                // Conjugate of wavelet for correlation
-                product[i] = signalFFT[i].multiply(waveletFFT[i].conjugate());
-            }
-            
-            // Inverse FFT
-            double[] convResult = ifft(product);
-            
-            // Extract valid portion and normalize
-            for (int i = 0; i < signalLength; i++) {
-                coefficients[s][i] = convResult[i] / sqrtScale;
+        if (config.isUseStructuredConcurrency() && numScales >= 4) {
+            // Parallel processing for FFT-based CWT
+            IntStream.range(0, numScales).parallel().forEach(s -> {
+                coefficients[s] = computeFFTScale(signalFFT, scales[s], fftSize, signalLength);
+            });
+        } else {
+            // Sequential processing
+            for (int s = 0; s < numScales; s++) {
+                coefficients[s] = computeFFTScale(signalFFT, scales[s], fftSize, signalLength);
             }
         }
         
         return new CWTResult(coefficients, scales, wavelet);
+    }
+    
+    /**
+     * Computes CWT coefficients for a single scale using FFT.
+     */
+    private double[] computeFFTScale(Complex[] signalFFT, double scale, int fftSize, int signalLength) {
+        double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
+        
+        // Generate scaled wavelet
+        double[] scaledWavelet = generateScaledWavelet(scale, fftSize);
+        
+        // FFT of wavelet
+        Complex[] waveletFFT = fft(scaledWavelet);
+        
+        // Multiply in frequency domain (convolution theorem)
+        Complex[] product = new Complex[fftSize];
+        for (int i = 0; i < fftSize; i++) {
+            // Conjugate of wavelet for correlation
+            product[i] = signalFFT[i].multiply(waveletFFT[i].conjugate());
+        }
+        
+        // Inverse FFT
+        double[] convResult = ifft(product);
+        
+        // Extract valid portion and normalize
+        double[] result = new double[signalLength];
+        for (int i = 0; i < signalLength; i++) {
+            result[i] = convResult[i] / sqrtScale;
+        }
+        
+        return result;
     }
     
     /**

@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.cwt.optimization;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import jdk.incubator.vector.*;
+import java.util.stream.IntStream;
 
 /**
  * SIMD-optimized operations for Continuous Wavelet Transform.
@@ -267,27 +268,48 @@ public final class CWTVectorOps {
      */
     public double[][] computeMultiScale(double[] signal, double[] scales, 
                                       ContinuousWavelet wavelet) {
+        return computeMultiScale(signal, scales, wavelet, true);
+    }
+    
+    /**
+     * Computes CWT for multiple scales with optional parallel processing.
+     */
+    public double[][] computeMultiScale(double[] signal, double[] scales, 
+                                      ContinuousWavelet wavelet, boolean useParallel) {
         int numScales = scales.length;
         int signalLen = signal.length;
         double[][] coefficients = new double[numScales][signalLen];
         
-        // Generate wavelets for each scale
-        for (int s = 0; s < numScales; s++) {
-            double scale = scales[s];
-            int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
-            double[] scaledWavelet = new double[waveletSupport];
-            
-            // Sample wavelet at scale
-            for (int i = 0; i < waveletSupport; i++) {
-                double t = (i - waveletSupport / 2.0) / scale;
-                scaledWavelet[i] = wavelet.psi(t);
+        if (useParallel && numScales >= 4) {
+            // Parallel processing for multiple scales
+            IntStream.range(0, numScales).parallel().forEach(s -> {
+                coefficients[s] = computeSingleScale(signal, scales[s], wavelet);
+            });
+        } else {
+            // Sequential processing for few scales or when parallel disabled
+            for (int s = 0; s < numScales; s++) {
+                coefficients[s] = computeSingleScale(signal, scales[s], wavelet);
             }
-            
-            // Convolve with signal
-            coefficients[s] = convolve(signal, scaledWavelet, scale);
         }
         
         return coefficients;
+    }
+    
+    /**
+     * Computes CWT coefficients for a single scale.
+     */
+    private double[] computeSingleScale(double[] signal, double scale, ContinuousWavelet wavelet) {
+        int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
+        double[] scaledWavelet = new double[waveletSupport];
+        
+        // Sample wavelet at scale
+        for (int i = 0; i < waveletSupport; i++) {
+            double t = (i - waveletSupport / 2.0) / scale;
+            scaledWavelet[i] = wavelet.psi(t);
+        }
+        
+        // Convolve with signal
+        return convolve(signal, scaledWavelet, scale);
     }
     
     /**

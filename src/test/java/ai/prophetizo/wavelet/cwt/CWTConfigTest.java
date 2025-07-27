@@ -123,7 +123,8 @@ class CWTConfigTest {
             .fftSize(0)
             .build();
         assertTrue(config1.shouldUseFFT(2048)); // Large signal
-        assertFalse(config1.shouldUseFFT(64)); // Small signal
+        assertTrue(config1.shouldUseFFT(64)); // At threshold (64)
+        assertFalse(config1.shouldUseFFT(32)); // Below threshold
         
         // FFT disabled
         CWTConfig config2 = CWTConfig.builder()

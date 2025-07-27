@@ -187,6 +187,67 @@ public class CWTPerformanceDemo {
         }
         
         System.out.println();
+        
+        // Test parallel vs sequential processing
+        parallelProcessingComparison();
+    }
+    
+    /**
+     * Demonstrates parallel processing performance benefits.
+     */
+    private static void parallelProcessingComparison() {
+        System.out.println("\nParallel vs Sequential Processing:");
+        System.out.println("Scales | Sequential (ms) | Parallel (ms) | Speedup | Cores Used");
+        System.out.println("-------|-----------------|---------------|---------|----------");
+        
+        MorletWavelet wavelet = new MorletWavelet();
+        double[] testSignal = createTestSignal(2048);
+        int[] scaleCounts = {4, 8, 16, 32, 64};
+        int availableCores = Runtime.getRuntime().availableProcessors();
+        
+        for (int scaleCount : scaleCounts) {
+            double[] testScales = ScaleSpace.logarithmic(2.0, 32.0, scaleCount).getScales();
+            
+            // Sequential processing
+            CWTConfig sequentialConfig = CWTConfig.builder()
+                .enableFFT(true)
+                .useStructuredConcurrency(false)
+                .build();
+            CWTTransform sequentialCwt = new CWTTransform(wavelet, sequentialConfig);
+            
+            // Warm up
+            sequentialCwt.analyze(testSignal, new double[]{testScales[0]});
+            
+            long seqStart = System.nanoTime();
+            sequentialCwt.analyze(testSignal, testScales);
+            long seqTime = System.nanoTime() - seqStart;
+            
+            // Parallel processing
+            CWTConfig parallelConfig = CWTConfig.builder()
+                .enableFFT(true)
+                .useStructuredConcurrency(true)
+                .build();
+            CWTTransform parallelCwt = new CWTTransform(wavelet, parallelConfig);
+            
+            // Warm up
+            parallelCwt.analyze(testSignal, new double[]{testScales[0]});
+            
+            long parStart = System.nanoTime();
+            parallelCwt.analyze(testSignal, testScales);
+            long parTime = System.nanoTime() - parStart;
+            
+            double speedup = (double) seqTime / parTime;
+            int effectiveCores = Math.min(scaleCount, availableCores);
+            
+            System.out.printf("%6d | %15.2f | %13.2f | %7.1fx | %d/%d%n",
+                scaleCount, seqTime / 1e6, parTime / 1e6, speedup, effectiveCores, availableCores);
+        }
+        
+        System.out.println("\nParallel processing benefits:");
+        System.out.println("- Scales processed independently across CPU cores");
+        System.out.println("- Best speedup achieved when scales ≥ CPU cores");
+        System.out.println("- Overhead negligible for 4+ scales");
+        System.out.printf("- System has %d CPU cores available%n", availableCores);
     }
     
     /**
