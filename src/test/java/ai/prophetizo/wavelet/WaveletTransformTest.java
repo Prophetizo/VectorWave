@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
 import ai.prophetizo.wavelet.test.WaveletTestUtils;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -302,11 +303,12 @@ class WaveletTransformTest extends BaseWaveletTest {
             // Use relative tolerance for finite values
             double relativeError = Math.abs(signalEnergy - transformEnergy) / signalEnergy;
             
-            // Allow up to 1% relative error for extreme values
-            assertTrue(relativeError < 0.01,
+            // Use centralized tolerance constant with detailed explanation
+            assertTrue(relativeError < ToleranceConstants.EXTREME_VALUE_RELATIVE_TOLERANCE,
                 String.format("Energy should be approximately preserved even with extreme values. " +
-                             "Relative error: %.6f%% (signal=%.6e, transform=%.6e)",
-                             relativeError * 100, signalEnergy, transformEnergy));
+                             "Relative error: %.6f%% (signal=%.6e, transform=%.6e). %s",
+                             relativeError * 100, signalEnergy, transformEnergy,
+                             ToleranceConstants.explainTolerance(ToleranceConstants.EXTREME_VALUE_RELATIVE_TOLERANCE)));
         }
     }
     
