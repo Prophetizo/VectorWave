@@ -38,6 +38,17 @@ public final class WaveletRegistry {
 
         // Register continuous wavelets
         register(new MorletWavelet());
+        
+        // Register financial wavelets
+        register(new ai.prophetizo.wavelet.cwt.finance.PaulWavelet());
+        register(new ai.prophetizo.wavelet.cwt.finance.DOGWavelet());
+        register(new ai.prophetizo.wavelet.cwt.finance.ShannonWavelet());
+        
+        // Register Gaussian derivative wavelets
+        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(1)); // gaus1
+        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(2)); // gaus2
+        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(3)); // gaus3
+        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(4)); // gaus4
     }
 
     private WaveletRegistry() {
