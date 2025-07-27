@@ -52,7 +52,7 @@ public class SignalSizeBenchmark {
         
         // Create transform with default SIMD optimization
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         transform = factory.create(new Haar());
     }
     

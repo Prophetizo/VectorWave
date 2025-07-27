@@ -319,4 +319,18 @@ class DaubechiesWaveletTest extends BaseWaveletTest {
                 name + " step function reconstruction with " + implType);
         });
     }
+    
+    @Test
+    @DisplayName("DB2 coefficients satisfy mathematical properties")
+    void testDB2CoefficientVerification() {
+        assertTrue(Daubechies.DB2.verifyCoefficients(), 
+            "DB2 coefficients should satisfy all mathematical properties");
+    }
+    
+    @Test
+    @DisplayName("DB4 coefficients satisfy mathematical properties")
+    void testDB4CoefficientVerification() {
+        assertTrue(Daubechies.DB4.verifyCoefficients(), 
+            "DB4 coefficients should satisfy all mathematical properties");
+    }
 }
