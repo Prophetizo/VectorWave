@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CWTVectorOpsTest {
     
     private static final double TOLERANCE = 1e-10;
-    private static final double RELAXED_TOLERANCE = 1e-6; // For complex operations
+    private static final double RELAXED_TOLERANCE = 1e-6; // Due to additional floating-point operations in complex arithmetic
     private CWTVectorOps vectorOps;
     private double[] testSignal;
     private double[] testWavelet;

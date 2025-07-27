@@ -15,8 +15,8 @@ public final class PlatformDetectionExample {
      * Example of OLD platform detection pattern (scattered throughout codebase).
      * This is the type of code that should be replaced.
      * 
-     * WARNING: These examples show PROBLEMATIC CODE with potential issues:
-     * - NullPointerException risks from unchecked System.getProperty() calls
+     * WARNING: These examples have been FIXED to be null-safe but still show 
+     * patterns that should NOT be used:
      * - Scattered, duplicated platform detection logic
      * - Hard to test and maintain
      * 
