@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
 
@@ -122,8 +123,8 @@ public final class CWTTransform {
         int numScales = scales.length;
         ComplexMatrix complexCoeffs = new ComplexMatrix(numScales, signalLength);
         
-        // For complex wavelets, we need both real and imaginary parts
-        MorletWavelet morlet = wavelet instanceof MorletWavelet m ? m : null;
+        // Check if wavelet implements ComplexContinuousWavelet interface
+        ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
         
         for (int s = 0; s < numScales; s++) {
             double scale = scales[s];
@@ -149,9 +150,9 @@ public final class CWTTransform {
                     double waveletReal = wavelet.psi(-t / scale) / sqrtScale;
                     sumReal += signalValue * waveletReal;
                     
-                    // Imaginary part (if Morlet)
-                    if (morlet != null) {
-                        double waveletImag = morlet.psiImaginary(-t / scale) / sqrtScale;
+                    // Imaginary part (if complex wavelet)
+                    if (complexWavelet != null) {
+                        double waveletImag = complexWavelet.psiImaginary(-t / scale) / sqrtScale;
                         sumImag += signalValue * waveletImag;
                     }
                 }

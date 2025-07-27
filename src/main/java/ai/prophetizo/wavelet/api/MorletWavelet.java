@@ -19,7 +19,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * </ul>
  * </p>
  */
-public final class MorletWavelet implements ContinuousWavelet {
+public final class MorletWavelet implements ComplexContinuousWavelet {
 
     private final double omega0; // Central frequency parameter (typically 5-6)
     private final double sigma;  // Bandwidth parameter
@@ -70,6 +70,7 @@ public final class MorletWavelet implements ContinuousWavelet {
      * @param t the time parameter
      * @return the imaginary part of psi(t)
      */
+    @Override
     public double psiImaginary(double t) {
         double gaussianEnvelope = Math.exp(-0.5 * t * t / (sigma * sigma));
         double carrier = Math.sin(omega0 * t);
@@ -88,10 +89,7 @@ public final class MorletWavelet implements ContinuousWavelet {
         return sigma;
     }
 
-    @Override
-    public boolean isComplex() {
-        return true;
-    }
+    // isComplex() is already implemented by ComplexContinuousWavelet interface
 
     @Override
     public double[] discretize(int numCoeffs) {

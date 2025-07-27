@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt.optimization;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import jdk.incubator.vector.*;
@@ -375,12 +376,12 @@ public final class FFTAcceleratedCWT {
         
         int halfSupport = (int)(4 * scale * wavelet.bandwidth());
         
-        if (wavelet instanceof MorletWavelet morlet) {
+        if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {
             for (int i = -halfSupport; i <= halfSupport; i++) {
                 int idx = (i + length) % length;
                 double t = i / scale;
-                double real = morlet.psi(t);
-                double imag = morlet.psiImaginary(t);
+                double real = complexWavelet.psi(t);
+                double imag = complexWavelet.psiImaginary(t);
                 samples[idx] = new Complex(real, imag);
             }
         } else {

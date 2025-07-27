@@ -179,6 +179,69 @@ class ScaleSpaceTest {
     }
     
     @Test
+    @DisplayName("Should sort unsorted custom scales")
+    void testCustomScaleSpaceWithUnsortedInput() {
+        // Given - unsorted scales
+        double[] unsortedScales = {5.0, 1.0, 13.0, 3.0, 8.0, 2.0, 1.5};
+        double[] expectedSorted = {1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 13.0};
+        
+        // When
+        ScaleSpace scaleSpace = ScaleSpace.custom(unsortedScales);
+        
+        // Then
+        assertNotNull(scaleSpace);
+        assertEquals(unsortedScales.length, scaleSpace.getNumScales());
+        assertArrayEquals(expectedSorted, scaleSpace.getScales(), TOLERANCE);
+        assertEquals(1.0, scaleSpace.getMinScale(), TOLERANCE);
+        assertEquals(13.0, scaleSpace.getMaxScale(), TOLERANCE);
+    }
+    
+    @Test
+    @DisplayName("Should efficiently handle pre-sorted scales")
+    void testCustomSortedScaleSpace() {
+        // Given - already sorted scales
+        double[] sortedScales = {1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 13.0};
+        
+        // When
+        ScaleSpace scaleSpace = ScaleSpace.customSorted(sortedScales);
+        
+        // Then
+        assertNotNull(scaleSpace);
+        assertEquals(sortedScales.length, scaleSpace.getNumScales());
+        assertArrayEquals(sortedScales, scaleSpace.getScales(), TOLERANCE);
+        assertEquals(1.0, scaleSpace.getMinScale(), TOLERANCE);
+        assertEquals(13.0, scaleSpace.getMaxScale(), TOLERANCE);
+    }
+    
+    @Test
+    @DisplayName("Should validate sorted order in customSorted")
+    void testCustomSortedValidation() {
+        // Test unsorted input
+        double[] unsortedScales = {1.0, 3.0, 2.0};
+        assertThrows(IllegalArgumentException.class,
+            () -> ScaleSpace.customSorted(unsortedScales),
+            "Should reject unsorted scales");
+        
+        // Test with duplicate values
+        double[] duplicateScales = {1.0, 2.0, 2.0, 3.0};
+        assertThrows(IllegalArgumentException.class,
+            () -> ScaleSpace.customSorted(duplicateScales),
+            "Should reject non-strictly ascending scales");
+        
+        // Test with negative values
+        double[] negativeScales = {-1.0, 0.0, 1.0};
+        assertThrows(IllegalArgumentException.class,
+            () -> ScaleSpace.customSorted(negativeScales),
+            "Should reject negative scales");
+        
+        // Test with zero
+        double[] zeroScales = {0.0, 1.0, 2.0};
+        assertThrows(IllegalArgumentException.class,
+            () -> ScaleSpace.customSorted(zeroScales),
+            "Should reject zero scales");
+    }
+    
+    @Test
     @DisplayName("Should find scale index for given frequency")
     void testFindScaleForFrequency() {
         // Given

@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.cwt.memory.CWTMemoryPool;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
  * Configuration for Continuous Wavelet Transform operations.
@@ -243,7 +244,7 @@ public final class CWTConfig {
             if (size < 0) {
                 throw new IllegalArgumentException("FFT size must be non-negative");
             }
-            if (size > 0 && (size & (size - 1)) != 0) {
+            if (size > 0 && !ValidationUtils.isPowerOfTwo(size)) {
                 throw new IllegalArgumentException("FFT size must be a power of 2 or 0 (auto)");
             }
             this.fftSize = size;

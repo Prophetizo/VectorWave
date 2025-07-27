@@ -162,10 +162,13 @@ class CWTTransformTest {
         CWTTransform unnormalizedTransform = new CWTTransform(wavelet, unnormalizedConfig);
         
         // Use a chirp signal instead of constant
+        // A chirp signal has linearly increasing frequency, which helps test
+        // the normalization across different scales. The instantaneous frequency
+        // at time t is: f(t) = f0 + k*t, where k is the chirp rate
         double[] chirpSignal = new double[256];
         for (int i = 0; i < chirpSignal.length; i++) {
             double t = i / 256.0;
-            double freq = 5 + 20 * t; // Frequency increases from 5 to 25
+            double freq = 5 + 20 * t; // Frequency increases from 5 to 25 Hz
             chirpSignal[i] = Math.sin(2 * Math.PI * freq * t);
         }
         double[] scales = {2.0, 4.0, 8.0};
@@ -178,17 +181,42 @@ class CWTTransformTest {
         double[][] normCoeffs = normalizedResult.getMagnitude();
         double[][] unnormCoeffs = unnormalizedResult.getMagnitude();
         
-        // With normalization, the magnitude should be adjusted by sqrt(scale)
+        // Mathematical relationship between normalized and unnormalized coefficients:
+        // 
+        // The continuous wavelet transform is defined as:
+        // CWT(a,b) = (1/√a) ∫ f(t) ψ*((t-b)/a) dt
+        // 
+        // Where:
+        // - a is the scale parameter
+        // - b is the translation parameter  
+        // - ψ is the mother wavelet
+        // - ψ* is the complex conjugate of ψ
+        //
+        // When normalization is enabled, the 1/√a factor is included,
+        // which preserves the L2 norm of the wavelet across scales.
+        // When disabled, this factor is omitted.
+        //
+        // Therefore: unnormalized_coeff = normalized_coeff * √a
+        //
         // Check that normalized coefficients differ from unnormalized by sqrt(scale) factor
         for (int s = 0; s < scales.length; s++) {
             double scaleFactor = Math.sqrt(scales[s]);
             
             // Check a few points in the middle of the signal
+            // We avoid edges to prevent boundary effects from affecting the test
             for (int t = 100; t < 150; t++) {
                 double expectedRatio = scaleFactor;
                 double actualRatio = unnormCoeffs[s][t] / normCoeffs[s][t];
                 
                 // Allow tolerance for numerical differences
+                // We use a relative tolerance of 10% because:
+                // 1. Numerical integration errors accumulate differently at different scales
+                // 2. Boundary effects can introduce small variations
+                // 3. The chirp signal has varying frequency content that may not perfectly
+                //    align with the wavelet's center frequency at all scales
+                //
+                // We also check that the normalized coefficient is not too small to avoid
+                // numerical instability when computing the ratio
                 if (normCoeffs[s][t] > 1e-10) { // Avoid division by very small numbers
                     assertEquals(expectedRatio, actualRatio, expectedRatio * 0.1,
                         "Normalization factor incorrect at scale " + scales[s] + ", time " + t);

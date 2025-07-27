@@ -155,8 +155,9 @@ public final class ScaleSpace {
     
     /**
      * Creates a custom scale space from user-defined scales.
+     * The scales will be automatically sorted in ascending order.
      * 
-     * @param scales array of scales (must be positive and ascending)
+     * @param scales array of scales (must be positive, will be sorted)
      * @return custom scale space
      */
     public static ScaleSpace custom(double[] scales) {
@@ -169,6 +170,36 @@ public final class ScaleSpace {
         Arrays.sort(sortedScales);
         
         return new ScaleSpace(sortedScales, ScaleType.CUSTOM);
+    }
+    
+    /**
+     * Creates a custom scale space from pre-sorted scales.
+     * This method is more efficient than {@link #custom(double[])} when
+     * the scales are already sorted in ascending order.
+     * 
+     * @param sortedScales array of scales in ascending order (must be positive)
+     * @return custom scale space
+     * @throws IllegalArgumentException if scales are not in ascending order
+     */
+    public static ScaleSpace customSorted(double[] sortedScales) {
+        if (sortedScales == null || sortedScales.length == 0) {
+            throw new IllegalArgumentException("Scales array cannot be null or empty");
+        }
+        
+        // Verify scales are sorted and positive
+        double previousScale = 0;
+        for (int i = 0; i < sortedScales.length; i++) {
+            if (sortedScales[i] <= 0) {
+                throw new IllegalArgumentException("All scales must be positive");
+            }
+            if (sortedScales[i] <= previousScale) {
+                throw new IllegalArgumentException("Scales must be in strictly ascending order");
+            }
+            previousScale = sortedScales[i];
+        }
+        
+        // Use the array directly (clone for safety)
+        return new ScaleSpace(sortedScales.clone(), ScaleType.CUSTOM);
     }
     
     /**

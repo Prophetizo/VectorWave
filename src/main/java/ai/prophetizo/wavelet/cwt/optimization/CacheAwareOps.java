@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt.optimization;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import jdk.incubator.vector.*;
@@ -127,8 +128,8 @@ public final class CacheAwareOps {
         int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
         int halfSupport = waveletSupport / 2;
         
-        // For Morlet wavelet, compute complex values
-        MorletWavelet morlet = wavelet instanceof MorletWavelet m ? m : null;
+        // For complex wavelets, compute complex values
+        ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
         
         // Process in blocks
         for (int blockStart = 0; blockStart < signalLen; blockStart += OPTIMAL_BLOCK_SIZE) {
@@ -146,8 +147,8 @@ public final class CacheAwareOps {
                         
                         sumReal += signalValue * waveletReal;
                         
-                        if (morlet != null) {
-                            double waveletImag = morlet.psiImaginary(-t / scale) / Math.sqrt(scale);
+                        if (complexWavelet != null) {
+                            double waveletImag = complexWavelet.psiImaginary(-t / scale) / Math.sqrt(scale);
                             sumImag += signalValue * waveletImag;
                         }
                     }
