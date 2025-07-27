@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.test;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import java.util.Random;
 
@@ -21,20 +22,27 @@ public final class WaveletTestUtils {
     
     /**
      * Default tolerance for floating-point comparisons.
-     * Based on typical reconstruction error for double precision.
+     * @deprecated Use {@link ToleranceConstants#DEFAULT_TOLERANCE} instead.
+     * This constant is maintained for backward compatibility but will be removed in future versions.
      */
-    public static final double DEFAULT_TOLERANCE = 1e-10;
+    @Deprecated
+    public static final double DEFAULT_TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
     
     /**
      * Tolerance for energy preservation checks.
-     * Slightly more relaxed due to potential rounding in transforms.
+     * @deprecated Use {@link ToleranceConstants#ENERGY_TOLERANCE} instead.
+     * This constant is maintained for backward compatibility but will be removed in future versions.
      */
-    public static final double ENERGY_TOLERANCE = 1e-12;
+    @Deprecated
+    public static final double ENERGY_TOLERANCE = ToleranceConstants.ENERGY_TOLERANCE;
     
     /**
      * Tolerance for orthogonality checks in wavelet filters.
+     * @deprecated Use {@link ToleranceConstants#ORTHOGONALITY_TOLERANCE} instead.
+     * This constant is maintained for backward compatibility but will be removed in future versions.
      */
-    public static final double ORTHOGONALITY_TOLERANCE = 1e-14;
+    @Deprecated
+    public static final double ORTHOGONALITY_TOLERANCE = ToleranceConstants.ORTHOGONALITY_TOLERANCE;
     
     private WaveletTestUtils() {
         // Utility class, prevent instantiation
