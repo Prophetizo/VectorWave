@@ -264,11 +264,13 @@ public final class GatherScatterOps {
             // Load values under mask
             DoubleVector values = DoubleVector.fromArray(DOUBLE_SPECIES, signal, i, vectorMask);
 
-            // Compress and store
-            double[] compressed = values.compress(vectorMask).toArray();
-            int compressedCount = vectorMask.trueCount();
-            System.arraycopy(compressed, 0, result, resultIdx, compressedCount);
-            resultIdx += compressedCount;
+            // Manual compression since compress() may not be available in all Vector API versions
+            double[] vectorArray = values.toArray();
+            for (int j = 0; j < vectorArray.length && i + j < signal.length; j++) {
+                if (vectorMask.laneIsSet(j)) {
+                    result[resultIdx++] = vectorArray[j];
+                }
+            }
         }
 
         // Handle remainder

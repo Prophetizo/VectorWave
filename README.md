@@ -1,19 +1,23 @@
 # VectorWave
 
-High-performance Fast Wavelet Transform (FWT) library for Java 21+ with comprehensive wavelet family support and SIMD optimizations.
+High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehensive wavelet family support and SIMD optimizations.
 
 ## Features
 
 ### Core Capabilities
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
+- **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
+- **Financial Wavelets**: Specialized wavelets for market analysis (Paul, Shannon, DOG, Gaussian derivatives)
 - **Type-Safe API**: Sealed interfaces with compile-time validation
 - **Zero Dependencies**: Pure Java implementation
 - **Flexible Boundary Handling**: Periodic, Zero, Symmetric, and Reflect padding modes
 
 ### Performance
 - **SIMD Optimizations**: Platform-specific Vector API support (x86 AVX2/AVX512, ARM NEON, Apple Silicon)
+- **FFT Acceleration**: O(n log n) convolution for CWT using Cooley-Tukey FFT algorithm
+- **Cache-Aware Operations**: Platform-adaptive cache configuration (auto-detects Apple Silicon vs x86)
 - **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
-- **Memory Efficiency**: Object pooling, aligned allocation, cache-aware operations
+- **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
 - **Parallel Processing**: Fork-join framework for batch operations
 
 ### Advanced Features
@@ -65,6 +69,31 @@ double[] clean = denoiser.denoise(noisySignal,
 );
 ```
 
+### Continuous Wavelet Transform (CWT)
+```java
+// Basic CWT analysis
+MorletWavelet wavelet = new MorletWavelet();
+CWTTransform cwt = new CWTTransform(wavelet);
+double[] scales = {1.0, 2.0, 4.0, 8.0, 16.0};
+CWTResult result = cwt.analyze(signal, scales);
+
+// Financial analysis with specialized wavelets
+PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+var crashResult = analyzer.detectMarketCrashes(priceData, threshold);
+
+// FFT-accelerated CWT for large signals
+CWTConfig config = CWTConfig.builder()
+    .enableFFT(true)
+    .normalizeScales(true)
+    .build();
+CWTTransform fftCwt = new CWTTransform(wavelet, config);
+
+// Gaussian derivative wavelets for feature detection
+GaussianDerivativeWavelet gaus2 = new GaussianDerivativeWavelet(2); // Mexican Hat
+// Registered as "gaus1", "gaus2", "gaus3", "gaus4" in WaveletRegistry
+```
+
 ### Streaming
 ```java
 // Real-time streaming transform
@@ -96,6 +125,17 @@ TransformConfig config = TransformConfig.builder()
     .build();
 
 WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode, config);
+
+// Platform-adaptive cache configuration
+CacheAwareOps.CacheConfig cacheConfig = CacheAwareOps.getDefaultCacheConfig();
+// Auto-detects: Apple Silicon (128KB L1, 4MB L2) vs x86 (32KB L1, 256KB L2)
+
+// Custom cache configuration
+CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
+    64 * 1024,  // L1 size
+    512 * 1024, // L2 size  
+    64          // cache line size
+);
 ```
 
 ## Documentation

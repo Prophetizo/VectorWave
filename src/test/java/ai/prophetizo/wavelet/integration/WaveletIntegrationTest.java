@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
     
     private WaveletTransformFactory factory;
     
-    private static final double TOLERANCE = 1e-10;
+    private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
     
     @BeforeEach
     protected void setUp(org.junit.jupiter.api.TestInfo testInfo) {
