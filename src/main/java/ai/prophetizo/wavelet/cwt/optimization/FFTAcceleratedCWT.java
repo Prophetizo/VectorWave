@@ -249,20 +249,33 @@ public final class FFTAcceleratedCWT {
     
     /**
      * Inverse FFT for real result.
+     * 
+     * <p>Uses the conjugate property of the DFT to compute IFFT using FFT:
+     * IFFT(X) = (1/N) * conj(FFT(conj(X)))</p>
+     * 
+     * <p>This approach reuses the forward FFT implementation, avoiding code duplication
+     * and ensuring consistent numerical behavior.</p>
+     * 
+     * @param X frequency domain complex values
+     * @return time domain real values
      */
     public double[] ifft(Complex[] X) {
         int n = X.length;
         
-        // Conjugate
+        // Step 1: Conjugate the input
+        // This leverages the mathematical property that IFFT can be computed
+        // using FFT by conjugating the input and output
         Complex[] conjX = new Complex[n];
         for (int i = 0; i < n; i++) {
             conjX[i] = X[i].conjugate();
         }
         
-        // Forward FFT
+        // Step 2: Apply forward FFT to the conjugated input
         Complex[] result = fftComplex(conjX);
         
-        // Conjugate and scale
+        // Step 3: Extract real part and scale by 1/N
+        // The imaginary part is discarded as it should be negligible for real signals
+        // The scaling factor 1/N is required for the inverse transform normalization
         double[] realResult = new double[n];
         for (int i = 0; i < n; i++) {
             realResult[i] = result[i].real / n;
@@ -273,20 +286,32 @@ public final class FFTAcceleratedCWT {
     
     /**
      * Inverse FFT for complex result.
+     * 
+     * <p>Computes the inverse Discrete Fourier Transform using the conjugate method:
+     * IFFT(X) = conj(FFT(conj(X))) / N</p>
+     * 
+     * <p>This elegant approach allows us to compute the inverse transform using
+     * the same FFT algorithm, which is more efficient than implementing a
+     * separate inverse transform.</p>
+     * 
+     * @param X frequency domain complex values
+     * @return time domain complex values
      */
     public Complex[] ifftComplex(Complex[] X) {
         int n = X.length;
         
-        // Conjugate
+        // Step 1: Conjugate the frequency domain input
         Complex[] conjX = new Complex[n];
         for (int i = 0; i < n; i++) {
             conjX[i] = X[i].conjugate();
         }
         
-        // Forward FFT
+        // Step 2: Apply forward FFT
         Complex[] result = fftComplex(conjX);
         
-        // Conjugate and scale
+        // Step 3: Conjugate the result and normalize by 1/N
+        // Note: We manually conjugate here (real part stays same, imaginary part negated)
+        // while also applying the 1/N scaling factor required for inverse DFT
         Complex[] finalResult = new Complex[n];
         for (int i = 0; i < n; i++) {
             finalResult[i] = new Complex(result[i].real / n, -result[i].imag / n);
