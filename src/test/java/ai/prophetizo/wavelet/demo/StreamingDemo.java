@@ -46,6 +46,10 @@ public class StreamingDemo {
         System.out.println("\n4. Financial Tick Data Streaming");
         System.out.println("--------------------------------");
         demoFinancialStreaming();
+        
+        System.out.println("\n5. 7-Level Streaming Decomposition Demo");
+        System.out.println("---------------------------------------");
+        demo7LevelStreaming();
     }
     
     private static void demoBasicStreaming() throws InterruptedException {
@@ -341,5 +345,106 @@ public class StreamingDemo {
         Thread.sleep(100);
         
         System.out.println("\nDemo complete!");
+    }
+    
+    private static void demo7LevelStreaming() throws InterruptedException {
+        System.out.println("Demonstrating 7-level DB4 wavelet decomposition in streaming mode...");
+        
+        // Create 7-level streaming transform with DB4
+        StreamingWaveletTransform transform = StreamingWaveletTransform.createMultiLevel(
+            Daubechies.DB4,
+            BoundaryMode.PERIODIC,
+            512,  // Block size must be >= 2^7 = 128 for 7 levels, using 512 for better performance
+            7     // Exactly 7 decomposition levels
+        );
+        
+        CountDownLatch latch = new CountDownLatch(2);  // Expect 2 blocks from 1024 samples with 512 block size
+        AtomicLong blockCount = new AtomicLong();
+        
+        transform.subscribe(new Flow.Subscriber<TransformResult>() {
+            private Flow.Subscription subscription;
+            
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(Long.MAX_VALUE);
+                System.out.println("Subscribed to 7-level transform results");
+            }
+            
+            @Override
+            public void onNext(TransformResult result) {
+                long count = blockCount.incrementAndGet();
+                System.out.printf("Block %d: Received %d approximation + %d detail coefficients (from level 7)\n",
+                    count,
+                    result.approximationCoeffs().length,
+                    result.detailCoeffs().length);
+                
+                // Note: Current implementation only provides final level coefficients
+                // In a full implementation, we would have access to all 7 levels
+                
+                latch.countDown();
+            }
+            
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("Error: " + throwable.getMessage());
+            }
+            
+            @Override
+            public void onComplete() {
+                System.out.println("7-level transform complete");
+            }
+        });
+        
+        // Generate test signal with multiple frequency components
+        System.out.println("\nProcessing 1024 samples in chunks...");
+        int totalSamples = 1024;
+        int chunkSize = 64;
+        
+        for (int chunk = 0; chunk < totalSamples / chunkSize; chunk++) {
+            double[] samples = new double[chunkSize];
+            
+            for (int i = 0; i < chunkSize; i++) {
+                int sampleIndex = chunk * chunkSize + i;
+                double t = sampleIndex / 1024.0;
+                
+                // Multi-frequency signal suitable for 7-level analysis
+                samples[i] = Math.sin(2 * Math.PI * 2 * t)      // Very low freq (captured in approx)
+                           + 0.7 * Math.sin(2 * Math.PI * 8 * t)    // Low freq (level 6-7)
+                           + 0.5 * Math.sin(2 * Math.PI * 32 * t)   // Medium freq (level 4-5)
+                           + 0.3 * Math.sin(2 * Math.PI * 128 * t)  // High freq (level 2-3)
+                           + 0.1 * Math.sin(2 * Math.PI * 256 * t)  // Very high freq (level 1)
+                           + 0.05 * (random.nextDouble() - 0.5);    // Noise
+            }
+            
+            transform.process(samples);
+            
+            // Small delay to simulate real-time streaming
+            Thread.sleep(5);
+        }
+        
+        // Close and wait for completion
+        try {
+            transform.close();
+        } catch (Exception e) {
+            System.err.println("Error closing transform: " + e.getMessage());
+        }
+        
+        latch.await(1, TimeUnit.SECONDS);
+        
+        // Print statistics
+        var stats = transform.getStatistics();
+        System.out.printf("\nStatistics for 7-level streaming:\n");
+        System.out.printf("  Total samples processed: %d\n", stats.getSamplesProcessed());
+        System.out.printf("  Blocks emitted: %d\n", stats.getBlocksEmitted());
+        System.out.printf("  Block size: 512 samples\n");
+        System.out.printf("  Decomposition levels: 7\n");
+        System.out.printf("  Avg processing time: %.2f µs per block\n", 
+            stats.getAverageProcessingTime() / 1000.0);
+        
+        System.out.println("\nNote: Each 512-sample block undergoes 7-level decomposition");
+        System.out.println("      Level 1: Finest details (highest frequencies)");
+        System.out.println("      Level 7: Coarsest details (lowest frequencies)");
+        System.out.println("      Final approximation: Overall trend/DC component");
     }
 }
