@@ -70,4 +70,71 @@ class PlatformDetectorTest {
         assertEquals(1024 * 1024, PlatformDetector.CacheInfo.ARM_DEFAULT.l2CacheSize());
         assertEquals(64, PlatformDetector.CacheInfo.ARM_DEFAULT.cacheLineSize());
     }
+    
+    @Test
+    @DisplayName("Should detect operating system")
+    void testOperatingSystemDetection() {
+        PlatformDetector.OperatingSystem os = PlatformDetector.getOperatingSystem();
+        assertNotNull(os);
+        // At least verify it's one of the known OS types
+        assertTrue(os == PlatformDetector.OperatingSystem.MACOS ||
+                  os == PlatformDetector.OperatingSystem.WINDOWS ||
+                  os == PlatformDetector.OperatingSystem.LINUX ||
+                  os == PlatformDetector.OperatingSystem.OTHER);
+    }
+    
+    @Test
+    @DisplayName("Should provide AVX support information")
+    void testAVXSupport() {
+        // These are heuristics, so we just verify they return reasonable values
+        boolean hasAVX2 = PlatformDetector.hasAVX2Support();
+        boolean hasAVX512 = PlatformDetector.hasAVX512Support();
+        
+        // If platform has AVX-512, it should also have AVX2
+        if (hasAVX512) {
+            assertTrue(hasAVX2, "Platform with AVX-512 should also support AVX2");
+        }
+        
+        // ARM platforms shouldn't report AVX-512 support
+        if (PlatformDetector.isARM() || PlatformDetector.isAppleSilicon()) {
+            assertFalse(hasAVX512, "ARM platforms should not report AVX-512 support");
+        }
+    }
+    
+    @Test
+    @DisplayName("Should provide reasonable SIMD threshold")
+    void testSIMDThreshold() {
+        int threshold = PlatformDetector.getRecommendedSIMDThreshold();
+        assertTrue(threshold > 0, "SIMD threshold should be positive");
+        assertTrue(threshold <= 64, "SIMD threshold should be reasonable");
+        
+        // Platform-specific checks
+        if (PlatformDetector.isAppleSilicon() || PlatformDetector.isARM()) {
+            assertEquals(8, threshold, "ARM platforms should have lower SIMD threshold");
+        } else if (PlatformDetector.isX86_64()) {
+            assertEquals(16, threshold, "x86-64 should have higher SIMD threshold");
+        }
+    }
+    
+    @Test
+    @DisplayName("Should provide optimization hints")
+    void testOptimizationHints() {
+        String hints = PlatformDetector.getPlatformOptimizationHints();
+        assertNotNull(hints);
+        assertFalse(hints.isEmpty());
+        
+        // Should contain basic information
+        assertTrue(hints.contains("Platform:"));
+        assertTrue(hints.contains("OS:"));
+        assertTrue(hints.contains("SIMD Threshold:"));
+        assertTrue(hints.contains("Cache:"));
+        
+        // Platform-specific content
+        if (PlatformDetector.isAppleSilicon()) {
+            assertTrue(hints.contains("NEON"));
+            assertTrue(hints.contains("unified memory"));
+        } else if (PlatformDetector.isX86_64()) {
+            assertTrue(hints.contains("SSE"));
+        }
+    }
 }

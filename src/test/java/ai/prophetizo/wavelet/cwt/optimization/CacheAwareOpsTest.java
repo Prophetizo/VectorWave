@@ -278,8 +278,9 @@ class CacheAwareOpsTest {
     void testPerformanceComparison() {
         // Given
         double[] largeSignal = new double[8192];
+        Random random = new Random(RANDOM_SEED); // Use seeded Random for reproducibility
         for (int i = 0; i < largeSignal.length; i++) {
-            largeSignal[i] = Math.random() - 0.5;
+            largeSignal[i] = random.nextDouble() - 0.5;
         }
         double scale = 16.0;
         double[] wavelet = generateWavelet(scale);

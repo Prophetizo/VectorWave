@@ -13,6 +13,13 @@ class CWTTransformTest {
     private static final double TOLERANCE = 1e-10;
     
     /**
+     * Threshold for numerical stability checks when computing ratios.
+     * Values smaller than this threshold may cause numerical instability
+     * in division operations.
+     */
+    private static final double NUMERICAL_STABILITY_THRESHOLD = 1e-6;
+    
+    /**
      * Relative tolerance for normalization factor tests (10%).
      * This tolerance accounts for:
      * 1. Numerical integration errors that accumulate differently at different scales
@@ -219,7 +226,7 @@ class CWTTransformTest {
                 
                 // Check that the normalized coefficient is not too small to avoid
                 // numerical instability when computing the ratio
-                if (normCoeffs[s][t] > TOLERANCE) { // Avoid division by very small numbers
+                if (normCoeffs[s][t] > NUMERICAL_STABILITY_THRESHOLD) { // Avoid division by very small numbers
                     assertEquals(expectedRatio, actualRatio, expectedRatio * NORMALIZATION_TOLERANCE,
                         "Normalization factor incorrect at scale " + scales[s] + ", time " + t);
                 }

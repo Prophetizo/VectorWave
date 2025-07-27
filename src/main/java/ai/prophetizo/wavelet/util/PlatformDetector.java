@@ -25,6 +25,20 @@ public final class PlatformDetector {
     }
     
     /**
+     * Operating system types.
+     */
+    public enum OperatingSystem {
+        /** macOS */
+        MACOS,
+        /** Microsoft Windows */
+        WINDOWS,
+        /** Linux distributions */
+        LINUX,
+        /** Other/unknown OS */
+        OTHER
+    }
+    
+    /**
      * Cache configuration for the platform.
      */
     public record CacheInfo(
@@ -39,6 +53,7 @@ public final class PlatformDetector {
     }
     
     private static final Platform CURRENT_PLATFORM = detectPlatform();
+    private static final OperatingSystem CURRENT_OS = detectOperatingSystem();
     private static final CacheInfo CACHE_INFO = detectCacheInfo();
     
     // Prevent instantiation
@@ -193,13 +208,111 @@ public final class PlatformDetector {
     }
     
     /**
+     * Gets the detected operating system.
+     * 
+     * @return the current operating system
+     */
+    public static OperatingSystem getOperatingSystem() {
+        return CURRENT_OS;
+    }
+    
+    /**
+     * Detects the current operating system.
+     * 
+     * @return the detected operating system
+     */
+    private static OperatingSystem detectOperatingSystem() {
+        String osName = System.getProperty("ai.prophetizo.test.os",
+                                         System.getProperty("os.name", "")).toLowerCase();
+        
+        if (osName.contains("mac") || osName.contains("darwin")) {
+            return OperatingSystem.MACOS;
+        } else if (osName.contains("win")) {
+            return OperatingSystem.WINDOWS;
+        } else if (osName.contains("nux") || osName.contains("nix") || osName.contains("aix")) {
+            return OperatingSystem.LINUX;
+        }
+        
+        return OperatingSystem.OTHER;
+    }
+    
+    /**
+     * Checks if the platform likely supports AVX2 instructions.
+     * This is a heuristic based on platform type.
+     * 
+     * @return true if AVX2 is likely supported
+     */
+    public static boolean hasAVX2Support() {
+        return switch (CURRENT_PLATFORM) {
+            case X86_64 -> true; // Most modern x86-64 CPUs have AVX2
+            case APPLE_SILICON -> true; // Apple Silicon has NEON which is comparable
+            default -> false;
+        };
+    }
+    
+    /**
+     * Checks if the platform likely supports AVX-512 instructions.
+     * This is a heuristic based on platform type.
+     * 
+     * @return true if AVX-512 is likely supported
+     */
+    public static boolean hasAVX512Support() {
+        // AVX-512 is only on some x86-64 processors, not on ARM
+        return CURRENT_PLATFORM == Platform.X86_64;
+    }
+    
+    /**
+     * Gets the recommended SIMD threshold for the current platform.
+     * 
+     * @return recommended minimum array size for SIMD operations
+     */
+    public static int getRecommendedSIMDThreshold() {
+        return switch (CURRENT_PLATFORM) {
+            case APPLE_SILICON -> 8; // Apple Silicon benefits from SIMD with smaller arrays
+            case ARM -> 8; // ARM NEON also efficient with smaller arrays
+            case X86_64 -> 16; // x86-64 needs larger arrays to amortize overhead
+            case UNKNOWN -> 32; // Conservative default
+        };
+    }
+    
+    /**
+     * Gets platform-specific optimization hints.
+     * 
+     * @return optimization hints as a formatted string
+     */
+    public static String getPlatformOptimizationHints() {
+        StringBuilder hints = new StringBuilder();
+        hints.append("Platform: ").append(CURRENT_PLATFORM).append("\n");
+        hints.append("OS: ").append(CURRENT_OS).append("\n");
+        hints.append("SIMD Threshold: ").append(getRecommendedSIMDThreshold()).append(" elements\n");
+        
+        if (CURRENT_PLATFORM == Platform.APPLE_SILICON) {
+            hints.append("Optimizations: NEON SIMD, unified memory architecture\n");
+            hints.append("Recommendations: Use smaller block sizes, leverage cache-friendly access patterns\n");
+        } else if (CURRENT_PLATFORM == Platform.X86_64) {
+            hints.append("Optimizations: ");
+            if (hasAVX512Support()) hints.append("AVX-512 ");
+            if (hasAVX2Support()) hints.append("AVX2 ");
+            hints.append("SSE\n");
+            hints.append("Recommendations: Use larger block sizes for SIMD, consider NUMA effects\n");
+        }
+        
+        hints.append("Cache: L1=").append(CACHE_INFO.l1DataCacheSize / 1024).append("KB, ");
+        hints.append("L2=").append(CACHE_INFO.l2CacheSize / 1024).append("KB, ");
+        hints.append("Line=").append(CACHE_INFO.cacheLineSize).append("B");
+        
+        return hints.toString();
+    }
+    
+    /**
      * Gets a human-readable description of the current platform.
      * 
      * @return platform description
      */
     public static String getDescription() {
-        return String.format("Platform: %s, L1 Cache: %d KB, L2 Cache: %d MB, Cache Line: %d bytes",
+        return String.format("Platform: %s, OS: %s, L1 Cache: %d KB, L2 Cache: %d MB, Cache Line: %d bytes",
             CURRENT_PLATFORM,
+            CURRENT_OS,
             CACHE_INFO.l1DataCacheSize / 1024,
             CACHE_INFO.l2CacheSize / (1024 * 1024),
             CACHE_INFO.cacheLineSize

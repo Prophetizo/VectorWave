@@ -14,35 +14,54 @@ public final class PlatformDetectionExample {
     /**
      * Example of OLD platform detection pattern (scattered throughout codebase).
      * This is the type of code that should be replaced.
+     * 
+     * WARNING: These examples show PROBLEMATIC CODE with potential issues:
+     * - NullPointerException risks from unchecked System.getProperty() calls
+     * - Scattered, duplicated platform detection logic
+     * - Hard to test and maintain
+     * 
+     * DO NOT USE THESE PATTERNS - they are shown here only as examples
+     * of what to avoid. Use the NewPatterns examples instead.
      */
     public static class OldPatterns {
         
         /**
          * Example of hardcoded Apple Silicon detection.
          * This pattern was found in the CWT implementation code.
+         * WARNING: This code has a potential NullPointerException!
          */
         public boolean isAppleSiliconOldWay() {
-            // OLD: Hardcoded system property checks
-            return System.getProperty("os.arch").equals("aarch64") && 
-                   System.getProperty("os.name").toLowerCase().contains("mac");
+            // OLD: Hardcoded system property checks without null safety
+            // FIXED VERSION (but still not recommended - use PlatformDetection instead):
+            String arch = System.getProperty("os.arch");
+            String osName = System.getProperty("os.name");
+            return arch != null && arch.equals("aarch64") && 
+                   osName != null && osName.toLowerCase().contains("mac");
         }
         
         /**
          * Example of platform-specific SIMD threshold selection.
+         * WARNING: This code also has a potential NullPointerException!
          */
         public int getSIMDThresholdOldWay() {
-            // OLD: Scattered platform checks
-            boolean isAppleSilicon = System.getProperty("os.arch").equals("aarch64") && 
-                                   System.getProperty("os.name").toLowerCase().contains("mac");
+            // OLD: Scattered platform checks without null safety
+            // FIXED VERSION (but still not recommended - use PlatformDetection instead):
+            String arch = System.getProperty("os.arch");
+            String osName = System.getProperty("os.name");
+            boolean isAppleSilicon = arch != null && arch.equals("aarch64") && 
+                                   osName != null && osName.toLowerCase().contains("mac");
             return isAppleSilicon ? 8 : 16;
         }
         
         /**
          * Example of AVX capability detection.
+         * NOTE: This version actually has proper null checking, but is still
+         * not recommended due to incomplete platform detection logic.
          */
         public boolean hasAVXSupportOldWay() {
-            // OLD: Incomplete and error-prone platform detection
+            // OLD: Incomplete platform detection (though null-safe in this case)
             String arch = System.getProperty("os.arch");
+            // This is already null-safe due to short-circuit evaluation
             return arch != null && (arch.equals("x86_64") || arch.equals("amd64"));
         }
     }
@@ -58,7 +77,7 @@ public final class PlatformDetectionExample {
          */
         public boolean isAppleSiliconNewWay() {
             // NEW: Clean, testable, centralized detection
-            return PlatformDetection.isAppleSilicon();
+            return PlatformDetector.isAppleSilicon();
         }
         
         /**
@@ -66,7 +85,7 @@ public final class PlatformDetectionExample {
          */
         public int getSIMDThresholdNewWay() {
             // NEW: Single method call with platform-optimized defaults
-            return PlatformDetection.getRecommendedSIMDThreshold();
+            return PlatformDetector.getRecommendedSIMDThreshold();
         }
         
         /**
@@ -74,7 +93,7 @@ public final class PlatformDetectionExample {
          */
         public boolean hasAVX2SupportNewWay() {
             // NEW: Accurate, heuristic-based detection
-            return PlatformDetection.hasAVX2Support();
+            return PlatformDetector.hasAVX2Support();
         }
         
         /**
@@ -82,7 +101,7 @@ public final class PlatformDetectionExample {
          */
         public String getPlatformInfoNewWay() {
             // NEW: Rich platform information for debugging/optimization
-            return PlatformDetection.getPlatformOptimizationHints();
+            return PlatformDetector.getPlatformOptimizationHints();
         }
     }
     
@@ -95,11 +114,11 @@ public final class PlatformDetectionExample {
          * Method that uses platform detection and can be easily tested.
          */
         public String selectOptimizationStrategy() {
-            if (PlatformDetection.isAppleSilicon()) {
+            if (PlatformDetector.isAppleSilicon()) {
                 return "Apple Silicon NEON optimizations";
-            } else if (PlatformDetection.hasAVX512Support()) {
+            } else if (PlatformDetector.hasAVX512Support()) {
                 return "AVX-512 optimizations"; 
-            } else if (PlatformDetection.hasAVX2Support()) {
+            } else if (PlatformDetector.hasAVX2Support()) {
                 return "AVX2 optimizations";
             } else {
                 return "Scalar optimizations";
@@ -111,9 +130,9 @@ public final class PlatformDetectionExample {
          */
         public OptimizationConfig createOptimizationConfig() {
             return new OptimizationConfig(
-                PlatformDetection.getRecommendedSIMDThreshold(),
-                PlatformDetection.hasAVX2Support(),
-                PlatformDetection.isAppleSilicon()
+                PlatformDetector.getRecommendedSIMDThreshold(),
+                PlatformDetector.hasAVX2Support(),
+                PlatformDetector.isAppleSilicon()
             );
         }
     }
