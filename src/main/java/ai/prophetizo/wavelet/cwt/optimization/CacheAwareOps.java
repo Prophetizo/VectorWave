@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import jdk.incubator.vector.*;
 
+import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 
 /**
@@ -21,25 +22,142 @@ public final class CacheAwareOps {
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final int VECTOR_LENGTH = SPECIES.length();
     
-    // Cache parameters (typical values for modern CPUs)
-    private static final int L1_CACHE_SIZE = 32 * 1024; // 32KB L1 data cache
-    private static final int L2_CACHE_SIZE = 256 * 1024; // 256KB L2 cache
-    private static final int CACHE_LINE_SIZE = 64; // 64-byte cache lines
+    /**
+     * Platform-adaptive cache configuration.
+     */
+    public static class CacheConfig {
+        public final int l1CacheSize;
+        public final int l2CacheSize;
+        public final int cacheLineSize;
+        public final int l1BlockSize;
+        public final int l2BlockSize;
+        public final int optimalBlockSize;
+        public final int tileSize;
+        
+        private CacheConfig(int l1Size, int l2Size, int lineSize) {
+            this.l1CacheSize = l1Size;
+            this.l2CacheSize = l2Size;
+            this.cacheLineSize = lineSize;
+            
+            // Calculate optimal block sizes based on cache hierarchy
+            this.l1BlockSize = Math.min(512, l1Size / (3 * Double.BYTES)); // 3 arrays in L1
+            this.l2BlockSize = Math.min(4096, l2Size / (4 * Double.BYTES)); // 4 arrays in L2
+            
+            // Ensure block sizes are multiples of vector length and cache line
+            this.optimalBlockSize = (l1BlockSize / VECTOR_LENGTH) * VECTOR_LENGTH;
+            this.tileSize = lineSize / Double.BYTES;
+        }
+        
+        /**
+         * Creates a cache configuration with explicit sizes.
+         */
+        public static CacheConfig create(int l1Size, int l2Size, int lineSize) {
+            return new CacheConfig(l1Size, l2Size, lineSize);
+        }
+        
+        /**
+         * Creates default configuration for the current platform.
+         */
+        public static CacheConfig detectOrDefault() {
+            return new CacheConfig(
+                detectL1CacheSize(),
+                detectL2CacheSize(), 
+                detectCacheLineSize()
+            );
+        }
+        
+        private static int detectL1CacheSize() {
+            // Try system properties first
+            String l1Prop = System.getProperty("ai.prophetizo.cache.l1.size");
+            if (l1Prop != null) {
+                try {
+                    return Integer.parseInt(l1Prop);
+                } catch (NumberFormatException ignored) {}
+            }
+            
+            // Platform-specific detection
+            String arch = System.getProperty("os.arch", "").toLowerCase();
+            String osName = System.getProperty("os.name", "").toLowerCase();
+            
+            if (arch.contains("aarch64") && osName.contains("mac")) {
+                // Apple Silicon - larger L1 caches
+                return 128 * 1024; // 128KB L1 data cache
+            } else if (arch.contains("amd64") || arch.contains("x86_64")) {
+                // x86-64 - typical values
+                return 32 * 1024; // 32KB L1 data cache
+            }
+            
+            // Conservative default
+            return 32 * 1024;
+        }
+        
+        private static int detectL2CacheSize() {
+            // Try system properties first
+            String l2Prop = System.getProperty("ai.prophetizo.cache.l2.size");
+            if (l2Prop != null) {
+                try {
+                    return Integer.parseInt(l2Prop);
+                } catch (NumberFormatException ignored) {}
+            }
+            
+            // Platform-specific detection
+            String arch = System.getProperty("os.arch", "").toLowerCase();
+            String osName = System.getProperty("os.name", "").toLowerCase();
+            
+            if (arch.contains("aarch64") && osName.contains("mac")) {
+                // Apple Silicon - larger L2 caches per core
+                return 4 * 1024 * 1024; // 4MB L2 cache
+            } else if (arch.contains("amd64") || arch.contains("x86_64")) {
+                // x86-64 - typical values
+                return 256 * 1024; // 256KB L2 cache
+            }
+            
+            // Conservative default
+            return 256 * 1024;
+        }
+        
+        private static int detectCacheLineSize() {
+            // Try system properties first
+            String lineProp = System.getProperty("ai.prophetizo.cache.line.size");
+            if (lineProp != null) {
+                try {
+                    return Integer.parseInt(lineProp);
+                } catch (NumberFormatException ignored) {}
+            }
+            
+            // Standard cache line size for modern architectures
+            return 64;
+        }
+    }
     
-    // Optimal block sizes based on cache hierarchy
-    private static final int L1_BLOCK_SIZE = 
-        Math.min(512, L1_CACHE_SIZE / (3 * Double.BYTES)); // 3 arrays in L1
-    private static final int L2_BLOCK_SIZE = 
-        Math.min(4096, L2_CACHE_SIZE / (4 * Double.BYTES)); // 4 arrays in L2
-    
-    // Ensure block sizes are multiples of vector length and cache line
-    private static final int OPTIMAL_BLOCK_SIZE = 
-        (L1_BLOCK_SIZE / VECTOR_LENGTH) * VECTOR_LENGTH;
-    private static final int TILE_SIZE = 
-        (CACHE_LINE_SIZE / Double.BYTES);
+    // Default cache configuration (lazy-initialized)
+    private static volatile CacheConfig defaultConfig;
     
     /**
-     * Computes convolution using cache-friendly blocking.
+     * Gets the default cache configuration for this platform.
+     */
+    public static CacheConfig getDefaultCacheConfig() {
+        CacheConfig config = defaultConfig;
+        if (config == null) {
+            synchronized (CacheAwareOps.class) {
+                config = defaultConfig;
+                if (config == null) {
+                    defaultConfig = config = CacheConfig.detectOrDefault();
+                }
+            }
+        }
+        return config;
+    }
+    
+    // Cache parameters for backward compatibility
+    private static final int L1_CACHE_SIZE = getDefaultCacheConfig().l1CacheSize;
+    private static final int L2_CACHE_SIZE = getDefaultCacheConfig().l2CacheSize;
+    private static final int CACHE_LINE_SIZE = getDefaultCacheConfig().cacheLineSize;
+    private static final int OPTIMAL_BLOCK_SIZE = getDefaultCacheConfig().optimalBlockSize;
+    private static final int TILE_SIZE = getDefaultCacheConfig().tileSize;
+    
+    /**
+     * Computes convolution using cache-friendly blocking with default cache configuration.
      * 
      * @param signal input signal
      * @param wavelet wavelet coefficients
@@ -47,11 +165,24 @@ public final class CacheAwareOps {
      * @return convolution result
      */
     public double[] blockedConvolve(double[] signal, double[] wavelet, double scale) {
+        return blockedConvolve(signal, wavelet, scale, getDefaultCacheConfig());
+    }
+    
+    /**
+     * Computes convolution using cache-friendly blocking with custom cache configuration.
+     * 
+     * @param signal input signal
+     * @param wavelet wavelet coefficients
+     * @param scale scale factor
+     * @param cacheConfig cache configuration to use for optimization
+     * @return convolution result
+     */
+    public double[] blockedConvolve(double[] signal, double[] wavelet, double scale, CacheConfig cacheConfig) {
         int signalLen = signal.length;
         int waveletLen = wavelet.length;
         double[] result = new double[signalLen];
         
-        if (signalLen < OPTIMAL_BLOCK_SIZE) {
+        if (signalLen < cacheConfig.optimalBlockSize) {
             // Small signals - use direct computation
             return directConvolve(signal, wavelet, scale);
         }
@@ -66,8 +197,8 @@ public final class CacheAwareOps {
         }
         
         // Process signal in blocks to maximize cache reuse
-        for (int blockStart = 0; blockStart < signalLen; blockStart += OPTIMAL_BLOCK_SIZE) {
-            int blockEnd = Math.min(blockStart + OPTIMAL_BLOCK_SIZE, signalLen);
+        for (int blockStart = 0; blockStart < signalLen; blockStart += cacheConfig.optimalBlockSize) {
+            int blockEnd = Math.min(blockStart + cacheConfig.optimalBlockSize, signalLen);
             
             // Process each output position in the block
             for (int tau = blockStart; tau < blockEnd; tau++) {

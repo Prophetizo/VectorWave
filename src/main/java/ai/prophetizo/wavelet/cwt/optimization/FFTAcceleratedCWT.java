@@ -248,16 +248,37 @@ public final class FFTAcceleratedCWT {
     }
     
     /**
-     * Inverse FFT for real result.
+     * Inverse Fast Fourier Transform for real-valued output.
      * 
-     * <p>Uses the conjugate property of the DFT to compute IFFT using FFT:
-     * IFFT(X) = (1/N) * conj(FFT(conj(X)))</p>
+     * <p><strong>Algorithm:</strong> Uses the mathematical conjugate property of the DFT:</p>
+     * <pre>IFFT(X) = (1/N) * conj(FFT(conj(X)))</pre>
      * 
-     * <p>This approach reuses the forward FFT implementation, avoiding code duplication
-     * and ensuring consistent numerical behavior.</p>
+     * <p>This elegant approach leverages the forward FFT implementation for the inverse
+     * transform, avoiding code duplication while ensuring consistent numerical behavior
+     * and identical optimization characteristics.</p>
      * 
-     * @param X frequency domain complex values
-     * @return time domain real values
+     * <p><strong>Performance Characteristics:</strong></p>
+     * <ul>
+     *   <li><strong>Time Complexity:</strong> O(N log N) using Cooley-Tukey algorithm</li>
+     *   <li><strong>Space Complexity:</strong> O(N) for intermediate arrays</li>
+     *   <li><strong>Numerical Stability:</strong> Same as forward FFT due to shared implementation</li>
+     *   <li><strong>Optimization:</strong> Benefits from all forward FFT optimizations (bit-reversal, twiddle factors)</li>
+     * </ul>
+     * 
+     * <p><strong>Input Requirements:</strong></p>
+     * <ul>
+     *   <li>Array length must be a power of 2</li>
+     *   <li>Input represents frequency domain coefficients from a forward FFT</li>
+     *   <li>For real signals, frequency domain should have conjugate symmetry</li>
+     * </ul>
+     * 
+     * @param X frequency domain complex values (length must be power of 2)
+     * @return time domain real values with same length as input
+     * @throws IllegalArgumentException if input length is not a power of 2
+     * @throws NullPointerException if X is null
+     * @see #fft(double[]) for the forward transform
+     * @see #ifftComplex(Complex[]) for complex-valued output
+     * @since 1.0.0
      */
     public double[] ifft(Complex[] X) {
         int n = X.length;
@@ -413,12 +434,31 @@ public final class FFTAcceleratedCWT {
     
     /**
      * Evaluates a wavelet at a given point, handling both real and complex wavelets.
-     * This helper method provides a unified interface for evaluating any continuous wavelet
-     * as a complex number, simplifying code that needs to handle both real and complex wavelets.
      * 
-     * @param wavelet the wavelet to evaluate
-     * @param t the time/position parameter
-     * @return Complex value of the wavelet at point t
+     * <p>This helper method provides a unified interface for evaluating any continuous wavelet
+     * as a complex number, simplifying code that needs to handle both real and complex wavelets.
+     * For real wavelets, the imaginary part is set to zero. For complex wavelets, both real
+     * and imaginary parts are computed using the wavelet's implementation.</p>
+     * 
+     * <p><strong>Usage Examples:</strong></p>
+     * <pre>{@code
+     * // Evaluate a real wavelet (e.g., Haar, Daubechies)
+     * ContinuousWavelet realWavelet = new SomeRealWavelet();
+     * Complex result1 = evaluateAsComplex(realWavelet, 1.5);
+     * // result1.imag will be 0.0
+     * 
+     * // Evaluate a complex wavelet (e.g., Morlet)
+     * ComplexContinuousWavelet complexWavelet = new MorletWavelet();
+     * Complex result2 = evaluateAsComplex(complexWavelet, 1.5);
+     * // result2 contains both real and imaginary components
+     * }</pre>
+     * 
+     * @param wavelet the continuous wavelet to evaluate (real or complex)
+     * @param t the time/position parameter where the wavelet should be evaluated
+     * @return Complex value of the wavelet at point t. For real wavelets, imaginary part is 0.
+     *         For complex wavelets, both real and imaginary parts are computed.
+     * @throws NullPointerException if wavelet is null
+     * @since 1.0.0
      */
     public static Complex evaluateAsComplex(ContinuousWavelet wavelet, double t) {
         if (wavelet instanceof ComplexContinuousWavelet complexWavelet) {

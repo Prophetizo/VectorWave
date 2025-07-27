@@ -6,11 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.util.Random;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class CacheAwareOpsTest {
     
     private static final double TOLERANCE = 1e-10;
+    private static final long RANDOM_SEED = 54321L; // Fixed seed for reproducible tests
     private CacheAwareOps cacheOps;
     private double[] testSignal;
     private MorletWavelet wavelet;
@@ -181,8 +184,9 @@ class CacheAwareOpsTest {
     void testPrefetching() {
         // Given
         double[] largeSignal = new double[16384];
+        Random random = new Random(RANDOM_SEED); // Use seeded Random for reproducibility
         for (int i = 0; i < largeSignal.length; i++) {
-            largeSignal[i] = Math.random() - 0.5;
+            largeSignal[i] = random.nextDouble() - 0.5;
         }
         
         // When - process with prefetching

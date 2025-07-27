@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.util.Random;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class FFTAcceleratedCWTTest {
     
     private static final double TOLERANCE = 1e-10;
     private static final double RELAXED_TOLERANCE = 1e-6; // For FFT operations
+    private static final long RANDOM_SEED = 12345L; // Fixed seed for reproducible tests
     private FFTAcceleratedCWT fftCWT;
     private double[] testSignal;
     private MorletWavelet wavelet;
@@ -274,8 +277,9 @@ class FFTAcceleratedCWTTest {
     void testPerformanceComparison() {
         // Given
         double[] largeSignal = new double[4096];
+        Random random = new Random(RANDOM_SEED); // Use seeded Random for reproducibility
         for (int i = 0; i < largeSignal.length; i++) {
-            largeSignal[i] = Math.random() - 0.5;
+            largeSignal[i] = random.nextDouble() - 0.5;
         }
         double scale = 16.0;
         

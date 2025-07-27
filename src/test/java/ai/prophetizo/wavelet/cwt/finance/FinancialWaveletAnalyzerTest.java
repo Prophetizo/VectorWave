@@ -5,11 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.util.Random;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class FinancialWaveletAnalyzerTest {
     
     private static final double TOLERANCE = 1e-10;
+    private static final long RANDOM_SEED = 98765L; // Fixed seed for reproducible tests
     private FinancialWaveletAnalyzer analyzer;
     private double[] priceData;
     private double[] volumeData;
@@ -22,6 +25,9 @@ class FinancialWaveletAnalyzerTest {
         int N = 512;
         priceData = new double[N];
         volumeData = new double[N];
+        
+        // Use seeded Random for reproducible tests
+        Random random = new Random(RANDOM_SEED);
         
         // Generate price data with trend, cycles, and jumps
         for (int i = 0; i < N; i++) {
@@ -37,7 +43,7 @@ class FinancialWaveletAnalyzerTest {
             priceData[i] += 3.0 * Math.sin(2 * Math.PI * i / 22);
             
             // Add some noise
-            priceData[i] += 0.5 * Math.random();
+            priceData[i] += 0.5 * random.nextDouble();
             
             // Simulate market crash at day 200
             if (i >= 200 && i < 220) {
@@ -45,7 +51,7 @@ class FinancialWaveletAnalyzerTest {
             }
             
             // Volume spikes during crash
-            volumeData[i] = 1000000 + 100000 * Math.random();
+            volumeData[i] = 1000000 + 100000 * random.nextDouble();
             if (i >= 195 && i < 225) {
                 volumeData[i] *= 3.0; // Triple volume during volatility
             }
