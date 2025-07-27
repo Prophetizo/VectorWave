@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.cwt.memory.CWTMemoryPool;
 
 /**
  * Configuration for Continuous Wavelet Transform operations.
@@ -31,6 +32,7 @@ public final class CWTConfig {
     private final boolean useScopedValues;
     private final boolean useStructuredConcurrency;
     private final boolean useStreamGatherers;
+    private final CWTMemoryPool memoryPool;
     
     // FFT threshold for automatic decision
     private static final int FFT_THRESHOLD = 256;
@@ -44,6 +46,7 @@ public final class CWTConfig {
         this.useScopedValues = builder.useScopedValues;
         this.useStructuredConcurrency = builder.useStructuredConcurrency;
         this.useStreamGatherers = builder.useStreamGatherers;
+        this.memoryPool = builder.memoryPool;
     }
     
     /**
@@ -123,7 +126,8 @@ public final class CWTConfig {
             .fftSize(fftSize)
             .useScopedValues(useScopedValues)
             .useStructuredConcurrency(useStructuredConcurrency)
-            .useStreamGatherers(useStreamGatherers);
+            .useStreamGatherers(useStreamGatherers)
+            .memoryPool(memoryPool);
     }
     
     /**
@@ -195,6 +199,10 @@ public final class CWTConfig {
         return useStreamGatherers;
     }
     
+    public CWTMemoryPool getMemoryPool() {
+        return memoryPool;
+    }
+    
     /**
      * Builder for CWT configuration.
      */
@@ -207,6 +215,7 @@ public final class CWTConfig {
         private boolean useScopedValues = false;
         private boolean useStructuredConcurrency = true;
         private boolean useStreamGatherers = true;
+        private CWTMemoryPool memoryPool = null;
         
         private Builder() {}
         
@@ -253,6 +262,11 @@ public final class CWTConfig {
         
         public Builder useStreamGatherers(boolean use) {
             this.useStreamGatherers = use;
+            return this;
+        }
+        
+        public Builder memoryPool(CWTMemoryPool pool) {
+            this.memoryPool = pool;
             return this;
         }
         

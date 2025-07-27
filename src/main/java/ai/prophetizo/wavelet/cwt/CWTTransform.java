@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
 
 /**
  * Main engine for Continuous Wavelet Transform computation.
@@ -15,6 +16,7 @@ public final class CWTTransform {
     
     private final ContinuousWavelet wavelet;
     private final CWTConfig config;
+    private final CWTVectorOps vectorOps;
     
     /**
      * Creates a CWT transform with default configuration.
@@ -41,6 +43,7 @@ public final class CWTTransform {
         
         this.wavelet = wavelet;
         this.config = config;
+        this.vectorOps = new CWTVectorOps();
     }
     
     /**
@@ -78,45 +81,34 @@ public final class CWTTransform {
      * Direct convolution implementation.
      */
     private CWTResult analyzeDirect(double[] signal, double[] scales) {
-        int signalLength = signal.length;
-        int numScales = scales.length;
-        
         if (wavelet.isComplex()) {
             return analyzeDirectComplex(signal, scales);
         }
         
-        // Real-valued wavelet
-        double[][] coefficients = new double[numScales][signalLength];
+        // Allocate coefficients array using memory pool if available
+        double[][] coefficients;
+        if (config.getMemoryPool() != null) {
+            coefficients = config.getMemoryPool().allocateCoefficients(scales.length, signal.length);
+        } else {
+            coefficients = new double[scales.length][signal.length];
+        }
         
-        for (int s = 0; s < numScales; s++) {
-            double scale = scales[s];
-            double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
-            
-            // Determine wavelet support
-            int halfSupport = (int)(4 * scale * wavelet.bandwidth());
-            
-            // Convolve signal with scaled wavelet
-            for (int tau = 0; tau < signalLength; tau++) {
-                double sum = 0.0;
-                
-                for (int t = -halfSupport; t <= halfSupport; t++) {
-                    int idx = tau + t;
-                    
-                    if (idx >= 0 && idx < signalLength) {
-                        // Apply boundary handling
-                        double signalValue = signal[idx];
-                        double waveletValue = wavelet.psi(-t / scale) / sqrtScale;
-                        sum += signalValue * waveletValue;
-                    } else {
-                        // Handle boundaries based on config
-                        double signalValue = getBoundaryValue(signal, idx);
-                        double waveletValue = wavelet.psi(-t / scale) / sqrtScale;
-                        sum += signalValue * waveletValue;
-                    }
-                }
-                
-                coefficients[s][tau] = sum;
-            }
+        // Use optimized multi-scale computation
+        double[][] computedCoeffs = vectorOps.computeMultiScale(signal, scales, wavelet);
+        
+        // Copy results to allocated array
+        for (int i = 0; i < scales.length; i++) {
+            System.arraycopy(computedCoeffs[i], 0, coefficients[i], 0, signal.length);
+        }
+        
+        // Apply normalization if needed
+        if (config.isNormalizeAcrossScales()) {
+            vectorOps.normalizeByScale(coefficients, scales);
+        }
+        
+        // Apply boundary handling if not periodic
+        if (config.getBoundaryMode() != ai.prophetizo.wavelet.api.BoundaryMode.PERIODIC) {
+            coefficients = applyBoundaryHandling(signal, scales, coefficients);
         }
         
         return new CWTResult(coefficients, scales, wavelet);
@@ -234,6 +226,37 @@ public final class CWTTransform {
         }
         
         return waveletArray;
+    }
+    
+    /**
+     * Apply boundary handling to coefficients.
+     */
+    private double[][] applyBoundaryHandling(double[] signal, double[] scales, 
+                                           double[][] coefficients) {
+        // For non-periodic boundaries, recompute with proper padding
+        CWTVectorOps.PaddingMode paddingMode = switch (config.getPaddingStrategy()) {
+            case ZERO -> CWTVectorOps.PaddingMode.ZERO;
+            case REFLECT -> CWTVectorOps.PaddingMode.REFLECT;
+            case PERIODIC -> CWTVectorOps.PaddingMode.PERIODIC;
+            case SYMMETRIC -> CWTVectorOps.PaddingMode.SYMMETRIC;
+        };
+        
+        for (int s = 0; s < scales.length; s++) {
+            double scale = scales[s];
+            int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
+            double[] scaledWavelet = new double[waveletSupport];
+            
+            // Sample wavelet at scale
+            for (int i = 0; i < waveletSupport; i++) {
+                double t = (i - waveletSupport / 2.0) / scale;
+                scaledWavelet[i] = wavelet.psi(t);
+            }
+            
+            coefficients[s] = vectorOps.convolveWithPadding(
+                signal, scaledWavelet, scale, paddingMode);
+        }
+        
+        return coefficients;
     }
     
     /**
