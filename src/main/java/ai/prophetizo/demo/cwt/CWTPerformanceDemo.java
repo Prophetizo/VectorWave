@@ -3,6 +3,7 @@ package ai.prophetizo.demo.cwt;
 import ai.prophetizo.wavelet.api.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.optimization.CacheAwareOps;
+import ai.prophetizo.wavelet.util.PlatformDetector;
 
 /**
  * Demonstrates CWT performance optimizations and platform adaptability.
@@ -39,13 +40,12 @@ public class CWTPerformanceDemo {
         System.out.println("==========================================");
         
         // Display system information
-        String osName = System.getProperty("os.name");
-        String osArch = System.getProperty("os.arch");
         String javaVersion = System.getProperty("java.version");
         
-        System.out.printf("Operating System: %s%n", osName);
-        System.out.printf("Architecture: %s%n", osArch);
+        System.out.printf("Operating System: %s%n", PlatformDetector.getOperatingSystem());
+        System.out.printf("Architecture: %s%n", PlatformDetector.getPlatform());
         System.out.printf("Java Version: %s%n", javaVersion);
+        System.out.printf("Platform Details: %s%n", PlatformDetector.getPlatformOptimizationHints());
         
         // Get default cache configuration
         CacheAwareOps.CacheConfig defaultConfig = CacheAwareOps.getDefaultCacheConfig();
@@ -58,12 +58,12 @@ public class CWTPerformanceDemo {
         System.out.printf("  Tile Size: %d elements%n", defaultConfig.tileSize);
         
         // Show platform-specific optimizations
-        if (osArch.toLowerCase().contains("aarch64") && osName.toLowerCase().contains("mac")) {
+        if (PlatformDetector.isAppleSilicon()) {
             System.out.println("\nApple Silicon optimizations detected:");
             System.out.println("  - Larger L1 cache (128KB) for better blocking");
             System.out.println("  - Large L2 cache (4MB) for multi-scale analysis");
             System.out.println("  - Optimized for unified memory architecture");
-        } else if (osArch.toLowerCase().contains("amd64") || osArch.toLowerCase().contains("x86_64")) {
+        } else if (PlatformDetector.isX86_64()) {
             System.out.println("\nx86-64 optimizations detected:");
             System.out.println("  - Standard L1 cache (32KB) configuration");
             System.out.println("  - Conservative L2 cache (256KB) assumptions");

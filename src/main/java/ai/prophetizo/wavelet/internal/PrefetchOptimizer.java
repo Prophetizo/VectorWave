@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.PlatformDetector;
+
 /**
  * Provides cache prefetching optimizations for wavelet transform operations.
  *
@@ -45,9 +47,7 @@ public final class PrefetchOptimizer {
      */
     private static boolean checkPrefetchSupport() {
         // Check for x86_64 or ARM64 platforms that typically support prefetch
-        String arch = System.getProperty("os.arch", "").toLowerCase();
-        return arch.contains("amd64") || arch.contains("x86_64") ||
-                arch.contains("aarch64") || arch.contains("arm64");
+        return PlatformDetector.isX86_64() || PlatformDetector.isARM();
     }
 
     /**
@@ -232,7 +232,7 @@ public final class PrefetchOptimizer {
     public static String getPrefetchInfo() {
         return String.format("Prefetch Support: %s, Architecture: %s, Cache Line Size: %d bytes",
                 PREFETCH_SUPPORTED ? "Enabled" : "Disabled",
-                System.getProperty("os.arch", "unknown"),
+                PlatformDetector.getPlatform(),
                 CACHE_LINE_SIZE);
     }
 }

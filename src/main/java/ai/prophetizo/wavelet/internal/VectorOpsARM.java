@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -270,15 +271,13 @@ public final class VectorOpsARM {
      * Check if this is an ARM platform that can benefit from these optimizations.
      */
     public static boolean isARMPlatform() {
-        String arch = System.getProperty("os.arch").toLowerCase();
-        return arch.contains("aarch64") || arch.contains("arm");
+        return PlatformDetector.isARM();
     }
 
     /**
      * Check if running on Apple Silicon (M1/M2/M3).
      */
     public static boolean isAppleSilicon() {
-        return isARMPlatform() &&
-                System.getProperty("os.name").toLowerCase().contains("mac");
+        return PlatformDetector.isAppleSilicon();
     }
 }
