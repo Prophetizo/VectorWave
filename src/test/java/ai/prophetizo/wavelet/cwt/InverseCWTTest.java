@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.cwt;
 
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.finance.DOGWavelet;
 import ai.prophetizo.wavelet.cwt.finance.PaulWavelet;

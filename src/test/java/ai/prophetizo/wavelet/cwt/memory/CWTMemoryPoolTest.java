@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.cwt.memory;
 
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.CWTConfig;
 import ai.prophetizo.wavelet.cwt.CWTTransform;

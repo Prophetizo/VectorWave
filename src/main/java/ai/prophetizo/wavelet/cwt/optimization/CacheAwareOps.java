@@ -2,7 +2,7 @@ package ai.prophetizo.wavelet.cwt.optimization;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.*;

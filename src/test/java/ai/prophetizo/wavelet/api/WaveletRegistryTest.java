@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 

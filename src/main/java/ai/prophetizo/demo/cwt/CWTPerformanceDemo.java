@@ -1,6 +1,6 @@
 package ai.prophetizo.demo.cwt;
 
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.optimization.CacheAwareOps;
 import ai.prophetizo.wavelet.util.PlatformDetector;

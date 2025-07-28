@@ -37,7 +37,7 @@ public final class WaveletRegistry {
         register(BiorthogonalSpline.BIOR1_3);
 
         // Register continuous wavelets
-        register(new MorletWavelet());
+        register(new ai.prophetizo.wavelet.cwt.MorletWavelet());
         
         // Register financial wavelets
         register(new ai.prophetizo.wavelet.cwt.finance.PaulWavelet());

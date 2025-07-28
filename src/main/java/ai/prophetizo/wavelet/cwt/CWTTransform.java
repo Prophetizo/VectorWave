@@ -2,7 +2,7 @@ package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
 import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 import java.util.stream.IntStream;

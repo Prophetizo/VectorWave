@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;

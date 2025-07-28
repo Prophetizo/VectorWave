@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.cwt.optimization;
 
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.ComplexMatrix;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

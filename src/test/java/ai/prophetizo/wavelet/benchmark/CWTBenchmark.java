@@ -3,7 +3,7 @@ package ai.prophetizo.wavelet.benchmark;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.finance.*;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
-import ai.prophetizo.wavelet.api.MorletWavelet;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 

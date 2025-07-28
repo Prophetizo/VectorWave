@@ -2,6 +2,7 @@ package ai.prophetizo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
 import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
