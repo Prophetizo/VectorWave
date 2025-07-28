@@ -366,7 +366,10 @@ public class FinancialWaveletAnalyzer {
         CyclicalAnalysisResult cycles = analyzeCyclicalPatterns(priceData, samplingRate);
         
         // Generate signals based on combined analysis
-        for (int i = SIGNAL_GENERATION_MIN_HISTORY; i < priceData.length - CRASH_PREDICTION_FORWARD_WINDOW; i++) {
+        // Ensure we don't exceed volatility array bounds (length = priceData.length - 1)
+        int maxIndex = Math.min(priceData.length - CRASH_PREDICTION_FORWARD_WINDOW, 
+                               volatility.instantaneousVolatility.length);
+        for (int i = SIGNAL_GENERATION_MIN_HISTORY; i < maxIndex; i++) {
             // Sell signal before potential crash
             if (crashes.crashProbabilities.containsKey(i + CRASH_PREDICTION_FORWARD_WINDOW)) {
                 double prob = crashes.crashProbabilities.get(i + CRASH_PREDICTION_FORWARD_WINDOW);
@@ -449,8 +452,8 @@ public class FinancialWaveletAnalyzer {
             if (t == 0) {
                 // First point: use the first return volatility
                 volatilityIndex[t] = absReturns.length > 0 ? absReturns[0] * 100.0 : 0.0;
-            } else if (t <= absReturns.length) {
-                // For t > 0, use raw absolute return plus wavelet enhancement
+            } else if (t < absReturns.length) {
+                // For t > 0 and t < absReturns.length, use raw absolute return plus wavelet enhancement
                 double baseVol = absReturns[t-1] * 100.0; // Scale up for visibility
                 
                 // Add wavelet-based enhancement for better detection

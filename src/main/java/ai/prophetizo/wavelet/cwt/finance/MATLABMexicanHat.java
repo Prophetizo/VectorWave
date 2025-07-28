@@ -57,6 +57,10 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
     
     private static final String NAME = "mexihat";
     
+    // MATLAB-specific constants (pre-calculated for performance)
+    private static final double MATLAB_SIGMA = 5.0 / Math.sqrt(8.0);  // ≈ 1.7678
+    private static final double MATLAB_NORMALIZATION = 0.8673250706;
+    
     // MATLAB mexihat exact values at key points
     // These were obtained from MATLAB R2023b wavelet toolbox
     private static final double[][] MATLAB_VALUES = {
@@ -90,27 +94,35 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
     
     @Override
     public double psi(double t) {
-        // For exact MATLAB values, interpolate from the table
-        for (int i = 0; i < MATLAB_VALUES.length - 1; i++) {
-            double t1 = MATLAB_VALUES[i][0];
-            double t2 = MATLAB_VALUES[i + 1][0];
-            
-            if (t >= t1 && t <= t2) {
-                // Linear interpolation
-                double v1 = MATLAB_VALUES[i][1];
-                double v2 = MATLAB_VALUES[i + 1][1];
-                double alpha = (t - t1) / (t2 - t1);
-                return v1 * (1 - alpha) + v2 * alpha;
+        // Quick bounds check
+        if (t < MATLAB_VALUES[0][0] || t > MATLAB_VALUES[MATLAB_VALUES.length - 1][0]) {
+            // Outside the table range, use the formula with MATLAB's parameters
+            // MATLAB uses: ψ(t) = (2/(√3 * π^(1/4))) * (1 - x²) * exp(-x²/2)
+            // where x = t / (5/√8)
+            double x = t / MATLAB_SIGMA;
+            return MATLAB_NORMALIZATION * (1 - x * x) * Math.exp(-x * x / 2);
+        }
+        
+        // Binary search for the interval containing t
+        int left = 0;
+        int right = MATLAB_VALUES.length - 1;
+        
+        while (left < right - 1) {
+            int mid = (left + right) / 2;
+            if (t < MATLAB_VALUES[mid][0]) {
+                right = mid;
+            } else {
+                left = mid;
             }
         }
         
-        // Outside the table range, use the formula with MATLAB's parameters
-        // MATLAB uses: ψ(t) = (2/(√3 * π^(1/4))) * (1 - x²) * exp(-x²/2)
-        // where x = t / (5/√8)
-        double sigma = 5.0 / Math.sqrt(8.0);
-        double x = t / sigma;
-        double C = 0.8673250706; // MATLAB's normalization
-        return C * (1 - x * x) * Math.exp(-x * x / 2);
+        // Linear interpolation between left and right points
+        double t1 = MATLAB_VALUES[left][0];
+        double t2 = MATLAB_VALUES[right][0];
+        double v1 = MATLAB_VALUES[left][1];
+        double v2 = MATLAB_VALUES[right][1];
+        double alpha = (t - t1) / (t2 - t1);
+        return v1 * (1 - alpha) + v2 * alpha;
     }
     
     @Override

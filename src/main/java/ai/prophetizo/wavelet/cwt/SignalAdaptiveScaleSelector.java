@@ -87,8 +87,13 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
      * Analyzes signal to extract key characteristics for scale selection.
      */
     private SignalCharacteristics analyzeSignal(double[] signal, double samplingRate) {
-        int n = Math.min(signal.length, DEFAULT_SPECTRAL_ANALYSIS_SIZE);
-        double[] analysisSegment = Arrays.copyOf(signal, n);
+        // Only copy if we need to truncate; otherwise use original array
+        double[] analysisSegment;
+        if (signal.length <= DEFAULT_SPECTRAL_ANALYSIS_SIZE) {
+            analysisSegment = signal;  // No copy needed
+        } else {
+            analysisSegment = Arrays.copyOf(signal, DEFAULT_SPECTRAL_ANALYSIS_SIZE);
+        }
         
         // Compute power spectral density
         SpectralAnalysis spectral = computeSpectralAnalysis(analysisSegment, samplingRate);

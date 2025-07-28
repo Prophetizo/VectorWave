@@ -82,6 +82,11 @@ public final class InverseCWT {
     /**
      * Reconstructs the signal from CWT coefficients.
      * 
+     * <p><strong>Note:</strong> Currently only supports reconstruction from real 
+     * coefficients. For complex wavelets, only the real part of the coefficients 
+     * is used in reconstruction. Full complex coefficient reconstruction is not 
+     * yet implemented.</p>
+     * 
      * @param cwtResult the CWT result containing coefficients
      * @return reconstructed signal
      * @throws InvalidArgumentException if input is invalid
@@ -113,6 +118,9 @@ public final class InverseCWT {
     
     /**
      * Reconstructs the signal using only a specific frequency band.
+     * 
+     * <p><strong>Note:</strong> Currently only supports reconstruction from real 
+     * coefficients. Complex coefficient reconstruction is not yet implemented.</p>
      * 
      * @param cwtResult the CWT result
      * @param minScale minimum scale (inclusive)
@@ -157,6 +165,9 @@ public final class InverseCWT {
     
     /**
      * Reconstructs the signal from frequency domain representation.
+     * 
+     * <p><strong>Note:</strong> Currently only supports reconstruction from real 
+     * coefficients. Complex coefficient reconstruction is not yet implemented.</p>
      * 
      * @param cwtResult the CWT result
      * @param samplingRate the sampling rate in Hz
