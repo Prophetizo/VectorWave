@@ -54,7 +54,15 @@ BiorthogonalSpline.BIOR3_1, BIOR3_3, BIOR3_5, BIOR3_7, BIOR3_9
 
 #### Continuous Wavelets
 ```java
+// Basic wavelets
 new MorletWavelet(omega0, sigma)  // omega0: frequency, sigma: bandwidth
+
+// Financial wavelets
+new PaulWavelet(m)                 // m: order (2,4,6)
+new DOGWavelet(m)                  // m: derivative order
+new ShannonGaborWavelet(fb, fc)    // fb: bandwidth, fc: center frequency
+new ClassicalShannonWavelet()      // Perfect frequency localization
+new GaussianDerivativeWavelet(n)   // n: derivative order (1-4)
 ```
 
 ### Boundary Modes
@@ -196,8 +204,66 @@ WaveletException (base)
 └── InvalidStateException       // Invalid object state
 ```
 
+## CWT API
+
+### CWTTransform
+
+```java
+// Basic CWT
+CWTTransform cwt = new CWTTransform(wavelet);
+CWTTransform cwt = new CWTTransform(wavelet, config);
+
+// Analysis
+CWTResult analyze(double[] signal, double[] scales)
+```
+
+### CWTResult
+
+```java
+double[][] getCoefficients()      // Scale x Time coefficients
+double[] getScales()             // Scales used
+ContinuousWavelet getWavelet()   // Wavelet used
+int getNumScales()               // Number of scales
+int getNumSamples()              // Signal length
+```
+
+### InverseCWT
+
+```java
+// Standard reconstruction (simple but limited accuracy)
+InverseCWT inverse = new InverseCWT(wavelet);
+double[] reconstruct(CWTResult result)
+
+// DWT-based reconstruction (recommended - fast and stable)
+DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
+DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet, discreteWavelet, enableRefinement);
+
+double[] reconstruct(CWTResult result)
+// Automatically maps continuous wavelets to suitable discrete wavelets
+// Works best with dyadic scales (powers of 2)
+// 10-300x faster than standard method
+```
+
+### Financial Analysis
+
+```java
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+
+// Crash detection
+MarketCrashResult detectMarketCrashes(double[] prices, double threshold)
+MarketCrashResult detectMarketCrashes(double[] prices, double threshold, 
+                                     double[] scales)
+
+// Volatility analysis
+VolatilityResult analyzeVolatility(double[] returns)
+VolatilityResult analyzeVolatility(double[] returns, double[] scales)
+
+// Pattern detection
+HFTPatternResult detectHFTPatterns(double[] prices, double samplingRate)
+```
+
 ## Thread Safety
 
-- **Thread-safe**: WaveletTransform, WaveletDenoiser, all Wavelet implementations
+- **Thread-safe**: WaveletTransform, WaveletDenoiser, all Wavelet implementations, CWTTransform, InverseCWT, DWTBasedInverseCWT
 - **Not thread-safe**: StreamingWaveletTransform (use one per thread)
 - **Lock-free**: Memory pools, WaveletRegistry
