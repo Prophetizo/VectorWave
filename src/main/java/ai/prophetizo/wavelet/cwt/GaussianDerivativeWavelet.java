@@ -45,6 +45,10 @@ public final class GaussianDerivativeWavelet implements ContinuousWavelet {
     private final String name;
     private final double normFactor;
     
+    // Pre-computed coefficients for performance
+    private final double sigmaPower; // sigma^n for the denominator
+    private final boolean isOdd; // Whether the derivative order is odd
+    
     /**
      * Creates a first-order Gaussian derivative wavelet with σ=1.
      */
@@ -84,6 +88,8 @@ public final class GaussianDerivativeWavelet implements ContinuousWavelet {
         this.sigma = sigma;
         this.name = "gaus" + n;
         this.normFactor = calculateNormalizationFactor(n, sigma);
+        this.sigmaPower = Math.pow(sigma, n);
+        this.isOdd = (n % 2) == 1;
     }
     
     @Override
@@ -112,18 +118,68 @@ public final class GaussianDerivativeWavelet implements ContinuousWavelet {
         // Gaussian envelope
         double gaussian = Math.exp(-0.5 * x2) * normFactor;
         
-        // Apply derivative operator based on order
+        // Compute polynomial coefficient for the derivative
+        double polynomial = computeHermitePolynomial(x, x2);
+        
+        // Apply normalization with pre-computed sigma power
+        return polynomial / sigmaPower * gaussian;
+    }
+    
+    /**
+     * Computes the Hermite polynomial component for the given derivative order.
+     * This method is optimized to avoid repeated switch statements.
+     */
+    private double computeHermitePolynomial(double x, double x2) {
+        // For odd orders, factor out x for efficiency
+        if (isOdd) {
+            return x * computeOddHermite(x2);
+        } else {
+            return computeEvenHermite(x2);
+        }
+    }
+    
+    /**
+     * Computes odd Hermite polynomials (after factoring out x).
+     */
+    private double computeOddHermite(double x2) {
         return switch (n) {
-            case 1 -> -x / sigma * gaussian;
-            case 2 -> (x2 - 1.0) / (sigma * sigma) * gaussian;
-            case 3 -> x * (3.0 - x2) / (sigma * sigma * sigma) * gaussian;
-            case 4 -> (x2 * x2 - 6.0 * x2 + 3.0) / (sigma * sigma * sigma * sigma) * gaussian;
-            case 5 -> x * (x2 * x2 - 10.0 * x2 + 15.0) / Math.pow(sigma, 5) * gaussian;
-            case 6 -> (x2 * x2 * x2 - 15.0 * x2 * x2 + 45.0 * x2 - 15.0) / Math.pow(sigma, 6) * gaussian;
-            case 7 -> x * (x2 * x2 * x2 - 21.0 * x2 * x2 + 105.0 * x2 - 105.0) / Math.pow(sigma, 7) * gaussian;
-            case 8 -> (x2 * x2 * x2 * x2 - 28.0 * x2 * x2 * x2 + 210.0 * x2 * x2 - 420.0 * x2 + 105.0) / 
-                     Math.pow(sigma, 8) * gaussian;
-            default -> throw new IllegalStateException("Unsupported derivative order: " + n);
+            case 1 -> -1.0;
+            case 3 -> 3.0 - x2;
+            case 5 -> {
+                double x4 = x2 * x2;
+                yield x4 - 10.0 * x2 + 15.0;
+            }
+            case 7 -> {
+                double x4 = x2 * x2;
+                double x6 = x4 * x2;
+                yield x6 - 21.0 * x4 + 105.0 * x2 - 105.0;
+            }
+            default -> throw new IllegalStateException("Invalid odd order: " + n);
+        };
+    }
+    
+    /**
+     * Computes even Hermite polynomials.
+     */
+    private double computeEvenHermite(double x2) {
+        return switch (n) {
+            case 2 -> x2 - 1.0;
+            case 4 -> {
+                double x4 = x2 * x2;
+                yield x4 - 6.0 * x2 + 3.0;
+            }
+            case 6 -> {
+                double x4 = x2 * x2;
+                double x6 = x4 * x2;
+                yield x6 - 15.0 * x4 + 45.0 * x2 - 15.0;
+            }
+            case 8 -> {
+                double x4 = x2 * x2;
+                double x6 = x4 * x2;
+                double x8 = x4 * x4;
+                yield x8 - 28.0 * x6 + 210.0 * x4 - 420.0 * x2 + 105.0;
+            }
+            default -> throw new IllegalStateException("Invalid even order: " + n);
         };
     }
     

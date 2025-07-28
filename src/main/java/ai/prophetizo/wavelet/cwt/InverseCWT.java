@@ -28,10 +28,18 @@ import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
  * 
  * <p>Key features:</p>
  * <ul>
- *   <li>Full signal reconstruction from CWT coefficients</li>
- *   <li>Band-limited reconstruction for frequency filtering</li>
- *   <li>Optimized computation using FFT when appropriate</li>
- *   <li>Support for both real and complex wavelets</li>
+ *   <li>Supports reconstruction from real CWT coefficients</li>
+ *   <li>FFT acceleration for large-scale reconstructions</li>
+ *   <li>Automatic admissibility constant calculation</li>
+ *   <li>Progressive reconstruction with configurable frequency bands</li>
+ * </ul>
+ * 
+ * <p><strong>Current Limitations:</strong></p>
+ * <ul>
+ *   <li>Complex coefficient reconstruction is not yet implemented - only real 
+ *       coefficients are processed</li>
+ *   <li>For complex wavelets, only the real part of coefficients is used in 
+ *       reconstruction</li>
  * </ul>
  * 
  * @since 1.1.0

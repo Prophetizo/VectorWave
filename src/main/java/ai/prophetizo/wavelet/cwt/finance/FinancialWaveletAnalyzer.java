@@ -5,6 +5,8 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 
 import java.util.*;
 
+import static ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisConfig.*;
+
 /**
  * Comprehensive financial analysis using specialized wavelets.
  * 
@@ -164,7 +166,7 @@ public class FinancialWaveletAnalyzer {
         CWTTransform transform = new CWTTransform(paul, config);
         
         // Use scales that capture sharp drops (1-10 day movements)
-        ScaleSpace scales = ScaleSpace.logarithmic(1.0, 10.0, 20);
+        ScaleSpace scales = ScaleSpace.logarithmic(CRASH_MIN_SCALE, CRASH_MAX_SCALE, CRASH_NUM_SCALES);
         CWTResult result = transform.analyze(priceData, scales);
         
         // Analyze coefficients for asymmetric patterns
@@ -189,7 +191,7 @@ public class FinancialWaveletAnalyzer {
             severity[t] = asymmetryScore;
             
             // Detect crash if asymmetry score exceeds threshold
-            if (asymmetryScore > 10.0 && isLocalMaximum(severity, t)) {
+            if (asymmetryScore > CRASH_ASYMMETRY_THRESHOLD && isLocalMaximum(severity, t)) {
                 crashPoints.add(t);
                 crashProbabilities.put(t, Math.min(asymmetryScore / 20.0, 1.0));
             }
@@ -249,7 +251,7 @@ public class FinancialWaveletAnalyzer {
         Map<Double, Double> periodogram = new HashMap<>();
         
         // Test multiple Shannon wavelets with different frequency bands
-        double[] testFrequencies = {0.2, 0.1, 0.045, 0.02}; // 5, 10, 22, 50 day cycles
+        double[] testFrequencies = CYCLE_TEST_FREQUENCIES; // 5, 10, 22, 50 day cycles
         
         for (double testFreq : testFrequencies) {
             double bandwidth = 0.2 * testFreq; // Narrow band around test frequency
@@ -327,7 +329,7 @@ public class FinancialWaveletAnalyzer {
             double priceChange = Math.abs(priceData[i] - priceData[i-1]) / priceData[i-1];
             double volumeChange = Math.abs(volumeData[i] - volumeData[i-1]) / volumeData[i-1];
             
-            if (volumeChange > 2.0 && priceChange < 0.01) {
+            if (volumeChange > VOLUME_DIVERGENCE_THRESHOLD && priceChange < PRICE_DIVERGENCE_THRESHOLD) {
                 anomalies.add(new MarketAnomaly(i, AnomalyType.VOLUME_PRICE_DIVERGENCE, 
                     volumeChange, "High volume with minimal price movement"));
             }
@@ -386,9 +388,9 @@ public class FinancialWaveletAnalyzer {
             }
         }
         
-        // Calculate performance metrics (simplified)
-        double sharpeRatio = 0.8; // Placeholder
-        double winRate = 0.6; // Placeholder
+        // Calculate performance metrics
+        double sharpeRatio = calculateSharpeRatio(signals, priceData);
+        double winRate = calculateWinRate(signals, priceData);
         
         return new TradingSignalResult(signals, sharpeRatio, winRate);
     }
@@ -406,7 +408,7 @@ public class FinancialWaveletAnalyzer {
         // Use Paul wavelet for trend and momentum
         PaulWavelet paul = new PaulWavelet(3);
         CWTTransform paulTransform = new CWTTransform(paul, config);
-        ScaleSpace trendScales = ScaleSpace.logarithmic(10.0, 50.0, 10);
+        ScaleSpace trendScales = ScaleSpace.logarithmic(TREND_MIN_SCALE, TREND_MAX_SCALE, TREND_NUM_SCALES);
         CWTResult paulResult = paulTransform.analyze(priceData, trendScales);
         
         // Use DOG wavelet for volatility - analyze returns not prices
@@ -465,16 +467,32 @@ public class FinancialWaveletAnalyzer {
         // Simplified parameter optimization
         OptimalParameters params = switch (objective) {
             case CRASH_DETECTION -> new OptimalParameters(
-                4, 2, 0.5, 1.5, new double[]{1.0, 10.0}
+                OptimizationDefaults.CRASH_PAUL_ORDER, 
+                OptimizationDefaults.CRASH_DOG_ORDER, 
+                OptimizationDefaults.CRASH_THRESHOLD_FACTOR, 
+                OptimizationDefaults.CRASH_SEVERITY_EXPONENT, 
+                OptimizationDefaults.CRASH_SCALE_RANGE
             );
             case VOLATILITY_ANALYSIS -> new OptimalParameters(
-                3, 2, 0.3, 1.0, new double[]{1.0, 30.0}
+                OptimizationDefaults.VOLATILITY_PAUL_ORDER, 
+                OptimizationDefaults.VOLATILITY_DOG_ORDER, 
+                OptimizationDefaults.VOLATILITY_THRESHOLD_FACTOR, 
+                OptimizationDefaults.VOLATILITY_EXPONENT, 
+                OptimizationDefaults.VOLATILITY_SCALE_RANGE
             );
             case CYCLE_DETECTION -> new OptimalParameters(
-                2, 3, 0.2, 2.0, new double[]{5.0, 50.0}
+                OptimizationDefaults.CYCLE_SHANNON_FB, 
+                OptimizationDefaults.CYCLE_SHANNON_FC, 
+                OptimizationDefaults.CYCLE_THRESHOLD_FACTOR, 
+                OptimizationDefaults.CYCLE_EXPONENT, 
+                OptimizationDefaults.CYCLE_SCALE_RANGE
             );
             case SIGNAL_GENERATION -> new OptimalParameters(
-                4, 2, 0.4, 1.5, new double[]{2.0, 20.0}
+                OptimizationDefaults.SIGNAL_PAUL_ORDER, 
+                OptimizationDefaults.SIGNAL_DOG_ORDER, 
+                OptimizationDefaults.SIGNAL_THRESHOLD_FACTOR, 
+                OptimizationDefaults.SIGNAL_EXPONENT, 
+                OptimizationDefaults.SIGNAL_SCALE_RANGE
             );
         };
         
@@ -539,9 +557,9 @@ public class FinancialWaveletAnalyzer {
     }
     
     private VolatilityLevel classifyVolatility(double vol, double avgVol) {
-        if (vol < avgVol * 0.5) return VolatilityLevel.LOW;
-        if (vol < avgVol * 1.5) return VolatilityLevel.MEDIUM;
-        if (vol < avgVol * 3.0) return VolatilityLevel.HIGH;
+        if (vol < avgVol * VOLATILITY_LOW_THRESHOLD) return VolatilityLevel.LOW;
+        if (vol < avgVol * VOLATILITY_MEDIUM_THRESHOLD) return VolatilityLevel.MEDIUM;
+        if (vol < avgVol * VOLATILITY_HIGH_THRESHOLD) return VolatilityLevel.HIGH;
         return VolatilityLevel.EXTREME;
     }
     
@@ -583,7 +601,7 @@ public class FinancialWaveletAnalyzer {
         if (index < 20) return MarketRegime.RANGING;
         
         double recentReturn = (prices[index] - prices[index - 20]) / prices[index - 20];
-        double avgVolatility = 0.02; // Assumed average
+        double avgVolatility = DEFAULT_AVERAGE_VOLATILITY; // Assumed average
         
         if (volatility > avgVolatility * 2) {
             return MarketRegime.VOLATILE;
@@ -598,7 +616,7 @@ public class FinancialWaveletAnalyzer {
     
     private double calculateRiskLevel(VolatilityAnalysisResult volatility, 
                                     CrashDetectionResult crashes, int currentIndex) {
-        double riskLevel = 0.5; // Base risk
+        double riskLevel = BASE_RISK_LEVEL; // Base risk
         
         // Increase risk based on current volatility
         if (currentIndex < volatility.instantaneousVolatility.length) {
@@ -631,5 +649,139 @@ public class FinancialWaveletAnalyzer {
         }
         
         return maxDrawdown;
+    }
+    
+    /**
+     * Calculates the Sharpe ratio for the generated trading signals.
+     * 
+     * @param signals list of trading signals
+     * @param prices price data
+     * @return Sharpe ratio (annualized)
+     */
+    private double calculateSharpeRatio(List<TradingSignal> signals, double[] prices) {
+        if (signals.isEmpty() || prices.length < 2) {
+            return 0.0;
+        }
+        
+        // Calculate returns from signals
+        List<Double> returns = new ArrayList<>();
+        double position = 0; // 0 = no position, 1 = long, -1 = short
+        int entryIndex = -1;
+        double entryPrice = 0;
+        
+        for (TradingSignal signal : signals) {
+            if (signal.timeIndex() >= prices.length) continue;
+            
+            if (signal.type() == SignalType.BUY && position <= 0) {
+                if (position < 0) {
+                    // Close short position
+                    double returnPct = (entryPrice - prices[signal.timeIndex()]) / entryPrice;
+                    returns.add(returnPct);
+                }
+                // Open long position
+                position = 1;
+                entryIndex = signal.timeIndex();
+                entryPrice = prices[entryIndex];
+                
+            } else if (signal.type() == SignalType.SELL && position >= 0) {
+                if (position > 0) {
+                    // Close long position
+                    double returnPct = (prices[signal.timeIndex()] - entryPrice) / entryPrice;
+                    returns.add(returnPct);
+                }
+                // Open short position
+                position = -1;
+                entryIndex = signal.timeIndex();
+                entryPrice = prices[entryIndex];
+            }
+        }
+        
+        // Close any open position at the end
+        if (position != 0 && entryIndex >= 0 && entryIndex < prices.length - 1) {
+            double finalPrice = prices[prices.length - 1];
+            double returnPct = position > 0 
+                ? (finalPrice - entryPrice) / entryPrice
+                : (entryPrice - finalPrice) / entryPrice;
+            returns.add(returnPct);
+        }
+        
+        if (returns.isEmpty()) {
+            return 0.0;
+        }
+        
+        // Calculate mean and standard deviation
+        double meanReturn = returns.stream()
+            .mapToDouble(Double::doubleValue)
+            .average()
+            .orElse(0.0);
+            
+        double variance = returns.stream()
+            .mapToDouble(r -> Math.pow(r - meanReturn, 2))
+            .average()
+            .orElse(0.0);
+            
+        double stdDev = Math.sqrt(variance);
+        
+        // Sharpe ratio with risk-free rate of 0 for simplicity
+        // Annualize assuming 252 trading days
+        double dailySharpe = stdDev > 0 ? meanReturn / stdDev : 0.0;
+        return dailySharpe * Math.sqrt(252);
+    }
+    
+    /**
+     * Calculates the win rate of trading signals.
+     * 
+     * @param signals list of trading signals
+     * @param prices price data
+     * @return win rate (0.0 to 1.0)
+     */
+    private double calculateWinRate(List<TradingSignal> signals, double[] prices) {
+        if (signals.isEmpty() || prices.length < 2) {
+            return 0.0;
+        }
+        
+        int winningTrades = 0;
+        int totalTrades = 0;
+        double position = 0;
+        double entryPrice = 0;
+        
+        for (TradingSignal signal : signals) {
+            if (signal.timeIndex() >= prices.length) continue;
+            
+            if (signal.type() == SignalType.BUY && position <= 0) {
+                if (position < 0) {
+                    // Close short position
+                    double profit = entryPrice - prices[signal.timeIndex()];
+                    if (profit > 0) winningTrades++;
+                    totalTrades++;
+                }
+                // Open long position
+                position = 1;
+                entryPrice = prices[signal.timeIndex()];
+                
+            } else if (signal.type() == SignalType.SELL && position >= 0) {
+                if (position > 0) {
+                    // Close long position
+                    double profit = prices[signal.timeIndex()] - entryPrice;
+                    if (profit > 0) winningTrades++;
+                    totalTrades++;
+                }
+                // Open short position
+                position = -1;
+                entryPrice = prices[signal.timeIndex()];
+            }
+        }
+        
+        // Check final position
+        if (position != 0 && prices.length > 0) {
+            double finalPrice = prices[prices.length - 1];
+            double profit = position > 0 
+                ? finalPrice - entryPrice
+                : entryPrice - finalPrice;
+            if (profit > 0) winningTrades++;
+            totalTrades++;
+        }
+        
+        return totalTrades > 0 ? (double) winningTrades / totalTrades : 0.0;
     }
 }

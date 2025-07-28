@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt.memory;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,7 +20,27 @@ public final class CWTMemoryPool {
     
     // Pool organized by array size (power of 2)
     private final ConcurrentHashMap<Integer, Queue<double[]>> arrayPools;
-    private final ConcurrentHashMap<Integer, Queue<double[][]>> matrixPools;
+    private final ConcurrentHashMap<MatrixKey, Queue<double[][]>> matrixPools;
+    
+    /**
+     * Key for matrix pools to avoid collision issues with large dimensions.
+     */
+    private record MatrixKey(int rows, int cols) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj instanceof MatrixKey other) {
+                return rows == other.rows && cols == other.cols;
+            }
+            return false;
+        }
+        
+        @Override
+        public int hashCode() {
+            // Use Objects.hash for better distribution with large values
+            return Objects.hash(rows, cols);
+        }
+    }
     
     // Statistics
     private final AtomicLong totalAllocations = new AtomicLong(0);
@@ -126,8 +147,8 @@ public final class CWTMemoryPool {
     public double[][] allocateCoefficients(int rows, int cols) {
         totalAllocations.incrementAndGet();
         
-        // Use composite key for matrix dimensions
-        int key = (rows << 16) | (cols & 0xFFFF);
+        // Use MatrixKey to handle large dimensions correctly
+        MatrixKey key = new MatrixKey(rows, cols);
         
         Queue<double[][]> pool = matrixPools.computeIfAbsent(key,
             k -> new ConcurrentLinkedQueue<>());
@@ -166,7 +187,7 @@ public final class CWTMemoryPool {
         
         int rows = matrix.length;
         int cols = matrix[0].length;
-        int key = (rows << 16) | (cols & 0xFFFF);
+        MatrixKey key = new MatrixKey(rows, cols);
         
         Queue<double[][]> pool = matrixPools.get(key);
         if (pool != null && pool.size() < maxPoolSizePerBucket) {

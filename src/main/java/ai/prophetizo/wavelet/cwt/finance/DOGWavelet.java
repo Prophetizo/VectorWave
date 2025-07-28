@@ -81,15 +81,18 @@ public final class DOGWavelet implements ContinuousWavelet {
     
     @Override
     public double psi(double t) {
+        // Compute t² once and reuse
+        double t_squared = t * t;
+        
         // Special case for n=2 (Mexican Hat)
         if (n == 2) {
             // Standard mathematical Mexican Hat: ψ(t) = (2/(√3 * π^(1/4))) * (1 - t²) * exp(-t²/2)
             // This is the canonical form used in most academic literature
-            return normFactor * (1 - t * t) * Math.exp(-t * t / 2);
+            return normFactor * (1 - t_squared) * Math.exp(-t_squared / 2);
         }
         
         // General DOG wavelet: normalized n-th derivative of Gaussian
-        double gaussian = Math.exp(-t * t / 2);
+        double gaussian = Math.exp(-t_squared / 2);
         double hermite = hermitePolynomial(n, t);
         
         // Apply sign correction: (-1)^(n+1)

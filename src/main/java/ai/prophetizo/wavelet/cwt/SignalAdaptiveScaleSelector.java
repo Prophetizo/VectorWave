@@ -75,7 +75,7 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         // Ensure we don't exceed maximum scale count
         if (scales.size() > config.getMaxScales()) {
-            scales = prioritizeScales(scales, characteristics, config.getMaxScales());
+            scales = prioritizeScales(scales, characteristics, config.getMaxScales(), wavelet);
         }
         
         // Sort and return
@@ -406,13 +406,13 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
      * Prioritizes scales when we have too many, keeping the most important ones.
      */
     private List<Double> prioritizeScales(List<Double> scales, SignalCharacteristics characteristics,
-                                         int maxScales) {
+                                         int maxScales, ContinuousWavelet wavelet) {
         // Assign priority scores to each scale
         double[] priorities = new double[scales.size()];
         
         for (int i = 0; i < scales.size(); i++) {
             double scale = scales.get(i);
-            priorities[i] = computeScalePriority(scale, characteristics);
+            priorities[i] = computeScalePriority(scale, characteristics, wavelet);
         }
         
         // Sort by priority and keep top scales
@@ -432,13 +432,15 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
     /**
      * Computes priority score for a scale based on signal characteristics.
      */
-    private double computeScalePriority(double scale, SignalCharacteristics characteristics) {
+    private double computeScalePriority(double scale, SignalCharacteristics characteristics, 
+                                      ContinuousWavelet wavelet) {
         double priority = 1.0; // Base priority
         
         // Higher priority for scales corresponding to dominant frequencies
         for (DominantFrequency domFreq : characteristics.dominantFrequencies) {
-            double centerFreq = characteristics.spectralAnalysis.samplingRate / 2; // Placeholder
-            double freqScale = centerFreq / domFreq.frequency;
+            double centerFreq = wavelet.centerFrequency();
+            double samplingRate = characteristics.spectralAnalysis.samplingRate;
+            double freqScale = centerFreq * samplingRate / domFreq.frequency;
             
             // Gaussian weighting around dominant frequency
             double distance = Math.abs(Math.log(scale) - Math.log(freqScale));
