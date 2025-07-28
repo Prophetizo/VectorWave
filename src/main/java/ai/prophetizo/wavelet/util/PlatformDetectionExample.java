@@ -6,6 +6,11 @@ package ai.prophetizo.wavelet.util;
  * 
  * <p>This class shows before/after examples of platform detection patterns
  * and how they can be refactored using the centralized utility.</p>
+ * 
+ * <h2>⚠️ IMPORTANT WARNING ⚠️</h2>
+ * <p>This file contains ANTI-PATTERNS for educational purposes only!</p>
+ * <p>The {@link OldPatterns} class shows BAD CODE that should NEVER be copied.</p>
+ * <p>Always use the patterns shown in {@link NewPatterns} instead.</p>
  *
  * @since 1.0.0
  */
@@ -15,24 +20,40 @@ public final class PlatformDetectionExample {
      * Example of OLD platform detection pattern (scattered throughout codebase).
      * This is the type of code that should be replaced.
      * 
-     * WARNING: These examples have been FIXED to be null-safe but still show 
-     * patterns that should NOT be used:
-     * - Scattered, duplicated platform detection logic
-     * - Hard to test and maintain
+     * ⚠️ WARNING: ANTI-PATTERNS - DO NOT COPY THIS CODE! ⚠️
      * 
-     * DO NOT USE THESE PATTERNS - they are shown here only as examples
-     * of what to avoid. Use the NewPatterns examples instead.
+     * These examples demonstrate BAD PRACTICES that should NEVER be used:
+     * - Direct system property access (hard to test)
+     * - Scattered, duplicated platform detection logic
+     * - Error-prone string comparisons
+     * - Difficult to maintain across the codebase
+     * 
+     * ❌ DO NOT USE THESE PATTERNS IN PRODUCTION CODE ❌
+     * 
+     * These are shown ONLY for educational purposes to demonstrate what
+     * to avoid. Always use PlatformDetector instead (see NewPatterns below).
+     * 
+     * Even though these examples include null-safety fixes, they still
+     * represent poor design that should be refactored.
      */
     public static class OldPatterns {
         
         /**
          * Example of hardcoded Apple Silicon detection.
          * This pattern was found in the CWT implementation code.
-         * WARNING: This code has a potential NullPointerException!
+         * 
+         * ⚠️ ANTI-PATTERN: DO NOT COPY THIS CODE! ⚠️
+         * Problems with this approach:
+         * - Originally had NullPointerException risk
+         * - Duplicated logic across codebase
+         * - Hard to mock for testing
+         * - Platform detection logic scattered
+         * 
+         * ✅ USE INSTEAD: PlatformDetector.isAppleSilicon()
          */
         public boolean isAppleSiliconOldWay() {
-            // OLD: Hardcoded system property checks without null safety
-            // FIXED VERSION (but still not recommended - use PlatformDetection instead):
+            // ❌ BAD: Direct system property access
+            // Even with null-safety fixes, this is still an anti-pattern!
             String arch = System.getProperty("os.arch");
             String osName = System.getProperty("os.name");
             return arch != null && arch.equals("aarch64") && 
@@ -41,11 +62,18 @@ public final class PlatformDetectionExample {
         
         /**
          * Example of platform-specific SIMD threshold selection.
-         * WARNING: This code also has a potential NullPointerException!
+         * 
+         * ⚠️ ANTI-PATTERN: DO NOT COPY THIS CODE! ⚠️
+         * Problems:
+         * - Platform detection duplicated from above method
+         * - Magic numbers (8, 16) with no explanation
+         * - Hard to update when adding new platforms
+         * 
+         * ✅ USE INSTEAD: PlatformDetector.getRecommendedSIMDThreshold()
          */
         public int getSIMDThresholdOldWay() {
-            // OLD: Scattered platform checks without null safety
-            // FIXED VERSION (but still not recommended - use PlatformDetection instead):
+            // ❌ BAD: Duplicated platform detection logic
+            // ❌ BAD: Hard-coded thresholds scattered in code
             String arch = System.getProperty("os.arch");
             String osName = System.getProperty("os.name");
             boolean isAppleSilicon = arch != null && arch.equals("aarch64") && 
@@ -55,11 +83,17 @@ public final class PlatformDetectionExample {
         
         /**
          * Example of AVX capability detection.
-         * NOTE: This version actually has proper null checking, but is still
-         * not recommended due to incomplete platform detection logic.
+         * 
+         * ⚠️ ANTI-PATTERN: DO NOT COPY THIS CODE! ⚠️
+         * Problems:
+         * - Incomplete detection (doesn't check CPU capabilities)
+         * - Assumes all x86_64 CPUs have AVX (false!)
+         * - No way to override for testing
+         * 
+         * ✅ USE INSTEAD: PlatformDetector.hasAVX2Support()
          */
         public boolean hasAVXSupportOldWay() {
-            // OLD: Incomplete platform detection (though null-safe in this case)
+            // ❌ BAD: Overly simplistic platform detection
             String arch = System.getProperty("os.arch");
             // This is already null-safe due to short-circuit evaluation
             return arch != null && (arch.equals("x86_64") || arch.equals("amd64"));
@@ -68,7 +102,14 @@ public final class PlatformDetectionExample {
     
     /**
      * Example of NEW platform detection pattern using the utility.
-     * This is the recommended approach after refactoring.
+     * 
+     * ✅ RECOMMENDED PATTERNS - USE THESE! ✅
+     * 
+     * These examples show the correct way to handle platform detection:
+     * - Centralized detection logic
+     * - Easy to test (can override with system properties)
+     * - Consistent across the codebase
+     * - Maintainable and extensible
      */
     public static class NewPatterns {
         

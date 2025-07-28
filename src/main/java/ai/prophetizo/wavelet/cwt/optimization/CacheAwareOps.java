@@ -91,12 +91,8 @@ public final class CacheAwareOps {
         return config;
     }
     
-    // Cache parameters for backward compatibility
-    private static final int L1_CACHE_SIZE = getDefaultCacheConfig().l1CacheSize;
-    private static final int L2_CACHE_SIZE = getDefaultCacheConfig().l2CacheSize;
-    private static final int CACHE_LINE_SIZE = getDefaultCacheConfig().cacheLineSize;
-    private static final int OPTIMAL_BLOCK_SIZE = getDefaultCacheConfig().optimalBlockSize;
-    private static final int TILE_SIZE = getDefaultCacheConfig().tileSize;
+    // Cache parameters - removed static initialization to avoid circular dependencies
+    // These methods provide backward compatibility while avoiding initialization issues
     
     /**
      * Computes convolution using cache-friendly blocking with default cache configuration.
@@ -205,8 +201,9 @@ public final class CacheAwareOps {
         ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
         
         // Process in blocks
-        for (int blockStart = 0; blockStart < signalLen; blockStart += OPTIMAL_BLOCK_SIZE) {
-            int blockEnd = Math.min(blockStart + OPTIMAL_BLOCK_SIZE, signalLen);
+        final int optimalBlockSize = getDefaultCacheConfig().optimalBlockSize;
+        for (int blockStart = 0; blockStart < signalLen; blockStart += optimalBlockSize) {
+            int blockEnd = Math.min(blockStart + optimalBlockSize, signalLen);
             
             for (int tau = blockStart; tau < blockEnd; tau++) {
                 double sumReal = 0.0;
@@ -244,8 +241,12 @@ public final class CacheAwareOps {
         if (cols == 0) return;
         
         // Process in tiles for better cache locality
-        for (int rowStart = 0; rowStart < rows; rowStart += TILE_SIZE) {
-            int rowEnd = Math.min(rowStart + TILE_SIZE, rows);
+        final CacheConfig cacheConfig = getDefaultCacheConfig();
+        final int tileSize = cacheConfig.tileSize;
+        final int optimalBlockSize = cacheConfig.optimalBlockSize;
+        
+        for (int rowStart = 0; rowStart < rows; rowStart += tileSize) {
+            int rowEnd = Math.min(rowStart + tileSize, rows);
             
             // First pass: compute norms
             double[] norms = new double[rowEnd - rowStart];
@@ -255,8 +256,8 @@ public final class CacheAwareOps {
                 double[] row = matrix[r];
                 
                 // Process columns in blocks
-                for (int colStart = 0; colStart < cols; colStart += OPTIMAL_BLOCK_SIZE) {
-                    int colEnd = Math.min(colStart + OPTIMAL_BLOCK_SIZE, cols);
+                for (int colStart = 0; colStart < cols; colStart += optimalBlockSize) {
+                    int colEnd = Math.min(colStart + optimalBlockSize, cols);
                     
                     // Vectorized sum of squares
                     int c = colStart;
@@ -323,7 +324,7 @@ public final class CacheAwareOps {
         double[][] coefficients = new double[numScales][signalLen];
         
         // Process scales in groups that fit in L2 cache
-        int scalesPerBlock = L2_CACHE_SIZE / (signalLen * Double.BYTES);
+        int scalesPerBlock = getDefaultCacheConfig().l2CacheSize / (signalLen * Double.BYTES);
         scalesPerBlock = Math.max(1, Math.min(scalesPerBlock, numScales));
         
         for (int scaleBlock = 0; scaleBlock < numScales; scaleBlock += scalesPerBlock) {
@@ -367,7 +368,8 @@ public final class CacheAwareOps {
     public double[] createAlignedArray(int size) {
         // In Java, we can't directly control memory alignment,
         // but we can allocate arrays that are likely to be aligned
-        int alignedSize = ((size + TILE_SIZE - 1) / TILE_SIZE) * TILE_SIZE;
+        final int tileSize = getDefaultCacheConfig().tileSize;
+        int alignedSize = ((size + tileSize - 1) / tileSize) * tileSize;
         return new double[alignedSize];
     }
     
@@ -375,7 +377,7 @@ public final class CacheAwareOps {
      * Gets optimal block size for current platform.
      */
     public int getOptimalBlockSize() {
-        return OPTIMAL_BLOCK_SIZE;
+        return getDefaultCacheConfig().optimalBlockSize;
     }
     
     /**
