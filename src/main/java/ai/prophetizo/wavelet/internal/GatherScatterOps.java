@@ -267,7 +267,14 @@ public final class GatherScatterOps {
             // Compress values under mask
             DoubleVector compressed = values.compress(vectorMask);
             int compressedLength = vectorMask.trueCount();
-            compressed.intoArray(result, resultIdx);
+            
+            // Only copy the valid compressed elements
+            if (compressedLength > 0) {
+                double[] temp = new double[DOUBLE_LENGTH];
+                compressed.intoArray(temp, 0);
+                System.arraycopy(temp, 0, result, resultIdx, compressedLength);
+            }
+            
             resultIdx += compressedLength;
         }
 
