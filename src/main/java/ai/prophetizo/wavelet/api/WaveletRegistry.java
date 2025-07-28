@@ -42,7 +42,8 @@ public final class WaveletRegistry {
         // Register financial wavelets
         register(new ai.prophetizo.wavelet.cwt.finance.PaulWavelet());
         register(new ai.prophetizo.wavelet.cwt.finance.DOGWavelet());
-        register(new ai.prophetizo.wavelet.cwt.finance.ShannonWavelet());
+        register(new ai.prophetizo.wavelet.cwt.finance.ShannonGaborWavelet());
+        register(new ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet());
         
         // Register Gaussian derivative wavelets
         register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(1)); // gaus1

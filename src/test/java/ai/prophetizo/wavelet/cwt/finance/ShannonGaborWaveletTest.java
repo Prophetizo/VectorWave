@@ -7,21 +7,24 @@ import org.junit.jupiter.api.BeforeEach;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ShannonWaveletTest {
+/**
+ * Tests for Shannon-Gabor wavelet implementation.
+ */
+class ShannonGaborWaveletTest {
     
     private static final double TOLERANCE = 1e-10;
-    private ShannonWavelet wavelet;
+    private ShannonGaborWavelet wavelet;
     
     @BeforeEach
     void setUp() {
-        wavelet = new ShannonWavelet(); // Default bandwidth fb=0.5
+        wavelet = new ShannonGaborWavelet(); // Default bandwidth fb=0.5
     }
     
     @Test
     @DisplayName("Should create Shannon wavelet with default bandwidth")
-    void testCreateDefaultShannonWavelet() {
+    void testCreateDefaultShannonGaborWavelet() {
         assertNotNull(wavelet);
-        assertEquals("shan0.5-1.5", wavelet.name());
+        assertEquals("shan-gabor0.5-1.5", wavelet.name());
         assertEquals(0.5, wavelet.getBandwidth());
         assertEquals(1.5, wavelet.getCenterFrequencyParameter());
         assertFalse(wavelet.isComplex());
@@ -29,9 +32,9 @@ class ShannonWaveletTest {
     
     @Test
     @DisplayName("Should create Shannon wavelet with custom parameters")
-    void testCreateCustomShannonWavelet() {
-        ShannonWavelet custom = new ShannonWavelet(1.0, 2.0);
-        assertEquals("shan1.0-2.0", custom.name());
+    void testCreateCustomShannonGaborWavelet() {
+        ShannonGaborWavelet custom = new ShannonGaborWavelet(1.0, 2.0);
+        assertEquals("shan-gabor1.0-2.0", custom.name());
         assertEquals(1.0, custom.getBandwidth());
         assertEquals(2.0, custom.getCenterFrequencyParameter());
     }
@@ -39,10 +42,10 @@ class ShannonWaveletTest {
     @Test
     @DisplayName("Should validate wavelet parameters")
     void testValidateParameters() {
-        assertThrows(IllegalArgumentException.class, () -> new ShannonWavelet(0, 1.5));
-        assertThrows(IllegalArgumentException.class, () -> new ShannonWavelet(-1, 1.5));
-        assertThrows(IllegalArgumentException.class, () -> new ShannonWavelet(0.5, 0));
-        assertThrows(IllegalArgumentException.class, () -> new ShannonWavelet(0.5, -1));
+        assertThrows(IllegalArgumentException.class, () -> new ShannonGaborWavelet(0, 1.5));
+        assertThrows(IllegalArgumentException.class, () -> new ShannonGaborWavelet(-1, 1.5));
+        assertThrows(IllegalArgumentException.class, () -> new ShannonGaborWavelet(0.5, 0));
+        assertThrows(IllegalArgumentException.class, () -> new ShannonGaborWavelet(0.5, -1));
     }
     
     @Test
@@ -82,7 +85,7 @@ class ShannonWaveletTest {
         assertEquals(expectedFreq, wavelet.centerFrequency(), TOLERANCE);
         
         // Test with custom parameters
-        ShannonWavelet custom = new ShannonWavelet(2.0, 3.0);
+        ShannonGaborWavelet custom = new ShannonGaborWavelet(2.0, 3.0);
         assertEquals(6.0, custom.centerFrequency(), TOLERANCE);
     }
     
@@ -92,11 +95,11 @@ class ShannonWaveletTest {
         assertEquals(0.5, wavelet.bandwidth(), TOLERANCE);
         
         // Narrowband version
-        ShannonWavelet narrow = new ShannonWavelet(0.1, 1.5);
+        ShannonGaborWavelet narrow = new ShannonGaborWavelet(0.1, 1.5);
         assertEquals(0.1, narrow.bandwidth(), TOLERANCE);
         
         // Wideband version
-        ShannonWavelet wide = new ShannonWavelet(2.0, 1.5);
+        ShannonGaborWavelet wide = new ShannonGaborWavelet(2.0, 1.5);
         assertEquals(2.0, wide.bandwidth(), TOLERANCE);
     }
     
@@ -165,7 +168,7 @@ class ShannonWaveletTest {
         }
         
         // Shannon wavelet configured for mid-frequency band should respond to 5Hz component
-        ShannonWavelet midBand = new ShannonWavelet(2.0, 5.0 / 2.0); // Center at 5Hz
+        ShannonGaborWavelet midBand = new ShannonGaborWavelet(2.0, 5.0 / 2.0); // Center at 5Hz
         
         // Simple convolution test around middle of signal
         double response = 0;

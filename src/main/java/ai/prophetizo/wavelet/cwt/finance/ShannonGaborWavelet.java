@@ -4,16 +4,17 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 /**
- * Shannon wavelet - optimal for frequency band analysis in financial data.
+ * Shannon-Gabor wavelet - windowed sinc function for time-frequency analysis.
  * 
- * <p>The Shannon wavelet (also known as the Shannon-Gabor wavelet) is based on the
- * sinc function and provides optimal time-frequency localization for band-limited
- * signals. It's particularly useful for:</p>
+ * <p>The Shannon-Gabor wavelet combines the frequency selectivity of the Shannon
+ * wavelet with a Gaussian-like window, providing better time localization than
+ * the classical Shannon wavelet. This makes it particularly useful for financial
+ * applications where both time and frequency localization are important:</p>
  * <ul>
- *   <li>Analyzing specific frequency bands in market data</li>
- *   <li>Detecting periodic patterns in trading volumes</li>
- *   <li>Identifying cyclical behavior in financial time series</li>
- *   <li>Filtering noise from specific frequency ranges</li>
+ *   <li>Intraday volatility analysis with time-varying characteristics</li>
+ *   <li>High-frequency trading pattern detection</li>
+ *   <li>Market event impact analysis (news, announcements)</li>
+ *   <li>Regime change detection with smooth transitions</li>
  * </ul>
  * 
  * <p>Mathematical definition:</p>
@@ -24,30 +25,38 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * where fb is the bandwidth parameter and fc is the center frequency parameter.
  * For real-valued analysis, we use the real part: cos(2π*fc*t) instead of the complex exponential.
  * 
+ * <p>Compared to the classical Shannon wavelet, this variant:</p>
+ * <ul>
+ *   <li>Has better time localization due to windowing</li>
+ *   <li>Reduces Gibbs phenomenon (ringing artifacts)</li>
+ *   <li>Provides smoother coefficient transitions</li>
+ *   <li>Is more suitable for analyzing transient events</li>
+ * </ul>
+ * 
  * @since 1.0.0
  */
-public final class ShannonWavelet implements ContinuousWavelet {
+public final class ShannonGaborWavelet implements ContinuousWavelet {
     
     private final double fb; // Bandwidth parameter
     private final double fc; // Center frequency parameter
     private final String name;
     
     /**
-     * Creates a Shannon wavelet with default parameters.
+     * Creates a Shannon-Gabor wavelet with default parameters.
      * Default: fb=0.5, fc=1.5 (good for general frequency analysis)
      */
-    public ShannonWavelet() {
+    public ShannonGaborWavelet() {
         this(0.5, 1.5);
     }
     
     /**
-     * Creates a Shannon wavelet with specified parameters.
+     * Creates a Shannon-Gabor wavelet with specified parameters.
      * 
      * @param fb bandwidth parameter (must be positive)
      * @param fc center frequency parameter (must be positive)
      * @throws IllegalArgumentException if fb <= 0 or fc <= 0
      */
-    public ShannonWavelet(double fb, double fc) {
+    public ShannonGaborWavelet(double fb, double fc) {
         if (fb <= 0) {
             throw new IllegalArgumentException("Bandwidth parameter must be positive, got: " + fb);
         }
@@ -57,7 +66,7 @@ public final class ShannonWavelet implements ContinuousWavelet {
         
         this.fb = fb;
         this.fc = fc;
-        this.name = String.format("shan%.1f-%.1f", fb, fc);
+        this.name = String.format("shan-gabor%.1f-%.1f", fb, fc);
     }
     
     @Override

@@ -13,6 +13,18 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * <p>This wavelet has perfect frequency localization with support in [π/2, π]
  * in the frequency domain.</p>
  * 
+ * <p>For financial applications:</p>
+ * <ul>
+ *   <li>Use when you need perfect frequency separation (e.g., isolating trading cycles)</li>
+ *   <li>Best for analyzing stationary periodic patterns</li>
+ *   <li>May produce ringing artifacts (Gibbs phenomenon) around sharp transitions</li>
+ *   <li>Not recommended for transient event detection</li>
+ * </ul>
+ * 
+ * <p>Compare with Shannon-Gabor wavelet which provides better time localization
+ * at the cost of some frequency resolution.</p>
+ * 
+ * @see ShannonGaborWavelet
  * @since 1.1.0
  */
 public final class ClassicalShannonWavelet implements ContinuousWavelet {

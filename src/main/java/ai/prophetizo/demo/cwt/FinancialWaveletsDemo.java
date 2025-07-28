@@ -138,11 +138,11 @@ public class FinancialWaveletsDemo {
      * Demonstrates Shannon wavelet for frequency domain analysis.
      */
     private static void shannonWaveletAnalysis(double[] prices) {
-        System.out.println("2. Shannon Wavelet Analysis (Frequency Components)");
-        System.out.println("==================================================");
+        System.out.println("2. Shannon-Gabor Wavelet Analysis (Frequency Components)");
+        System.out.println("========================================================");
         
-        // Shannon wavelet provides excellent frequency localization
-        ShannonWavelet shannonWavelet = new ShannonWavelet();
+        // Shannon-Gabor wavelet provides excellent frequency localization
+        ShannonGaborWavelet shannonWavelet = new ShannonGaborWavelet();
         
         System.out.printf("Using Shannon wavelet%n");
         System.out.printf("Bandwidth: %.3f, Center frequency: %.3f%n", 

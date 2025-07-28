@@ -257,7 +257,7 @@ public class FinancialWaveletAnalyzer {
         
         for (double testFreq : testFrequencies) {
             double bandwidth = 0.2 * testFreq; // Narrow band around test frequency
-            ShannonWavelet shannon = new ShannonWavelet(bandwidth, testFreq / bandwidth);
+            ShannonGaborWavelet shannon = new ShannonGaborWavelet(bandwidth, testFreq / bandwidth);
             
             CWTTransform transform = new CWTTransform(shannon, config);
             ScaleSpace scales = ScaleSpace.linear(0.8, 1.2, 5); // Fine scale resolution
