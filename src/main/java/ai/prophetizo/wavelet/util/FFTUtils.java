@@ -30,7 +30,7 @@ public final class FFTUtils {
         // Initialize twiddle factor tables for common sizes
         for (int i = 0; i < 13; i++) {
             int n = 1 << i;
-            if (n <= MAX_CACHED_SIZE) {
+            if (n <= MAX_CACHED_SIZE && n > 1) {  // Skip n=1 case
                 COS_TABLES[i] = new double[n / 2];
                 SIN_TABLES[i] = new double[n / 2];
                 for (int k = 0; k < n / 2; k++) {
@@ -45,9 +45,15 @@ public final class FFTUtils {
     /**
      * Performs forward FFT on complex data.
      * 
-     * @param data complex input/output array
+     * @param data complex input/output array (must be power of 2 length)
      */
     public static void fft(ComplexNumber[] data) {
+        if (data == null || data.length == 0) {
+            throw new IllegalArgumentException("FFT input cannot be null or empty");
+        }
+        if ((data.length & (data.length - 1)) != 0) {
+            throw new IllegalArgumentException("FFT input length must be a power of 2, got: " + data.length);
+        }
         fftRadix2(data, false);
     }
     
@@ -152,13 +158,15 @@ public final class FFTUtils {
         // Cooley-Tukey FFT
         for (int len = 2; len <= n; len <<= 1) {
             int halfLen = len / 2;
-            int tableIndex = Integer.numberOfTrailingZeros(len) - 1;
+            // tableIndex corresponds to log2(len), which is the index in our tables
+            int tableIndex = Integer.numberOfTrailingZeros(len);
             
             for (int i = 0; i < n; i += len) {
                 for (int j = 0; j < halfLen; j++) {
                     // Use precomputed twiddle factors if available
                     double cos, sin;
-                    if (len <= MAX_CACHED_SIZE && tableIndex < COS_TABLES.length) {
+                    if (len <= MAX_CACHED_SIZE && tableIndex >= 0 && tableIndex < COS_TABLES.length 
+                        && COS_TABLES[tableIndex] != null) {
                         cos = COS_TABLES[tableIndex][j];
                         sin = inverse ? -SIN_TABLES[tableIndex][j] : SIN_TABLES[tableIndex][j];
                     } else {

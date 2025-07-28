@@ -92,11 +92,22 @@ public final class InverseCWT {
         }
         
         double[] scales = cwtResult.getScales();
+        if (scales == null || scales.length == 0) {
+            throw new InvalidArgumentException("CWT result has no scales");
+        }
+        
         int signalLength = cwtResult.getNumSamples();
+        if (signalLength <= 0) {
+            throw new InvalidArgumentException("Invalid signal length: " + signalLength);
+        }
         
         // For now, we'll work with the real coefficients only
         // TODO: Add support for complex coefficient reconstruction
         double[][] realCoeffs = cwtResult.getCoefficients();
+        if (realCoeffs == null || realCoeffs.length == 0) {
+            throw new InvalidArgumentException("CWT result has no coefficients");
+        }
+        
         return reconstructInternalReal(realCoeffs, scales, signalLength, 0, scales.length);
     }
     
@@ -373,6 +384,14 @@ public final class InverseCWT {
      */
     private double[] calculateLogScaleWeights(double[] scales, int start, int end) {
         int n = end - start;
+        if (n <= 0) {
+            throw new InvalidArgumentException("Invalid scale range: start=" + start + ", end=" + end);
+        }
+        if (start < 0 || end > scales.length) {
+            throw new InvalidArgumentException("Scale indices out of bounds: start=" + start + 
+                ", end=" + end + ", scales.length=" + scales.length);
+        }
+        
         double[] weights = new double[n];
         
         if (n == 1) {
@@ -505,14 +524,19 @@ public final class InverseCWT {
      * Creates wavelet in frequency domain for FFT-based reconstruction.
      */
     private ComplexNumber[] createWaveletFFT(double scale, int fftSize) {
-        ComplexNumber[] waveletFFT = new ComplexNumber[fftSize];
-        
-        // Create scaled wavelet in time domain
+        // Create scaled wavelet in time domain with proper circular shift
         double[] waveletTime = new double[fftSize];
-        int center = fftSize / 2;
         
+        // The wavelet should be centered at t=0, which corresponds to index 0
+        // in the FFT convention (not fftSize/2)
         for (int i = 0; i < fftSize; i++) {
-            double t = (i - center) / scale;
+            // Map index to time value with wraparound
+            double t;
+            if (i <= fftSize / 2) {
+                t = i / scale;
+            } else {
+                t = (i - fftSize) / scale;
+            }
             waveletTime[i] = wavelet.psi(t) / Math.sqrt(scale);
         }
         
