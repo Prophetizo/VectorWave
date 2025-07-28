@@ -46,6 +46,29 @@ public final class FinancialAnalysisConfig {
     public static final double TREND_MAX_SCALE = 50.0;
     public static final int TREND_NUM_SCALES = 10;
     
+    // Market Regime Detection Parameters
+    /** Lookback period (in days) for regime detection calculations */
+    public static final int REGIME_DETECTION_LOOKBACK_PERIOD = 20;
+    
+    /** Threshold for trend detection (5% return over lookback period) */
+    public static final double REGIME_TREND_THRESHOLD = 0.05;
+    
+    // Trading Signal Generation Parameters
+    /** Minimum history required before generating trading signals */
+    public static final int SIGNAL_GENERATION_MIN_HISTORY = 20;
+    
+    /** Lookback window for checking recent crashes */
+    public static final int RECENT_CRASH_LOOKBACK_WINDOW = 20;
+    
+    /** Crash probability normalization factor */
+    public static final double CRASH_PROBABILITY_NORMALIZATION = 20.0;
+    
+    /** Recent crash window for risk assessment */
+    public static final int RISK_ASSESSMENT_CRASH_WINDOW = 20;
+    
+    /** Forward-looking window for crash prediction (days) */
+    public static final int CRASH_PREDICTION_FORWARD_WINDOW = 5;
+    
     // Risk Assessment Parameters
     /** Default assumed average volatility for risk calculations */
     public static final double DEFAULT_AVERAGE_VOLATILITY = 0.02;

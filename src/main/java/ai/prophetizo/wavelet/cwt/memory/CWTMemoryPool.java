@@ -172,7 +172,8 @@ public final class CWTMemoryPool {
         
         double[][] newMatrix = new double[rows][];
         for (int i = 0; i < rows; i++) {
-            newMatrix[i] = allocateArray(cols);
+            // Allocate exact size needed - don't round up to power of 2 for matrix rows
+            newMatrix[i] = new double[cols];
         }
         return newMatrix;
     }
@@ -192,12 +193,8 @@ public final class CWTMemoryPool {
         Queue<double[][]> pool = matrixPools.get(key);
         if (pool != null && pool.size() < maxPoolSizePerBucket) {
             pool.offer(matrix);
-        } else {
-            // Release individual arrays
-            for (double[] row : matrix) {
-                releaseArray(row);
-            }
         }
+        // Don't release individual arrays since they weren't allocated via allocateArray
     }
     
     /**

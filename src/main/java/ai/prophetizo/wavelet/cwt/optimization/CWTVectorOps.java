@@ -12,6 +12,11 @@ import java.util.stream.IntStream;
  * <p>Leverages Java 23's Vector API for significant performance improvements
  * in CWT computations including convolution, multi-scale analysis, and
  * complex arithmetic.</p>
+ * 
+ * <p>Platform detection combines CPU capabilities with JVM Vector API support
+ * to ensure optimal performance. The Vector API's preferred species length
+ * indicates what the JVM can efficiently use, which we validate against
+ * actual CPU instruction set support.</p>
  *
  * @since 1.0.0
  */
@@ -23,11 +28,13 @@ public final class CWTVectorOps {
     // Platform detection
     private static final boolean IS_APPLE_SILICON = PlatformDetector.isAppleSilicon();
     
-    private static final boolean HAS_AVX512 = SPECIES.length() >= 8;
-    private static final boolean HAS_AVX2 = SPECIES.length() >= 4;
+    // Proper AVX detection based on platform capabilities
+    // Note: Vector API's SPECIES length indicates what the JVM can use, not necessarily CPU support
+    private static final boolean HAS_AVX512 = PlatformDetector.hasAVX512Support() && SPECIES.length() >= 8;
+    private static final boolean HAS_AVX2 = PlatformDetector.hasAVX2Support() && SPECIES.length() >= 4;
     
     // Optimization thresholds
-    private static final int SIMD_THRESHOLD = IS_APPLE_SILICON ? 8 : 16;
+    private static final int SIMD_THRESHOLD = PlatformDetector.getRecommendedSIMDThreshold();
     private static final int FFT_THRESHOLD = 256;
     private static final int BLOCK_SIZE = 64; // Cache-friendly block size
     

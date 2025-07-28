@@ -31,9 +31,51 @@ public final class PaulWavelet implements ComplexContinuousWavelet {
     private final double normFactor;
     private final String name;
     
-    // Normalization constants for PyWavelets compatibility
-    private static final double PYWAVELETS_PAUL4_NORM = 0.7511128827951223;
-    private static final double THEORETICAL_PAUL4_NORM = 0.7518;
+    /**
+     * Normalization correction factors for PyWavelets compatibility.
+     * 
+     * <p>Different implementations of the Paul wavelet use slightly different
+     * normalization conventions. PyWavelets follows Torrence & Compo (1998),
+     * while the theoretical formula gives slightly different values.</p>
+     * 
+     * <p>These constants ensure compatibility with PyWavelets for validation
+     * and cross-platform consistency in financial applications.</p>
+     */
+    private static final class NormalizationCorrections {
+        // PyWavelets measured norm for Paul-4 wavelet at ψ(0)
+        static final double PYWAVELETS_PAUL4_NORM = 0.7511128827951223;
+        
+        // Theoretical norm from the mathematical formula for Paul-4
+        static final double THEORETICAL_PAUL4_NORM = 0.7518;
+        
+        // Correction factor: theoretical / pywavelets
+        static final double PAUL4_CORRECTION = THEORETICAL_PAUL4_NORM / PYWAVELETS_PAUL4_NORM;
+        
+        /**
+         * Gets the normalization correction factor for a given order.
+         * Currently only Paul-4 requires correction for PyWavelets compatibility.
+         * 
+         * <p>To add corrections for other orders:</p>
+         * <ol>
+         *   <li>Measure the actual ψ(0) value from PyWavelets</li>
+         *   <li>Calculate theoretical value using the formula</li>
+         *   <li>Add constants and extend this method</li>
+         * </ol>
+         * 
+         * @param order the Paul wavelet order
+         * @return correction factor to apply (1.0 if no correction needed)
+         */
+        static double getCorrectionFactor(int order) {
+            // Currently only order 4 needs correction
+            // This can be extended with a switch statement for multiple orders:
+            // switch (order) {
+            //     case 4: return PAUL4_CORRECTION;
+            //     case 6: return PAUL6_CORRECTION;  // if needed
+            //     default: return 1.0;
+            // }
+            return (order == 4) ? PAUL4_CORRECTION : 1.0;
+        }
+    }
     
     /**
      * Creates a Paul wavelet with default order m=4.
@@ -187,17 +229,14 @@ public final class PaulWavelet implements ComplexContinuousWavelet {
         // Calculate (2m)!
         double factorial2m = factorial(2 * m);
         
-        // Base normalization
+        // Base normalization from theoretical formula
         double baseNorm = pow2m * mFactorial / Math.sqrt(Math.PI * factorial2m);
         
-        // Apply correction factor to match PyWavelets implementation
-        // For detailed explanation, see docs/WAVELET_NORMALIZATION.md#paul-4-specific-correction
-        if (m == 4) {
-            // PyWavelets uses Torrence & Compo (1998) convention
-            return baseNorm * THEORETICAL_PAUL4_NORM / PYWAVELETS_PAUL4_NORM;
-        }
+        // Apply correction factor for compatibility with reference implementations
+        // This ensures consistent results across different platforms and libraries
+        double correctionFactor = NormalizationCorrections.getCorrectionFactor(m);
         
-        return baseNorm;
+        return baseNorm * correctionFactor;
     }
     
     /**

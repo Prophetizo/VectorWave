@@ -193,7 +193,7 @@ public class FinancialWaveletAnalyzer {
             // Detect crash if asymmetry score exceeds threshold
             if (asymmetryScore > CRASH_ASYMMETRY_THRESHOLD && isLocalMaximum(severity, t)) {
                 crashPoints.add(t);
-                crashProbabilities.put(t, Math.min(asymmetryScore / 20.0, 1.0));
+                crashProbabilities.put(t, Math.min(asymmetryScore / CRASH_PROBABILITY_NORMALIZATION, 1.0));
             }
         }
         
@@ -310,7 +310,7 @@ public class FinancialWaveletAnalyzer {
         Map<Integer, MarketRegime> regimeMap = new HashMap<>();
         MarketRegime currentRegime = MarketRegime.RANGING;
         
-        for (int i = 20; i < priceData.length; i++) {
+        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < priceData.length; i++) {
             // volatility.instantaneousVolatility is returns.length = priceData.length - 1
             int volIndex = Math.min(i, volatility.instantaneousVolatility.length - 1);
             MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[volIndex]);
@@ -362,10 +362,10 @@ public class FinancialWaveletAnalyzer {
         CyclicalAnalysisResult cycles = analyzeCyclicalPatterns(priceData, samplingRate);
         
         // Generate signals based on combined analysis
-        for (int i = 20; i < priceData.length - 5; i++) {
+        for (int i = SIGNAL_GENERATION_MIN_HISTORY; i < priceData.length - CRASH_PREDICTION_FORWARD_WINDOW; i++) {
             // Sell signal before potential crash
-            if (crashes.crashProbabilities.containsKey(i + 5)) {
-                double prob = crashes.crashProbabilities.get(i + 5);
+            if (crashes.crashProbabilities.containsKey(i + CRASH_PREDICTION_FORWARD_WINDOW)) {
+                double prob = crashes.crashProbabilities.get(i + CRASH_PREDICTION_FORWARD_WINDOW);
                 if (prob > 0.7) {
                     signals.add(new TradingSignal(i, SignalType.SELL, prob,
                         "High crash probability detected"));
@@ -374,7 +374,7 @@ public class FinancialWaveletAnalyzer {
             
             // Buy signal after crash in low volatility
             boolean recentCrash = false;
-            for (int j = Math.max(0, i - 20); j < i - 5; j++) {
+            for (int j = Math.max(0, i - RECENT_CRASH_LOOKBACK_WINDOW); j < i - CRASH_PREDICTION_FORWARD_WINDOW; j++) {
                 if (crashes.crashPoints.contains(j)) {
                     recentCrash = true;
                     break;
@@ -411,16 +411,16 @@ public class FinancialWaveletAnalyzer {
         ScaleSpace trendScales = ScaleSpace.logarithmic(TREND_MIN_SCALE, TREND_MAX_SCALE, TREND_NUM_SCALES);
         CWTResult paulResult = paulTransform.analyze(priceData, trendScales);
         
-        // Use DOG wavelet for volatility - analyze returns not prices
-        double[] returns = new double[N - 1];
-        for (int i = 0; i < returns.length; i++) {
-            returns[i] = Math.abs(priceData[i + 1] - priceData[i]) / priceData[i];
+        // Use DOG wavelet for volatility - analyze absolute returns
+        double[] absReturns = new double[N - 1];
+        for (int i = 0; i < absReturns.length; i++) {
+            absReturns[i] = Math.abs((priceData[i + 1] - priceData[i]) / priceData[i]);
         }
         
         DOGWavelet dog = new DOGWavelet(2);
         CWTTransform dogTransform = new CWTTransform(dog, config);
         ScaleSpace volScales = ScaleSpace.logarithmic(1.0, 20.0, 10);
-        CWTResult dogResult = dogTransform.analyze(returns, volScales);
+        CWTResult dogResult = dogTransform.analyze(absReturns, volScales);
         
         double[][] paulCoeffs = paulResult.getCoefficients();
         double[][] dogMagnitude = dogResult.getMagnitude();
@@ -428,28 +428,41 @@ public class FinancialWaveletAnalyzer {
         for (int t = 0; t < N; t++) {
             // Trend strength from low-frequency Paul coefficients
             double trend = 0;
-            for (int s = 5; s < 10; s++) {
+            for (int s = 5; s < 10 && s < paulCoeffs.length; s++) {
                 trend += paulCoeffs[s][t];
             }
             trendStrength[t] = trend / 5.0;
             
             // Momentum from mid-frequency Paul coefficients
             double mom = 0;
-            for (int s = 0; s < 5; s++) {
+            for (int s = 0; s < 5 && s < paulCoeffs.length; s++) {
                 mom += paulCoeffs[s][t];
             }
             momentum[t] = mom / 5.0;
             
             // Volatility index from DOG magnitude
-            if (t < dogMagnitude[0].length) {
-                double vol = 0;
-                for (int s = 0; s < volScales.getNumScales(); s++) {
-                    vol += dogMagnitude[s][t] * dogMagnitude[s][t];
+            // Note: absReturns is N-1 length, so we need to handle indexing carefully
+            if (t == 0) {
+                // First point: use the first return volatility
+                volatilityIndex[t] = absReturns.length > 0 ? absReturns[0] * 100.0 : 0.0;
+            } else if (t <= absReturns.length) {
+                // For t > 0, use raw absolute return plus wavelet enhancement
+                double baseVol = absReturns[t-1] * 100.0; // Scale up for visibility
+                
+                // Add wavelet-based enhancement for better detection
+                if (t-1 < dogMagnitude[0].length) {
+                    double waveletEnhancement = 0;
+                    int volScalesUsed = Math.min(3, volScales.getNumScales());
+                    for (int s = 0; s < volScalesUsed; s++) {
+                        waveletEnhancement += dogMagnitude[s][t-1] * dogMagnitude[s][t-1];
+                    }
+                    volatilityIndex[t] = baseVol + Math.sqrt(waveletEnhancement);
+                } else {
+                    volatilityIndex[t] = baseVol;
                 }
-                volatilityIndex[t] = Math.sqrt(vol / volScales.getNumScales());
             } else {
                 // Last element gets previous value
-                volatilityIndex[t] = t > 0 ? volatilityIndex[t-1] : 0.0;
+                volatilityIndex[t] = volatilityIndex[t-1];
             }
             
             // TODO: Implement proper support/resistance detection using wavelet-based peak/trough analysis
@@ -598,16 +611,17 @@ public class FinancialWaveletAnalyzer {
     
     private MarketRegime detectRegime(double[] prices, int index, double volatility) {
         // Simple regime detection based on recent price movement and volatility
-        if (index < 20) return MarketRegime.RANGING;
+        if (index < REGIME_DETECTION_LOOKBACK_PERIOD) return MarketRegime.RANGING;
         
-        double recentReturn = (prices[index] - prices[index - 20]) / prices[index - 20];
+        double recentReturn = (prices[index] - prices[index - REGIME_DETECTION_LOOKBACK_PERIOD]) / 
+                             prices[index - REGIME_DETECTION_LOOKBACK_PERIOD];
         double avgVolatility = DEFAULT_AVERAGE_VOLATILITY; // Assumed average
         
         if (volatility > avgVolatility * 2) {
             return MarketRegime.VOLATILE;
-        } else if (recentReturn > 0.05) {
+        } else if (recentReturn > REGIME_TREND_THRESHOLD) {
             return MarketRegime.TRENDING_UP;
-        } else if (recentReturn < -0.05) {
+        } else if (recentReturn < -REGIME_TREND_THRESHOLD) {
             return MarketRegime.TRENDING_DOWN;
         } else {
             return MarketRegime.RANGING;
@@ -626,7 +640,7 @@ public class FinancialWaveletAnalyzer {
         
         // Increase risk if recent crash
         for (int crashPoint : crashes.crashPoints) {
-            if (Math.abs(crashPoint - currentIndex) < 20) {
+            if (Math.abs(crashPoint - currentIndex) < RISK_ASSESSMENT_CRASH_WINDOW) {
                 riskLevel += 0.2;
                 break;
             }

@@ -23,6 +23,7 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     
     private static final double GOLDEN_RATIO = (1.0 + Math.sqrt(5.0)) / 2.0;
     private static final double MEL_SCALE_FACTOR = 1127.01048; // ln(1+f/700)
+    private static final int DEFAULT_MAX_SCALES = 200; // Default maximum number of scales
     
     @Override
     public double[] selectScales(double[] signal, ContinuousWavelet wavelet, double samplingRate) {
@@ -406,6 +407,23 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     public static double[] generateCriticalSamplingScales(ContinuousWavelet wavelet,
                                                          int signalLength,
                                                          double samplingRate) {
+        return generateCriticalSamplingScales(wavelet, signalLength, samplingRate, 
+                                              DEFAULT_MAX_SCALES);
+    }
+    
+    /**
+     * Generates critical sampling scales for perfect reconstruction with configurable maximum.
+     * 
+     * @param wavelet the wavelet to use
+     * @param signalLength length of the signal
+     * @param samplingRate sampling rate (Hz)
+     * @param maxScales maximum number of scales to generate
+     * @return array of critically sampled scales
+     */
+    public static double[] generateCriticalSamplingScales(ContinuousWavelet wavelet,
+                                                         int signalLength,
+                                                         double samplingRate,
+                                                         int maxScales) {
         double centerFreq = wavelet.centerFrequency();
         double bandwidth = wavelet.bandwidth();
         
@@ -418,7 +436,7 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         double maxScale = centerFreq * signalLength / (4.0 * samplingRate);
         
         double currentScale = minScale;
-        while (currentScale <= maxScale && scales.size() < 50) { // Limit scale count
+        while (currentScale <= maxScale && scales.size() < maxScales) {
             scales.add(currentScale);
             currentScale *= criticalRatio;
         }

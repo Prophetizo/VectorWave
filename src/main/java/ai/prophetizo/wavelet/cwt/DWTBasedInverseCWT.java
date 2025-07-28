@@ -210,14 +210,16 @@ public final class DWTBasedInverseCWT {
         // Start with approximation at coarsest level
         double[] current = dwtCoeffs.approximation.clone();
         
-        // Reconstruct level by level
+        // Reconstruct level by level using the WaveletTransform
         for (int level = dwtCoeffs.maxLevel; level >= 1; level--) {
             double[] detail = dwtCoeffs.details[level - 1];
             
             if (detail != null) {
-                // Manually perform inverse DWT for this level
-                // Since TransformResult is abstract, we'll do the reconstruction directly
-                current = inverseDWTLevel(current, detail);
+                // Create TransformResult for this level
+                TransformResult levelResult = TransformResult.create(current, detail);
+                
+                // Use the WaveletTransform's inverse method
+                current = dwtTransform.inverse(levelResult);
             } else {
                 // No detail at this level, just upsample
                 current = upsample(current);
@@ -234,46 +236,6 @@ public final class DWTBasedInverseCWT {
         return current;
     }
     
-    /**
-     * Performs one level of inverse DWT.
-     */
-    private double[] inverseDWTLevel(double[] approx, double[] detail) {
-        if (detail == null) {
-            return upsample(approx);
-        }
-        
-        int outputLength = approx.length + detail.length;
-        double[] output = new double[outputLength];
-        
-        // Get filter coefficients
-        double[] lowPass = dwavelet.lowPassReconstruction();
-        double[] highPass = dwavelet.highPassReconstruction();
-        
-        // Reconstruction by upsampling and filtering
-        for (int n = 0; n < outputLength; n++) {
-            double sum = 0;
-            
-            // Low-pass contribution
-            for (int k = 0; k < lowPass.length; k++) {
-                int idx = (n - k) / 2;
-                if (idx >= 0 && idx < approx.length && (n - k) % 2 == 0) {
-                    sum += lowPass[k] * approx[idx];
-                }
-            }
-            
-            // High-pass contribution
-            for (int k = 0; k < highPass.length; k++) {
-                int idx = (n - k) / 2;
-                if (idx >= 0 && idx < detail.length && (n - k) % 2 == 0) {
-                    sum += highPass[k] * detail[idx];
-                }
-            }
-            
-            output[n] = sum;
-        }
-        
-        return output;
-    }
     
     /**
      * Refines reconstruction using non-dyadic scale information.

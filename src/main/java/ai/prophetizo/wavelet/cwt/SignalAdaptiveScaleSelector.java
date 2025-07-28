@@ -374,8 +374,9 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         // Add extra scales around dominant frequencies
         for (DominantFrequency domFreq : characteristics.dominantFrequencies) {
-            double centerFreq = characteristics.spectralAnalysis.samplingRate / 2; // Placeholder for wavelet center freq
-            double scale = centerFreq / domFreq.frequency;
+            double centerFreq = wavelet.centerFrequency();
+            double samplingRate = characteristics.spectralAnalysis.samplingRate;
+            double scale = (centerFreq * samplingRate) / domFreq.frequency;
             
             if (scale >= minScale && scale <= maxScale) {
                 // Add scales around this frequency with density proportional to energy
