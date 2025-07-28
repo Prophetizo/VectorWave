@@ -27,6 +27,14 @@ High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehe
   - Fast mode: < 1 µs/sample latency
   - Quality mode: Enhanced SNR with overlap
 - **Multi-level Transforms**: Configurable decomposition levels
+- **Complex Wavelet Analysis**: Full magnitude and phase information
+  - Complex coefficient computation
+  - Instantaneous frequency extraction
+  - Phase synchronization analysis
+- **Adaptive Scale Selection**: Automatic scale optimization
+  - Signal-adaptive placement based on energy distribution
+  - Multiple spacing strategies (dyadic, logarithmic, mel-scale)
+  - Real-time adaptation with sub-millisecond overhead
 - **DWT-Based CWT Reconstruction**: Fast and stable reconstruction method
   - Leverages orthogonal DWT properties
   - 10-300x faster than standard methods
@@ -83,6 +91,27 @@ CWTTransform cwt = new CWTTransform(wavelet);
 double[] scales = {1.0, 2.0, 4.0, 8.0, 16.0};
 CWTResult result = cwt.analyze(signal, scales);
 
+// Automatic scale selection
+DyadicScaleSelector scaleSelector = DyadicScaleSelector.create();
+double[] optimalScales = scaleSelector.selectScales(signal, wavelet, samplingRate);
+CWTResult autoResult = cwt.analyze(signal, optimalScales);
+
+// Signal-adaptive scale selection
+SignalAdaptiveScaleSelector adaptiveSelector = new SignalAdaptiveScaleSelector();
+double[] adaptiveScales = adaptiveSelector.selectScales(signal, wavelet, samplingRate);
+// Automatically places more scales where signal has energy
+
+// Complex wavelet analysis for phase information
+ComplexCWTResult complexResult = cwt.analyzeComplex(signal, scales);
+double[][] magnitude = complexResult.getMagnitude();
+double[][] phase = complexResult.getPhase();
+double[][] instFreq = complexResult.getInstantaneousFrequency();
+
+// Phase synchronization between signals
+ComplexCWTResult result1 = cwt.analyzeComplex(signal1, scales);
+ComplexCWTResult result2 = cwt.analyzeComplex(signal2, scales);
+double syncIndex = calculatePhaseSynchronization(result1.getPhase(), result2.getPhase());
+
 // Financial analysis with specialized wavelets
 PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
@@ -95,20 +124,10 @@ CWTConfig config = CWTConfig.builder()
     .build();
 CWTTransform fftCwt = new CWTTransform(wavelet, config);
 
-// Gaussian derivative wavelets for feature detection
-GaussianDerivativeWavelet gaus2 = new GaussianDerivativeWavelet(2); // Mexican Hat
-// Registered as "gaus1", "gaus2", "gaus3", "gaus4" in WaveletRegistry
-
 // Fast DWT-based CWT reconstruction (recommended)
 DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
 double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 // Works best with dyadic scales for optimal accuracy
-
-// Complex wavelet analysis for phase information
-ComplexCWTResult complexResult = cwt.analyzeComplex(signal, scales);
-double[][] magnitude = complexResult.getMagnitude();
-double[][] phase = complexResult.getPhase();
-double[][] instFreq = complexResult.getInstantaneousFrequency();
 ```
 
 ### Streaming

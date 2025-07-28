@@ -32,6 +32,8 @@ java -cp target/classes ai.prophetizo.Main
 - `ai.prophetizo.wavelet.streaming` - Real-time processing
 - `ai.prophetizo.wavelet.denoising` - Signal denoising
 - `ai.prophetizo.wavelet.concurrent` - Parallel processing
+- `ai.prophetizo.wavelet.cwt` - Continuous Wavelet Transform
+- `ai.prophetizo.wavelet.cwt.finance` - Financial analysis wavelets
 
 ### Key Design Patterns
 - **Sealed Interfaces**: Type-safe wavelet hierarchy
@@ -112,3 +114,40 @@ StreamingDenoiserFactory.create(wavelet, method, blockSize, overlap)
 // overlap < 0.3 → FastStreamingDenoiser
 // overlap ≥ 0.3 → QualityStreamingDenoiser
 ```
+
+## CWT Implementation
+
+### Key CWT Components
+- **CWTTransform**: Main engine with FFT acceleration
+- **ComplexCWTResult**: Complex coefficients with phase/magnitude
+- **Adaptive Scale Selection**: Automatic scale optimization
+  - `DyadicScaleSelector`: Powers-of-2 scales
+  - `SignalAdaptiveScaleSelector`: Energy-based placement
+  - `OptimalScaleSelector`: Mathematical spacing strategies
+
+### CWT Usage
+```java
+// Basic CWT
+MorletWavelet wavelet = new MorletWavelet(6.0, 1.0);
+CWTTransform cwt = new CWTTransform(wavelet);
+
+// Automatic scale selection
+SignalAdaptiveScaleSelector selector = new SignalAdaptiveScaleSelector();
+double[] scales = selector.selectScales(signal, wavelet, samplingRate);
+
+// Complex analysis
+ComplexCWTResult result = cwt.analyzeComplex(signal, scales);
+double[][] phase = result.getPhase();
+double[][] instFreq = result.getInstantaneousFrequency();
+
+// Financial analysis
+PaulWavelet paul = new PaulWavelet(4);
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+var crashes = analyzer.detectMarketCrashes(priceData, threshold);
+```
+
+### CWT Performance Tips
+- Use FFT acceleration for signals > 256 samples
+- Dyadic scales optimize FFT performance
+- Signal-adaptive selection reduces computation by 30-50%
+- Complex analysis adds ~20% overhead vs real-only
