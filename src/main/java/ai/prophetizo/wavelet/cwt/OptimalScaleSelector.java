@@ -3,6 +3,8 @@ package ai.prophetizo.wavelet.cwt;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Optimal scale selector implementing various mathematically-principled scale spacing strategies.
@@ -24,6 +26,9 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     private static final double GOLDEN_RATIO = (1.0 + Math.sqrt(5.0)) / 2.0;
     private static final double MEL_SCALE_FACTOR = 1127.01048; // ln(1+f/700)
     private static final int DEFAULT_MAX_SCALES = 200; // Default maximum number of scales
+    
+    // Cache for adaptive ratio caps based on wavelet characteristics
+    private static final Map<String, Double> RATIO_CAP_CACHE = new ConcurrentHashMap<>();
     
     @Override
     public double[] selectScales(double[] signal, ContinuousWavelet wavelet, double samplingRate) {
@@ -317,6 +322,22 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
      * @param centerFreq wavelet center frequency
      * @return adaptive maximum ratio for scale progression
      */
+    /**
+     * Creates a cache key for wavelet characteristics.
+     * 
+     * @param wavelet the wavelet
+     * @param bandwidth wavelet bandwidth
+     * @param centerFreq wavelet center frequency
+     * @return cache key string
+     */
+    private static String createWaveletCacheKey(ContinuousWavelet wavelet, 
+                                              double bandwidth, 
+                                              double centerFreq) {
+        // Include wavelet name and key characteristics in the cache key
+        return String.format("%s_%.6f_%.6f", 
+            wavelet.name().toLowerCase(), bandwidth, centerFreq);
+    }
+    
     private static double calculateAdaptiveRatioCap(ContinuousWavelet wavelet, 
                                                    double bandwidth, 
                                                    double centerFreq) {
@@ -484,8 +505,10 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         // Critical sampling rate in scale domain with adaptive capping
         double rawRatio = Math.exp(Math.PI * bandwidth / centerFreq);
         
-        // Adaptive capping based on wavelet characteristics
-        double maxRatio = calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq);
+        // Get adaptive cap from cache or calculate if not present
+        String cacheKey = createWaveletCacheKey(wavelet, bandwidth, centerFreq);
+        double maxRatio = RATIO_CAP_CACHE.computeIfAbsent(cacheKey, 
+            k -> calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq));
         double criticalRatio = Math.min(rawRatio, maxRatio);
         
         List<Double> scales = new ArrayList<>();

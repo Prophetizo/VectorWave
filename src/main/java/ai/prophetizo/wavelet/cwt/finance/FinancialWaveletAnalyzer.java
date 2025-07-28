@@ -321,7 +321,7 @@ public class FinancialWaveletAnalyzer {
         }
         
         // Handle the last price point separately (no volatility data for it)
-        if (priceData.length > REGIME_DETECTION_LOOKBACK_PERIOD) {
+        if (priceData.length >= REGIME_DETECTION_LOOKBACK_PERIOD) {
             regimeMap.put(priceData.length - 1, currentRegime);
         }
         
@@ -381,10 +381,16 @@ public class FinancialWaveletAnalyzer {
             
             // Buy signal after crash in low volatility
             boolean recentCrash = false;
-            for (int j = Math.max(0, i - RECENT_CRASH_LOOKBACK_WINDOW); j < i - CRASH_PREDICTION_FORWARD_WINDOW; j++) {
-                if (crashes.crashPoints.contains(j)) {
-                    recentCrash = true;
-                    break;
+            int lookbackStart = Math.max(0, i - RECENT_CRASH_LOOKBACK_WINDOW);
+            int lookbackEnd = Math.max(0, i - CRASH_PREDICTION_FORWARD_WINDOW);
+            
+            // Only check for recent crashes if we have a valid range
+            if (lookbackStart < lookbackEnd) {
+                for (int j = lookbackStart; j < lookbackEnd; j++) {
+                    if (crashes.crashPoints.contains(j)) {
+                        recentCrash = true;
+                        break;
+                    }
                 }
             }
             

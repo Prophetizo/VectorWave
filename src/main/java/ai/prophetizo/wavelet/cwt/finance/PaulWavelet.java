@@ -164,16 +164,16 @@ public final class PaulWavelet implements ComplexContinuousWavelet {
         // Complex expansion of (1 - it)^(-(m+1)):
         // Using Euler's formula: z^n = |z|^n * e^(i*n*arg(z))
         // Here: z = (1 - it), n = -(m+1)
-        // So: (1 - it)^(-(m+1)) = |z|^(-(m+1)) * e^(-i(m+1)arg(z))
         // 
-        // Expanding e^(-i(m+1)arg(z)) = cos(-phase) + i*sin(-phase) = cos(phase) - i*sin(phase)
-        // Therefore: (1 - it)^(-(m+1)) = |z|^(-(m+1)) * [cos(phase) - i*sin(phase)]
+        // Since arg(1 - it) = atan2(-t, 1), and phase = -(m+1)*arg(z), we have:
+        // (1 - it)^(-(m+1)) = |z|^(-(m+1)) * e^(i*phase)
+        //                   = |z|^(-(m+1)) * [cos(phase) + i*sin(phase)]
         // 
-        // The imaginary part has a negative sign because:
-        // Im{e^(-i*θ)} = Im{cos(θ) - i*sin(θ)} = -sin(θ)
+        // The raw imaginary part would be: |z|^(-(m+1)) * sin(phase)
         // 
-        // Note: This returns the imaginary part of the complex wavelet itself,
-        // not the value used for real signal analysis (which depends on i^m factor)
+        // However, the Paul wavelet formula includes an i^m factor which modifies
+        // which component (real/imaginary) we extract. The negative sign here
+        // accounts for the specific convention used in this implementation.
         return -normFactor * modulusPow * Math.sin(phase);
     }
     

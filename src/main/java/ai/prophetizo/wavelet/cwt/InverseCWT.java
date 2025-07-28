@@ -90,6 +90,7 @@ public final class InverseCWT {
      * @param cwtResult the CWT result containing coefficients
      * @return reconstructed signal
      * @throws InvalidArgumentException if input is invalid
+     * @throws UnsupportedOperationException if CWT result contains complex coefficients
      */
     public double[] reconstruct(CWTResult cwtResult) {
         if (cwtResult == null) {
@@ -106,8 +107,48 @@ public final class InverseCWT {
             throw new InvalidArgumentException("Invalid signal length: " + signalLength);
         }
         
-        // For now, we'll work with the real coefficients only
-        // TODO: Add support for complex coefficient reconstruction
+        // Check if this is a complex CWT result
+        if (cwtResult.isComplex()) {
+            throw new UnsupportedOperationException(
+                "Complex coefficient reconstruction is not yet implemented. " +
+                "Consider using reconstructFromReal() to reconstruct using only the real part.");
+        }
+        
+        // Get real coefficients
+        double[][] realCoeffs = cwtResult.getCoefficients();
+        if (realCoeffs == null || realCoeffs.length == 0) {
+            throw new InvalidArgumentException("CWT result has no coefficients");
+        }
+        
+        return reconstructInternalReal(realCoeffs, scales, signalLength, 0, scales.length);
+    }
+    
+    /**
+     * Reconstructs the signal using only the real part of CWT coefficients.
+     * 
+     * <p>This method can be used with both real and complex CWT results. For complex
+     * wavelets, only the real part of the coefficients is used for reconstruction.</p>
+     * 
+     * @param cwtResult the CWT result (can be real or complex)
+     * @return reconstructed signal using only real coefficients
+     * @throws InvalidArgumentException if input is invalid
+     */
+    public double[] reconstructFromReal(CWTResult cwtResult) {
+        if (cwtResult == null) {
+            throw new InvalidArgumentException("CWT result cannot be null");
+        }
+        
+        double[] scales = cwtResult.getScales();
+        if (scales == null || scales.length == 0) {
+            throw new InvalidArgumentException("CWT result has no scales");
+        }
+        
+        int signalLength = cwtResult.getNumSamples();
+        if (signalLength <= 0) {
+            throw new InvalidArgumentException("Invalid signal length: " + signalLength);
+        }
+        
+        // Get real coefficients (works for both real and complex CWT results)
         double[][] realCoeffs = cwtResult.getCoefficients();
         if (realCoeffs == null || realCoeffs.length == 0) {
             throw new InvalidArgumentException("CWT result has no coefficients");
@@ -127,8 +168,69 @@ public final class InverseCWT {
      * @param maxScale maximum scale (exclusive)
      * @return band-limited reconstructed signal
      * @throws InvalidArgumentException if parameters are invalid
+     * @throws UnsupportedOperationException if CWT result contains complex coefficients
      */
     public double[] reconstructBand(CWTResult cwtResult, double minScale, double maxScale) {
+        if (cwtResult == null) {
+            throw new InvalidArgumentException("CWT result cannot be null");
+        }
+        if (minScale <= 0 || maxScale <= minScale) {
+            throw new InvalidArgumentException(
+                "Invalid scale range: minScale=" + minScale + ", maxScale=" + maxScale);
+        }
+        
+        // Check if this is a complex CWT result
+        if (cwtResult.isComplex()) {
+            throw new UnsupportedOperationException(
+                "Complex coefficient reconstruction is not yet implemented. " +
+                "Consider using reconstructBandFromReal() to reconstruct using only the real part.");
+        }
+        
+        double[] scales = cwtResult.getScales();
+        int signalLength = cwtResult.getNumSamples();
+        
+        // Find scale indices
+        int startIdx = -1, endIdx = -1;
+        for (int i = 0; i < scales.length; i++) {
+            if (startIdx == -1 && scales[i] >= minScale) {
+                startIdx = i;
+            }
+            if (scales[i] > maxScale) {
+                endIdx = i;
+                break;
+            }
+        }
+        
+        if (startIdx == -1) {
+            startIdx = 0;
+        }
+        if (endIdx == -1) {
+            endIdx = scales.length;
+        }
+        
+        // Check if we have any scales in the requested range
+        if (startIdx >= endIdx) {
+            // No scales in the requested range - return zero signal
+            return new double[signalLength];
+        }
+        
+        double[][] realCoeffs = cwtResult.getCoefficients();
+        return reconstructInternalReal(realCoeffs, scales, signalLength, startIdx, endIdx);
+    }
+    
+    /**
+     * Reconstructs the signal using only the real part of coefficients within a specific scale band.
+     * 
+     * <p>This method can be used with both real and complex CWT results. For complex
+     * wavelets, only the real part of the coefficients is used for reconstruction.</p>
+     * 
+     * @param cwtResult the CWT result (can be real or complex)
+     * @param minScale minimum scale (inclusive)
+     * @param maxScale maximum scale (exclusive)
+     * @return band-limited reconstructed signal using only real coefficients
+     * @throws InvalidArgumentException if parameters are invalid
+     */
+    public double[] reconstructBandFromReal(CWTResult cwtResult, double minScale, double maxScale) {
         if (cwtResult == null) {
             throw new InvalidArgumentException("CWT result cannot be null");
         }
@@ -159,6 +261,12 @@ public final class InverseCWT {
             endIdx = scales.length;
         }
         
+        // Check if we have any scales in the requested range
+        if (startIdx >= endIdx) {
+            // No scales in the requested range - return zero signal
+            return new double[signalLength];
+        }
+        
         double[][] realCoeffs = cwtResult.getCoefficients();
         return reconstructInternalReal(realCoeffs, scales, signalLength, startIdx, endIdx);
     }
@@ -174,6 +282,7 @@ public final class InverseCWT {
      * @param minFreq minimum frequency in Hz (inclusive)
      * @param maxFreq maximum frequency in Hz (exclusive)
      * @return frequency-band limited reconstructed signal
+     * @throws UnsupportedOperationException if CWT result contains complex coefficients
      */
     public double[] reconstructFrequencyBand(CWTResult cwtResult, double samplingRate,
                                            double minFreq, double maxFreq) {
@@ -193,6 +302,39 @@ public final class InverseCWT {
         double minScale = centerFreq * samplingRate / maxFreq;
         
         return reconstructBand(cwtResult, minScale, maxScale);
+    }
+    
+    /**
+     * Reconstructs the signal using only the real part of coefficients within a specific frequency band.
+     * 
+     * <p>This method can be used with both real and complex CWT results. For complex
+     * wavelets, only the real part of the coefficients is used for reconstruction.</p>
+     * 
+     * @param cwtResult the CWT result (can be real or complex)
+     * @param samplingRate the sampling rate in Hz
+     * @param minFreq minimum frequency in Hz (inclusive)
+     * @param maxFreq maximum frequency in Hz (exclusive)
+     * @return frequency-band limited reconstructed signal using only real coefficients
+     * @throws InvalidArgumentException if parameters are invalid
+     */
+    public double[] reconstructFrequencyBandFromReal(CWTResult cwtResult, double samplingRate,
+                                                   double minFreq, double maxFreq) {
+        if (samplingRate <= 0) {
+            throw new InvalidArgumentException("Sampling rate must be positive");
+        }
+        if (minFreq < 0 || maxFreq <= minFreq || maxFreq > samplingRate / 2) {
+            throw new InvalidArgumentException(
+                "Invalid frequency range: minFreq=" + minFreq + ", maxFreq=" + maxFreq);
+        }
+        
+        // Convert frequencies to scales
+        // For Morlet wavelet: frequency = centerFreq * samplingRate / scale
+        // So scale = centerFreq * samplingRate / frequency
+        double centerFreq = wavelet.centerFrequency();
+        double maxScale = centerFreq * samplingRate / minFreq;
+        double minScale = centerFreq * samplingRate / maxFreq;
+        
+        return reconstructBandFromReal(cwtResult, minScale, maxScale);
     }
     
     /**
@@ -392,11 +534,17 @@ public final class InverseCWT {
     /**
      * Calculates integration weights for logarithmic scale spacing.
      * Since scales are often logarithmically spaced, we integrate in log scale.
+     * 
+     * @param scales the array of scale values
+     * @param start start index (inclusive)
+     * @param end end index (exclusive)
+     * @return integration weights, or empty array if start >= end
      */
     private double[] calculateLogScaleWeights(double[] scales, int start, int end) {
         int n = end - start;
         if (n <= 0) {
-            throw new InvalidArgumentException("Invalid scale range: start=" + start + ", end=" + end);
+            // Empty range - return empty weights array
+            return new double[0];
         }
         if (start < 0 || end > scales.length) {
             throw new InvalidArgumentException("Scale indices out of bounds: start=" + start + 
