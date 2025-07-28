@@ -8,7 +8,11 @@ High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehe
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
 - **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
 - **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
-- **Financial Wavelets**: Specialized wavelets for market analysis (Paul, Shannon, DOG, Gaussian derivatives)
+- **Financial Wavelets**: Specialized wavelets for market analysis
+  - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
+  - Shannon wavelet: Band-limited analysis
+  - DOG wavelets: Gaussian derivatives for smooth features
+  - MATLAB-compatible Mexican Hat: Legacy system integration
 - **Type-Safe API**: Sealed interfaces with compile-time validation
 - **Zero Dependencies**: Pure Java implementation
 - **Flexible Boundary Handling**: Periodic, Zero, Symmetric, and Reflect padding modes
@@ -130,6 +134,19 @@ double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 // Works best with dyadic scales for optimal accuracy
 ```
 
+### Wavelet Selection Guide
+
+| Wavelet | Best For | Characteristics |
+|---------|----------|-----------------|
+| **Morlet** | General time-frequency analysis | Gaussian-modulated complex sinusoid, good frequency localization |
+| **Paul** | Financial crash detection | Asymmetric, captures sharp rises/falls |
+| **Mexican Hat (DOG2)** | Edge detection, volatility | Second derivative of Gaussian, zero crossings at edges |
+| **DOG(n)** | Smooth feature extraction | Higher derivatives for smoother patterns |
+| **Shannon** | Band-limited signals | Perfect frequency localization, poor time localization |
+| **Daubechies** | Signal compression, denoising | Compact support, orthogonal |
+| **Symlets** | Symmetric signal analysis | Near-symmetric, orthogonal |
+| **Coiflets** | Numerical analysis | Vanishing moments for polynomial signals |
+
 ### Streaming
 ```java
 // Real-time streaming transform
@@ -183,6 +200,7 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 - [Benchmarking Guide](docs/BENCHMARKING.md)
 - [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
 - [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
+- [Wavelet Selection Guide](docs/WAVELET_SELECTION.md)
 
 ## Requirements
 
