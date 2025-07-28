@@ -329,6 +329,9 @@ public class FinancialWaveletAnalyzer {
         List<MarketAnomaly> anomalies = new ArrayList<>();
         
         // Volume-price divergence
+        if (volumeData == null || volumeData.length < 2) {
+            throw new IllegalArgumentException("volumeData must not be null and must have at least two elements.");
+        }
         for (int i = 1; i < priceData.length - 1; i++) {
             double priceChange = Math.abs(priceData[i] - priceData[i-1]) / priceData[i-1];
             double volumeChange = Math.abs(volumeData[i] - volumeData[i-1]) / volumeData[i-1];
