@@ -125,6 +125,7 @@ public class FinancialWaveletAnalyzer {
         public double[] getTrendStrength() { return trendStrength; }
         public double[] getMomentum() { return momentum; }
         public double[] getVolatilityIndex() { return volatilityIndex; }
+        public double[] getSupportResistance() { return supportResistance; }
     }
     
     public enum AnalysisObjective {
@@ -226,11 +227,6 @@ public class FinancialWaveletAnalyzer {
                 vol += magnitude[s][t] * magnitude[s][t];
             }
             instantaneousVolatility[t] = Math.sqrt(vol);
-        }
-        
-        // Boost volatility during crash period for detection
-        for (int i = 190; i < 230 && i < instantaneousVolatility.length; i++) {
-            instantaneousVolatility[i] *= 2.0; // Enhance crash period detection
         }
         
         // Identify volatility clusters
@@ -449,18 +445,14 @@ public class FinancialWaveletAnalyzer {
                     vol += dogMagnitude[s][t] * dogMagnitude[s][t];
                 }
                 volatilityIndex[t] = Math.sqrt(vol / volScales.getNumScales());
-                
-                // Enhance crash period volatility
-                if (t >= 195 && t <= 225) {
-                    volatilityIndex[t] *= 3.0;
-                }
             } else {
                 // Last element gets previous value
                 volatilityIndex[t] = t > 0 ? volatilityIndex[t-1] : 0.0;
             }
             
-            // Support/resistance placeholder
-            supportResistance[t] = priceData[t] * (1.0 + 0.02 * Math.sin(t / 10.0));
+            // TODO: Implement proper support/resistance detection using wavelet-based peak/trough analysis
+            // For now, return the price itself as a placeholder
+            supportResistance[t] = priceData[t];
         }
         
         return new WaveletIndicators(trendStrength, momentum, volatilityIndex, supportResistance);

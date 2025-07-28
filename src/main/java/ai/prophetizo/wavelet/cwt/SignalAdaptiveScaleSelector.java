@@ -71,7 +71,7 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         // Generate adaptive scales based on signal energy distribution
         List<Double> scales = generateAdaptiveScales(
-            minScale, maxScale, characteristics, config);
+            minScale, maxScale, characteristics, config, wavelet);
         
         // Ensure we don't exceed maximum scale count
         if (scales.size() > config.getMaxScales()) {
@@ -354,14 +354,15 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
      */
     private List<Double> generateAdaptiveScales(double minScale, double maxScale,
                                                SignalCharacteristics characteristics,
-                                               ScaleSelectionConfig config) {
+                                               ScaleSelectionConfig config,
+                                               ContinuousWavelet wavelet) {
         List<Double> scales = new ArrayList<>();
         
         // Base logarithmic scale distribution
         int baseScaleCount = Math.min(config.getMaxScales(), 
             estimateScaleCount(characteristics.spectralCentroid * 0.5, 
                              characteristics.spectralCentroid * 2.0,
-                             null, characteristics.spectralAnalysis.samplingRate, 
+                             wavelet, characteristics.spectralAnalysis.samplingRate, 
                              config.getScalesPerOctave()));
         
         // Generate base scales
