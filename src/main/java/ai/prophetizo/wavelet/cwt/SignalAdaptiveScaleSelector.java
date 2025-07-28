@@ -177,6 +177,12 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         // Find total energy
         double totalEnergy = Arrays.stream(psd).sum();
+        
+        // Handle zero energy case
+        if (totalEnergy <= 0) {
+            return dominantFreqs; // Return empty list for zero signal
+        }
+        
         double energyThreshold = totalEnergy * DEFAULT_ENERGY_THRESHOLD;
         
         // Find local maxima above threshold
@@ -275,8 +281,17 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         // Compute spectral centroid (center of mass)
         double totalEnergy = Arrays.stream(psd).sum();
-        double centroid = 0;
         
+        // Handle zero energy case (e.g., zero signal)
+        if (totalEnergy <= 0) {
+            // Return default values for zero signal
+            double defaultBandwidth = spectral.samplingRate / 4; // Nyquist / 2
+            double defaultCentroid = spectral.samplingRate / 4;
+            double defaultSpread = spectral.samplingRate / 8;
+            return new double[]{defaultBandwidth, defaultCentroid, defaultSpread};
+        }
+        
+        double centroid = 0;
         for (int i = 0; i < psd.length; i++) {
             centroid += frequencies[i] * psd[i];
         }
@@ -333,6 +348,14 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
             
             // Find frequency range containing significant energy
             double totalEnergy = Arrays.stream(spectral.psd).sum();
+            
+            // Handle zero energy case - use default frequency range
+            if (totalEnergy <= 0) {
+                minFreq = 1.0;
+                maxFreq = spectral.samplingRate / 2;
+                return new double[]{minFreq, maxFreq};
+            }
+            
             double cumulativeEnergy = 0;
             
             int minIdx = 0, maxIdx = spectral.psd.length - 1;

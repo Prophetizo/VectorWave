@@ -2,7 +2,6 @@ package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
-import ai.prophetizo.wavelet.Complex;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.util.FFTUtils;

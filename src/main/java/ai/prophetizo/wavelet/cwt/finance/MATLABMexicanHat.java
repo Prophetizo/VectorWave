@@ -87,6 +87,9 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
         {5.0,  -0.0000888178}
     };
     
+    // Cache array length as static field for performance in hot path
+    private static final int MATLAB_VALUES_LENGTH = MATLAB_VALUES.length;
+    
     @Override
     public String name() {
         return NAME;
@@ -95,7 +98,7 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
     @Override
     public double psi(double t) {
         // Quick bounds check
-        if (t < MATLAB_VALUES[0][0] || t > MATLAB_VALUES[MATLAB_VALUES.length - 1][0]) {
+        if (t < MATLAB_VALUES[0][0] || t > MATLAB_VALUES[MATLAB_VALUES_LENGTH - 1][0]) {
             // Outside the table range, use the formula with MATLAB's parameters
             // MATLAB uses: ψ(t) = (2/(√3 * π^(1/4))) * (1 - x²) * exp(-x²/2)
             // where x = t / (5/√8)
@@ -105,7 +108,7 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
         
         // Binary search for the interval containing t
         int left = 0;
-        int right = MATLAB_VALUES.length - 1;
+        int right = MATLAB_VALUES_LENGTH - 1;
         
         while (left < right - 1) {
             int mid = (left + right) / 2;

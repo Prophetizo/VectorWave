@@ -311,6 +311,8 @@ public class FinancialWaveletAnalyzer {
         MarketRegime currentRegime = MarketRegime.RANGING;
         
         // Note: volatility.instantaneousVolatility has length priceData.length - 1
+        // Loop goes up to priceData.length - 1 (exclusive), so max i = priceData.length - 2
+        // This correctly accesses the last element of instantaneousVolatility array
         for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < priceData.length - 1; i++) {
             MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[i]);
             if (newRegime != currentRegime) {
@@ -332,6 +334,11 @@ public class FinancialWaveletAnalyzer {
         if (volumeData == null || volumeData.length < 2) {
             throw new IllegalArgumentException("volumeData must not be null and must have at least two elements.");
         }
+        if (volumeData.length != priceData.length) {
+            throw new IllegalArgumentException("volumeData length (" + volumeData.length + 
+                ") must match priceData length (" + priceData.length + ")");
+        }
+        
         for (int i = 1; i < priceData.length - 1; i++) {
             double priceChange = Math.abs(priceData[i] - priceData[i-1]) / priceData[i-1];
             double volumeChange = Math.abs(volumeData[i] - volumeData[i-1]) / volumeData[i-1];
@@ -457,29 +464,7 @@ public class FinancialWaveletAnalyzer {
             momentum[t] = mom / 5.0;
             
             // Volatility index from DOG magnitude
-            // Note: absReturns is N-1 length, so we need to handle indexing carefully
-            if (t == 0) {
-                // First point: use the first return volatility
-                volatilityIndex[t] = absReturns.length > 0 ? absReturns[0] * 100.0 : 0.0;
-            } else if (t < absReturns.length) {
-                // For t > 0 and t < absReturns.length, use raw absolute return plus wavelet enhancement
-                double baseVol = absReturns[t-1] * 100.0; // Scale up for visibility
-                
-                // Add wavelet-based enhancement for better detection
-                if (t-1 < dogMagnitude[0].length) {
-                    double waveletEnhancement = 0;
-                    int volScalesUsed = Math.min(3, volScales.getNumScales());
-                    for (int s = 0; s < volScalesUsed; s++) {
-                        waveletEnhancement += dogMagnitude[s][t-1] * dogMagnitude[s][t-1];
-                    }
-                    volatilityIndex[t] = baseVol + Math.sqrt(waveletEnhancement);
-                } else {
-                    volatilityIndex[t] = baseVol;
-                }
-            } else {
-                // Last element gets previous value
-                volatilityIndex[t] = volatilityIndex[t-1];
-            }
+            volatilityIndex[t] = calculateVolatilityIndex(t, absReturns, dogMagnitude, volScales);
             
             // Support/Resistance from low-frequency Paul coefficients
             // Low-frequency components represent the underlying trend and key levels
@@ -756,6 +741,47 @@ public class FinancialWaveletAnalyzer {
         // Annualize assuming 252 trading days
         double dailySharpe = stdDev > 0 ? meanReturn / stdDev : 0.0;
         return dailySharpe * Math.sqrt(252);
+    }
+    
+    /**
+     * Calculates volatility index at time t using absolute returns and wavelet enhancement.
+     * 
+     * <p>This method handles the complex indexing between price data (length N) and
+     * absolute returns (length N-1), combining raw volatility with wavelet-based
+     * enhancement for better detection of volatility patterns.</p>
+     * 
+     * @param t current time index in price data
+     * @param absReturns absolute returns array (length N-1)
+     * @param dogMagnitude DOG wavelet magnitude coefficients
+     * @param volScales scale space used for volatility analysis
+     * @return volatility index value at time t
+     */
+    private double calculateVolatilityIndex(int t, double[] absReturns, double[][] dogMagnitude, 
+                                          ScaleSpace volScales) {
+        // Note: absReturns is N-1 length, so we need to handle indexing carefully
+        if (t == 0) {
+            // First point: use the first return volatility
+            return absReturns.length > 0 ? absReturns[0] * 100.0 : 0.0;
+        } else if (t < absReturns.length) {
+            // For t > 0 and t < absReturns.length, use raw absolute return plus wavelet enhancement
+            double baseVol = absReturns[t-1] * 100.0; // Scale up for visibility
+            
+            // Add wavelet-based enhancement for better detection
+            if (t-1 < dogMagnitude[0].length) {
+                double waveletEnhancement = 0;
+                int volScalesUsed = Math.min(3, volScales.getNumScales());
+                for (int s = 0; s < volScalesUsed; s++) {
+                    waveletEnhancement += dogMagnitude[s][t-1] * dogMagnitude[s][t-1];
+                }
+                return baseVol + Math.sqrt(waveletEnhancement);
+            } else {
+                return baseVol;
+            }
+        } else {
+            // Last element: can't calculate new volatility, so use previous value
+            // This handles the case where t == priceData.length - 1
+            return t > 0 ? calculateVolatilityIndex(t-1, absReturns, dogMagnitude, volScales) : 0.0;
+        }
     }
     
     /**
