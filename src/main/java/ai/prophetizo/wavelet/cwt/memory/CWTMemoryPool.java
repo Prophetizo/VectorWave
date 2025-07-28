@@ -173,6 +173,12 @@ public final class CWTMemoryPool {
         double[][] newMatrix = new double[rows][];
         for (int i = 0; i < rows; i++) {
             // Allocate exact size needed - don't round up to power of 2 for matrix rows
+            // Rationale: CWT coefficient matrices have dimensions determined by:
+            // - rows = number of scales (typically 10-100, rarely power of 2)
+            // - cols = signal length (often already power of 2)
+            // Rounding up columns would waste significant memory (e.g., 1000→1024 = 2.4% waste per row)
+            // across many rows, without cache line benefits since matrix access patterns in CWT
+            // are typically row-wise (scale-by-scale) rather than column-wise
             newMatrix[i] = new double[cols];
         }
         return newMatrix;

@@ -67,13 +67,12 @@ public final class PaulWavelet implements ComplexContinuousWavelet {
          */
         static double getCorrectionFactor(int order) {
             // Currently only order 4 needs correction
-            // This can be extended with a switch statement for multiple orders:
-            // switch (order) {
-            //     case 4: return PAUL4_CORRECTION;
-            //     case 6: return PAUL6_CORRECTION;  // if needed
-            //     default: return 1.0;
-            // }
-            return (order == 4) ? PAUL4_CORRECTION : 1.0;
+            // This can be extended for multiple orders as needed
+            switch (order) {
+                case 4: return PAUL4_CORRECTION;
+                // case 6: return PAUL6_CORRECTION;  // Add when correction factor is determined
+                default: return 1.0;
+            }
         }
     }
     
