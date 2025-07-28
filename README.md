@@ -7,6 +7,7 @@ High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehe
 ### Core Capabilities
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
 - **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
+- **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
 - **Financial Wavelets**: Specialized wavelets for market analysis (Paul, Shannon, DOG, Gaussian derivatives)
 - **Type-Safe API**: Sealed interfaces with compile-time validation
 - **Zero Dependencies**: Pure Java implementation
@@ -102,6 +103,12 @@ GaussianDerivativeWavelet gaus2 = new GaussianDerivativeWavelet(2); // Mexican H
 DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
 double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 // Works best with dyadic scales for optimal accuracy
+
+// Complex wavelet analysis for phase information
+ComplexCWTResult complexResult = cwt.analyzeComplex(signal, scales);
+double[][] magnitude = complexResult.getMagnitude();
+double[][] phase = complexResult.getPhase();
+double[][] instFreq = complexResult.getInstantaneousFrequency();
 ```
 
 ### Streaming

@@ -69,6 +69,28 @@ public final class CWTTransform {
     }
     
     /**
+     * Analyzes a signal using complex wavelet transform.
+     * 
+     * @param signal the input signal
+     * @param scales the scales to analyze
+     * @return complex CWT coefficients preserving magnitude and phase
+     */
+    public ComplexCWTResult analyzeComplex(double[] signal, double[] scales) {
+        validateInputs(signal, scales);
+        
+        if (!wavelet.isComplex() && !(wavelet instanceof ComplexContinuousWavelet)) {
+            // For real wavelets, compute analytic signal using Hilbert transform
+            return analyzeRealAsComplex(signal, scales);
+        }
+        
+        if (config.shouldUseFFT(signal.length)) {
+            return analyzeFFTComplex(signal, scales);
+        } else {
+            return analyzeDirectComplexFull(signal, scales);
+        }
+    }
+    
+    /**
      * Analyzes a signal using a scale space.
      * 
      * @param signal the input signal
@@ -385,6 +407,227 @@ public final class CWTTransform {
         }
     }
     
+    /**
+     * Analyzes real wavelet as complex using Hilbert transform.
+     */
+    private ComplexCWTResult analyzeRealAsComplex(double[] signal, double[] scales) {
+        // First compute real CWT
+        CWTResult realResult = analyze(signal, scales);
+        double[][] realCoeffs = realResult.getCoefficients();
+        
+        // Convert to complex using Hilbert transform on each scale
+        ComplexNumber[][] complexCoeffs = new ComplexNumber[scales.length][signal.length];
+        
+        for (int s = 0; s < scales.length; s++) {
+            double[] hilbert = computeHilbertTransform(realCoeffs[s]);
+            for (int t = 0; t < signal.length; t++) {
+                complexCoeffs[s][t] = new ComplexNumber(realCoeffs[s][t], hilbert[t]);
+            }
+        }
+        
+        return new ComplexCWTResult(complexCoeffs, scales, wavelet);
+    }
+    
+    /**
+     * Direct complex convolution implementation.
+     */
+    private ComplexCWTResult analyzeDirectComplexFull(double[] signal, double[] scales) {
+        int signalLength = signal.length;
+        int numScales = scales.length;
+        ComplexNumber[][] coefficients = new ComplexNumber[numScales][signalLength];
+        
+        // Check if wavelet is already complex
+        ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
+        
+        for (int s = 0; s < numScales; s++) {
+            double scale = scales[s];
+            double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
+            
+            int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+            
+            for (int tau = 0; tau < signalLength; tau++) {
+                double sumReal = 0.0;
+                double sumImag = 0.0;
+                
+                for (int t = -halfSupport; t <= halfSupport; t++) {
+                    int index = tau - t;
+                    
+                    if (index >= 0 && index < signalLength) {
+                        double waveletArg = t / scale;
+                        
+                        if (complexWavelet != null) {
+                            // Use complex wavelet directly
+                            ComplexNumber psi = complexWavelet.psiComplex(waveletArg);
+                            // Correlation requires conjugate
+                            sumReal += signal[index] * psi.real() / sqrtScale;
+                            sumImag -= signal[index] * psi.imag() / sqrtScale;  // Conjugate
+                        } else {
+                            // Real wavelet
+                            double psiValue = wavelet.psi(waveletArg) / sqrtScale;
+                            sumReal += signal[index] * psiValue;
+                        }
+                    } else {
+                        // Apply boundary handling
+                        double boundaryValue = getBoundaryValue(signal, index);
+                        double waveletArg = t / scale;
+                        
+                        if (complexWavelet != null) {
+                            ComplexNumber psi = complexWavelet.psiComplex(waveletArg);
+                            sumReal += boundaryValue * psi.real() / sqrtScale;
+                            sumImag -= boundaryValue * psi.imag() / sqrtScale;
+                        } else {
+                            double psiValue = wavelet.psi(waveletArg) / sqrtScale;
+                            sumReal += boundaryValue * psiValue;
+                        }
+                    }
+                }
+                
+                coefficients[s][tau] = new ComplexNumber(sumReal, sumImag);
+            }
+        }
+        
+        return new ComplexCWTResult(coefficients, scales, wavelet);
+    }
+    
+    /**
+     * FFT-based complex analysis.
+     */
+    private ComplexCWTResult analyzeFFTComplex(double[] signal, double[] scales) {
+        int signalLength = signal.length;
+        int numScales = scales.length;
+        ComplexNumber[][] coefficients = new ComplexNumber[numScales][signalLength];
+        
+        // Compute FFT of signal once
+        int fftSize = nextPowerOfTwo(2 * signalLength);
+        Complex[] signalFFT = computeFFT(signal, fftSize);
+        
+        for (int s = 0; s < numScales; s++) {
+            double scale = scales[s];
+            double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
+            
+            // Generate scaled wavelet
+            Complex[] waveletFFT = computeWaveletFFTComplex(scale, fftSize);
+            
+            // Multiply in frequency domain
+            Complex[] product = new Complex[fftSize];
+            for (int i = 0; i < fftSize; i++) {
+                product[i] = signalFFT[i].multiply(waveletFFT[i].conjugate());
+            }
+            
+            // Inverse FFT gives complex convolution result
+            ComplexNumber[] convResult = ifftComplex(product);
+            
+            // Extract valid portion
+            for (int t = 0; t < signalLength; t++) {
+                coefficients[s][t] = new ComplexNumber(
+                    convResult[t].real() / sqrtScale,
+                    convResult[t].imag() / sqrtScale
+                );
+            }
+        }
+        
+        return new ComplexCWTResult(coefficients, scales, wavelet);
+    }
+    
+    /**
+     * Computes wavelet FFT for complex wavelets.
+     */
+    private Complex[] computeWaveletFFTComplex(double scale, int fftSize) {
+        ComplexNumber[] waveletArray = new ComplexNumber[fftSize];
+        int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+        int center = fftSize / 2;
+        
+        ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
+        
+        for (int i = 0; i < fftSize; i++) {
+            waveletArray[i] = ComplexNumber.ZERO;
+        }
+        
+        for (int i = -halfSupport; i <= halfSupport; i++) {
+            int idx = (center + i + fftSize) % fftSize;
+            
+            if (complexWavelet != null) {
+                waveletArray[idx] = complexWavelet.psiComplex(i / scale);
+            } else {
+                waveletArray[idx] = ComplexNumber.ofReal(wavelet.psi(i / scale));
+            }
+        }
+        
+        // Convert to internal Complex type and compute FFT
+        Complex[] complexArray = new Complex[fftSize];
+        for (int i = 0; i < fftSize; i++) {
+            complexArray[i] = new Complex(waveletArray[i].real(), waveletArray[i].imag());
+        }
+        
+        return fftComplex(complexArray);
+    }
+    
+    /**
+     * Inverse FFT returning ComplexNumber array.
+     */
+    private ComplexNumber[] ifftComplex(Complex[] spectrum) {
+        // Take conjugate of spectrum
+        Complex[] conjugate = new Complex[spectrum.length];
+        for (int i = 0; i < spectrum.length; i++) {
+            conjugate[i] = spectrum[i].conjugate();
+        }
+        
+        // Forward FFT of conjugate
+        Complex[] result = fftComplex(conjugate);
+        
+        // Take conjugate and scale
+        ComplexNumber[] output = new ComplexNumber[spectrum.length];
+        double scale = 1.0 / spectrum.length;
+        for (int i = 0; i < spectrum.length; i++) {
+            output[i] = new ComplexNumber(
+                result[i].real * scale,
+                -result[i].imag * scale
+            );
+        }
+        
+        return output;
+    }
+    
+    /**
+     * Simple Hilbert transform using FFT.
+     */
+    private double[] computeHilbertTransform(double[] signal) {
+        int n = signal.length;
+        int fftSize = nextPowerOfTwo(n);
+        
+        // Compute FFT
+        Complex[] fft = computeFFT(signal, fftSize);
+        
+        // Apply Hilbert filter in frequency domain
+        // H(f) = -i*sgn(f) = {-i for f>0, 0 for f=0, i for f<0}
+        for (int i = 1; i < fftSize/2; i++) {
+            // Positive frequencies: multiply by -i
+            double temp = fft[i].real;
+            fft[i] = new Complex(fft[i].imag, -temp);
+        }
+        
+        // Negative frequencies: multiply by i
+        for (int i = fftSize/2 + 1; i < fftSize; i++) {
+            double temp = fft[i].real;
+            fft[i] = new Complex(-fft[i].imag, temp);
+        }
+        
+        // DC and Nyquist are zero
+        fft[0] = new Complex(0, 0);
+        if (fftSize > 1) {
+            fft[fftSize/2] = new Complex(0, 0);
+        }
+        
+        // Inverse FFT
+        double[] result = ifft(fft);
+        
+        // Extract valid portion
+        double[] hilbert = new double[n];
+        System.arraycopy(result, 0, hilbert, 0, n);
+        
+        return hilbert;
+    }
+    
     // Getters
     
     public ContinuousWavelet getWavelet() {
@@ -393,6 +636,78 @@ public final class CWTTransform {
     
     public CWTConfig getConfig() {
         return config;
+    }
+    
+    /**
+     * Finds the next power of two greater than or equal to n.
+     */
+    private static int nextPowerOfTwo(int n) {
+        if (n <= 1) return 1;
+        n--;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        return n + 1;
+    }
+    
+    /**
+     * Computes FFT of real signal.
+     */
+    private Complex[] computeFFT(double[] signal, int fftSize) {
+        Complex[] data = new Complex[fftSize];
+        
+        // Initialize with signal data
+        for (int i = 0; i < signal.length && i < fftSize; i++) {
+            data[i] = new Complex(signal[i], 0);
+        }
+        
+        // Pad with zeros
+        for (int i = signal.length; i < fftSize; i++) {
+            data[i] = new Complex(0, 0);
+        }
+        
+        return fftComplex(data);
+    }
+    
+    /**
+     * Cooley-Tukey FFT implementation for Complex arrays.
+     */
+    private Complex[] fftComplex(Complex[] x) {
+        int n = x.length;
+        
+        // Base case
+        if (n <= 1) return x;
+        
+        // Radix-2 Cooley-Tukey FFT
+        if (n % 2 != 0) {
+            throw new IllegalArgumentException("Length must be a power of 2");
+        }
+        
+        // Divide
+        Complex[] even = new Complex[n/2];
+        Complex[] odd = new Complex[n/2];
+        for (int k = 0; k < n/2; k++) {
+            even[k] = x[2*k];
+            odd[k] = x[2*k + 1];
+        }
+        
+        // Conquer
+        Complex[] evenFFT = fftComplex(even);
+        Complex[] oddFFT = fftComplex(odd);
+        
+        // Combine
+        Complex[] result = new Complex[n];
+        for (int k = 0; k < n/2; k++) {
+            double theta = -2 * Math.PI * k / n;
+            Complex w = new Complex(Math.cos(theta), Math.sin(theta));
+            Complex t = w.multiply(oddFFT[k]);
+            result[k] = new Complex(evenFFT[k].real + t.real, evenFFT[k].imag + t.imag);
+            result[k + n/2] = new Complex(evenFFT[k].real - t.real, evenFFT[k].imag - t.imag);
+        }
+        
+        return result;
     }
     
     /**

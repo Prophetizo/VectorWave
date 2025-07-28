@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 /**
@@ -12,6 +13,17 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * @since 1.0.0
  */
 public interface ComplexContinuousWavelet extends ContinuousWavelet {
+    
+    /**
+     * Evaluates the complex wavelet function at a given point.
+     * 
+     * @param t the time/position parameter
+     * @return complex value of the wavelet
+     * @since 1.3.0
+     */
+    default ComplexNumber psiComplex(double t) {
+        return new ComplexNumber(psi(t), psiImaginary(t));
+    }
     
     /**
      * Evaluates the imaginary part of the wavelet function at a given point.
