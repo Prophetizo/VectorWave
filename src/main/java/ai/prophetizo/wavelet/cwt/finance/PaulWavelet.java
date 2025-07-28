@@ -161,10 +161,12 @@ public final class PaulWavelet implements ComplexContinuousWavelet {
         double modulusPow = Math.pow(modulus, -(m + 1));
         double phase = -(m + 1) * Math.atan2(-t, 1.0);
         
-        // Imaginary part: norm * |z|^(-(m+1)) * sin(phase)
-        // Include the i^m factor effect
-        // For m=4, i^4 = 1, so no change
-        // But the formula has implicit negative for imaginary part
+        // Complex expansion: (1 - it)^(-(m+1)) = |z|^(-(m+1)) * e^(-i(m+1)arg(z))
+        // = |z|^(-(m+1)) * [cos(phase) - i*sin(phase)]
+        // The imaginary part is: -|z|^(-(m+1)) * sin(phase)
+        // 
+        // Note: This returns the imaginary part of the complex wavelet itself,
+        // not the value used for real signal analysis (which depends on i^m factor)
         return -normFactor * modulusPow * Math.sin(phase);
     }
     

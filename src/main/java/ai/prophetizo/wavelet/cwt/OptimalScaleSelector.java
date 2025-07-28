@@ -303,6 +303,60 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     }
     
     /**
+     * Calculates adaptive ratio cap based on wavelet characteristics.
+     * 
+     * <p>Different wavelets have different optimal sampling densities:
+     * <ul>
+     *   <li>Narrow-band wavelets (high Q-factor): Need denser sampling (lower ratio)</li>
+     *   <li>Broad-band wavelets (low Q-factor): Can use sparser sampling (higher ratio)</li>
+     *   <li>Complex wavelets: May need special handling for phase information</li>
+     * </ul>
+     * 
+     * @param wavelet the wavelet being used
+     * @param bandwidth wavelet bandwidth parameter
+     * @param centerFreq wavelet center frequency
+     * @return adaptive maximum ratio for scale progression
+     */
+    private static double calculateAdaptiveRatioCap(ContinuousWavelet wavelet, 
+                                                   double bandwidth, 
+                                                   double centerFreq) {
+        // Q-factor (quality factor) indicates frequency selectivity
+        double qFactor = centerFreq / bandwidth;
+        
+        // Base cap varies with Q-factor
+        // High Q (narrow-band): ratio 2.0-2.5
+        // Medium Q: ratio 2.5-3.5  
+        // Low Q (broad-band): ratio 3.5-5.0
+        double baseCap;
+        if (qFactor > 5.0) {
+            // Narrow-band wavelet (e.g., high-order Morlet)
+            baseCap = 2.0 + 0.5 * Math.min((qFactor - 5.0) / 5.0, 1.0);
+        } else if (qFactor > 2.0) {
+            // Medium selectivity
+            baseCap = 2.5 + Math.min((5.0 - qFactor) / 3.0, 1.0);
+        } else {
+            // Broad-band wavelet (e.g., Mexican Hat, low-order wavelets)
+            baseCap = 3.5 + 1.5 * Math.min((2.0 - qFactor) / 2.0, 1.0);
+        }
+        
+        // Adjust for specific wavelet types
+        String waveletName = wavelet.name().toLowerCase();
+        if (waveletName.contains("morlet")) {
+            // Morlet benefits from finer sampling
+            baseCap *= 0.9;
+        } else if (waveletName.contains("shannon")) {
+            // Shannon has sharp frequency cutoff, can use coarser sampling
+            baseCap *= 1.1;
+        } else if (waveletName.contains("paul")) {
+            // Paul wavelets are asymmetric, use standard sampling
+            baseCap *= 1.0;
+        }
+        
+        // Ensure reasonable bounds
+        return Math.max(1.5, Math.min(baseCap, 5.0));
+    }
+    
+    /**
      * Estimates optimal number of scales for given range and configuration.
      */
     private int estimateOptimalScaleCount(double minScale, double maxScale, ScaleSelectionConfig config) {
@@ -427,9 +481,12 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         double centerFreq = wavelet.centerFrequency();
         double bandwidth = wavelet.bandwidth();
         
-        // Critical sampling rate in scale domain - limit to reasonable values
+        // Critical sampling rate in scale domain with adaptive capping
         double rawRatio = Math.exp(Math.PI * bandwidth / centerFreq);
-        double criticalRatio = Math.min(rawRatio, 3.0); // Cap at 3x to avoid extreme ratios
+        
+        // Adaptive capping based on wavelet characteristics
+        double maxRatio = calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq);
+        double criticalRatio = Math.min(rawRatio, maxRatio);
         
         List<Double> scales = new ArrayList<>();
         double minScale = centerFreq / (samplingRate / 2.0);

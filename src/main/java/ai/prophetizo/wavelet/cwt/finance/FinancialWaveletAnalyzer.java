@@ -310,15 +310,19 @@ public class FinancialWaveletAnalyzer {
         Map<Integer, MarketRegime> regimeMap = new HashMap<>();
         MarketRegime currentRegime = MarketRegime.RANGING;
         
-        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < priceData.length; i++) {
-            // volatility.instantaneousVolatility is returns.length = priceData.length - 1
-            int volIndex = Math.min(i, volatility.instantaneousVolatility.length - 1);
-            MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[volIndex]);
+        // Note: volatility.instantaneousVolatility has length priceData.length - 1
+        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < priceData.length - 1; i++) {
+            MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[i]);
             if (newRegime != currentRegime) {
                 regimeChanges.add(i);
                 currentRegime = newRegime;
             }
             regimeMap.put(i, currentRegime);
+        }
+        
+        // Handle the last price point separately (no volatility data for it)
+        if (priceData.length > REGIME_DETECTION_LOOKBACK_PERIOD) {
+            regimeMap.put(priceData.length - 1, currentRegime);
         }
         
         // Detect anomalies
@@ -465,9 +469,9 @@ public class FinancialWaveletAnalyzer {
                 volatilityIndex[t] = volatilityIndex[t-1];
             }
             
-            // TODO: Implement proper support/resistance detection using wavelet-based peak/trough analysis
-            // For now, return the price itself as a placeholder
-            supportResistance[t] = priceData[t];
+            // Support/Resistance from low-frequency Paul coefficients
+            // Low-frequency components represent the underlying trend and key levels
+            supportResistance[t] = calculateSupportResistance(paulCoeffs, priceData, t);
         }
         
         return new WaveletIndicators(trendStrength, momentum, volatilityIndex, supportResistance);
@@ -740,6 +744,79 @@ public class FinancialWaveletAnalyzer {
         // Annualize assuming 252 trading days
         double dailySharpe = stdDev > 0 ? meanReturn / stdDev : 0.0;
         return dailySharpe * Math.sqrt(252);
+    }
+    
+    /**
+     * Calculates support/resistance levels using wavelet analysis.
+     * 
+     * <p>This method identifies key price levels by analyzing low-frequency wavelet
+     * coefficients which represent the underlying market structure. Local extrema
+     * in these coefficients often correspond to support and resistance levels.</p>
+     * 
+     * @param paulCoeffs wavelet coefficients from Paul transform
+     * @param prices original price data
+     * @param currentIndex current time index
+     * @return estimated support/resistance level at current index
+     */
+    private double calculateSupportResistance(double[][] paulCoeffs, double[] prices, int currentIndex) {
+        if (currentIndex == 0 || paulCoeffs.length == 0) {
+            return prices[currentIndex];
+        }
+        
+        // Use low-frequency scales (higher indices) for structure
+        int structureScaleStart = Math.min(5, paulCoeffs.length - 1);
+        int structureScaleEnd = Math.min(10, paulCoeffs.length);
+        
+        // Look for local extrema in a window around current point
+        int windowSize = SUPPORT_RESISTANCE_WINDOW;
+        int startIdx = Math.max(0, currentIndex - windowSize);
+        int endIdx = Math.min(paulCoeffs[0].length - 1, currentIndex + windowSize);
+        
+        double closestSupport = prices[currentIndex];
+        double closestResistance = prices[currentIndex];
+        double minDistance = Double.MAX_VALUE;
+        
+        // Find local maxima (resistance) and minima (support) in wavelet space
+        for (int scale = structureScaleStart; scale < structureScaleEnd; scale++) {
+            if (scale >= paulCoeffs.length) break;
+            
+            double[] coeffs = paulCoeffs[scale];
+            
+            for (int i = startIdx + 1; i < endIdx - 1 && i < coeffs.length - 1; i++) {
+                // Check for local maximum (potential resistance)
+                if (coeffs[i] > coeffs[i-1] && coeffs[i] > coeffs[i+1]) {
+                    double level = prices[i];
+                    double distance = Math.abs(level - prices[currentIndex]);
+                    
+                    if (level > prices[currentIndex] && distance < minDistance) {
+                        closestResistance = level;
+                        minDistance = distance;
+                    }
+                }
+                
+                // Check for local minimum (potential support)
+                if (coeffs[i] < coeffs[i-1] && coeffs[i] < coeffs[i+1]) {
+                    double level = prices[i];
+                    double distance = Math.abs(level - prices[currentIndex]);
+                    
+                    if (level < prices[currentIndex] && distance < minDistance) {
+                        closestSupport = level;
+                        minDistance = distance;
+                    }
+                }
+            }
+        }
+        
+        // Return the closest support or resistance level
+        double supportDist = Math.abs(prices[currentIndex] - closestSupport);
+        double resistDist = Math.abs(prices[currentIndex] - closestResistance);
+        
+        // If we're closer to support, return support; otherwise resistance
+        if (supportDist < resistDist) {
+            return closestSupport;
+        } else {
+            return closestResistance;
+        }
     }
     
     /**

@@ -195,8 +195,8 @@ public final class DWTBasedInverseCWT {
                 }
                 
                 dwt.approximation = approx;
-                // Adjust maxLevel to match approximation
-                dwt.maxLevel = (int)(Math.log(signalLength / approxLength) / Math.log(2));
+                // Do NOT change maxLevel - it must match the details array size
+                // The reconstruction will handle the size mismatch appropriately
             }
         }
         
@@ -383,9 +383,13 @@ public final class DWTBasedInverseCWT {
     
     /**
      * Container for extracted DWT coefficients.
+     * 
+     * <p>Note: maxLevel must remain consistent with the details array size.
+     * If the approximation doesn't match the expected size for maxLevel,
+     * the reconstruction process will handle it appropriately.</p>
      */
     private static class DWTCoefficients {
-        int maxLevel;
+        final int maxLevel;  // Made final to prevent accidental modification
         final double[][] details;
         double[] approximation;
         

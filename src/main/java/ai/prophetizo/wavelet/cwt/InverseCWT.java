@@ -5,6 +5,8 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.Complex;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.util.FFTUtils;
+import java.util.Arrays;
 
 /**
  * Inverse Continuous Wavelet Transform for signal reconstruction.
@@ -176,6 +178,70 @@ public final class InverseCWT {
      */
     private double[] reconstructInternalReal(double[][] coefficients, double[] scales,
                                            int signalLength, int startScale, int endScale) {
+        if (useFFT && signalLength >= 128) {
+            // Use FFT-based reconstruction for large signals
+            return reconstructInternalRealFFT(coefficients, scales, signalLength, startScale, endScale);
+        } else {
+            // Use direct method for small signals
+            return reconstructInternalRealDirect(coefficients, scales, signalLength, startScale, endScale);
+        }
+    }
+    
+    /**
+     * FFT-based reconstruction - O(N log N * M) complexity.
+     */
+    private double[] reconstructInternalRealFFT(double[][] coefficients, double[] scales,
+                                              int signalLength, int startScale, int endScale) {
+        // Pad to next power of 2 for FFT
+        int fftSize = nextPowerOfTwo(signalLength);
+        ComplexNumber[] reconstruction = new ComplexNumber[fftSize];
+        Arrays.fill(reconstruction, new ComplexNumber(0, 0));
+        
+        // Integration weights
+        double[] weights = calculateLogScaleWeights(scales, startScale, endScale);
+        
+        // For each scale, compute contribution using FFT convolution
+        for (int s = startScale; s < endScale; s++) {
+            double scale = scales[s];
+            double weight = weights[s - startScale] / scale;
+            
+            // Create wavelet at this scale in frequency domain
+            ComplexNumber[] waveletFFT = createWaveletFFT(scale, fftSize);
+            
+            // FFT of coefficients at this scale
+            ComplexNumber[] coeffFFT = new ComplexNumber[fftSize];
+            for (int i = 0; i < signalLength; i++) {
+                coeffFFT[i] = new ComplexNumber(coefficients[s][i], 0);
+            }
+            for (int i = signalLength; i < fftSize; i++) {
+                coeffFFT[i] = new ComplexNumber(0, 0);
+            }
+            FFTUtils.fft(coeffFFT);
+            
+            // Multiply in frequency domain and accumulate
+            for (int i = 0; i < fftSize; i++) {
+                ComplexNumber contrib = coeffFFT[i].multiply(waveletFFT[i]).multiply(weight);
+                reconstruction[i] = reconstruction[i].add(contrib);
+            }
+        }
+        
+        // Inverse FFT to get time domain signal
+        FFTUtils.ifft(reconstruction);
+        
+        // Extract real part and normalize
+        double[] result = new double[signalLength];
+        for (int i = 0; i < signalLength; i++) {
+            result[i] = reconstruction[i].real() / admissibilityConstant;
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Direct reconstruction - O(N²M) complexity.
+     */
+    private double[] reconstructInternalRealDirect(double[][] coefficients, double[] scales,
+                                                 int signalLength, int startScale, int endScale) {
         double[] reconstructed = new double[signalLength];
         
         // Integration weights for trapezoidal rule in log scale
@@ -433,5 +499,44 @@ public final class InverseCWT {
      */
     public boolean isAdmissible() {
         return admissibilityConstant > 0 && admissibilityConstant < Double.POSITIVE_INFINITY;
+    }
+    
+    /**
+     * Creates wavelet in frequency domain for FFT-based reconstruction.
+     */
+    private ComplexNumber[] createWaveletFFT(double scale, int fftSize) {
+        ComplexNumber[] waveletFFT = new ComplexNumber[fftSize];
+        
+        // Create scaled wavelet in time domain
+        double[] waveletTime = new double[fftSize];
+        int center = fftSize / 2;
+        
+        for (int i = 0; i < fftSize; i++) {
+            double t = (i - center) / scale;
+            waveletTime[i] = wavelet.psi(t) / Math.sqrt(scale);
+        }
+        
+        // Convert to frequency domain
+        ComplexNumber[] waveletComplex = new ComplexNumber[fftSize];
+        for (int i = 0; i < fftSize; i++) {
+            waveletComplex[i] = new ComplexNumber(waveletTime[i], 0);
+        }
+        
+        FFTUtils.fft(waveletComplex);
+        return waveletComplex;
+    }
+    
+    /**
+     * Finds next power of 2 greater than or equal to n.
+     */
+    private static int nextPowerOfTwo(int n) {
+        if (n <= 1) return 1;
+        n--;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        return n + 1;
     }
 }

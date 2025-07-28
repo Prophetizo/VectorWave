@@ -108,8 +108,8 @@ public final class CWTMemoryPool {
         double[] array = pool.poll();
         if (array != null) {
             poolHits.incrementAndGet();
-            // Clear the array before returning
-            Arrays.fill(array, 0, Math.min(size, array.length), 0.0);
+            // Clear only the requested portion - array.length is always >= size
+            Arrays.fill(array, 0, size, 0.0);
             return array;
         }
         

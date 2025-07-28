@@ -282,12 +282,15 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         double[] sortedPsd = psd.clone();
         Arrays.sort(sortedPsd);
         
-        double energyThreshold = totalEnergy * 0.1; // Bottom 10%
-        double threshold = 0;
+        double targetEnergy = totalEnergy * 0.9; // Top 90% of energy
+        double cumulativeEnergy = 0;
+        double powerThreshold = 0;
+        
+        // Find power level that captures 90% of total energy
         for (int i = sortedPsd.length - 1; i >= 0; i--) {
-            threshold += sortedPsd[i];
-            if (threshold >= energyThreshold) {
-                threshold = sortedPsd[i];
+            cumulativeEnergy += sortedPsd[i];
+            if (cumulativeEnergy >= targetEnergy) {
+                powerThreshold = sortedPsd[i];
                 break;
             }
         }
@@ -295,7 +298,7 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         // Count frequency bins above threshold
         int significantBins = 0;
         for (double power : psd) {
-            if (power >= threshold) significantBins++;
+            if (power >= powerThreshold) significantBins++;
         }
         
         double effectiveBandwidth = significantBins * spectral.samplingRate / (2 * psd.length);

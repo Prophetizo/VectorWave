@@ -69,6 +69,10 @@ public final class FinancialAnalysisConfig {
     /** Forward-looking window for crash prediction (days) */
     public static final int CRASH_PREDICTION_FORWARD_WINDOW = 5;
     
+    // Technical Analysis Parameters
+    /** Window size for support/resistance detection (days) */
+    public static final int SUPPORT_RESISTANCE_WINDOW = 20;
+    
     // Risk Assessment Parameters
     /** Default assumed average volatility for risk calculations */
     public static final double DEFAULT_AVERAGE_VOLATILITY = 0.02;
