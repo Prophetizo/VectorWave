@@ -69,7 +69,8 @@ public final class DOGWavelet implements ContinuousWavelet {
     public double psi(double t) {
         // Special case for n=2 (Mexican Hat)
         if (n == 2) {
-            // Mexican Hat: norm * (1 - t²) * exp(-t²/2)
+            // Standard mathematical Mexican Hat: ψ(t) = (2/(√3 * π^(1/4))) * (1 - t²) * exp(-t²/2)
+            // This is the canonical form used in most academic literature
             return normFactor * (1 - t * t) * Math.exp(-t * t / 2);
         }
         
@@ -137,8 +138,8 @@ public final class DOGWavelet implements ContinuousWavelet {
     private static double calculateNormalizationFactor(int n) {
         // Special case for n=2 (Mexican Hat)
         if (n == 2) {
-            // Mexican Hat normalization: 2/(√3 * π^(1/4))
-            return 2.0 / (Math.sqrt(3) * Math.pow(Math.PI, 0.25));
+            // Standard mathematical normalization: 2/(√3 * π^(1/4))
+            return 2.0 / (Math.sqrt(3.0) * Math.pow(Math.PI, 0.25));
         }
         
         // General case: norm = 1 / √(2^n * √π * n!)
