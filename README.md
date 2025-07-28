@@ -181,6 +181,8 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 - [API Reference](docs/API.md)
 - [Adding New Wavelets](docs/ADDING_WAVELETS.md)
 - [Benchmarking Guide](docs/BENCHMARKING.md)
+- [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
+- [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
 
 ## Requirements
 

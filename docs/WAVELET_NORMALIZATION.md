@@ -31,6 +31,39 @@ For exact MATLAB compatibility, use the `MATLABMexicanHat` class:
 ContinuousWavelet mexihat = new MATLABMexicanHat();
 ```
 
+### Financial Analysis Considerations
+
+#### Why MATLAB Compatibility Matters in Finance
+
+The MATLAB parameterization has become an industry standard in quantitative finance due to:
+
+1. **Historical Precedence**: Most financial wavelet research from the 1990s-2010s used MATLAB
+2. **Regulatory Compliance**: Risk models validated with MATLAB need exact reproduction
+3. **Academic Literature**: Financial papers reference MATLAB's specific scaling
+4. **Legacy Systems**: Trading systems calibrated with MATLAB parameters
+
+#### Practical Implications
+
+The MATLAB scaling (σ = 5/√8 ≈ 1.77) affects financial analysis:
+
+- **Volatility Detection**: The wider support (zeros at ±1.77) better captures multi-day volatility clusters
+- **Intraday Patterns**: The stretched wavelet aligns with typical 2-3 day persistence in markets
+- **Frequency Content**: The scaling affects which market cycles are emphasized
+
+#### When to Use Each Version
+
+**Use MATLABMexicanHat when:**
+- Migrating existing MATLAB models to Java
+- Reproducing published research results
+- Regulatory requirements specify MATLAB compatibility
+- Working with legacy trading systems
+
+**Use DOGWavelet(2) when:**
+- Building new models without legacy constraints
+- Following mathematical literature exactly
+- Optimizing for computational efficiency
+- Implementing custom scaling strategies
+
 ## Paul Wavelet
 
 ### Standard Form

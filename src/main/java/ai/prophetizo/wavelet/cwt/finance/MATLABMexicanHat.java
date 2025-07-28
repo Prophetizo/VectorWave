@@ -7,9 +7,50 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * MATLAB-compatible Mexican Hat (DOG2) wavelet implementation.
  * 
  * <p>This implementation exactly matches MATLAB's mexihat function values.
- * MATLAB uses a specific parameterization that differs from the standard
- * mathematical definition.</p>
+ * MATLAB uses a specific parameterization (σ = 5/√8 ≈ 1.7678) that differs 
+ * from the standard mathematical definition (σ = 1).</p>
  * 
+ * <h2>Why MATLAB Compatibility Matters in Finance</h2>
+ * 
+ * <p><strong>Industry Standard:</strong> MATLAB's Wavelet Toolbox has been the de facto 
+ * standard in quantitative finance for decades. Many financial models, research papers, 
+ * and trading systems were developed using MATLAB's specific parameterization.</p>
+ * 
+ * <p><strong>Key Benefits:</strong></p>
+ * <ul>
+ *   <li><strong>Legacy Compatibility:</strong> Existing risk models and trading signals 
+ *       calibrated with MATLAB will produce identical results</li>
+ *   <li><strong>Regulatory Compliance:</strong> Backtests and regulatory submissions 
+ *       that reference MATLAB implementations remain valid</li>
+ *   <li><strong>Research Reproducibility:</strong> Results match published financial 
+ *       literature that used MATLAB</li>
+ *   <li><strong>Model Migration:</strong> Seamless transition from MATLAB to Java 
+ *       without recalibration</li>
+ * </ul>
+ * 
+ * <h2>Scale Considerations</h2>
+ * 
+ * <p>MATLAB's scaling (zeros at ±1.77 instead of ±1) may better match financial time scales:</p>
+ * <ul>
+ *   <li><strong>Daily Patterns:</strong> Wider support captures intraday volatility clusters</li>
+ *   <li><strong>Weekly Cycles:</strong> The 1.77 scaling aligns with 2-3 day volatility persistence</li>
+ *   <li><strong>Market Microstructure:</strong> Better detection of bid-ask bounce effects</li>
+ * </ul>
+ * 
+ * <h2>Usage Guidelines</h2>
+ * 
+ * <p>Use this implementation when:</p>
+ * <ul>
+ *   <li>Migrating existing MATLAB-based financial models</li>
+ *   <li>Reproducing results from financial research papers</li>
+ *   <li>Maintaining compatibility with legacy systems</li>
+ *   <li>Regulatory requirements specify MATLAB compatibility</li>
+ * </ul>
+ * 
+ * <p>For new implementations without legacy constraints, consider using 
+ * {@link DOGWavelet} with n=2 for the standard mathematical form.</p>
+ * 
+ * @see DOGWavelet for the standard mathematical Mexican Hat implementation
  * @since 1.1.0
  */
 public final class MATLABMexicanHat implements ContinuousWavelet {

@@ -25,6 +25,20 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * 
  * <p>Special case: DOG(2) is the Mexican Hat wavelet, widely used in finance.</p>
  * 
+ * <h2>Standard Mathematical Form</h2>
+ * <p>This implementation uses the standard mathematical parameterization with σ=1.
+ * For MATLAB compatibility (σ=5/√8), use {@link MATLABMexicanHat} instead.</p>
+ * 
+ * <h2>Financial Applications</h2>
+ * <p>The DOG(2) Mexican Hat wavelet is particularly effective for:</p>
+ * <ul>
+ *   <li>Detecting volatility regime changes</li>
+ *   <li>Identifying market turning points</li>
+ *   <li>Analyzing persistence in volatility clusters</li>
+ * </ul>
+ * 
+ * @see MATLABMexicanHat for MATLAB-compatible Mexican Hat implementation
+ * @see <a href="../../../../../../../docs/FINANCIAL_WAVELETS.md">Financial Wavelets Guide</a>
  * @since 1.0.0
  */
 public final class DOGWavelet implements ContinuousWavelet {
