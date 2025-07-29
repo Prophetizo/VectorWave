@@ -2,8 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
-
-import java.util.Objects;
+import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
  * Factory for creating WaveletTransform instances.
@@ -15,16 +14,16 @@ import java.util.Objects;
  * <pre>{@code
  * // Using factory with configuration
  * WaveletTransform transform = new WaveletTransformFactory()
- *     .withBoundaryMode(BoundaryMode.PERIODIC)
+ *     .boundaryMode(BoundaryMode.PERIODIC)
  *     .create(new Haar());
- * 
+ *
  * // Using default factory method
  * WaveletTransform transform2 = WaveletTransformFactory.createDefault(Daubechies.DB4);
- * 
+ *
  * // With biorthogonal wavelet
  * WaveletTransform transform3 = new WaveletTransformFactory()
  *     .create(BiorthogonalSpline.BIOR1_3);
- *     
+ *
  * // With continuous wavelet (discretized)
  * WaveletTransform transform4 = new WaveletTransformFactory()
  *     .create(new MorletWavelet());
@@ -59,9 +58,8 @@ public class WaveletTransformFactory {
      * @return this factory for method chaining
      * @throws NullPointerException if boundaryMode is null
      */
-    public WaveletTransformFactory withBoundaryMode(BoundaryMode boundaryMode) {
-        this.boundaryMode = Objects.requireNonNull(boundaryMode,
-                "boundaryMode cannot be null.");
+    public WaveletTransformFactory boundaryMode(BoundaryMode boundaryMode) {
+        this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
         return this;
     }
 
@@ -73,7 +71,7 @@ public class WaveletTransformFactory {
      * @throws NullPointerException if wavelet is null
      */
     public WaveletTransform create(Wavelet wavelet) {
-        Objects.requireNonNull(wavelet, "wavelet cannot be null.");
+        NullChecks.requireNonNull(wavelet, "wavelet");
         return new WaveletTransform(wavelet, boundaryMode);
     }
 

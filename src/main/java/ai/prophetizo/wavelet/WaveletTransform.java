@@ -2,8 +2,11 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.util.NullChecks;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Objects;
@@ -15,16 +18,16 @@ import java.util.Objects;
  * orthogonal (Haar, Daubechies, Symlets, Coiflets), biorthogonal, and
  * continuous wavelets. All transforms use a scalar implementation for
  * correctness and maintainability.</p>
- * 
+ *
  * <p>Example usage:</p>
  * <pre>{@code
  * // Create transform with Haar wavelet
  * WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
- * 
+ *
  * // Perform forward transform
  * double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
  * TransformResult result = transform.forward(signal);
- * 
+ *
  * // Perform inverse transform
  * double[] reconstructed = transform.inverse(result);
  * }</pre>
@@ -33,6 +36,8 @@ public class WaveletTransform {
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
+    private final WaveletOpsFactory.WaveletOps operations;
+    private final boolean useSIMD;
 
     /**
      * Constructs a transformer with the specified wavelet and boundary mode.
@@ -42,14 +47,29 @@ public class WaveletTransform {
      * @throws NullPointerException if any parameter is null
      */
     public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode) {
-        this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null.");
-        this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null.");
+        this(wavelet, boundaryMode, null);
+    }
+
+    /**
+     * Constructs a transformer with the specified wavelet, boundary mode, and configuration.
+     *
+     * @param wavelet      The wavelet to use for the transformations
+     * @param boundaryMode The boundary handling mode
+     * @param config       Optional transform configuration (null for defaults)
+     * @throws NullPointerException if wavelet or boundaryMode is null
+     */
+    public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, TransformConfig config) {
+        this.wavelet = NullChecks.requireNonNull(wavelet, "wavelet");
+        this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
 
         // Validate supported boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
-            throw new UnsupportedOperationException(
-                    "Only PERIODIC and ZERO_PADDING boundary modes are currently supported.");
+            throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
+
+        // Create appropriate operations implementation
+        this.operations = WaveletOpsFactory.create(config);
+        this.useSIMD = operations.getImplementationType().startsWith("Vector");
     }
 
     /**
@@ -73,8 +93,9 @@ public class WaveletTransform {
 
         // Perform convolution and downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            ScalarOps.convolveAndDownsamplePeriodic(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsamplePeriodic(signal, highPassFilter, detailCoeffs);
+            // Use combined transform for better cache efficiency when possible
+            ScalarOps.combinedTransformPeriodic(signal, lowPassFilter, highPassFilter,
+                    approximationCoeffs, detailCoeffs);
         } else {
             ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
             ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
@@ -138,5 +159,23 @@ public class WaveletTransform {
      */
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
+    }
+
+    /**
+     * Returns true if this transform is using SIMD operations.
+     *
+     * @return true if SIMD is being used, false otherwise
+     */
+    public boolean isUsingSIMD() {
+        return useSIMD;
+    }
+
+    /**
+     * Gets implementation details about the operations being used.
+     *
+     * @return implementation type string
+     */
+    public String getImplementationType() {
+        return operations.getImplementationType();
     }
 }

@@ -1,137 +1,153 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Development guide for Claude Code when working with the VectorWave repository.
 
-## Build and Run Commands
+## Build Commands
 
-### Building the project
 ```bash
+# Build
 mvn clean compile
-```
 
-### Running the main demo
-```bash
-# Direct Java execution (recommended)
-java -cp target/classes ai.prophetizo.Main
+# Test
+mvn test
+mvn test -Dtest=TestClassName
 
-# Using Maven exec plugin (requires exec plugin configuration in pom.xml)
-mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
-```
+# Coverage
+mvn clean test jacoco:report
+# Report: target/site/jacoco/index.html
 
-### Packaging as JAR
-```bash
+# Package
 mvn clean package
+
+# Run main demo
+java -cp target/classes ai.prophetizo.Main
 ```
 
-## Architecture Overview
+## Architecture
 
-VectorWave is a comprehensive Fast Wavelet Transform (FWT) library supporting multiple wavelet families through a flexible, type-safe architecture.
+### Package Structure
+- `ai.prophetizo.wavelet.api` - Public API interfaces
+- `ai.prophetizo.wavelet.internal` - SIMD and optimization implementations
+- `ai.prophetizo.wavelet.wavelets` - Wavelet family implementations
+- `ai.prophetizo.wavelet.streaming` - Real-time processing
+- `ai.prophetizo.wavelet.denoising` - Signal denoising
+- `ai.prophetizo.wavelet.concurrent` - Parallel processing
+- `ai.prophetizo.wavelet.cwt` - Continuous Wavelet Transform
+- `ai.prophetizo.wavelet.cwt.finance` - Financial analysis wavelets
 
-### Core Design Principles
-- **Extensibility**: Supports orthogonal, biorthogonal, and continuous wavelets
-- **Type-safe wavelet selection**: Sealed interface hierarchy ensures compile-time validation
-- **Clean API separation**: Public API in `ai.prophetizo.wavelet.api`, internal implementations hidden
-- **Zero dependencies**: Pure Java implementation
+### Key Design Patterns
+- **Sealed Interfaces**: Type-safe wavelet hierarchy
+- **Factory Pattern**: Transform and denoiser creation
+- **Strategy Pattern**: Boundary modes, threshold methods
+- **Builder Pattern**: Configuration objects
 
-### Wavelet Type Hierarchy
+### Performance Considerations
+- Signal length must be power of 2
+- SIMD benefits: ≥8 elements (ARM), ≥16 elements (x86)
+- Use `TransformConfig` to control optimization paths
+- Memory pools reduce GC pressure
 
+## Testing
+
+### Test Categories
+- Unit tests: All wavelet types and operations
+- Integration tests: Complex scenarios (`*IntegrationTest`)
+- Performance tests: Disabled by default (`@Disabled`)
+- Benchmarks: JMH in `src/test/java/.../benchmark/`
+
+### Running Benchmarks
+```bash
+./jmh-runner.sh                    # All benchmarks
+./jmh-runner.sh BenchmarkName      # Specific benchmark
 ```
-Wavelet (sealed base interface)
-├── DiscreteWavelet (for DWT)
-│   ├── OrthogonalWavelet
-│   │   ├── Haar
-│   │   ├── Daubechies (DB2, DB4)
-│   │   ├── Symlet (sym2, sym3, ...)
-│   │   └── Coiflet (coif1, coif2, ...)
-│   └── BiorthogonalWavelet
-│       └── BiorthogonalSpline (bior1.3, ...)
-└── ContinuousWavelet (for CWT)
-    └── MorletWavelet
-```
 
-### Key Components
+## Adding New Features
 
-1. **WaveletTransform** (`wavelet/WaveletTransform.java`): Main transform engine
-   - Handles forward and inverse transforms
-   - Supports periodic and zero-padding boundary modes
-   - Works with any wavelet type
+### New Wavelet
+1. Implement appropriate interface (`OrthogonalWavelet`, `BiorthogonalWavelet`, `ContinuousWavelet`)
+2. Register in `WaveletRegistry`
+3. Add tests in `src/test/java/.../wavelets/`
+4. Update documentation
 
-2. **Wavelet Interfaces** (`wavelet/api/`):
-   - `Wavelet`: Base sealed interface with core methods
-   - `DiscreteWavelet`: Base for discrete wavelets with vanishing moments
-   - `OrthogonalWavelet`: Wavelets where reconstruction = decomposition filters
-   - `BiorthogonalWavelet`: Wavelets with dual filter pairs
-   - `ContinuousWavelet`: Wavelets defined by mathematical functions
+### New Optimization
+1. Extend `VectorOps` or create specialized kernel
+2. Add to `WaveletOpsFactory` selection logic
+3. Benchmark against existing implementations
+4. Document platform requirements
 
-3. **WaveletRegistry** (`wavelet/api/WaveletRegistry.java`):
-   - Central registry for all available wavelets
-   - Lookup by name or type
-   - Wavelet discovery functionality
+## CI/CD
 
-4. **Transform Operations**:
-   - `ScalarOps`: Core mathematical operations for wavelet transforms
-   - Handles convolution, downsampling, upsampling for both boundary modes
+GitHub Actions workflow (`ci.yml`):
+- Multi-platform testing (Ubuntu, Windows, macOS)
+- Code quality checks
+- Coverage reporting
+- Test artifacts upload
 
-### Important Technical Notes
-- Requires Java 21 or later
-- Power-of-2 signal lengths required for transforms
-- Currently implements single-level transforms only
-- No external dependencies (pure Java implementation)
-- Continuous wavelets are discretized for DWT operations
+## Important Notes
 
-### Adding New Wavelets
+- Java 21+ required (CI currently uses Java 21)
+- Vector API is incubating - expect warnings
+- Use JMH for all performance measurements
+- Coverage goal: >80% (excluding demos)
 
-To add a new wavelet type:
+## Common Tasks
 
-1. **For Orthogonal wavelets**: Implement `OrthogonalWavelet` interface
-2. **For Biorthogonal wavelets**: Implement `BiorthogonalWavelet` interface  
-3. **For Continuous wavelets**: Implement `ContinuousWavelet` interface
-4. Register in `WaveletRegistry` static initializer
-5. Add comprehensive tests
-
-Example:
+### Debugging SIMD
 ```java
-public record MyWavelet() implements OrthogonalWavelet {
-    @Override
-    public String name() { return "mywav"; }
-    
-    @Override
-    public double[] lowPassDecomposition() { 
-        return new double[]{...}; 
-    }
-    
-    @Override
-    public double[] highPassDecomposition() {
-        // Generate from low-pass using QMF
-    }
-    
-    @Override
-    public int vanishingMoments() { return 2; }
-}
+// Force scalar mode
+TransformConfig.builder().forceScalar(true).build()
+
+// Check Vector API info
+VectorOps.getVectorInfo()
 ```
 
-### Testing
-JUnit 5 is configured for unit testing:
-- Test files are located in `src/test/java/ai/prophetizo/`
-- Run all tests: `mvn test`
-- Run specific test: `mvn test -Dtest=TestClassName`
-- Performance tests are disabled by default (annotated with `@Disabled`)
-- Example: `ValidationUtilsTest` covers all validation scenarios
+### Memory Profiling
+```java
+// Use pooled variants
+WaveletTransformPool pool = new WaveletTransformPool(wavelet, mode);
+```
 
-### Benchmarking
-JMH (Java Microbenchmark Harness) is configured for accurate performance measurements:
-- Benchmark classes are in `src/test/java/ai/prophetizo/wavelet/benchmark/`
-- See `BENCHMARKING.md` for detailed instructions
-- Run benchmarks using: `./jmh-runner.sh` or `./jmh-runner.sh BenchmarkName`
-- **Important**: Always use JMH for performance measurements, not manual timing
+### Streaming Performance
+```java
+// Check latency requirements
+StreamingDenoiserFactory.create(wavelet, method, blockSize, overlap)
+// overlap < 0.3 → FastStreamingDenoiser
+// overlap ≥ 0.3 → QualityStreamingDenoiser
+```
 
-### Continuous Integration
-GitHub Actions are configured for:
-- **CI Workflow** (`ci.yml`): Runs on all pushes and PRs
-  - Multi-platform testing (Ubuntu, Windows, macOS)
-  - Unit and integration tests
-  - Code quality checks
-  - Test result reporting and artifact upload
+## CWT Implementation
 
-### License
-This project is licensed under the GNU General Public License v3.0.
+### Key CWT Components
+- **CWTTransform**: Main engine with FFT acceleration
+- **ComplexCWTResult**: Complex coefficients with phase/magnitude
+- **Adaptive Scale Selection**: Automatic scale optimization
+  - `DyadicScaleSelector`: Powers-of-2 scales
+  - `SignalAdaptiveScaleSelector`: Energy-based placement
+  - `OptimalScaleSelector`: Mathematical spacing strategies
+
+### CWT Usage
+```java
+// Basic CWT
+MorletWavelet wavelet = new MorletWavelet(6.0, 1.0);
+CWTTransform cwt = new CWTTransform(wavelet);
+
+// Automatic scale selection
+SignalAdaptiveScaleSelector selector = new SignalAdaptiveScaleSelector();
+double[] scales = selector.selectScales(signal, wavelet, samplingRate);
+
+// Complex analysis
+ComplexCWTResult result = cwt.analyzeComplex(signal, scales);
+double[][] phase = result.getPhase();
+double[][] instFreq = result.getInstantaneousFrequency();
+
+// Financial analysis
+PaulWavelet paul = new PaulWavelet(4);
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+var crashes = analyzer.detectMarketCrashes(priceData, threshold);
+```
+
+### CWT Performance Tips
+- Use FFT acceleration for signals > 256 samples
+- Dyadic scales optimize FFT performance
+- Signal-adaptive selection reduces computation by 30-50%
+- Complex analysis adds ~20% overhead vs real-only

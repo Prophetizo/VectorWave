@@ -9,6 +9,9 @@ package ai.prophetizo.wavelet.cwt.optimization;
  * 
  * <p>The implementation uses the Cooley-Tukey algorithm with optimizations for
  * real-valued signals and efficient memory usage patterns.</p>
+ * 
+ * <p>For detailed mathematical background and implementation notes, see
+ * {@code docs/FFT_MATHEMATICAL_DETAILS.md}</p>
  *
  * @since 1.0.0
  */
@@ -127,64 +130,15 @@ public final class FFTAcceleratedCWT {
     /**
      * Computes the Inverse Fast Fourier Transform of complex frequency-domain data.
      * 
-     * <p>This method transforms complex frequency-domain coefficients back to the
-     * time domain, extracting the real part of the result. This is particularly
-     * useful for CWT applications where the result should be real-valued.</p>
+     * <p>Transforms frequency-domain coefficients back to time domain using the
+     * Cooley-Tukey algorithm. Returns only the real part, suitable for CWT applications.</p>
      * 
-     * <p>The extensive mathematical foundation of the IFFT ensures perfect reconstruction
-     * of signals when combined with the forward FFT, maintaining numerical stability
-     * through careful normalization and precision handling.</p>
+     * <p>Time complexity: O(N log N). Requires power-of-2 input length.</p>
      * 
-     * <p><strong>Mathematical Context:</strong></p>
-     * <p>The Inverse Discrete Fourier Transform is defined as:</p>
-     * <pre>
-     * x[n] = (1/N) * Σ(k=0 to N-1) X[k] * e^(j*2π*k*n/N)
-     * </pre>
+     * <p>For detailed mathematical background and implementation notes, see
+     * {@code docs/FFT_MATHEMATICAL_DETAILS.md}</p>
      * 
-     * <p>Where:</p>
-     * <ul>
-     *   <li>N is the transform length (must be power of 2 for FFT efficiency)</li>
-     *   <li>X[k] are the frequency-domain coefficients</li>
-     *   <li>x[n] are the reconstructed time-domain samples</li>
-     *   <li>j is the imaginary unit (√-1)</li>
-     * </ul>
-     * 
-     * <p><strong>Implementation Details:</strong></p>
-     * <ul>
-     *   <li>Uses Cooley-Tukey algorithm with bit-reversal permutation</li>
-     *   <li>Applies 1/N normalization for proper scaling</li>
-     *   <li>Optimized for real-valued output extraction</li>
-     *   <li>Maintains numerical precision through careful floating-point handling</li>
-     * </ul>
-     * 
-     * <p><strong>Validation Requirements:</strong></p>
-     * <ul>
-     *   <li>Input array must not be null</li>
-     *   <li>Input array length must be a power of 2 (2, 4, 8, 16, 32, ...)</li>
-     *   <li>All complex coefficients must contain finite values</li>
-     * </ul>
-     * 
-     * <p><strong>Performance Characteristics:</strong></p>
-     * <ul>
-     *   <li>Time complexity: O(N log N)</li>
-     *   <li>Space complexity: O(N)</li>
-     *   <li>Optimized for power-of-2 lengths</li>
-     *   <li>Cache-friendly memory access patterns</li>
-     * </ul>
-     * 
-     * <p><strong>Usage Example:</strong></p>
-     * <pre>{@code
-     * // Forward transform
-     * Complex[] spectrum = fft(timeSignal);
-     * 
-     * // Process in frequency domain
-     * // ... apply filtering, convolution, etc.
-     * 
-     * // Inverse transform back to time domain
-     * double[] reconstructed = ifft(spectrum);
-     * }</pre>
-     * 
-     * @param X the input complex frequency-domain coefficients
+     * @param X the input complex frequency-domain coefficients (power-of-2 length)
      * @return the real-valued time-domain signal
      * @throws NullPointerException if X is null
      * @throws IllegalArgumentException if X length is not a power of 2 or contains invalid values

@@ -2,16 +2,16 @@ package ai.prophetizo.wavelet.api;
 
 /**
  * Interface for orthogonal wavelets where the wavelet transform is orthogonal.
- * 
+ *
  * <p>In orthogonal wavelets, the reconstruction filters are time-reversed
  * versions of the decomposition filters. This provides perfect reconstruction
  * and computational efficiency.</p>
- * 
+ *
  * <p>Examples include: Haar, Daubechies, Symlets, Coiflets</p>
  */
-public sealed interface OrthogonalWavelet extends DiscreteWavelet 
-    permits Haar, Daubechies, Symlet, Coiflet {
-    
+public sealed interface OrthogonalWavelet extends DiscreteWavelet
+        permits Haar, Daubechies, Symlet, Coiflet {
+
     /**
      * For orthogonal wavelets, the low-pass reconstruction filter
      * is the same as the decomposition filter (no time reversal needed
@@ -21,7 +21,7 @@ public sealed interface OrthogonalWavelet extends DiscreteWavelet
     default double[] lowPassReconstruction() {
         return lowPassDecomposition();
     }
-    
+
     /**
      * For orthogonal wavelets, the high-pass reconstruction filter
      * is the same as the decomposition filter (no time reversal needed
@@ -31,7 +31,7 @@ public sealed interface OrthogonalWavelet extends DiscreteWavelet
     default double[] highPassReconstruction() {
         return highPassDecomposition();
     }
-    
+
     @Override
     default WaveletType getType() {
         return WaveletType.ORTHOGONAL;
