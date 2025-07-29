@@ -36,7 +36,7 @@ public final class FinancialAnalyzer {
         }
         this.config = config;
         this.transform = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC)
+                .boundaryMode(BoundaryMode.PERIODIC)
                 .create(Daubechies.DB4);
     }
     
