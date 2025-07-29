@@ -141,12 +141,28 @@ public class FinancialWaveletAnalyzer {
         // Apply wavelet transform for denoising
         TransformResult result = transform.forward(returns);
         
-        // Simple denoising: use only approximation coefficients (low-frequency components)
-        // This removes high-frequency noise while preserving the main trend
-        double[] denoisedReturns = transform.inverse(TransformResult.create(
-            result.approximationCoeffs(),
-            new double[result.detailCoeffs().length] // Zero out detail coefficients
-        ));
+        // Simple denoising strategy: remove high-frequency noise by zeroing detail coefficients
+        // This preserves the main trend (approximation) while eliminating short-term fluctuations
+        // Note: This is a basic denoising approach. For more sophisticated denoising,
+        // consider using soft/hard thresholding on detail coefficients instead of zeroing them.
+        double[] approxCoeffs = result.approximationCoeffs();
+        double[] detailCoeffs = result.detailCoeffs();
+        
+        // Create zero-filled detail coefficients array of the same length
+        // The TransformResult.create method requires matching array lengths
+        double[] zeroDetails = new double[detailCoeffs.length];
+        
+        // Defensive validation before creating TransformResult
+        if (approxCoeffs.length != zeroDetails.length) {
+            throw new IllegalStateException("Coefficient arrays must have matching lengths. " +
+                "Approximation length: " + approxCoeffs.length + ", Detail length: " + zeroDetails.length);
+        }
+        
+        // Create a new TransformResult with original approximation and zeroed details
+        TransformResult denoisedResult = TransformResult.create(approxCoeffs, zeroDetails);
+        
+        // Perform inverse transform to get denoised signal
+        double[] denoisedReturns = transform.inverse(denoisedResult);
         
         return calculateSharpeRatio(denoisedReturns, riskFreeRate);
     }
