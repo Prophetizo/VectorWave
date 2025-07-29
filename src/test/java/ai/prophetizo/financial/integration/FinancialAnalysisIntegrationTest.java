@@ -36,7 +36,7 @@ class FinancialAnalysisIntegrationTest {
         FinancialAnalyzer customAnalyzer = new FinancialAnalyzer(customConfig);
         
         // Test with a realistic asymmetry value (between 0 and 1)
-        double testAsymmetry = 0.75; // Between 0.5 and 10.0
+        double testAsymmetry = 0.75; // Above both thresholds (0.5 and 0.7)
         
         assertTrue(defaultAnalyzer.isCrashRisk(testAsymmetry), 
                 "Default analyzer should detect crash risk at 0.75 (above 0.7 threshold)");
