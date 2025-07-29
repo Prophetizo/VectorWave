@@ -94,7 +94,11 @@ public final class FinancialAnalyzer {
         double negativeAvg = negativeSum / negativeCount;
         
         // Calculate asymmetry ratio
-        return Math.abs(negativeAvg - positiveAvg) / Math.max(positiveAvg, negativeAvg);
+        double maxAvg = Math.max(positiveAvg, negativeAvg);
+        if (maxAvg == 0.0) {
+            return 0.0; // No asymmetry if both averages are zero
+        }
+        return Math.abs(negativeAvg - positiveAvg) / maxAvg;
     }
     
     /**
