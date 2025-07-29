@@ -16,7 +16,7 @@
  * <pre>{@code
  * // Create a transform using factory
  * WaveletTransformFactory factory = new WaveletTransformFactory()
- *     .withBoundaryMode(BoundaryMode.PERIODIC);
+ *     .boundaryMode(BoundaryMode.PERIODIC);
  * WaveletTransform transform = factory.create(Daubechies.DB4);
  * 
  * // Perform forward transform
