@@ -24,7 +24,7 @@ class FinancialAnalysisConfigTest {
     @Test
     @DisplayName("Default configuration should have expected values")
     void testDefaultConfiguration() {
-        assertEquals(10.0, defaultConfig.getCrashAsymmetryThreshold(), 1e-10);
+        assertEquals(0.7, defaultConfig.getCrashAsymmetryThreshold(), 1e-10);
         assertEquals(0.5, defaultConfig.getVolatilityLowThreshold(), 1e-10);
         assertEquals(0.02, defaultConfig.getRegimeTrendThreshold(), 1e-10);
         assertEquals(2.0, defaultConfig.getVolatilityHighThreshold(), 1e-10);

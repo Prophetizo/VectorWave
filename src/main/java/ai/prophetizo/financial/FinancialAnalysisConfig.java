@@ -15,7 +15,8 @@ package ai.prophetizo.financial;
 public final class FinancialAnalysisConfig {
     
     // Default threshold values
-    private static final double DEFAULT_CRASH_ASYMMETRY_THRESHOLD = 10.0;
+    // Note: Crash asymmetry values range from 0 to 1 (it's a ratio)
+    private static final double DEFAULT_CRASH_ASYMMETRY_THRESHOLD = 0.7;
     private static final double DEFAULT_VOLATILITY_LOW_THRESHOLD = 0.5;
     private static final double DEFAULT_REGIME_TREND_THRESHOLD = 0.02;
     private static final double DEFAULT_VOLATILITY_HIGH_THRESHOLD = 2.0;

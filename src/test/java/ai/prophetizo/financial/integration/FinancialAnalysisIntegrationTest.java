@@ -20,26 +20,28 @@ class FinancialAnalysisIntegrationTest {
     void testCrashAsymmetryThresholdIsConfigurable() {
         // Verify the default matches the original hardcoded value
         FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
-        assertEquals(10.0, defaultConfig.getCrashAsymmetryThreshold(), 1e-10,
-                "Default crash asymmetry threshold should match original hardcoded value");
+        assertEquals(0.7, defaultConfig.getCrashAsymmetryThreshold(), 1e-10,
+                "Default crash asymmetry threshold should be a realistic value (0-1 range)");
         
-        // Verify we can customize it
+        // Verify we can customize it with a realistic threshold
+        // Note: analyzeCrashAsymmetry returns values between 0 and 1 (it's a ratio)
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(5.0)
+                .crashAsymmetryThreshold(0.5)
                 .build();
-        assertEquals(5.0, customConfig.getCrashAsymmetryThreshold(), 1e-10,
+        assertEquals(0.5, customConfig.getCrashAsymmetryThreshold(), 1e-10,
                 "Crash asymmetry threshold should be configurable");
         
         // Verify analyzers use the configured thresholds
         FinancialAnalyzer defaultAnalyzer = new FinancialAnalyzer(defaultConfig);
         FinancialAnalyzer customAnalyzer = new FinancialAnalyzer(customConfig);
         
-        double testAsymmetry = 7.5; // Between 5.0 and 10.0
+        // Test with a realistic asymmetry value (between 0 and 1)
+        double testAsymmetry = 0.75; // Between 0.5 and 10.0
         
-        assertFalse(defaultAnalyzer.isCrashRisk(testAsymmetry), 
-                "Default analyzer should not detect crash risk at 7.5 (below 10.0 threshold)");
+        assertTrue(defaultAnalyzer.isCrashRisk(testAsymmetry), 
+                "Default analyzer should detect crash risk at 0.75 (above 0.7 threshold)");
         assertTrue(customAnalyzer.isCrashRisk(testAsymmetry), 
-                "Custom analyzer should detect crash risk at 7.5 (above 5.0 threshold)");
+                "Custom analyzer should detect crash risk at 0.75 (above 0.5 threshold)");
     }
     
     @Test
@@ -103,7 +105,7 @@ class FinancialAnalysisIntegrationTest {
     void testAllHardcodedThresholdsAreConfigurable() {
         // Create a completely custom configuration
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(8.0)          // Was hardcoded at 10.0
+                .crashAsymmetryThreshold(0.8)          // Was hardcoded at 10.0 (but actual values are 0-1)
                 .volatilityLowThreshold(0.3)           // Was hardcoded at 0.5
                 .volatilityHighThreshold(1.5)          // Additional configurable threshold
                 .regimeTrendThreshold(0.015)           // Was hardcoded at 0.02
@@ -115,7 +117,7 @@ class FinancialAnalysisIntegrationTest {
         FinancialAnalyzer analyzer = new FinancialAnalyzer(customConfig);
         
         // Verify all configurations are applied
-        assertEquals(8.0, analyzer.getConfig().getCrashAsymmetryThreshold(), 1e-10);
+        assertEquals(0.8, analyzer.getConfig().getCrashAsymmetryThreshold(), 1e-10);
         assertEquals(0.3, analyzer.getConfig().getVolatilityLowThreshold(), 1e-10);
         assertEquals(1.5, analyzer.getConfig().getVolatilityHighThreshold(), 1e-10);
         assertEquals(0.015, analyzer.getConfig().getRegimeTrendThreshold(), 1e-10);
@@ -141,8 +143,8 @@ class FinancialAnalysisIntegrationTest {
         
         // Verify default values match the original hardcoded constants from the issue
         FinancialAnalysisConfig config = defaultAnalyzer.getConfig();
-        assertEquals(10.0, config.getCrashAsymmetryThreshold(), 1e-10, 
-                "CRASH_ASYMMETRY_THRESHOLD default should be 10.0");
+        assertEquals(0.7, config.getCrashAsymmetryThreshold(), 1e-10, 
+                "CRASH_ASYMMETRY_THRESHOLD default should be 0.7 (realistic range)");
         assertEquals(0.5, config.getVolatilityLowThreshold(), 1e-10, 
                 "VOLATILITY_LOW_THRESHOLD default should be 0.5");
         assertEquals(0.02, config.getRegimeTrendThreshold(), 1e-10, 
@@ -171,7 +173,7 @@ class FinancialAnalysisIntegrationTest {
         
         // High-frequency trading configuration
         FinancialAnalysisConfig hftConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(5.0)       // More sensitive
+                .crashAsymmetryThreshold(0.3)       // More sensitive (lower threshold)
                 .volatilityLowThreshold(0.1)        // Lower volatility range
                 .regimeTrendThreshold(0.005)        // More sensitive to changes
                 .windowSize(64)                     // Smaller window for faster analysis
@@ -179,7 +181,7 @@ class FinancialAnalysisIntegrationTest {
         
         // Long-term investment analysis configuration
         FinancialAnalysisConfig longTermConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(15.0)      // Less sensitive to short-term fluctuations
+                .crashAsymmetryThreshold(0.9)       // Less sensitive to short-term fluctuations
                 .volatilityLowThreshold(1.0)        // Higher volatility range
                 .regimeTrendThreshold(0.05)         // Less sensitive to minor changes
                 .windowSize(512)                    // Larger window for trend analysis

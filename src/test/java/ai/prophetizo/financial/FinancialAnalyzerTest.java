@@ -39,7 +39,7 @@ class FinancialAnalyzerTest {
         FinancialAnalyzer defaultAnalyzer = FinancialAnalyzer.withDefaultConfig();
         
         assertNotNull(defaultAnalyzer);
-        assertEquals(10.0, defaultAnalyzer.getConfig().getCrashAsymmetryThreshold(), 1e-10);
+        assertEquals(0.7, defaultAnalyzer.getConfig().getCrashAsymmetryThreshold(), 1e-10);
         assertEquals(0.5, defaultAnalyzer.getConfig().getVolatilityLowThreshold(), 1e-10);
         assertEquals(0.02, defaultAnalyzer.getConfig().getRegimeTrendThreshold(), 1e-10);
     }
