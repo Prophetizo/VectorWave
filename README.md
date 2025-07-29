@@ -8,6 +8,9 @@ A comprehensive Fast Wavelet Transform (FWT) library for Java with support for m
   - Orthogonal: Haar, Daubechies (DB2, DB4), Symlets, Coiflets
   - Biorthogonal: Biorthogonal Spline wavelets
   - Continuous: Morlet wavelet (with discretization support)
+- **Financial Analysis**: 
+  - Configurable Sharpe ratio calculation with custom risk-free rates
+  - Wavelet-based denoising for improved financial signal analysis
 - **Type-Safe API**: Sealed interface hierarchy ensures compile-time wavelet validation
 - **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
 - **Zero Dependencies**: Pure Java implementation with no external dependencies
@@ -31,6 +34,12 @@ mvn clean compile
 
 ```bash
 java -cp target/classes ai.prophetizo.Main
+```
+
+### Financial Analysis Demo
+
+```bash
+java -cp target/classes ai.prophetizo.demo.FinancialDemo
 ```
 
 ### Basic Usage
@@ -57,6 +66,25 @@ transform = new WaveletTransformFactory()
 // Using Morlet wavelet (continuous)
 transform = new WaveletTransformFactory()
     .create(new MorletWavelet(6.0, 1.0));
+```
+
+### Financial Analysis
+
+```java
+import ai.prophetizo.financial.*;
+
+// Calculate Sharpe ratio with configurable risk-free rate
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+double[] returns = {0.05, 0.02, -0.01, 0.08, 0.04, 0.06, -0.02, 0.09};
+double sharpeRatio = analyzer.calculateSharpeRatio(returns);
+
+// Use custom risk-free rate
+FinancialConfig config = new FinancialConfig(0.03); // 3%
+analyzer = new FinancialWaveletAnalyzer(config);
+double customSharpe = analyzer.calculateSharpeRatio(returns);
+
+// Wavelet-denoised Sharpe ratio
+double waveletSharpe = analyzer.calculateWaveletSharpeRatio(returns);
 ```
 
 ### Wavelet Registry
@@ -186,6 +214,7 @@ The project includes GitHub Actions workflows for:
 
 ## Documentation
 
+- [FINANCIAL_ANALYSIS.md](FINANCIAL_ANALYSIS.md) - Financial analysis features and usage guide
 - [BENCHMARKING.md](BENCHMARKING.md) - Detailed benchmarking guide
 - [ADDING_WAVELETS.md](ADDING_WAVELETS.md) - Guide for adding new wavelet types
 - [CLAUDE.md](CLAUDE.md) - Development guidelines for AI assistants
