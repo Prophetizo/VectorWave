@@ -163,7 +163,22 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 **Run**: `java -cp target/classes ai.prophetizo.demo.StreamingDenoiserFactoryDemo`
 
-### 11. ScalarVsVectorDemo
+### 11. FactoryPatternDemo
+
+**Purpose**: Comprehensive demonstration of the Factory Pattern implementation
+
+**What it covers**:
+
+- Factory Registry for discovering available factories
+- WaveletTransformFactory with fluent API
+- CWTFactory for FFT-accelerated transforms
+- WaveletOpsFactory for operations configuration
+- Factory interface implementation best practices
+- Static convenience methods vs instance methods
+
+**Run**: `java -cp target/classes ai.prophetizo.demo.FactoryPatternDemo`
+
+### 12. ScalarVsVectorDemo
 
 **Purpose**: Understanding scalar vs SIMD/vector optimization paths
 
@@ -222,6 +237,11 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 - BoundaryModesDemo - Boundary handling
 - WaveletSelectionGuideDemo - Wavelet selection
+
+### Design Patterns
+
+- FactoryPatternDemo - Factory pattern implementation
+- StreamingDenoiserFactoryDemo - Factory-based implementation selection
 
 ## Best Practices Demonstrated
 

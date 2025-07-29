@@ -1,9 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
-import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.api.Wavelet;
-import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
@@ -31,7 +29,7 @@ import ai.prophetizo.wavelet.util.NullChecks;
  *     .create(new MorletWavelet());
  * }</pre>
  */
-public class WaveletTransformFactory implements Factory<WaveletTransform> {
+public class WaveletTransformFactory {
 
     // Default boundary mode is periodic (most common for DWT)
     private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
@@ -77,39 +75,6 @@ public class WaveletTransformFactory implements Factory<WaveletTransform> {
         return new WaveletTransform(wavelet, boundaryMode);
     }
 
-    /**
-     * Creates a WaveletTransform instance using default configuration.
-     * 
-     * <p>This method creates a transform using the Haar wavelet, which is
-     * the simplest and most commonly used wavelet for basic applications.
-     * For specific wavelet requirements, use {@link #create(Wavelet)} instead.</p>
-     * 
-     * @return a WaveletTransform configured with Haar wavelet and current boundary mode
-     */
-    @Override
-    public WaveletTransform create() {
-        return create(new Haar());
-    }
-
-    /**
-     * Gets a description of this factory.
-     * 
-     * @return description of the factory's purpose
-     */
-    @Override
-    public String getDescription() {
-        return "Factory for creating WaveletTransform instances with configurable boundary modes";
-    }
-
-    /**
-     * Gets the product type that this factory creates.
-     * 
-     * @return WaveletTransform.class
-     */
-    @Override
-    public Class<WaveletTransform> getProductType() {
-        return WaveletTransform.class;
-    }
 
     /**
      * Gets the current boundary mode setting.

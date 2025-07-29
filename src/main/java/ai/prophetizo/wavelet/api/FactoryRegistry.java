@@ -1,6 +1,5 @@
 package ai.prophetizo.wavelet.api;
 
-import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.cwt.CWTFactory;
 import ai.prophetizo.wavelet.ops.WaveletOpsFactory;
 import ai.prophetizo.wavelet.denoising.StreamingDenoiserFactory;
@@ -57,7 +56,6 @@ public final class FactoryRegistry {
      * Registers all built-in factory implementations.
      */
     private static void registerBuiltInFactories() {
-        registerFactory("WaveletTransform", new WaveletTransformFactory());
         registerFactory("CWT", new CWTFactory());
         registerFactory("WaveletOps", new WaveletOpsFactory());
         registerFactory("StreamingDenoiser", new StreamingDenoiserFactory());

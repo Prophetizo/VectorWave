@@ -71,8 +71,8 @@ public class FactoryPatternDemo {
         
         // Basic usage with fluent API
         WaveletTransformFactory factory = new WaveletTransformFactory();
-        System.out.println("Factory description: " + factory.getDescription());
-        System.out.println("Product type: " + factory.getProductType().getSimpleName());
+        System.out.println("WaveletTransformFactory demonstration");
+        System.out.println("Note: This factory requires a wavelet parameter");
         
         // Create transform with PERIODIC boundary
         WaveletTransform transform1 = factory
@@ -87,18 +87,10 @@ public class FactoryPatternDemo {
         // Static convenience method
         WaveletTransform transform3 = WaveletTransformFactory.createDefault(new Haar());
         
-        System.out.println("Created transforms with different boundary modes:");
+        System.out.println("\nCreated transforms with different boundary modes:");
         System.out.println("  - Transform 1 boundary: " + transform1.getBoundaryMode());
         System.out.println("  - Transform 2 boundary: " + transform2.getBoundaryMode());
         System.out.println("  - Transform 3 boundary: " + transform3.getBoundaryMode());
-        
-        // Demonstrate that parameterless create() throws exception for this factory
-        try {
-            factory.create();
-        } catch (UnsupportedOperationException e) {
-            System.out.println("Parameterless create() correctly throws exception: " + 
-                             e.getMessage().substring(0, 50) + "...");
-        }
     }
     
     private static void demonstrateCWTFactory() {
