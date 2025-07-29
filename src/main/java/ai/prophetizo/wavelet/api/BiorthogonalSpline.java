@@ -39,9 +39,9 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
     public static final BiorthogonalSpline BIOR1_3 = new BiorthogonalSpline(
         "bior1.3", 1, 3,
         // Decomposition low-pass filter
-        new double[]{-0.08838834764831845, 0.08838834764831845, 
+        new double[]{-0.08703882797784893, 0.08703882797784893, 
                      0.7071067811865476, 0.7071067811865476,
-                     0.08838834764831845, -0.08838834764831845},
+                     0.08703882797784893, -0.08703882797784893},
         // Reconstruction low-pass filter  
         new double[]{0.35355339059327373, 0.35355339059327373},
         true

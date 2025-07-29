@@ -60,19 +60,19 @@ class BiorthogonalSplineTest extends BaseWaveletTest {
     @Test
     @DisplayName("Filter orthogonality for biorthogonal wavelets")
     void testFilterOrthogonality() {
-        // For biorthogonal wavelets, we test the perfect reconstruction property
-        // instead of orthogonality. The sum of squares of coefficients should be normalized.
-        double[] lowDecomp = bior1_3.lowPassDecomposition();
+        // For biorthogonal wavelets, the decomposition and reconstruction filters
+        // are not orthogonal to each other, but they satisfy perfect reconstruction.
+        // The sum of squares of reconstruction filters should equal 1.0 (normalized).
         double[] lowRecon = bior1_3.lowPassReconstruction();
         
-        // Test normalization - sum of squares should be specific value
+        // Test normalization of reconstruction filter
         double sumSquares = 0.0;
-        for (double coeff : lowDecomp) {
+        for (double coeff : lowRecon) {
             sumSquares += coeff * coeff;
         }
         
         assertEquals(0.25, sumSquares, 1e-15, 
-            "Sum of squares of decomposition filter coefficients");
+            "Sum of squares of reconstruction filter coefficients");
     }
     
     @Test
