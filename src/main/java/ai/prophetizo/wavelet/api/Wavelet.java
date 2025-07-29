@@ -107,4 +107,69 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
         // For now, return true as placeholder
         return true;
     }
+    
+    /**
+     * Normalizes filter coefficients to have L2 norm = 1.
+     * 
+     * @param coefficients the filter coefficients to normalize
+     * @return normalized coefficients with L2 norm = 1
+     */
+    static double[] normalizeToUnitL2Norm(double[] coefficients) {
+        if (coefficients == null || coefficients.length == 0) {
+            return coefficients;
+        }
+        
+        // Calculate L2 norm (square root of sum of squares)
+        double sumOfSquares = 0.0;
+        for (double coeff : coefficients) {
+            sumOfSquares += coeff * coeff;
+        }
+        
+        if (sumOfSquares == 0.0) {
+            return coefficients; // Avoid division by zero
+        }
+        
+        double norm = Math.sqrt(sumOfSquares);
+        if (Math.abs(norm - 1.0) < 1e-15) {
+            return coefficients.clone(); // Already normalized, return copy
+        }
+        
+        // Normalize coefficients
+        double[] normalized = new double[coefficients.length];
+        for (int i = 0; i < coefficients.length; i++) {
+            normalized[i] = coefficients[i] / norm;
+        }
+        
+        return normalized;
+    }
+    
+    /**
+     * Validates that filter coefficients have L2 norm = 1 within tolerance.
+     * 
+     * @param coefficients the filter coefficients to validate
+     * @param tolerance acceptable deviation from unit norm
+     * @return true if coefficients are normalized
+     */
+    static boolean isNormalized(double[] coefficients, double tolerance) {
+        if (coefficients == null || coefficients.length == 0) {
+            return false;
+        }
+        
+        double sumOfSquares = 0.0;
+        for (double coeff : coefficients) {
+            sumOfSquares += coeff * coeff;
+        }
+        
+        return Math.abs(sumOfSquares - 1.0) <= tolerance;
+    }
+    
+    /**
+     * Validates that filter coefficients have L2 norm = 1 within default tolerance.
+     * 
+     * @param coefficients the filter coefficients to validate
+     * @return true if coefficients are normalized
+     */
+    static boolean isNormalized(double[] coefficients) {
+        return isNormalized(coefficients, 1e-12);
+    }
 }

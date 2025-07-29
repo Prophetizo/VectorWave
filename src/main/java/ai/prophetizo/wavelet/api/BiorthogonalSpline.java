@@ -30,8 +30,9 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
         this.name = name;
         this.reconstructionOrder = reconOrder;
         this.decompositionOrder = decompOrder;
-        this.lowPassDecomp = lowPassDecomp;
-        this.lowPassRecon = lowPassRecon;
+        // Normalize filters to ensure L2 norm = 1
+        this.lowPassDecomp = Wavelet.normalizeToUnitL2Norm(lowPassDecomp);
+        this.lowPassRecon = Wavelet.normalizeToUnitL2Norm(lowPassRecon);
         this.symmetric = symmetric;
     }
     
