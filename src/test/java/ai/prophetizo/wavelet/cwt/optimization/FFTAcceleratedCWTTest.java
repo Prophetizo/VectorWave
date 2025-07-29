@@ -330,4 +330,213 @@ class FFTAcceleratedCWTTest {
             assertEquals(4.0, conjugate.imag);
         }
     }
+    
+    @Nested
+    @DisplayName("Linear Convolution Tests")
+    class LinearConvolutionTests {
+        
+        @Test
+        @DisplayName("Should perform linear convolution without circular artifacts")
+        void convolveLinear_shouldAvoidCircularArtifacts() {
+            // Given - simple test case where circular vs linear gives different results
+            double[] signal = {1.0, 2.0, 3.0, 0.0}; // Note: trailing zero to highlight difference
+            double[] kernel = {0.5, -0.5}; // Simple difference kernel
+            
+            // When
+            double[] result = fft.convolveLinear(signal, kernel);
+            
+            // Then - result should have length signal.length + kernel.length - 1
+            assertEquals(5, result.length, "Linear convolution result should have length N+M-1");
+            
+            // Expected linear convolution result: [0.5, 0.5, 0.5, -1.5, 0.0]
+            double[] expected = {0.5, 0.5, 0.5, -1.5, 0.0};
+            
+            for (int i = 0; i < expected.length; i++) {
+                assertEquals(expected[i], result[i], 1e-12, 
+                    "Linear convolution result at index " + i + " should match expected value");
+            }
+        }
+        
+        @Test
+        @DisplayName("Should handle edge case with unit impulse")
+        void convolveLinear_shouldHandleUnitImpulse() {
+            // Given - unit impulse should return kernel unchanged
+            double[] signal = {1.0, 0.0, 0.0, 0.0};
+            double[] kernel = {1.0, -1.0, 0.5};
+            
+            // When
+            double[] result = fft.convolveLinear(signal, kernel);
+            
+            // Then - first part should be kernel, rest zeros
+            assertEquals(6, result.length, "Result length should be N+M-1");
+            
+            for (int i = 0; i < kernel.length; i++) {
+                assertEquals(kernel[i], result[i], 1e-12, 
+                    "Convolution with unit impulse should preserve kernel at index " + i);
+            }
+            
+            for (int i = kernel.length; i < result.length; i++) {
+                assertEquals(0.0, result[i], 1e-12, 
+                    "Remaining values should be zero at index " + i);
+            }
+        }
+        
+        @Test
+        @DisplayName("Should validate input parameters")
+        void convolveLinear_shouldValidateInputs() {
+            double[] validSignal = {1.0, 2.0};
+            double[] validKernel = {0.5};
+            
+            // Test null signal
+            assertThrows(NullPointerException.class, 
+                () -> fft.convolveLinear(null, validKernel));
+            
+            // Test null kernel
+            assertThrows(NullPointerException.class, 
+                () -> fft.convolveLinear(validSignal, null));
+            
+            // Test empty signal
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveLinear(new double[0], validKernel));
+            
+            // Test empty kernel
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveLinear(validSignal, new double[0]));
+            
+            // Test signal with NaN
+            double[] signalWithNaN = {1.0, Double.NaN};
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveLinear(signalWithNaN, validKernel));
+            
+            // Test kernel with infinity
+            double[] kernelWithInf = {Double.POSITIVE_INFINITY};
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveLinear(validSignal, kernelWithInf));
+        }
+        
+        @Test
+        @DisplayName("Should produce same result as direct convolution for small inputs")
+        void convolveLinear_shouldMatchDirectConvolution() {
+            // Given
+            double[] signal = {1.0, 2.0, 3.0};
+            double[] kernel = {0.5, -0.25};
+            
+            // When - FFT convolution
+            double[] fftResult = fft.convolveLinear(signal, kernel);
+            
+            // When - direct convolution (reference implementation)
+            double[] directResult = directConvolve(signal, kernel);
+            
+            // Then
+            assertEquals(directResult.length, fftResult.length, "Result lengths should match");
+            
+            for (int i = 0; i < directResult.length; i++) {
+                assertEquals(directResult[i], fftResult[i], 1e-12, 
+                    "FFT and direct convolution should match at index " + i);
+            }
+        }
+        
+        private double[] directConvolve(double[] signal, double[] kernel) {
+            int outputLength = signal.length + kernel.length - 1;
+            double[] result = new double[outputLength];
+            
+            for (int n = 0; n < outputLength; n++) {
+                for (int k = 0; k < kernel.length; k++) {
+                    int signalIndex = n - k;
+                    if (signalIndex >= 0 && signalIndex < signal.length) {
+                        result[n] += signal[signalIndex] * kernel[k];
+                    }
+                }
+            }
+            
+            return result;
+        }
+    }
+    
+    @Nested
+    @DisplayName("CWT Convolution Tests")
+    class CWTConvolutionTests {
+        
+        @Test
+        @DisplayName("Should perform CWT convolution with proper scaling")
+        void convolveCWT_shouldApplyProperScaling() {
+            // Given
+            double[] signal = {1.0, 0.0, -1.0, 0.0};
+            double[] wavelet = {1.0, -1.0}; // Simple difference wavelet
+            double scale = 2.0;
+            
+            // When
+            double[] result = fft.convolveCWT(signal, wavelet, scale);
+            
+            // Then - result should be scaled by 1/sqrt(scale)
+            assertEquals(5, result.length, "CWT result should have proper length");
+            
+            double expectedScale = 1.0 / Math.sqrt(scale);
+            assertNotEquals(0.0, result[0], "Result should not be zero");
+            
+            // Verify scaling is applied (compare with unscaled convolution)
+            double[] unscaledWavelet = {wavelet[0] * expectedScale, wavelet[1] * expectedScale};
+            double[] expected = fft.convolveLinear(signal, unscaledWavelet);
+            
+            for (int i = 0; i < expected.length; i++) {
+                assertEquals(expected[i], result[i], 1e-12, 
+                    "CWT result should match scaled linear convolution at index " + i);
+            }
+        }
+        
+        @Test
+        @DisplayName("Should validate CWT parameters")
+        void convolveCWT_shouldValidateParameters() {
+            double[] validSignal = {1.0, 2.0};
+            double[] validWavelet = {0.5};
+            double validScale = 1.0;
+            
+            // Test null signal
+            assertThrows(NullPointerException.class, 
+                () -> fft.convolveCWT(null, validWavelet, validScale));
+            
+            // Test null wavelet
+            assertThrows(NullPointerException.class, 
+                () -> fft.convolveCWT(validSignal, null, validScale));
+            
+            // Test zero scale
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveCWT(validSignal, validWavelet, 0.0));
+            
+            // Test negative scale
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveCWT(validSignal, validWavelet, -1.0));
+            
+            // Test infinite scale
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveCWT(validSignal, validWavelet, Double.POSITIVE_INFINITY));
+            
+            // Test NaN scale
+            assertThrows(IllegalArgumentException.class, 
+                () -> fft.convolveCWT(validSignal, validWavelet, Double.NaN));
+        }
+        
+        @Test
+        @DisplayName("Should handle different scale values correctly")
+        void convolveCWT_shouldHandleDifferentScales() {
+            // Given
+            double[] signal = {1.0, 1.0, 1.0, 1.0};
+            double[] wavelet = {1.0};
+            
+            // When - different scales
+            double[] result1 = fft.convolveCWT(signal, wavelet, 1.0);
+            double[] result4 = fft.convolveCWT(signal, wavelet, 4.0);
+            
+            // Then - larger scale should produce smaller magnitude results
+            assertEquals(result1.length, result4.length, "Results should have same length");
+            
+            // Scale factor should be 1/sqrt(4) = 0.5 relative to scale 1
+            double expectedRatio = 1.0 / Math.sqrt(4.0);
+            
+            for (int i = 0; i < result1.length; i++) {
+                assertEquals(result1[i] * expectedRatio, result4[i], 1e-12, 
+                    "Scale 4 result should be scaled version of scale 1 result at index " + i);
+            }
+        }
+    }
 }

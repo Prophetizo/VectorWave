@@ -1,6 +1,8 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,15 +28,15 @@ class WaveletTransformFactoryTest {
     @Test
     @DisplayName("Create with null wavelet should throw exception")
     void testCreateNullWavelet() {
-        assertThrows(NullPointerException.class,
+        assertThrows(InvalidArgumentException.class,
             () -> factory.create(null));
     }
     
     @Test
     @DisplayName("WithBoundaryMode with null should throw exception")
     void testWithBoundaryModeNull() {
-        assertThrows(NullPointerException.class,
-            () -> factory.withBoundaryMode(null));
+        assertThrows(InvalidArgumentException.class,
+            () -> factory.boundaryMode(null));
     }
     
     // === Factory Method Tests ===
@@ -55,7 +57,7 @@ class WaveletTransformFactoryTest {
     @DisplayName("Create with wavelet after setting boundary mode")
     void testCreateWithBoundaryMode() {
         WaveletTransform transform = factory
-            .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+            .boundaryMode(BoundaryMode.ZERO_PADDING)
             .create(new Haar());
         
         assertNotNull(transform);
@@ -109,7 +111,7 @@ class WaveletTransformFactoryTest {
     @DisplayName("Factory should support PERIODIC boundary mode")
     void testPeriodicBoundaryMode() {
         WaveletTransform transform = factory
-            .withBoundaryMode(BoundaryMode.PERIODIC)
+            .boundaryMode(BoundaryMode.PERIODIC)
             .create(new Haar());
         
         assertNotNull(transform);
@@ -120,7 +122,7 @@ class WaveletTransformFactoryTest {
     @DisplayName("Factory should support ZERO_PADDING boundary mode")
     void testZeroPaddingBoundaryMode() {
         WaveletTransform transform = factory
-            .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+            .boundaryMode(BoundaryMode.ZERO_PADDING)
             .create(new Haar());
         
         assertNotNull(transform);
@@ -130,15 +132,15 @@ class WaveletTransformFactoryTest {
     @Test
     @DisplayName("Factory should reject SYMMETRIC boundary mode")
     void testSymmetricBoundaryMode() {
-        assertThrows(UnsupportedOperationException.class,
-            () -> factory.withBoundaryMode(BoundaryMode.SYMMETRIC).create(new Haar()));
+        assertThrows(InvalidConfigurationException.class,
+            () -> factory.boundaryMode(BoundaryMode.SYMMETRIC).create(new Haar()));
     }
     
     @Test
     @DisplayName("Factory should reject CONSTANT boundary mode")
     void testConstantBoundaryMode() {
-        assertThrows(UnsupportedOperationException.class,
-            () -> factory.withBoundaryMode(BoundaryMode.CONSTANT).create(new Haar()));
+        assertThrows(InvalidConfigurationException.class,
+            () -> factory.boundaryMode(BoundaryMode.CONSTANT).create(new Haar()));
     }
     
     // === Fluent API Tests ===
@@ -147,7 +149,7 @@ class WaveletTransformFactoryTest {
     @DisplayName("Factory should support method chaining")
     void testMethodChaining() {
         WaveletTransform transform = factory
-            .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+            .boundaryMode(BoundaryMode.ZERO_PADDING)
             .create(new Haar());
         
         assertNotNull(transform);
@@ -157,7 +159,7 @@ class WaveletTransformFactoryTest {
     @Test
     @DisplayName("Factory settings should persist across multiple creates")
     void testFactorySettingsPersistence() {
-        factory.withBoundaryMode(BoundaryMode.ZERO_PADDING);
+        factory.boundaryMode(BoundaryMode.ZERO_PADDING);
         
         // Create multiple transforms with same settings
         WaveletTransform transform1 = factory.create(new Haar());
@@ -180,7 +182,7 @@ class WaveletTransformFactoryTest {
         for (Wavelet wavelet : wavelets) {
             for (BoundaryMode mode : supportedModes) {
                 WaveletTransformFactory testFactory = new WaveletTransformFactory()
-                    .withBoundaryMode(mode);
+                    .boundaryMode(mode);
                 
                 WaveletTransform transform = testFactory.create(wavelet);
                 assertNotNull(transform, 
@@ -196,7 +198,7 @@ class WaveletTransformFactoryTest {
     void testFactoryReset() {
         // First factory with specific settings
         WaveletTransformFactory factory1 = new WaveletTransformFactory()
-            .withBoundaryMode(BoundaryMode.ZERO_PADDING);
+            .boundaryMode(BoundaryMode.ZERO_PADDING);
         
         // Second factory should have default settings
         WaveletTransformFactory factory2 = new WaveletTransformFactory();
