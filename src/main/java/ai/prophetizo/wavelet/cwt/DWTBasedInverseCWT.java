@@ -179,11 +179,14 @@ public final class DWTBasedInverseCWT {
             
             if (coarsestAvailable >= 0) {
                 // Use adjusted approximation length based on actual scale
-                int approxLength = Math.max(1, signalLength / (int)maxScale);
+                // Ensure we have a valid divisor by rounding up scales less than 1
+                int scaleDivisor = Math.max(1, (int)Math.round(maxScale));
+                int approxLength = Math.max(1, signalLength / scaleDivisor);
                 double[] approx = new double[approxLength];
                 double[] coarsestCWT = cwtCoeffs[coarsestAvailable];
                 
-                int stride = signalLength / approxLength;
+                // Calculate stride, ensuring it's at least 1
+                int stride = Math.max(1, signalLength / approxLength);
                 for (int i = 0; i < approxLength && i * stride < signalLength; i++) {
                     double sum = 0;
                     int count = 0;

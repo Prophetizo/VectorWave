@@ -347,22 +347,6 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
      * @param centerFreq wavelet center frequency
      * @return adaptive maximum ratio for scale progression
      */
-    /**
-     * Creates a cache key for wavelet characteristics.
-     * 
-     * @param wavelet the wavelet
-     * @param bandwidth wavelet bandwidth
-     * @param centerFreq wavelet center frequency
-     * @return cache key string
-     */
-    private static String createWaveletCacheKey(ContinuousWavelet wavelet, 
-                                              double bandwidth, 
-                                              double centerFreq) {
-        // Include wavelet name and key characteristics in the cache key
-        return String.format("%s_%.6f_%.6f", 
-            wavelet.name().toLowerCase(), bandwidth, centerFreq);
-    }
-    
     private static double calculateAdaptiveRatioCap(ContinuousWavelet wavelet, 
                                                    double bandwidth, 
                                                    double centerFreq) {
@@ -400,6 +384,22 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         
         // Ensure reasonable bounds
         return Math.max(1.5, Math.min(baseCap, 5.0));
+    }
+    
+    /**
+     * Creates a cache key for wavelet characteristics.
+     * 
+     * @param wavelet the wavelet
+     * @param bandwidth wavelet bandwidth
+     * @param centerFreq wavelet center frequency
+     * @return cache key string
+     */
+    private static String createWaveletCacheKey(ContinuousWavelet wavelet, 
+                                              double bandwidth, 
+                                              double centerFreq) {
+        // Include wavelet name and key characteristics in the cache key
+        return String.format("%s_%.6f_%.6f", 
+            wavelet.name().toLowerCase(), bandwidth, centerFreq);
     }
     
     /**
