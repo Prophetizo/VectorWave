@@ -33,7 +33,7 @@ public class ErrorHandlingDemo {
         
         try {
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(new Haar());
             
             transform.forward(invalidSignal);
@@ -54,7 +54,7 @@ public class ErrorHandlingDemo {
         
         try {
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(new Haar());
             
             transform.forward(null);
@@ -79,7 +79,7 @@ public class ErrorHandlingDemo {
         try {
             // Attempt to create transform with null wavelet
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(null);
             
             transform.forward(signal);
@@ -108,7 +108,7 @@ public class ErrorHandlingDemo {
             System.out.println("   ✓ Strategy 1 - Padded signal length: " + paddedSignal.length);
             
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+                    .boundaryMode(BoundaryMode.ZERO_PADDING)
                     .create(new Haar());
             
             var result = transform.forward(paddedSignal);
@@ -126,7 +126,7 @@ public class ErrorHandlingDemo {
             System.out.println("   ✓ Strategy 2 - Truncated signal length: " + truncatedSignal.length);
             
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(new Haar());
             
             var result = transform.forward(truncatedSignal);

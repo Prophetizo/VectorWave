@@ -51,7 +51,7 @@ public class OptimizationDemo {
         for (Wavelet wavelet : wavelets) {
             try {
                 WaveletTransform transform = new WaveletTransformFactory()
-                        .withBoundaryMode(BoundaryMode.PERIODIC)
+                        .boundaryMode(BoundaryMode.PERIODIC)
                         .create(wavelet);
                 
                 long startTime = System.nanoTime();
@@ -96,7 +96,7 @@ public class OptimizationDemo {
         for (BoundaryMode mode : modes) {
             try {
                 WaveletTransform transform = new WaveletTransformFactory()
-                        .withBoundaryMode(mode)
+                        .boundaryMode(mode)
                         .create(wavelet);
                 
                 long startTime = System.nanoTime();
@@ -132,7 +132,7 @@ public class OptimizationDemo {
         
         try {
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(Daubechies.DB2); // Smaller filter = less memory
             
             // Perform multiple transforms to see memory pattern
@@ -182,7 +182,7 @@ public class OptimizationDemo {
                 
                 try {
                     WaveletTransform transform = new WaveletTransformFactory()
-                            .withBoundaryMode(BoundaryMode.PERIODIC)
+                            .boundaryMode(BoundaryMode.PERIODIC)
                             .create(wavelet);
                     
                     // Warm up JVM
@@ -225,7 +225,7 @@ public class OptimizationDemo {
         
         try {
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(wavelet);
             
             int batchSize = 100;

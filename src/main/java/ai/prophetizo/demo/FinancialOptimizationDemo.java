@@ -41,7 +41,7 @@ public class FinancialOptimizationDemo {
         try {
             // Use Daubechies DB4 for better frequency localization
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(Daubechies.DB4);
             
             TransformResult result = transform.forward(noisyPrices);
@@ -82,7 +82,7 @@ public class FinancialOptimizationDemo {
         try {
             // Use Symlet for balanced time-frequency localization
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.PERIODIC)
+                    .boundaryMode(BoundaryMode.PERIODIC)
                     .create(Symlet.SYM2);
             
             TransformResult result = transform.forward(prices);
@@ -119,7 +119,7 @@ public class FinancialOptimizationDemo {
         try {
             // Use Coiflet for volatility analysis
             WaveletTransform transform = new WaveletTransformFactory()
-                    .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+                    .boundaryMode(BoundaryMode.ZERO_PADDING)
                     .create(Coiflet.COIF1);
             
             TransformResult result = transform.forward(returns);
@@ -157,7 +157,7 @@ public class FinancialOptimizationDemo {
         for (Wavelet wavelet : wavelets) {
             try {
                 WaveletTransform transform = new WaveletTransformFactory()
-                        .withBoundaryMode(BoundaryMode.PERIODIC)
+                        .boundaryMode(BoundaryMode.PERIODIC)
                         .create(wavelet);
                 
                 TransformResult result = transform.forward(prices);
