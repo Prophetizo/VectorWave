@@ -245,7 +245,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         
         // Verify energy is preserved
         WaveletAssertions.assertEnergyPreserved(
-            signal, result, WaveletTestUtils.ENERGY_TOLERANCE);
+            signal, result, ToleranceConstants.ENERGY_TOLERANCE);
         
         // Verify perfect reconstruction
         double[] reconstructed = transform.inverse(result);
