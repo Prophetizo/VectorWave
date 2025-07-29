@@ -49,17 +49,4 @@ public sealed interface TransformResult permits TransformResultImpl, PaddedTrans
      * @return the detail coefficients (cD)
      */
     double[] detailCoeffs();
-    
-    /**
-     * Factory method to create a TransformResult instance.
-     * This method is intended for advanced users who need to construct
-     * TransformResult instances manually for custom processing.
-     * 
-     * @param approximationCoeffs the approximation coefficients (must not be null/empty)
-     * @param detailCoeffs the detail coefficients (must not be null/empty, must match approximation length)
-     * @return a new TransformResult instance
-     */
-    static TransformResult create(double[] approximationCoeffs, double[] detailCoeffs) {
-        return new TransformResultImpl(approximationCoeffs, detailCoeffs);
-    }
 }

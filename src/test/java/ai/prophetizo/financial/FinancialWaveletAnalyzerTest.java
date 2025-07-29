@@ -52,7 +52,7 @@ class FinancialWaveletAnalyzerTest {
     void testConstructorWithConfigAndTransform() {
         FinancialConfig config = new FinancialConfig(0.025);
         var transform = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC)
+                .boundaryMode(BoundaryMode.PERIODIC)
                 .create(Daubechies.DB2);
         
         FinancialWaveletAnalyzer customAnalyzer = new FinancialWaveletAnalyzer(config, transform);

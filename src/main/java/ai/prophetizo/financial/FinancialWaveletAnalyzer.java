@@ -35,7 +35,7 @@ public class FinancialWaveletAnalyzer {
         }
         this.config = config;
         this.transform = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC)
+                .boundaryMode(BoundaryMode.PERIODIC)
                 .create(new Haar());
     }
     
