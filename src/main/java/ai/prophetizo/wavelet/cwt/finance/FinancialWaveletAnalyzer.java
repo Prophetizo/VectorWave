@@ -348,9 +348,9 @@ public class FinancialWaveletAnalyzer {
         MarketRegime currentRegime = MarketRegime.RANGING;
         
         // Note: volatility.instantaneousVolatility has length priceData.length - 1
-        // Loop goes up to priceData.length - 1 (exclusive), so max i = priceData.length - 2
-        // This correctly accesses the last element of instantaneousVolatility array
-        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < priceData.length - 1; i++) {
+        // Use explicit bounds check to ensure we never exceed array limits
+        int maxIndex = Math.min(priceData.length - 1, volatility.instantaneousVolatility.length);
+        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < maxIndex; i++) {
             MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[i]);
             if (newRegime != currentRegime) {
                 regimeChanges.add(i);
@@ -414,8 +414,10 @@ public class FinancialWaveletAnalyzer {
         
         // Generate signals based on combined analysis
         // Ensure we don't exceed volatility array bounds (length = priceData.length - 1)
-        int maxIndex = Math.min(priceData.length - CRASH_PREDICTION_FORWARD_WINDOW, 
-                               volatility.instantaneousVolatility.length);
+        // and handle cases where priceData is too short for forward-looking predictions
+        // Math.max(0, ...) prevents negative indices when priceData.length < CRASH_PREDICTION_FORWARD_WINDOW
+        int maxIndex = Math.max(0, Math.min(priceData.length - CRASH_PREDICTION_FORWARD_WINDOW, 
+                                           volatility.instantaneousVolatility.length));
         for (int i = SIGNAL_GENERATION_MIN_HISTORY; i < maxIndex; i++) {
             // Sell signal before potential crash
             if (crashes.crashProbabilities.containsKey(i + CRASH_PREDICTION_FORWARD_WINDOW)) {

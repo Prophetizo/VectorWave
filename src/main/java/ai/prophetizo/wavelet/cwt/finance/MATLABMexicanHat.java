@@ -58,7 +58,14 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
     private static final String NAME = "mexihat";
     
     // MATLAB-specific constants (pre-calculated for performance)
+    // MATLAB_SIGMA = 5/(2√2) = 5/√8 ≈ 1.7678
+    // Mathematical derivation: This scaling factor ensures zeros at ±√5 instead of ±√2
+    // MATLAB uses this wider support for better time-frequency localization in practical applications
+    // Note: Standard mexh uses σ = 1, but MATLAB's choice provides better frequency resolution
     private static final double MATLAB_SIGMA = 5.0 / Math.sqrt(8.0);  // ≈ 1.7678
+    
+    // MATLAB normalization factor: 2/(√3 * π^(1/4)) ≈ 0.8673
+    // This ensures the wavelet has unit energy and proper admissibility
     private static final double MATLAB_NORMALIZATION = 0.8673250706;
     
     // MATLAB mexihat exact values at key points
@@ -90,6 +97,19 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
     // Array length as compile-time constant for hot path optimization
     // Since MATLAB_VALUES is a compile-time constant array, this is also a compile-time constant
     private static final int MATLAB_VALUES_LENGTH = MATLAB_VALUES.length;
+    
+    // Verify mathematical relationships (for documentation purposes)
+    static {
+        // Verify that MATLAB_SIGMA = 5/(2√2) = 5/√8
+        double expectedSigma = 5.0 / (2.0 * Math.sqrt(2.0));
+        assert Math.abs(MATLAB_SIGMA - expectedSigma) < 1e-10 : 
+            "MATLAB_SIGMA calculation error";
+        
+        // Verify normalization factor approximation: 2/(√3 * π^(1/4))
+        double expectedNorm = 2.0 / (Math.sqrt(3.0) * Math.pow(Math.PI, 0.25));
+        assert Math.abs(MATLAB_NORMALIZATION - expectedNorm) < 1e-6 :
+            "MATLAB_NORMALIZATION does not match 2/(√3 * π^(1/4))";
+    }
     
     @Override
     public String name() {

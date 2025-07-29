@@ -158,4 +158,76 @@ This document summarizes all the code improvements made based on Copilot feedbac
   - Clear examples show how to calculate scales for specific frequency ranges
   - Mathematical formulas help users understand the underlying theory
 
+## 12. FinancialWaveletAnalyzer Array Bounds Safety
+
+### Defensive Array Bounds Check
+- **Issue**: Loop accessing volatility array could have off-by-one error risk
+- **Fix**: 
+  - Changed from implicit bounds to explicit `Math.min()` check
+  - Ensures loop never exceeds `instantaneousVolatility` array bounds
+  - More defensive and clearer about array length constraints
+- **Line**: 368
+
+### Negative Index Prevention
+- **Issue**: `priceData.length - CRASH_PREDICTION_FORWARD_WINDOW` could be negative for short data
+- **Fix**: 
+  - Added `Math.max(0, ...)` wrapper to prevent negative indices
+  - Ensures loop bounds are always non-negative
+  - Added explanatory comment about the safety check
+- **Lines**: 428-430
+
+## 13. SignalAdaptiveScaleSelector Magic Numbers
+
+### Extract Magic Numbers to Constants
+- **Issue**: Hardcoded values (1.0, 100.0, 32) for default scale parameters
+- **Fix**: 
+  - Created named constants with descriptive names
+  - Added documentation explaining the purpose of each value
+  - Makes the code more maintainable and self-documenting
+- **New Constants**:
+  - `ZERO_SIGNAL_MIN_SCALE = 1.0` - Covers high frequencies up to Nyquist
+  - `ZERO_SIGNAL_MAX_SCALE = 100.0` - Covers low frequencies down to ~1% of sampling rate
+  - `ZERO_SIGNAL_NUM_SCALES = 32` - Sufficient resolution for most applications
+- **Lines**: 32-35, 75-79
+
+## 14. OptimalScaleSelector MEL_SCALE_FACTOR Documentation
+
+### Corrected Misleading Comment
+- **Issue**: Comment incorrectly stated MEL_SCALE_FACTOR was "ln(1+f/700)"
+- **Fix**: 
+  - Updated comment to clarify it's the coefficient in the mel scale formula
+  - New comment: "Coefficient in mel scale formula: mel = 1127.01048 * ln(1 + f/700)"
+  - Accurately reflects the constant's role in the conversion
+- **Line**: 27
+
+## 15. InverseCWT calculateLogScaleWeights Documentation
+
+### Enhanced Documentation for Empty Array Return
+- **Issue**: Method returns empty array for empty ranges without clear documentation
+- **Fix**: 
+  - Added detailed javadoc explaining the empty array return behavior
+  - Clarified that this is safe because callers use the same bounds
+  - Added bounds validation to throw exception for invalid indices
+  - Reordered checks to validate bounds before checking empty range
+- **Improvements**:
+  - More explicit about the method's contract
+  - Better error messages for invalid inputs
+  - Maintains backward compatibility while being more robust
+- **Lines**: 534-556
+
+## 16. MATLABMexicanHat Mathematical Documentation
+
+### MATLAB_SIGMA Constant Mathematical Derivation
+- **Issue**: Magic number should be documented with its mathematical derivation
+- **Fix**: 
+  - Added comprehensive mathematical documentation explaining MATLAB_SIGMA = 5/(2√2) = 5/√8
+  - Explained why MATLAB uses this specific scaling (zeros at ±√5 instead of ±√2)
+  - Added assertions to verify the mathematical relationships
+  - Documented the practical implications for time-frequency localization
+- **Improvements**:
+  - Users understand the mathematical basis for MATLAB's parameterization
+  - Clear explanation of how this affects wavelet support and frequency resolution
+  - Verifiable mathematical relationships in code
+- **Lines**: 61-65, 103-112
+
 All changes maintain backward compatibility except where explicitly noted (OptimalScaleSelector).

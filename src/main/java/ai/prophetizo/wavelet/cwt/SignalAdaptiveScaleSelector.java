@@ -28,6 +28,12 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
     private static final int DEFAULT_SPECTRAL_ANALYSIS_SIZE = 1024;
     private static final double DEFAULT_SCALE_DENSITY_FACTOR = 1.5;
     
+    // Default scale parameters for zero signals
+    // These provide reasonable coverage for typical signal analysis scenarios
+    private static final double ZERO_SIGNAL_MIN_SCALE = 1.0;    // Covers high frequencies up to Nyquist
+    private static final double ZERO_SIGNAL_MAX_SCALE = 100.0;  // Covers low frequencies down to ~1% of sampling rate
+    private static final int ZERO_SIGNAL_NUM_SCALES = 32;       // Sufficient resolution for most applications
+    
     @Override
     public double[] selectScales(double[] signal, ContinuousWavelet wavelet, double samplingRate) {
         if (samplingRate <= 0) {
@@ -61,7 +67,11 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         
         if (isZeroSignal) {
             // For zero signal, return default logarithmic scales
-            return ScaleSpace.logarithmic(1.0, 100.0, Math.min(32, config.getMaxScales())).getScales();
+            return ScaleSpace.logarithmic(
+                ZERO_SIGNAL_MIN_SCALE, 
+                ZERO_SIGNAL_MAX_SCALE, 
+                Math.min(ZERO_SIGNAL_NUM_SCALES, config.getMaxScales())
+            ).getScales();
         }
         
         // Analyze signal characteristics
