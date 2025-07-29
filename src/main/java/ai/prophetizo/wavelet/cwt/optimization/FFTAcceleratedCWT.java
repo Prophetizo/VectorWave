@@ -390,8 +390,10 @@ public final class FFTAcceleratedCWT {
         double normalization = 1.0 / Math.sqrt(scale);
         
         for (int i = 0; i < wavelet.length; i++) {
-            // For real wavelets, conjugate is just the original value
-            // For complex wavelets, this would need modification
+            // Apply complex conjugate and scaling
+            // Real wavelets: conjugate(a + 0i) = a - 0i = a (no change)
+            // Complex wavelets would require: conjugate(a + bi) = a - bi
+            // Current implementation assumes real-valued wavelets only
             scaledWavelet[i] = wavelet[i] * normalization;
         }
         
