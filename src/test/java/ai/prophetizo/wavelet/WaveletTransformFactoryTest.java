@@ -213,6 +213,24 @@ class WaveletTransformFactoryTest {
         verifyTransformWorks(transform2);
     }
     
+    @Test
+    @DisplayName("Factory create() should return Haar wavelet transform")
+    void createWithoutParameterShouldReturnHaarTransform() {
+        WaveletTransformFactory factory = new WaveletTransformFactory();
+        
+        // Call parameterless create() method (Factory interface method)
+        WaveletTransform transform = factory.create();
+        
+        assertNotNull(transform, "Transform should not be null");
+        assertTrue(transform.getWavelet() instanceof Haar, 
+            "Default wavelet should be Haar");
+        assertEquals(BoundaryMode.PERIODIC, transform.getBoundaryMode(),
+            "Should use factory's boundary mode");
+        
+        // Verify it works
+        verifyTransformWorks(transform);
+    }
+    
     // === Helper Methods ===
     
     private void verifyTransformWorks(WaveletTransform transform) {

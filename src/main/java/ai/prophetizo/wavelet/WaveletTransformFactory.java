@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.util.NullChecks;
 
 /**
@@ -79,19 +80,15 @@ public class WaveletTransformFactory implements Factory<WaveletTransform> {
     /**
      * Creates a WaveletTransform instance using default configuration.
      * 
-     * <p>This method implements the Factory interface contract but requires
-     * a wavelet parameter for meaningful creation. Since no default wavelet
-     * is appropriate for all use cases, this method throws an exception.</p>
+     * <p>This method creates a transform using the Haar wavelet, which is
+     * the simplest and most commonly used wavelet for basic applications.
+     * For specific wavelet requirements, use {@link #create(Wavelet)} instead.</p>
      * 
-     * <p>Use {@link #create(Wavelet)} or {@link #createDefault(Wavelet)} instead.</p>
-     * 
-     * @throws UnsupportedOperationException always, as wavelet parameter is required
+     * @return a WaveletTransform configured with Haar wavelet and current boundary mode
      */
     @Override
     public WaveletTransform create() {
-        throw new UnsupportedOperationException(
-            "WaveletTransformFactory requires a wavelet parameter. " +
-            "Use create(Wavelet) or createDefault(Wavelet) instead.");
+        return create(new Haar());
     }
 
     /**
