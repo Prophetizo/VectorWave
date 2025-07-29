@@ -38,15 +38,4 @@ class ToleranceConstantsTest {
         assertTrue(explanation.contains("Custom tolerance value: 0.123"));
     }
 
-    @Test
-    @DisplayName("Should maintain backward compatibility with WaveletTestUtils")
-    void testBackwardCompatibility() {
-        // Verify that deprecated constants in WaveletTestUtils still work
-        assertEquals(ToleranceConstants.DEFAULT_TOLERANCE, 
-                    ai.prophetizo.wavelet.test.WaveletTestUtils.DEFAULT_TOLERANCE);
-        assertEquals(ToleranceConstants.ENERGY_TOLERANCE, 
-                    ai.prophetizo.wavelet.test.WaveletTestUtils.ENERGY_TOLERANCE);
-        assertEquals(ToleranceConstants.ORTHOGONALITY_TOLERANCE, 
-                    ai.prophetizo.wavelet.test.WaveletTestUtils.ORTHOGONALITY_TOLERANCE);
-    }
 }

@@ -66,12 +66,12 @@ class HaarWaveletTest extends BaseWaveletTest {
     void testFilterNormalization() {
         WaveletAssertions.assertFilterNormalized(
             haar.lowPassDecomposition(), 
-            WaveletTestUtils.ORTHOGONALITY_TOLERANCE,
+            ToleranceConstants.ORTHOGONALITY_TOLERANCE,
             "Haar low-pass");
         
         WaveletAssertions.assertFilterNormalized(
             haar.highPassDecomposition(),
-            WaveletTestUtils.ORTHOGONALITY_TOLERANCE,
+            ToleranceConstants.ORTHOGONALITY_TOLERANCE,
             "Haar high-pass");
     }
     
@@ -81,7 +81,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         WaveletAssertions.assertFiltersOrthogonal(
             haar.lowPassDecomposition(),
             haar.highPassDecomposition(),
-            WaveletTestUtils.ORTHOGONALITY_TOLERANCE);
+            ToleranceConstants.ORTHOGONALITY_TOLERANCE);
     }
     
     @Test

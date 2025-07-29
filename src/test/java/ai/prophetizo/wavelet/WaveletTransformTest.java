@@ -150,7 +150,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     @Test
@@ -229,7 +229,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     @Test

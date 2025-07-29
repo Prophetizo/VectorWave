@@ -20,29 +20,6 @@ import java.util.Random;
  */
 public final class WaveletTestUtils {
     
-    /**
-     * Default tolerance for floating-point comparisons.
-     * @deprecated Use {@link ToleranceConstants#DEFAULT_TOLERANCE} instead.
-     * This constant is maintained for backward compatibility but will be removed in future versions.
-     */
-    @Deprecated
-    public static final double DEFAULT_TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
-    
-    /**
-     * Tolerance for energy preservation checks.
-     * @deprecated Use {@link ToleranceConstants#ENERGY_TOLERANCE} instead.
-     * This constant is maintained for backward compatibility but will be removed in future versions.
-     */
-    @Deprecated
-    public static final double ENERGY_TOLERANCE = ToleranceConstants.ENERGY_TOLERANCE;
-    
-    /**
-     * Tolerance for orthogonality checks in wavelet filters.
-     * @deprecated Use {@link ToleranceConstants#ORTHOGONALITY_TOLERANCE} instead.
-     * This constant is maintained for backward compatibility but will be removed in future versions.
-     */
-    @Deprecated
-    public static final double ORTHOGONALITY_TOLERANCE = ToleranceConstants.ORTHOGONALITY_TOLERANCE;
     
     private WaveletTestUtils() {
         // Utility class, prevent instantiation

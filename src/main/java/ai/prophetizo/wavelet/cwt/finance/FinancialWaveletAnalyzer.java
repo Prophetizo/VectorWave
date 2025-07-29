@@ -295,22 +295,6 @@ public class FinancialWaveletAnalyzer {
         return new CyclicalAnalysisResult(dominantCycles, spectralDensity, periodogram);
     }
     
-    /**
-     * Performs comprehensive market analysis combining all wavelets.
-     * 
-     * @deprecated Use {@link #analyzeMarket(MarketAnalysisRequest)} instead for better API design
-     */
-    @Deprecated(since = "1.4", forRemoval = true)
-    public MarketAnalysisResult analyzeMarket(double[] priceData, double[] volumeData, 
-                                            double samplingRate) {
-        // Delegate to the new method using request object
-        MarketAnalysisRequest request = MarketAnalysisRequest.builder()
-            .priceData(priceData)
-            .volumeData(volumeData)
-            .samplingRate(samplingRate)
-            .build();
-        return analyzeMarket(request);
-    }
     
     /**
      * Performs comprehensive market analysis combining all wavelets.
@@ -403,7 +387,13 @@ public class FinancialWaveletAnalyzer {
         }
         
         // Calculate risk metrics
-        int riskIndex = Math.min(priceData.length - 1, volatility.instantaneousVolatility.length - 1);
+        // Volatility array has length priceData.length - 1 (based on returns)
+        // Use the last available volatility data point for current risk assessment
+        int riskIndex = volatility.instantaneousVolatility.length - 1;
+        if (riskIndex < 0) {
+            // Handle edge case where volatility data is empty
+            throw new IllegalStateException("Cannot calculate risk metrics: volatility data is empty");
+        }
         double currentRiskLevel = calculateRiskLevel(volatility, crashes, riskIndex);
         double maxDrawdown = calculateMaxDrawdown(priceData);
         

@@ -50,7 +50,7 @@ public final class WaveletAssertions {
                                                      double[] actual,
                                                      String message) {
         assertArraysEqualWithTolerance(expected, actual, 
-            WaveletTestUtils.DEFAULT_TOLERANCE, message);
+            ToleranceConstants.DEFAULT_TOLERANCE, message);
     }
     
     /**

@@ -109,12 +109,12 @@ class TestFrameworkVerificationTest extends BaseWaveletTest {
         
         // Test energy preservation
         WaveletAssertions.assertEnergyPreserved(
-            signal, result, WaveletTestUtils.ENERGY_TOLERANCE);
+            signal, result, ToleranceConstants.ENERGY_TOLERANCE);
         
         // Test reconstruction
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     @Test
