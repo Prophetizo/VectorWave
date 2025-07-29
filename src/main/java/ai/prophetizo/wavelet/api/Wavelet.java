@@ -125,8 +125,13 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
     /**
      * Normalizes filter coefficients to have L2 norm = 1.
      * 
+     * <p>This method always returns a new array unless the input is null or empty.
+     * Even if the coefficients are already normalized, a defensive copy is returned
+     * to ensure the original array cannot be modified by the caller.</p>
+     * 
      * @param coefficients the filter coefficients to normalize
-     * @return normalized coefficients with L2 norm = 1
+     * @return a new array containing normalized coefficients with L2 norm = 1,
+     *         or the original array if null or empty
      */
     static double[] normalizeToUnitL2Norm(double[] coefficients) {
         if (coefficients == null || coefficients.length == 0) {
@@ -144,7 +149,7 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
         }
         
         double norm = Math.sqrt(sumOfSquares);
-        if (Math.abs(norm - 1.0) < NORMALIZATION_CHECK_TOLERANCE) {
+        if (isAlreadyUnitNormalized(norm)) {
             return coefficients.clone(); // Already normalized, return copy
         }
         
@@ -185,5 +190,17 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
      */
     static boolean isNormalized(double[] coefficients) {
         return isNormalized(coefficients, DEFAULT_NORMALIZATION_TOLERANCE);
+    }
+    
+    /**
+     * Checks if a given L2 norm is already sufficiently close to unit norm.
+     * This is used to avoid unnecessary normalization operations when the
+     * coefficients are already normalized within acceptable tolerance.
+     * 
+     * @param norm the L2 norm to check
+     * @return true if the norm is within NORMALIZATION_CHECK_TOLERANCE of 1.0
+     */
+    private static boolean isAlreadyUnitNormalized(double norm) {
+        return Math.abs(norm - 1.0) < NORMALIZATION_CHECK_TOLERANCE;
     }
 }
