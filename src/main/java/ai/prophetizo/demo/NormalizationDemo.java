@@ -3,6 +3,7 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 
 /**
  * Demo showing consistent wavelet normalization across all types.

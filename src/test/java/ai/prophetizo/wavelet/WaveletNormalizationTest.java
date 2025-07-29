@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
