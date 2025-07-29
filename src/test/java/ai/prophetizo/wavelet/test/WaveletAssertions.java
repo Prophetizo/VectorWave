@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.test;
 
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,7 +51,7 @@ public final class WaveletAssertions {
                                                      double[] actual,
                                                      String message) {
         assertArraysEqualWithTolerance(expected, actual, 
-            WaveletTestUtils.DEFAULT_TOLERANCE, message);
+            ToleranceConstants.DEFAULT_TOLERANCE, message);
     }
     
     /**

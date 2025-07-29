@@ -61,7 +61,7 @@ public class WaveletTypeBenchmark {
         
         // Create factory with consistent settings
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         
         // Initialize all wavelet transforms
         haarTransform = factory.create(new Haar());
