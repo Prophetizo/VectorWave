@@ -46,6 +46,13 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
     double NORMALIZATION_CHECK_TOLERANCE = 1e-15;
     
     /**
+     * Default tolerance for validating filter normalization.
+     * This is less strict than NORMALIZATION_CHECK_TOLERANCE to account
+     * for accumulated floating-point errors in filter computations.
+     */
+    double DEFAULT_NORMALIZATION_TOLERANCE = 1e-12;
+    
+    /**
      * Returns the name of the wavelet (e.g., "Haar", "db4", "morl").
      * This should be a unique identifier for the wavelet.
      *
@@ -177,6 +184,6 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
      * @return true if coefficients are normalized
      */
     static boolean isNormalized(double[] coefficients) {
-        return isNormalized(coefficients, 1e-12);
+        return isNormalized(coefficients, DEFAULT_NORMALIZATION_TOLERANCE);
     }
 }
