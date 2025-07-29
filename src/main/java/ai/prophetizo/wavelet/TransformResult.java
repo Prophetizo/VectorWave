@@ -1,9 +1,5 @@
 package ai.prophetizo.wavelet;
 
-import ai.prophetizo.wavelet.util.ValidationUtils;
-
-import java.util.Arrays;
-
 /**
  * Represents the result of a single-level forward wavelet transform.
  * It cleanly separates the approximation (low-frequency) and detail (high-frequency) coefficients.
@@ -24,7 +20,21 @@ import java.util.Arrays;
  * <p>For debugging, enable full validation with:
  * {@code -Dai.prophetizo.wavelet.fullValidation=true}</p>
  */
-public sealed interface TransformResult permits TransformResultImpl {
+public sealed interface TransformResult permits TransformResultImpl, PaddedTransformResult {
+
+    /**
+     * Creates a new TransformResult with modified coefficients.
+     * This factory method is the recommended way to create modified transform results
+     * for operations like thresholding or denoising.
+     *
+     * @param approximationCoeffs the approximation coefficients
+     * @param detailCoeffs        the detail coefficients
+     * @return a new TransformResult
+     * @throws IllegalArgumentException if coefficients are invalid
+     */
+    static TransformResult create(double[] approximationCoeffs, double[] detailCoeffs) {
+        return new TransformResultImpl(approximationCoeffs, detailCoeffs);
+    }
 
     /**
      * Returns a defensive copy of the approximation coefficients.
@@ -51,93 +61,5 @@ public sealed interface TransformResult permits TransformResultImpl {
      */
     static TransformResult create(double[] approximationCoeffs, double[] detailCoeffs) {
         return new TransformResultImpl(approximationCoeffs, detailCoeffs);
-    }
-}
-
-/**
- * Package-private implementation of TransformResult.
- * This class can only be instantiated within the wavelet package.
- */
-final class TransformResultImpl implements TransformResult {
-    // System property to enable full validation in production
-    // System property name for enabling full validation
-    private static final String FULL_VALIDATION_PROPERTY = "ai.prophetizo.wavelet.fullValidation";
-
-    private static final boolean FULL_VALIDATION =
-            Boolean.getBoolean(FULL_VALIDATION_PROPERTY);
-
-    private final double[] approximationCoeffs;
-    private final double[] detailCoeffs;
-
-    /**
-     * Package-private constructor that validates and defensively copies the coefficient arrays.
-     *
-     * <p>Since this constructor is only called by internal transform operations that have
-     * already validated the input signal, we use assertions for internal consistency checks
-     * rather than full validation. This improves performance while maintaining safety.</p>
-     *
-     * <p>Enable assertions with -ea JVM flag during development/testing to verify invariants.
-     * Alternatively, set system property -Dai.prophetizo.wavelet.fullValidation=true to
-     * enable full validation in production for debugging purposes.</p>
-     *
-     * @param approximationCoeffs the approximation coefficients (must not be null/empty)
-     * @param detailCoeffs        the detail coefficients (must not be null/empty)
-     */
-    TransformResultImpl(double[] approximationCoeffs, double[] detailCoeffs) {
-        if (FULL_VALIDATION) {
-            // Full validation mode for debugging
-            ValidationUtils.validateNotNullOrEmpty(approximationCoeffs, "approximationCoeffs");
-            ValidationUtils.validateNotNullOrEmpty(detailCoeffs, "detailCoeffs");
-            ValidationUtils.validateMatchingLengths(approximationCoeffs, detailCoeffs);
-            ValidationUtils.validateFiniteValues(approximationCoeffs, "approximationCoeffs");
-            ValidationUtils.validateFiniteValues(detailCoeffs, "detailCoeffs");
-        } else {
-            // Use assertions for internal consistency checks
-            assert approximationCoeffs != null : "approximationCoeffs cannot be null.";
-            assert detailCoeffs != null : "detailCoeffs cannot be null.";
-            assert approximationCoeffs.length > 0 : "approximationCoeffs cannot be empty.";
-            assert detailCoeffs.length > 0 : "detailCoeffs cannot be empty.";
-            assert approximationCoeffs.length == detailCoeffs.length :
-                    "Coefficient arrays must have matching lengths.";
-
-            // In debug mode, verify finite values
-            assert areAllFinite(approximationCoeffs) : "approximationCoeffs contains non-finite values.";
-            assert areAllFinite(detailCoeffs) : "detailCoeffs contains non-finite values.";
-        }
-
-        // Make defensive copies to ensure immutability
-        this.approximationCoeffs = approximationCoeffs.clone();
-        this.detailCoeffs = detailCoeffs.clone();
-    }
-
-    /**
-     * Helper method for assertion to check if all values are finite.
-     * Only executed when assertions are enabled.
-     */
-    private static boolean areAllFinite(double[] values) {
-        for (double v : values) {
-            if (!Double.isFinite(v)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public double[] approximationCoeffs() {
-        return approximationCoeffs.clone();
-    }
-
-    @Override
-    public double[] detailCoeffs() {
-        return detailCoeffs.clone();
-    }
-
-    @Override
-    public String toString() {
-        return "TransformResult{" +
-                "\n  Approximation (cA) = " + Arrays.toString(approximationCoeffs) +
-                "\n  Detail (cD)        = " + Arrays.toString(detailCoeffs) +
-                "\n}";
     }
 }
