@@ -57,13 +57,7 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
         }
         
         // Early check for zero signal to avoid expensive analysis
-        boolean isZeroSignal = true;
-        for (double value : signal) {
-            if (value != 0.0) {
-                isZeroSignal = false;
-                break;
-            }
-        }
+        boolean isZeroSignal = Arrays.stream(signal).noneMatch(value -> value != 0.0);
         
         if (isZeroSignal) {
             // For zero signal, return default logarithmic scales
