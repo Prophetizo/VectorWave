@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OptimalScaleSelector implements AdaptiveScaleSelector {
     
     private static final double GOLDEN_RATIO = (1.0 + Math.sqrt(5.0)) / 2.0;
-    private static final double MEL_SCALE_FACTOR = 1127.01048; // ln(1+f/700)
+    private static final double MEL_SCALE_FACTOR = 1127.01048; // Coefficient in mel scale formula: mel = 1127.01048 * ln(1 + f/700)
     private static final int DEFAULT_MAX_SCALES = 200; // Default maximum number of scales
     
     // Cache for adaptive ratio caps based on wavelet characteristics
