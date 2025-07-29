@@ -1,209 +1,217 @@
 # VectorWave
 
-A comprehensive Fast Wavelet Transform (FWT) library for Java with support for multiple wavelet families and a clean, extensible architecture.
+High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehensive wavelet family support and SIMD optimizations.
 
 ## Features
 
-- **Multiple Wavelet Families**: 
-  - Orthogonal: Haar, Daubechies (DB2, DB4), Symlets, Coiflets
-  - Biorthogonal: Biorthogonal Spline wavelets
-  - Continuous: Morlet wavelet (with discretization support)
-- **Type-Safe API**: Sealed interface hierarchy ensures compile-time wavelet validation
-- **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
-- **Zero Dependencies**: Pure Java implementation with no external dependencies
-- **Boundary Modes**: Supports periodic and zero-padding boundary handling
-- **Performance**: Optimized scalar implementation with comprehensive benchmarking
+### Core Capabilities
+- **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
+- **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
+- **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
+- **Financial Wavelets**: Specialized wavelets for market analysis
+  - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
+  - Shannon wavelet: Band-limited analysis
+  - DOG wavelets: Gaussian derivatives for smooth features
+  - MATLAB-compatible Mexican Hat: Legacy system integration
+- **Type-Safe API**: Sealed interfaces with compile-time validation
+- **Zero Dependencies**: Pure Java implementation
+- **Flexible Boundary Handling**: Periodic, Zero, Symmetric, and Reflect padding modes
 
-## Requirements
+### Performance
+- **SIMD Optimizations**: Platform-specific Vector API support (x86 AVX2/AVX512, ARM NEON, Apple Silicon)
+- **FFT Acceleration**: O(n log n) convolution for CWT using Cooley-Tukey FFT algorithm
+- **Cache-Aware Operations**: Platform-adaptive cache configuration (auto-detects Apple Silicon vs x86)
+- **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
+- **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
+- **Parallel Processing**: Fork-join framework for batch operations
 
-- Java 21 or higher
-- Maven 3.6+
+### Advanced Features
+- **Denoising**: Universal, SURE, and Minimax threshold methods
+- **Streaming Support**: Real-time processing with Java Flow API
+  - Fast mode: < 1 µs/sample latency
+  - Quality mode: Enhanced SNR with overlap
+- **Multi-level Transforms**: Configurable decomposition levels
+- **Complex Wavelet Analysis**: Full magnitude and phase information
+  - Complex coefficient computation
+  - Instantaneous frequency extraction
+  - Phase synchronization analysis
+- **Adaptive Scale Selection**: Automatic scale optimization
+  - Signal-adaptive placement based on energy distribution
+  - Multiple spacing strategies (dyadic, logarithmic, mel-scale)
+  - Real-time adaptation with sub-millisecond overhead
+- **DWT-Based CWT Reconstruction**: Fast and stable reconstruction method
+  - Leverages orthogonal DWT properties
+  - 10-300x faster than standard methods
+  - O(N log N) complexity
+  - Ideal for financial applications and real-time processing
 
 ## Quick Start
 
-### Building the Project
-
 ```bash
+# Build
 mvn clean compile
+
+# Run tests
+mvn test
+
+# Run benchmarks
+./jmh-runner.sh
 ```
 
-### Running the Demo
+## Usage
 
-```bash
-java -cp target/classes ai.prophetizo.Main
-```
-
-### Basic Usage
-
+### Basic Transform
 ```java
-import ai.prophetizo.wavelet.*;
-import ai.prophetizo.wavelet.api.*;
-
-// Using Haar wavelet
+// Simple transform
 WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
 double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
 TransformResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
 
-// Using Daubechies DB4
-transform = new WaveletTransformFactory()
-    .withBoundaryMode(BoundaryMode.PERIODIC)
-    .create(Daubechies.DB4);
-    
-// Using Biorthogonal wavelet
-transform = new WaveletTransformFactory()
-    .create(BiorthogonalSpline.BIOR1_3);
-    
-// Using Morlet wavelet (continuous)
-transform = new WaveletTransformFactory()
-    .create(new MorletWavelet(6.0, 1.0));
+// Using different wavelets
+transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
+transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
+transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
 ```
 
-### Wavelet Registry
-
+### Denoising
 ```java
-// Discover available wavelets
-Set<String> allWavelets = WaveletRegistry.getAvailableWavelets();
-List<String> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
+WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4);
+double[] clean = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
 
-// Get wavelet by name
-Wavelet db4 = WaveletRegistry.getWavelet("db4");
-Wavelet haar = WaveletRegistry.getWavelet("haar");
-
-// Print all available wavelets
-WaveletRegistry.printAvailableWavelets();
+// Multi-level denoising
+double[] clean = denoiser.denoise(noisySignal, 
+    ThresholdMethod.SURE, 
+    4, // levels
+    ThresholdType.SOFT
+);
 ```
 
-## Performance Benchmarking
+### Continuous Wavelet Transform (CWT)
+```java
+// Basic CWT analysis
+MorletWavelet wavelet = new MorletWavelet();
+CWTTransform cwt = new CWTTransform(wavelet);
+double[] scales = {1.0, 2.0, 4.0, 8.0, 16.0};
+CWTResult result = cwt.analyze(signal, scales);
 
-VectorWave includes comprehensive JMH benchmarks to measure performance across different configurations.
+// Automatic scale selection
+DyadicScaleSelector scaleSelector = DyadicScaleSelector.create();
+double[] optimalScales = scaleSelector.selectScales(signal, wavelet, samplingRate);
+CWTResult autoResult = cwt.analyze(signal, optimalScales);
 
-### Available Benchmarks
+// Signal-adaptive scale selection
+SignalAdaptiveScaleSelector adaptiveSelector = new SignalAdaptiveScaleSelector();
+double[] adaptiveScales = adaptiveSelector.selectScales(signal, wavelet, samplingRate);
+// Automatically places more scales where signal has energy
 
-1. **Signal Size Scaling**: Tests performance with different signal sizes (256-16384)
-2. **Wavelet Type Comparison**: Compares performance of Haar, DB2, and DB4
-3. **Validation Performance**: Measures overhead of input validation
+// Complex wavelet analysis for phase information
+ComplexCWTResult complexResult = cwt.analyzeComplex(signal, scales);
+double[][] magnitude = complexResult.getMagnitude();
+double[][] phase = complexResult.getPhase();
+double[][] instFreq = complexResult.getInstantaneousFrequency();
 
-### Running Benchmarks
+// Phase synchronization between signals
+ComplexCWTResult result1 = cwt.analyzeComplex(signal1, scales);
+ComplexCWTResult result2 = cwt.analyzeComplex(signal2, scales);
+double syncIndex = calculatePhaseSynchronization(result1.getPhase(), result2.getPhase());
 
-```bash
-# Run all benchmarks
-./jmh-runner.sh
+// Financial analysis with specialized wavelets
+PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+var crashResult = analyzer.detectMarketCrashes(priceData, threshold);
 
-# Run specific benchmark
-./jmh-runner.sh ValidationBenchmark
+// FFT-accelerated CWT for large signals
+CWTConfig config = CWTConfig.builder()
+    .enableFFT(true)
+    .normalizeScales(true)
+    .build();
+CWTTransform fftCwt = new CWTTransform(wavelet, config);
 
-# Run with custom parameters
-./jmh-runner.sh SignalSizeBenchmark -wi 5 -i 10 -p signalSize=1024
+// Fast DWT-based CWT reconstruction (recommended)
+DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
+double[] reconstructed = dwtInverse.reconstruct(cwtResult);
+// Works best with dyadic scales for optimal accuracy
 ```
 
-### Benchmark Parameters
+### Wavelet Selection Guide
 
-- `-wi N`: Warmup iterations (default: 5)
-- `-i N`: Measurement iterations (default: 10)
-- `-f N`: Fork count (default: 2)
-- `-t N`: Thread count (default: 1)
-- `-p param=value`: Override @Param values
+| Wavelet | Best For | Characteristics |
+|---------|----------|-----------------|
+| **Morlet** | General time-frequency analysis | Gaussian-modulated complex sinusoid, good frequency localization |
+| **Paul** | Financial crash detection | Asymmetric, captures sharp rises/falls |
+| **Mexican Hat (DOG2)** | Edge detection, volatility | Second derivative of Gaussian, zero crossings at edges |
+| **DOG(n)** | Smooth feature extraction | Higher derivatives for smoother patterns |
+| **Shannon** | Band-limited signals | Perfect frequency localization, poor time localization |
+| **Daubechies** | Signal compression, denoising | Compact support, orthogonal |
+| **Symlets** | Symmetric signal analysis | Near-symmetric, orthogonal |
+| **Coiflets** | Numerical analysis | Vanishing moments for polynomial signals |
 
-## Architecture
+### Streaming
+```java
+// Real-time streaming transform
+StreamingWaveletTransform stream = StreamingWaveletTransform.create(
+    Daubechies.DB4,
+    BoundaryMode.PERIODIC,
+    512 // block size
+);
 
-### Wavelet Type Hierarchy
+stream.subscribe(result -> processResult(result));
+stream.process(dataChunk);
 
-```
-Wavelet (sealed interface)
-├── DiscreteWavelet
-│   ├── OrthogonalWavelet
-│   │   ├── Haar
-│   │   ├── Daubechies (DB2, DB4, ...)
-│   │   ├── Symlet (sym2, sym3, ...)
-│   │   └── Coiflet (coif1, coif2, ...)
-│   └── BiorthogonalWavelet
-│       └── BiorthogonalSpline (bior1.3, bior2.2, ...)
-└── ContinuousWavelet
-    └── MorletWavelet
-```
-
-### Core Components
-
-- **WaveletTransform**: Main entry point for transforms
-- **WaveletTransformFactory**: Factory for creating configured transforms
-- **Wavelet Interfaces**: Type-safe hierarchy for different wavelet families
-- **WaveletRegistry**: Central registry for wavelet discovery and creation
-- **TransformResult**: Immutable container for transform coefficients
-- **ScalarOps**: Core mathematical operations
-
-### Package Structure
-
-```
-ai.prophetizo.wavelet/
-├── api/                    # Public API interfaces
-│   ├── Wavelet            # Base wavelet interface
-│   ├── DiscreteWavelet    # Discrete wavelets base
-│   ├── OrthogonalWavelet  # Orthogonal wavelets
-│   ├── BiorthogonalWavelet# Biorthogonal wavelets
-│   ├── ContinuousWavelet  # Continuous wavelets
-│   ├── WaveletType        # Wavelet categorization
-│   ├── WaveletRegistry    # Wavelet discovery
-│   ├── BoundaryMode       # Boundary handling
-│   └── [Wavelet implementations]
-├── internal/               # Internal implementation
-│   └── ScalarOps          # Core operations
-├── util/                   # Utilities
-│   ├── ValidationUtils    # Input validation
-│   └── BatchValidation    # Batch validation
-└── exception/             # Custom exceptions
+// Streaming denoiser with automatic mode selection
+StreamingDenoiser denoiser = StreamingDenoiserFactory.create(
+    Daubechies.DB4,
+    ThresholdMethod.UNIVERSAL,
+    512, // block size
+    0.5  // overlap ratio - auto-selects implementation
+);
 ```
 
-## Testing
+### Performance Configuration
+```java
+// Force specific optimization path
+TransformConfig config = TransformConfig.builder()
+    .forceSIMD(true)  // or forceScalar(true)
+    .enablePrefetch(true)
+    .cacheOptimized(true)
+    .build();
 
-### Running Tests
+WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode, config);
 
-```bash
-# Run all tests
-mvn test
+// Platform-adaptive cache configuration
+CacheAwareOps.CacheConfig cacheConfig = CacheAwareOps.getDefaultCacheConfig();
+// Auto-detects: Apple Silicon (128KB L1, 4MB L2) vs x86 (32KB L1, 256KB L2)
 
-# Run specific test
-mvn test -Dtest=WaveletTransformTest
-
-# Run with coverage
-mvn clean test jacoco:report
+// Custom cache configuration
+CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
+    64 * 1024,  // L1 size
+    512 * 1024, // L2 size  
+    64          // cache line size
+);
 ```
-
-### Test Coverage
-
-The project maintains >80% code coverage with comprehensive tests for:
-- Transform correctness
-- Boundary conditions
-- Error handling
-- Edge cases
-
-## Continuous Integration
-
-The project includes GitHub Actions workflows for:
-- Automated testing on push/PR
-- Code coverage reporting
-- Build verification
 
 ## Documentation
 
-- [BENCHMARKING.md](BENCHMARKING.md) - Detailed benchmarking guide
-- [ADDING_WAVELETS.md](ADDING_WAVELETS.md) - Guide for adding new wavelet types
-- [CLAUDE.md](CLAUDE.md) - Development guidelines for AI assistants
-- JavaDoc - Run `mvn javadoc:javadoc` to generate API documentation
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Performance Guide](docs/PERFORMANCE.md)
+- [API Reference](docs/API.md)
+- [Adding New Wavelets](docs/ADDING_WAVELETS.md)
+- [Benchmarking Guide](docs/BENCHMARKING.md)
+- [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
+- [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
+- [Wavelet Selection Guide](docs/WAVELET_SELECTION.md)
 
-## Contributing
+## Requirements
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass and coverage remains >80%
-5. Submit a pull request
+- Java 21 or higher
+- Maven 3.6+
+- For SIMD: `--add-modules jdk.incubator.vector`
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+GPL-3.0 - See [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Contributing
 
-- Wavelet coefficients based on standard mathematical definitions
-- Benchmarking powered by JMH (Java Microbenchmark Harness)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
