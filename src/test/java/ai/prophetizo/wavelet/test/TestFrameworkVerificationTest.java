@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.test;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.Haar;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

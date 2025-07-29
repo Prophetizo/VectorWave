@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
 import ai.prophetizo.wavelet.test.WaveletTestUtils;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -177,7 +178,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         testBothImplementations(haar, (transform, implType) -> {
             assertTrue(
                 WaveletTestUtils.verifyPerfectReconstruction(
-                    transform, signal, WaveletTestUtils.DEFAULT_TOLERANCE),
+                    transform, signal, ToleranceConstants.DEFAULT_TOLERANCE),
                 "Perfect reconstruction failed for " + signalType + 
                 " with " + implType + " implementation");
         });
@@ -194,7 +195,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         double[] reconstructed = transform.inverse(result);
         
         WaveletAssertions.assertPerfectReconstruction(
-            twoElementSignal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            twoElementSignal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     // === Energy Preservation Tests ===
@@ -210,7 +211,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         testBothImplementations(haar, (transform, implType) -> {
             TransformResult result = transform.forward(signal);
             WaveletAssertions.assertEnergyPreserved(
-                signal, result, WaveletTestUtils.ENERGY_TOLERANCE);
+                signal, result, ToleranceConstants.ENERGY_TOLERANCE);
         });
     }
     
@@ -249,7 +250,7 @@ class HaarWaveletTest extends BaseWaveletTest {
         // Verify perfect reconstruction
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     // === Implementation Comparison Tests ===

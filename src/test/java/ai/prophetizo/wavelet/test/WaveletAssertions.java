@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.test;
 
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 

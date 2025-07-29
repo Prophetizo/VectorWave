@@ -211,7 +211,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         WaveletAssertions.assertValidTransformResult(result);
         WaveletAssertions.assertEnergyPreserved(
-            signal, result, WaveletTestUtils.ENERGY_TOLERANCE);
+            signal, result, ToleranceConstants.ENERGY_TOLERANCE);
     }
     
     // === Edge Cases ===
