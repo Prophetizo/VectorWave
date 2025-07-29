@@ -56,7 +56,7 @@ public class QuickPerformanceTest {
         
         // Create transform with default settings (automatically selects best implementation)
         WaveletTransformFactory factory = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC);
+                .boundaryMode(BoundaryMode.PERIODIC);
         
         WaveletTransform transform = factory.create(wavelet);
         
