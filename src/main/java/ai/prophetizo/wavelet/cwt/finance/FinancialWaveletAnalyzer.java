@@ -299,6 +299,21 @@ public class FinancialWaveletAnalyzer {
      */
     public MarketAnalysisResult analyzeMarket(double[] priceData, double[] volumeData, 
                                             double samplingRate) {
+        // Validate inputs early
+        if (priceData == null || priceData.length < 2) {
+            throw new IllegalArgumentException("priceData must not be null and must have at least two elements.");
+        }
+        if (volumeData == null || volumeData.length < 2) {
+            throw new IllegalArgumentException("volumeData must not be null and must have at least two elements.");
+        }
+        if (volumeData.length != priceData.length) {
+            throw new IllegalArgumentException("volumeData length (" + volumeData.length + 
+                ") must match priceData length (" + priceData.length + ")");
+        }
+        if (samplingRate <= 0) {
+            throw new IllegalArgumentException("samplingRate must be positive");
+        }
+        
         // Detect crashes
         CrashDetectionResult crashes = detectMarketCrashes(priceData, samplingRate);
         
@@ -331,14 +346,6 @@ public class FinancialWaveletAnalyzer {
         List<MarketAnomaly> anomalies = new ArrayList<>();
         
         // Volume-price divergence
-        if (volumeData == null || volumeData.length < 2) {
-            throw new IllegalArgumentException("volumeData must not be null and must have at least two elements.");
-        }
-        if (volumeData.length != priceData.length) {
-            throw new IllegalArgumentException("volumeData length (" + volumeData.length + 
-                ") must match priceData length (" + priceData.length + ")");
-        }
-        
         for (int i = 1; i < priceData.length - 1; i++) {
             double priceChange = Math.abs(priceData[i] - priceData[i-1]) / priceData[i-1];
             double volumeChange = Math.abs(volumeData[i] - volumeData[i-1]) / volumeData[i-1];

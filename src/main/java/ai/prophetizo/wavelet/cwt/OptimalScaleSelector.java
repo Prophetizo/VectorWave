@@ -30,6 +30,31 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     // Cache for adaptive ratio caps based on wavelet characteristics
     private static final Map<String, Double> RATIO_CAP_CACHE = new ConcurrentHashMap<>();
     
+    // Instance fields for pre-computed values when using a specific wavelet
+    private final ContinuousWavelet precomputedWavelet;
+    private final Double precomputedRatioCap;
+    
+    /**
+     * Creates an OptimalScaleSelector that can work with any wavelet.
+     */
+    public OptimalScaleSelector() {
+        this.precomputedWavelet = null;
+        this.precomputedRatioCap = null;
+    }
+    
+    /**
+     * Creates an OptimalScaleSelector optimized for a specific wavelet.
+     * Pre-computes the adaptive ratio cap for better performance in hot paths.
+     * 
+     * @param wavelet the wavelet to optimize for
+     */
+    public OptimalScaleSelector(ContinuousWavelet wavelet) {
+        this.precomputedWavelet = wavelet;
+        double centerFreq = wavelet.centerFrequency();
+        double bandwidth = wavelet.bandwidth();
+        this.precomputedRatioCap = calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq);
+    }
+    
     @Override
     public double[] selectScales(double[] signal, ContinuousWavelet wavelet, double samplingRate) {
         if (samplingRate <= 0) {
@@ -482,12 +507,15 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
     public static double[] generateCriticalSamplingScales(ContinuousWavelet wavelet,
                                                          int signalLength,
                                                          double samplingRate) {
-        return generateCriticalSamplingScales(wavelet, signalLength, samplingRate, 
-                                              DEFAULT_MAX_SCALES);
+        // Create a temporary instance and use its method
+        OptimalScaleSelector selector = new OptimalScaleSelector();
+        return selector.generateCriticalSamplingScales(wavelet, signalLength, samplingRate, 
+                                                       DEFAULT_MAX_SCALES);
     }
     
     /**
      * Generates critical sampling scales for perfect reconstruction with configurable maximum.
+     * Uses pre-computed values when the selector was created for a specific wavelet.
      * 
      * @param wavelet the wavelet to use
      * @param signalLength length of the signal
@@ -495,20 +523,26 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
      * @param maxScales maximum number of scales to generate
      * @return array of critically sampled scales
      */
-    public static double[] generateCriticalSamplingScales(ContinuousWavelet wavelet,
-                                                         int signalLength,
-                                                         double samplingRate,
-                                                         int maxScales) {
+    public double[] generateCriticalSamplingScales(ContinuousWavelet wavelet,
+                                                  int signalLength,
+                                                  double samplingRate,
+                                                  int maxScales) {
         double centerFreq = wavelet.centerFrequency();
         double bandwidth = wavelet.bandwidth();
         
         // Critical sampling rate in scale domain with adaptive capping
         double rawRatio = Math.exp(Math.PI * bandwidth / centerFreq);
         
-        // Get adaptive cap from cache or calculate if not present
-        String cacheKey = createWaveletCacheKey(wavelet, bandwidth, centerFreq);
-        double maxRatio = RATIO_CAP_CACHE.computeIfAbsent(cacheKey, 
-            k -> calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq));
+        // Use pre-computed value if this selector was created for a specific wavelet
+        double maxRatio;
+        if (precomputedWavelet != null && precomputedWavelet.equals(wavelet)) {
+            maxRatio = precomputedRatioCap;
+        } else {
+            // Fall back to cache for other wavelets
+            String cacheKey = createWaveletCacheKey(wavelet, bandwidth, centerFreq);
+            maxRatio = RATIO_CAP_CACHE.computeIfAbsent(cacheKey, 
+                k -> calculateAdaptiveRatioCap(wavelet, bandwidth, centerFreq));
+        }
         double criticalRatio = Math.min(rawRatio, maxRatio);
         
         List<Double> scales = new ArrayList<>();
@@ -523,4 +557,5 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         
         return scales.stream().mapToDouble(Double::doubleValue).toArray();
     }
+    
 }

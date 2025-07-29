@@ -195,8 +195,8 @@ public final class DWTBasedInverseCWT {
                 }
                 
                 dwt.approximation = approx;
-                // Do NOT change maxLevel - it must match the details array size
-                // The reconstruction will handle the size mismatch appropriately
+                // The reconstruction will handle any size mismatch between
+                // the approximation and detail levels appropriately
             }
         }
         

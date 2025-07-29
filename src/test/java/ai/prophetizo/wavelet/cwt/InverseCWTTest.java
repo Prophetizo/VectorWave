@@ -46,7 +46,7 @@ class InverseCWTTest {
         // When - perform CWT and inverse
         double[] scales = generateScales(1, 64, 32);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructed = inverseCWT.reconstructFromReal(cwtResult);
+        double[] reconstructed = inverseCWT.reconstruct(cwtResult);
         
         // Then - verify reconstruction quality
         assertEquals(signal.length, reconstructed.length);
@@ -80,7 +80,7 @@ class InverseCWTTest {
         // When
         double[] scales = generateScales(0.5, 128, 64);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructed = inverseCWT.reconstructFromReal(cwtResult);
+        double[] reconstructed = inverseCWT.reconstruct(cwtResult);
         
         // Then
         double relativeError = calculateRelativeError(signal, reconstructed);
@@ -105,7 +105,7 @@ class InverseCWTTest {
         // When - reconstruct only low frequencies (large scales)
         double[] scales = generateScales(1, 64, 32);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructedLow = inverseCWT.reconstructBandFromReal(cwtResult, 8, 64);
+        double[] reconstructedLow = inverseCWT.reconstructBand(cwtResult, 8, 64);
         
         // Then - verify high frequencies are filtered out
         double[] lowFreqSignal = new double[N];
@@ -130,7 +130,7 @@ class InverseCWTTest {
         // When - reconstruct 20-50 Hz band
         double[] scales = generateScales(0.5, 64, 64);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructedBand = inverseCWT.reconstructFrequencyBandFromReal(
+        double[] reconstructedBand = inverseCWT.reconstructFrequencyBand(
             cwtResult, samplingRate, 20, 50);
         
         // Then
@@ -159,7 +159,7 @@ class InverseCWTTest {
         // When
         double[] scales = generateScales(1, 64, 32);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructed = inverseCWT.reconstructFromReal(cwtResult);
+        double[] reconstructed = inverseCWT.reconstruct(cwtResult);
         
         // Then - Gaussian should be somewhat preserved
         double relativeError = calculateRelativeError(signal, reconstructed);
@@ -236,7 +236,7 @@ class InverseCWTTest {
         // When
         double[] scales = generateScales(1, 64, 32);
         CWTResult cwtResult = cwtTransform.analyze(signal, scales);
-        double[] reconstructed = inverseCWT.reconstructFromReal(cwtResult);
+        double[] reconstructed = inverseCWT.reconstruct(cwtResult);
         
         // Then - energy should be approximately preserved
         double originalEnergy = calculatePower(signal) * N;
@@ -272,7 +272,7 @@ class InverseCWTTest {
         CWTTransform paulTransform = new CWTTransform(new PaulWavelet(4));
         InverseCWT paulInverse = new InverseCWT(new PaulWavelet(4));
         CWTResult paulResult = paulTransform.analyze(signal, scales);
-        double[] paulReconstructed = paulInverse.reconstructFromReal(paulResult);
+        double[] paulReconstructed = paulInverse.reconstruct(paulResult);
         
         assertNotNull(paulReconstructed);
         assertEquals(N, paulReconstructed.length);

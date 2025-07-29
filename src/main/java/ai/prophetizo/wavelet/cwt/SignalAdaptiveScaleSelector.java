@@ -56,6 +56,20 @@ public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
             throw new IllegalArgumentException("Sampling rate must be positive");
         }
         
+        // Early check for zero signal to avoid expensive analysis
+        boolean isZeroSignal = true;
+        for (double value : signal) {
+            if (value != 0.0) {
+                isZeroSignal = false;
+                break;
+            }
+        }
+        
+        if (isZeroSignal) {
+            // For zero signal, return default logarithmic scales
+            return ScaleSpace.logarithmic(1.0, 100.0, Math.min(32, config.getMaxScales())).getScales();
+        }
+        
         // Analyze signal characteristics
         SignalCharacteristics characteristics = analyzeSignal(signal, config.getSamplingRate());
         

@@ -56,7 +56,7 @@ class InverseCWTDebugTest {
         }
         
         // Try reconstruction
-        double[] reconstructed = inverseCWT.reconstructFromReal(result);
+        double[] reconstructed = inverseCWT.reconstruct(result);
         
         // Find peak in reconstructed signal
         int peakIdx = 0;
