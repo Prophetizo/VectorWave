@@ -56,7 +56,7 @@ public class FinancialAnalysisDemo {
         
         // Create configuration optimized for high-frequency trading
         FinancialAnalysisConfig hftConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(5.0)       // Lower threshold for more sensitive crash detection
+                .crashAsymmetryThreshold(0.3)       // Lower threshold for more sensitive crash detection
                 .volatilityLowThreshold(0.1)        // Lower threshold for HFT volatility ranges
                 .volatilityHighThreshold(0.8)       // Lower threshold for HFT
                 .regimeTrendThreshold(0.005)        // More sensitive to regime changes

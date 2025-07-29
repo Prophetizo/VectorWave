@@ -16,9 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class FinancialAnalysisIntegrationTest {
     
     @Test
-    @DisplayName("Issue #65: CRASH_ASYMMETRY_THRESHOLD = 10.0 should be configurable")
+    @DisplayName("Issue #65: CRASH_ASYMMETRY_THRESHOLD should be configurable")
     void testCrashAsymmetryThresholdIsConfigurable() {
-        // Verify the default matches the original hardcoded value
+        // Verify the default is a realistic value (0.7) for the 0-1 ratio range
         FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
         assertEquals(0.7, defaultConfig.getCrashAsymmetryThreshold(), 1e-10,
                 "Default crash asymmetry threshold should be a realistic value (0-1 range)");
@@ -47,10 +47,10 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: VOLATILITY_LOW_THRESHOLD = 0.5 should be configurable")
     void testVolatilityLowThresholdIsConfigurable() {
-        // Verify the default matches the original hardcoded value
+        // Verify the default value is as expected
         FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
         assertEquals(0.5, defaultConfig.getVolatilityLowThreshold(), 1e-10,
-                "Default volatility low threshold should match original hardcoded value");
+                "Default volatility low threshold should be 0.5");
         
         // Verify we can customize it
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
@@ -76,10 +76,10 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: REGIME_TREND_THRESHOLD = 0.02 should be configurable")
     void testRegimeTrendThresholdIsConfigurable() {
-        // Verify the default matches the original hardcoded value
+        // Verify the default value is as expected
         FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
         assertEquals(0.02, defaultConfig.getRegimeTrendThreshold(), 1e-10,
-                "Default regime trend threshold should match original hardcoded value");
+                "Default regime trend threshold should be 0.02");
         
         // Verify we can customize it
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
@@ -105,10 +105,10 @@ class FinancialAnalysisIntegrationTest {
     void testAllHardcodedThresholdsAreConfigurable() {
         // Create a completely custom configuration
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
-                .crashAsymmetryThreshold(0.8)          // Was hardcoded at 10.0 (but actual values are 0-1)
-                .volatilityLowThreshold(0.3)           // Was hardcoded at 0.5
+                .crashAsymmetryThreshold(0.8)          // Custom threshold (values range 0-1)
+                .volatilityLowThreshold(0.3)           // Custom threshold
                 .volatilityHighThreshold(1.5)          // Additional configurable threshold
-                .regimeTrendThreshold(0.015)           // Was hardcoded at 0.02
+                .regimeTrendThreshold(0.015)           // Custom threshold
                 .anomalyDetectionThreshold(2.5)        // Additional configurable threshold
                 .windowSize(128)                       // Configurable window size
                 .confidenceLevel(0.99)                 // Configurable confidence level
@@ -138,10 +138,10 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: Backward compatibility should be maintained")
     void testBackwardCompatibilityMaintained() {
-        // Using default configuration should provide the same behavior as original hardcoded values
+        // Using default configuration should provide consistent behavior
         FinancialAnalyzer defaultAnalyzer = FinancialAnalyzer.withDefaultConfig();
         
-        // Verify default values match the original hardcoded constants from the issue
+        // Verify default values are as expected
         FinancialAnalysisConfig config = defaultAnalyzer.getConfig();
         assertEquals(0.7, config.getCrashAsymmetryThreshold(), 1e-10, 
                 "CRASH_ASYMMETRY_THRESHOLD default should be 0.7 (realistic range)");
