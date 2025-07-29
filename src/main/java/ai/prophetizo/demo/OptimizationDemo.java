@@ -38,7 +38,6 @@ public class OptimizationDemo {
             Daubechies.DB2,
             Daubechies.DB4,
             Symlet.SYM2,
-            Symlet.SYM2,
             Coiflet.COIF1,
             BiorthogonalSpline.BIOR1_3
         };
