@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
@@ -51,7 +52,7 @@ class FinancialWaveletAnalyzerTest {
     @DisplayName("Constructor with config and transform should set both correctly")
     void testConstructorWithConfigAndTransform() {
         FinancialConfig config = new FinancialConfig(0.025);
-        var transform = new WaveletTransformFactory()
+        WaveletTransform transform = new WaveletTransformFactory()
                 .boundaryMode(BoundaryMode.PERIODIC)
                 .create(Daubechies.DB2);
         

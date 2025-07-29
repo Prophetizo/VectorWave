@@ -152,13 +152,8 @@ public class FinancialWaveletAnalyzer {
         // The TransformResult.create method requires matching array lengths
         double[] zeroDetails = new double[detailCoeffs.length];
         
-        // Defensive validation before creating TransformResult
-        if (approxCoeffs.length != zeroDetails.length) {
-            throw new IllegalStateException("Coefficient arrays must have matching lengths. " +
-                "Approximation length: " + approxCoeffs.length + ", Detail length: " + zeroDetails.length);
-        }
-        
         // Create a new TransformResult with original approximation and zeroed details
+        // Note: approxCoeffs and detailCoeffs have the same length by design from the forward transform
         TransformResult denoisedResult = TransformResult.create(approxCoeffs, zeroDetails);
         
         // Perform inverse transform to get denoised signal
