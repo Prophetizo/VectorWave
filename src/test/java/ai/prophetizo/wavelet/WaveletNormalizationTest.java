@@ -25,6 +25,24 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Wavelet Normalization Tests")
 class WaveletNormalizationTest {
     
+    /**
+     * Extremely tight tolerance for wavelet filter normalization validation.
+     * 
+     * <p>This stringent tolerance (2e-10) is required because:</p>
+     * <ul>
+     *   <li>Wavelet coefficients are often derived from mathematical formulas with
+     *       high precision requirements</li>
+     *   <li>Small normalization errors can compound through multi-level decompositions,
+     *       affecting reconstruction quality</li>
+     *   <li>Cross-wavelet comparisons require consistent normalization to ensure
+     *       energy preservation across different wavelet families</li>
+     *   <li>Financial and scientific applications demand high numerical accuracy
+     *       for reliable signal analysis</li>
+     * </ul>
+     * 
+     * <p>Note: This is tighter than the general transform tolerance (1e-10) to ensure
+     * wavelet filters meet the highest precision standards.</p>
+     */
     private static final double NORMALIZATION_TOLERANCE = 2e-10;
     
     /**

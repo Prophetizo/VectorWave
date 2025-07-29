@@ -38,6 +38,13 @@ package ai.prophetizo.wavelet.api;
  * @see WaveletRegistry
  */
 public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
+    
+    /**
+     * Tolerance for checking if a filter is already normalized.
+     * Used to avoid unnecessary normalization operations.
+     */
+    double NORMALIZATION_CHECK_TOLERANCE = 1e-15;
+    
     /**
      * Returns the name of the wavelet (e.g., "Haar", "db4", "morl").
      * This should be a unique identifier for the wavelet.
@@ -130,7 +137,7 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
         }
         
         double norm = Math.sqrt(sumOfSquares);
-        if (Math.abs(norm - 1.0) < 1e-15) {
+        if (Math.abs(norm - 1.0) < NORMALIZATION_CHECK_TOLERANCE) {
             return coefficients.clone(); // Already normalized, return copy
         }
         
