@@ -10,19 +10,136 @@ import java.util.Arrays;
  * <p>ScaleSpace defines the scales at which the wavelet transform is computed.
  * It provides various factory methods for creating commonly used scale distributions
  * (linear, logarithmic, dyadic) and supports conversion between scales and frequencies.</p>
- *
+ * 
+ * <h2>Mathematical Foundation</h2>
+ * 
+ * <p>In the Continuous Wavelet Transform, the scale parameter 'a' controls the dilation
+ * of the mother wavelet ψ(t):</p>
+ * 
+ * <pre>
+ * ψ_{a,b}(t) = (1/√a) ψ((t-b)/a)
+ * </pre>
+ * 
+ * <p>Where:</p>
+ * <ul>
+ *   <li><b>a</b> - scale parameter (dilation): larger scales detect lower frequencies</li>
+ *   <li><b>b</b> - translation parameter: position in time</li>
+ * </ul>
+ * 
+ * <h2>Scale-Frequency Relationship</h2>
+ * 
+ * <p>The relationship between scale and frequency is inverse:</p>
+ * 
+ * <pre>
+ * frequency = (center_frequency × sampling_rate) / scale
+ * </pre>
+ * 
+ * <p>Where center_frequency is a wavelet-specific constant (e.g., ~0.8 for Morlet).</p>
+ * 
+ * <h2>Scale Selection Guidelines</h2>
+ * 
+ * <h3>1. Linear Spacing (LINEAR)</h3>
+ * <p><b>Mathematical form:</b> a_i = a_min + i × Δa</p>
+ * <p><b>Use when:</b></p>
+ * <ul>
+ *   <li>Analyzing signals with uniformly distributed frequency content</li>
+ *   <li>Equal importance across all frequencies</li>
+ *   <li>Simple time-frequency analysis</li>
+ * </ul>
+ * <p><b>Drawbacks:</b> Poor resolution at high frequencies, oversampling at low frequencies</p>
+ * 
+ * <h3>2. Logarithmic Spacing (LOGARITHMIC) - Recommended</h3>
+ * <p><b>Mathematical form:</b> a_i = a_min × r^i, where r = (a_max/a_min)^(1/(n-1))</p>
+ * <p><b>Use when:</b></p>
+ * <ul>
+ *   <li>Natural signals (speech, music, seismic data)</li>
+ *   <li>Financial time series analysis</li>
+ *   <li>Multi-scale phenomena</li>
+ *   <li>Need constant Q-factor (quality factor) analysis</li>
+ * </ul>
+ * <p><b>Benefits:</b> Mimics human perception, efficient coverage of frequency spectrum</p>
+ * 
+ * <h3>3. Dyadic Spacing (DYADIC)</h3>
+ * <p><b>Mathematical form:</b> a_i = 2^j, j ∈ ℤ</p>
+ * <p><b>Use when:</b></p>
+ * <ul>
+ *   <li>Compatibility with discrete wavelet transform</li>
+ *   <li>Octave-band analysis</li>
+ *   <li>Fast algorithms (reduced redundancy)</li>
+ *   <li>Multiresolution analysis</li>
+ * </ul>
+ * <p><b>Benefits:</b> Efficient computation, natural for binary systems</p>
+ * 
+ * <h3>4. Custom Spacing (CUSTOM)</h3>
+ * <p><b>Use when:</b></p>
+ * <ul>
+ *   <li>Domain-specific requirements</li>
+ *   <li>Non-uniform frequency regions of interest</li>
+ *   <li>Adaptive analysis based on signal characteristics</li>
+ * </ul>
+ * 
+ * <h2>Practical Considerations</h2>
+ * 
+ * <p><b>Number of scales:</b> Typically 10-100 scales, depending on:</p>
+ * <ul>
+ *   <li>Signal length: longer signals support more scales</li>
+ *   <li>Frequency range of interest</li>
+ *   <li>Computational resources</li>
+ *   <li>Required time-frequency resolution</li>
+ * </ul>
+ * 
+ * <p><b>Scale bounds:</b></p>
+ * <ul>
+ *   <li>Min scale: Limited by Nyquist frequency (typically 2-4 samples)</li>
+ *   <li>Max scale: Limited by signal length (typically length/4)</li>
+ * </ul>
+ * 
+ * @see CWTConfig for configuration options
+ * @see AdaptiveScaleSelector for automatic scale selection
  * @since 1.0.0
  */
 public final class ScaleSpace {
     
     /**
-     * Types of scale spacing.
+     * Types of scale spacing for wavelet transform analysis.
+     * 
+     * <p>Each type represents a different mathematical distribution of scales,
+     * affecting the time-frequency resolution trade-off.</p>
      */
     public enum ScaleType {
-        LINEAR,      // Linear scale spacing
-        LOGARITHMIC, // Log scale spacing (most common)
-        DYADIC,      // Powers of 2
-        CUSTOM       // User-defined scales
+        /**
+         * Linear scale spacing: a_i = a_min + i × Δa
+         * 
+         * <p>Uniform spacing in scale domain. Best for signals with
+         * uniform frequency distribution or when analyzing a narrow
+         * frequency band.</p>
+         */
+        LINEAR,
+        
+        /**
+         * Logarithmic scale spacing: a_i = a_min × r^i (RECOMMENDED)
+         * 
+         * <p>Geometric progression of scales. Provides constant Q-factor
+         * (ratio of center frequency to bandwidth) across all scales.
+         * Most suitable for natural signals and multi-scale phenomena.</p>
+         */
+        LOGARITHMIC,
+        
+        /**
+         * Dyadic (powers of 2) scale spacing: a_i = 2^j
+         * 
+         * <p>Octave-band analysis compatible with discrete wavelet transform.
+         * Efficient for multiresolution analysis and fast algorithms.</p>
+         */
+        DYADIC,
+        
+        /**
+         * Custom user-defined scales.
+         * 
+         * <p>For specialized applications requiring non-uniform scale
+         * distribution based on domain knowledge or signal characteristics.</p>
+         */
+        CUSTOM
     }
     
     private final double[] scales;
@@ -73,12 +190,23 @@ public final class ScaleSpace {
     }
     
     /**
-     * Creates a logarithmic scale space.
+     * Creates a logarithmic scale space (RECOMMENDED for most applications).
      * 
-     * @param minScale minimum scale
-     * @param maxScale maximum scale
-     * @param numScales number of scales
+     * <p>Scales follow geometric progression: a_i = a_min × r^i</p>
+     * 
+     * <p><b>Example:</b> For speech analysis (8 kHz sampling):</p>
+     * <pre>
+     * // Cover 50 Hz to 4 kHz with 64 log-spaced scales
+     * double minScale = 0.8 * 8000 / 4000;  // For 4 kHz
+     * double maxScale = 0.8 * 8000 / 50;    // For 50 Hz
+     * ScaleSpace scales = ScaleSpace.logarithmic(minScale, maxScale, 64);
+     * </pre>
+     * 
+     * @param minScale minimum scale (higher frequencies)
+     * @param maxScale maximum scale (lower frequencies)
+     * @param numScales number of scales (typically 10-100)
      * @return logarithmic scale space
+     * @throws IllegalArgumentException if parameters are invalid
      */
     public static ScaleSpace logarithmic(double minScale, double maxScale, int numScales) {
         validateScaleRange(minScale, maxScale, numScales);
@@ -98,9 +226,18 @@ public final class ScaleSpace {
     /**
      * Creates a dyadic (powers of 2) scale space.
      * 
-     * @param minLevel minimum level (2^minLevel)
-     * @param maxLevel maximum level (2^maxLevel)
+     * <p>Pure dyadic scales without subdivisions: a = 2^j</p>
+     * 
+     * <p><b>Example:</b> For fast multiresolution analysis:</p>
+     * <pre>
+     * // Create scales: 2, 4, 8, 16, 32, 64, 128
+     * ScaleSpace scales = ScaleSpace.dyadic(1, 7);
+     * </pre>
+     * 
+     * @param minLevel minimum level (scale = 2^minLevel)
+     * @param maxLevel maximum level (scale = 2^maxLevel)
      * @return dyadic scale space
+     * @throws IllegalArgumentException if minLevel > maxLevel
      */
     public static ScaleSpace dyadic(int minLevel, int maxLevel) {
         if (minLevel > maxLevel) {
@@ -157,8 +294,24 @@ public final class ScaleSpace {
      * Creates a custom scale space from user-defined scales.
      * The scales will be automatically sorted in ascending order.
      * 
+     * <p><b>Example:</b> For focusing on specific frequencies:</p>
+     * <pre>
+     * // Focus on 50Hz, 60Hz (power line), and harmonics
+     * double fs = 1000;  // Sampling rate
+     * double cf = 0.8;   // Morlet center frequency
+     * double[] customScales = {
+     *     cf * fs / 200,  // 200 Hz (4th harmonic)
+     *     cf * fs / 120,  // 120 Hz (2nd harmonic)
+     *     cf * fs / 100,  // 100 Hz
+     *     cf * fs / 60,   // 60 Hz (US power)
+     *     cf * fs / 50    // 50 Hz (EU power)
+     * };
+     * ScaleSpace scales = ScaleSpace.custom(customScales);
+     * </pre>
+     * 
      * @param scales array of scales (must be positive, will be sorted)
      * @return custom scale space
+     * @throws IllegalArgumentException if scales are invalid
      */
     public static ScaleSpace custom(double[] scales) {
         if (scales == null || scales.length == 0) {
@@ -221,7 +374,18 @@ public final class ScaleSpace {
     }
     
     /**
-     * Converts a single scale to frequency.
+     * Converts a single scale to frequency using the wavelet's center frequency.
+     * 
+     * <p><b>Formula:</b> frequency = (center_frequency × sampling_rate) / scale</p>
+     * 
+     * <p><b>Example:</b></p>
+     * <pre>
+     * MorletWavelet morlet = new MorletWavelet();  // cf ≈ 0.8
+     * double scale = 16;
+     * double fs = 1000;  // 1 kHz sampling
+     * double freq = scaleSpace.scaleToFrequency(scale, morlet, fs);
+     * // freq ≈ 50 Hz
+     * </pre>
      * 
      * @param scale the scale value
      * @param wavelet continuous wavelet

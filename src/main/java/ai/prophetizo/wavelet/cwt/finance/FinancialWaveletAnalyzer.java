@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.cwt.finance;
 
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import ai.prophetizo.wavelet.cwt.finance.MarketAnalysisRequest.AnalysisOptions;
 
 import java.util.*;
 
@@ -296,29 +297,66 @@ public class FinancialWaveletAnalyzer {
     
     /**
      * Performs comprehensive market analysis combining all wavelets.
+     * 
+     * @deprecated Use {@link #analyzeMarket(MarketAnalysisRequest)} instead for better API design
      */
+    @Deprecated(since = "1.4", forRemoval = true)
     public MarketAnalysisResult analyzeMarket(double[] priceData, double[] volumeData, 
                                             double samplingRate) {
+        // Delegate to the new method using request object
+        MarketAnalysisRequest request = MarketAnalysisRequest.builder()
+            .priceData(priceData)
+            .volumeData(volumeData)
+            .samplingRate(samplingRate)
+            .build();
+        return analyzeMarket(request);
+    }
+    
+    /**
+     * Performs comprehensive market analysis combining all wavelets.
+     * 
+     * <p>This method uses a parameter object to encapsulate all analysis parameters,
+     * providing a cleaner API and better extensibility.</p>
+     * 
+     * @param request the market analysis request containing all parameters
+     * @return comprehensive market analysis results
+     * @throws IllegalArgumentException if request parameters are invalid
+     * @since 1.4
+     */
+    public MarketAnalysisResult analyzeMarket(MarketAnalysisRequest request) {
+        // Validate request
+        if (request == null) {
+            throw new IllegalArgumentException("Market analysis request cannot be null");
+        }
+        
+        double[] priceData = request.priceData();
+        double[] volumeData = request.volumeData();
+        double samplingRate = request.samplingRate();
+        AnalysisOptions options = request.options();
+        
         // Validate inputs early
         if (priceData == null || priceData.length < 2) {
             throw new IllegalArgumentException("priceData must not be null and must have at least two elements.");
         }
-        if (volumeData == null || volumeData.length < 2) {
-            throw new IllegalArgumentException("volumeData must not be null and must have at least two elements.");
-        }
-        if (volumeData.length != priceData.length) {
-            throw new IllegalArgumentException("volumeData length (" + volumeData.length + 
-                ") must match priceData length (" + priceData.length + ")");
+        if (volumeData != null && volumeData.length > 0) {
+            if (volumeData.length != priceData.length) {
+                throw new IllegalArgumentException("volumeData length (" + volumeData.length + 
+                    ") must match priceData length (" + priceData.length + ")");
+            }
         }
         if (samplingRate <= 0) {
             throw new IllegalArgumentException("samplingRate must be positive");
         }
         
-        // Detect crashes
-        CrashDetectionResult crashes = detectMarketCrashes(priceData, samplingRate);
+        // Detect crashes based on options
+        CrashDetectionResult crashes = options.detectCrashes() ? 
+            detectMarketCrashes(priceData, samplingRate) : 
+            new CrashDetectionResult(new ArrayList<>(), new double[0], 0.0, new HashMap<>());
         
-        // Analyze volatility
-        VolatilityAnalysisResult volatility = analyzeVolatility(priceData, samplingRate);
+        // Analyze volatility based on options
+        VolatilityAnalysisResult volatility = options.analyzeVolatility() ? 
+            analyzeVolatility(priceData, samplingRate) : 
+            createEmptyVolatilityResult(priceData.length);
         
         // Detect regime changes
         List<Integer> regimeChanges = new ArrayList<>();
@@ -356,10 +394,12 @@ public class FinancialWaveletAnalyzer {
             }
         }
         
-        // Add crash points as anomalies
-        for (int crashPoint : crashes.crashPoints) {
-            anomalies.add(new MarketAnomaly(crashPoint, AnomalyType.PRICE_SPIKE,
-                crashes.severity[crashPoint], "Market crash detected"));
+        // Add crash points as anomalies if crashes were detected
+        if (options.detectCrashes()) {
+            for (int crashPoint : crashes.crashPoints) {
+                anomalies.add(new MarketAnomaly(crashPoint, AnomalyType.PRICE_SPIKE,
+                    crashes.severity[crashPoint], "Market crash detected"));
+            }
         }
         
         // Calculate risk metrics
@@ -919,5 +959,23 @@ public class FinancialWaveletAnalyzer {
         }
         
         return totalTrades > 0 ? (double) winningTrades / totalTrades : 0.0;
+    }
+    
+    /**
+     * Creates an empty volatility result for when volatility analysis is disabled.
+     * 
+     * @param signalLength length of the price signal
+     * @return empty volatility analysis result
+     */
+    private VolatilityAnalysisResult createEmptyVolatilityResult(int signalLength) {
+        int volLength = Math.max(0, signalLength - 1);
+        double[] emptyArray = new double[volLength];
+        List<VolatilityCluster> emptyClusters = new ArrayList<>();
+        return new VolatilityAnalysisResult(
+            emptyClusters,   // volatilityClusters
+            emptyArray,      // instantaneousVolatility
+            0.0,             // averageVolatility
+            0.0              // maxVolatility
+        );
     }
 }

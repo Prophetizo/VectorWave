@@ -141,8 +141,8 @@ class FinancialWaveletAnalyzerTest {
     @Test
     @DisplayName("Should perform comprehensive market analysis")
     void testComprehensiveAnalysis() {
-        FinancialWaveletAnalyzer.MarketAnalysisResult result = 
-            analyzer.analyzeMarket(priceData, volumeData, 100.0);
+        MarketAnalysisRequest request = MarketAnalysisRequest.of(priceData, volumeData, 100.0);
+        FinancialWaveletAnalyzer.MarketAnalysisResult result = analyzer.analyzeMarket(request);
         
         assertNotNull(result);
         

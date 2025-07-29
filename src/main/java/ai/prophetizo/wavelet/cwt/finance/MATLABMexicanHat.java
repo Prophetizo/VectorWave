@@ -87,7 +87,8 @@ public final class MATLABMexicanHat implements ContinuousWavelet {
         {5.0,  -0.0000888178}
     };
     
-    // Cache array length as static field for performance in hot path
+    // Array length as compile-time constant for hot path optimization
+    // Since MATLAB_VALUES is a compile-time constant array, this is also a compile-time constant
     private static final int MATLAB_VALUES_LENGTH = MATLAB_VALUES.length;
     
     @Override

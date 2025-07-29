@@ -133,4 +133,29 @@ This document summarizes all the code improvements made based on Copilot feedbac
 - More maintainable code with extracted methods
 - Better extensibility with switch statements
 
+## 10. FinancialWaveletAnalyzer API Update
+
+### Parameter Object Pattern
+- **Issue**: Method used separate parameters instead of request object
+- **Fix**: 
+  - Added new `analyzeMarket(MarketAnalysisRequest)` method
+  - Deprecated old method with separate parameters
+  - Updated implementation to respect analysis options
+  - Added helper method `createEmptyVolatilityResult()`
+- **Lines**: 300-349, 969-980
+
+## 11. ScaleSpace Documentation Enhancement
+
+### Comprehensive Mathematical Documentation
+- **Issue**: Class lacked documentation about mathematical foundations and when to use each scale type
+- **Fix**: 
+  - Added detailed mathematical foundations explaining scale-frequency relationships
+  - Documented each ScaleType (LINEAR, LOGARITHMIC, DYADIC, CUSTOM) with formulas and use cases
+  - Added practical examples for each factory method
+  - Included guidelines for scale selection and practical considerations
+- **Improvements**:
+  - Users can now make informed decisions about scale type selection
+  - Clear examples show how to calculate scales for specific frequency ranges
+  - Mathematical formulas help users understand the underlying theory
+
 All changes maintain backward compatibility except where explicitly noted (OptimalScaleSelector).
