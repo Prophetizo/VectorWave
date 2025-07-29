@@ -162,6 +162,8 @@ class WaveletNormalizationTest {
         double[] zeros = {0.0, 0.0, 0.0};
         double[] result = Wavelet.normalizeToUnitL2Norm(zeros);
         assertArrayEquals(zeros, result);
+        // Should return a copy even for zero coefficients
+        assertNotSame(zeros, result);
         
         // Test with already normalized coefficients
         double[] alreadyNormalized = {1.0 / Math.sqrt(2.0), 1.0 / Math.sqrt(2.0)};

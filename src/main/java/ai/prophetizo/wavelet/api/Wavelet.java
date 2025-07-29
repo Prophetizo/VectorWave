@@ -145,7 +145,7 @@ public sealed interface Wavelet permits DiscreteWavelet, ContinuousWavelet {
         }
         
         if (sumOfSquares == 0.0) {
-            return coefficients; // Avoid division by zero
+            return coefficients.clone(); // Avoid division by zero, return defensive copy
         }
         
         double norm = Math.sqrt(sumOfSquares);
