@@ -421,6 +421,14 @@ public final class InverseCWT {
                 ", end=" + end + ", scales.length=" + scales.length);
         }
         
+        // Validate that all scales in the range are positive
+        for (int i = start; i < end; i++) {
+            if (scales[i] <= 0) {
+                throw new InvalidArgumentException("Scale values must be positive for logarithmic integration. " +
+                    "Found non-positive scale at index " + i + ": " + scales[i]);
+            }
+        }
+        
         double[] weights = new double[n];
         
         if (n == 1) {
