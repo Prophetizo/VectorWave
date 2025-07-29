@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.memory.benchmark;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.memory.*;
+import org.junit.jupiter.api.Disabled;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
