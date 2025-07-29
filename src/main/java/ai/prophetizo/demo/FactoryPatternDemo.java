@@ -76,12 +76,12 @@ public class FactoryPatternDemo {
         
         // Create transform with PERIODIC boundary
         WaveletTransform transform1 = factory
-            .withBoundaryMode(BoundaryMode.PERIODIC)
+            .boundaryMode(BoundaryMode.PERIODIC)
             .create(new Haar());
         
         // Create transform with ZERO_PADDING boundary
         WaveletTransform transform2 = factory
-            .withBoundaryMode(BoundaryMode.ZERO_PADDING)
+            .boundaryMode(BoundaryMode.ZERO_PADDING)
             .create(new Haar());
         
         // Static convenience method

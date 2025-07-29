@@ -1,6 +1,8 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.Factory;
+import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 
 /**
@@ -97,10 +99,6 @@ public class CWTFactory implements Factory<FFTAcceleratedCWT> {
      */
     public boolean isOptimizationsEnabled() {
         return enableOptimizations;
-    }
-    
-    private CWTFactory() {
-        // Prevent instantiation
     }
     
     /**
