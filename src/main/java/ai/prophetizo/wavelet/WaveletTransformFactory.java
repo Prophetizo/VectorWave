@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.api.Wavelet;
 
 import java.util.Objects;
@@ -30,7 +31,7 @@ import java.util.Objects;
  *     .create(new MorletWavelet());
  * }</pre>
  */
-public class WaveletTransformFactory {
+public class WaveletTransformFactory implements Factory<WaveletTransform> {
 
     // Default boundary mode is periodic (most common for DWT)
     private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
@@ -75,6 +76,44 @@ public class WaveletTransformFactory {
     public WaveletTransform create(Wavelet wavelet) {
         Objects.requireNonNull(wavelet, "wavelet cannot be null.");
         return new WaveletTransform(wavelet, boundaryMode);
+    }
+
+    /**
+     * Creates a WaveletTransform instance using default configuration.
+     * 
+     * <p>This method implements the Factory interface contract but requires
+     * a wavelet parameter for meaningful creation. Since no default wavelet
+     * is appropriate for all use cases, this method throws an exception.</p>
+     * 
+     * <p>Use {@link #create(Wavelet)} or {@link #createDefault(Wavelet)} instead.</p>
+     * 
+     * @throws UnsupportedOperationException always, as wavelet parameter is required
+     */
+    @Override
+    public WaveletTransform create() {
+        throw new UnsupportedOperationException(
+            "WaveletTransformFactory requires a wavelet parameter. " +
+            "Use create(Wavelet) or createDefault(Wavelet) instead.");
+    }
+
+    /**
+     * Gets a description of this factory.
+     * 
+     * @return description of the factory's purpose
+     */
+    @Override
+    public String getDescription() {
+        return "Factory for creating WaveletTransform instances with configurable boundary modes";
+    }
+
+    /**
+     * Gets the product type that this factory creates.
+     * 
+     * @return WaveletTransform.class
+     */
+    @Override
+    public Class<WaveletTransform> getProductType() {
+        return WaveletTransform.class;
     }
 
     /**
