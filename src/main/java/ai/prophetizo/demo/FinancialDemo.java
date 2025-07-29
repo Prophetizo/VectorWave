@@ -61,7 +61,7 @@ public class FinancialDemo {
         System.out.println("3. WAVELET-BASED DENOISING");
         System.out.println("===========================");
         
-        // Add some noise to the returns to demonstrate denoising
+        // Define a separate array of noisy returns to demonstrate denoising
         double[] noisyReturns = {
             0.052, 0.018, -0.008, 0.084, 0.037, 0.063, -0.025, 0.091
         };
