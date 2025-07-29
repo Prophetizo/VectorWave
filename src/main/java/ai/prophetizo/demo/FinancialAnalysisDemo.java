@@ -4,11 +4,15 @@ import ai.prophetizo.financial.FinancialAnalysisConfig;
 import ai.prophetizo.financial.FinancialAnalyzer;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Demonstrates the financial analysis capabilities with configurable thresholds.
  */
 public class FinancialAnalysisDemo {
+    
+    // Use a fixed seed for reproducible demo results
+    private static final Random RANDOM = new Random(42);
     
     public static void main(String[] args) {
         System.out.println("VectorWave - Financial Analysis Demo");
@@ -144,7 +148,7 @@ public class FinancialAnalysisDemo {
         
         for (int i = 1; i < prices.length; i++) {
             // Small random fluctuations around the base price
-            double change = (Math.random() - 0.5) * 0.005; // ±0.25% changes
+            double change = (RANDOM.nextDouble() - 0.5) * 0.005; // ±0.25% changes
             prices[i] = prices[i-1] * (1 + change);
         }
         
@@ -158,7 +162,7 @@ public class FinancialAnalysisDemo {
         
         for (int i = 1; i < prices.length; i++) {
             // Larger random fluctuations
-            double change = (Math.random() - 0.5) * 0.04; // ±2% changes
+            double change = (RANDOM.nextDouble() - 0.5) * 0.04; // ±2% changes
             prices[i] = prices[i-1] * (1 + change);
         }
         
@@ -173,11 +177,11 @@ public class FinancialAnalysisDemo {
         for (int i = 1; i < prices.length; i++) {
             if (i < 30) {
                 // Normal market before crash
-                double change = (Math.random() - 0.5) * 0.01;
+                double change = (RANDOM.nextDouble() - 0.5) * 0.01;
                 prices[i] = prices[i-1] * (1 + change);
             } else {
                 // Market crash - sharp downward movements with high volatility
-                double change = -0.02 + (Math.random() - 0.8) * 0.03; // Biased downward
+                double change = -0.02 + (RANDOM.nextDouble() - 0.8) * 0.03; // Biased downward
                 prices[i] = prices[i-1] * (1 + change);
             }
         }
@@ -193,7 +197,7 @@ public class FinancialAnalysisDemo {
         for (int i = 1; i < prices.length; i++) {
             // Consistent upward trend with occasional small dips
             double trend = 0.005; // 0.5% average growth
-            double noise = (Math.random() - 0.5) * 0.015; // ±0.75% noise
+            double noise = (RANDOM.nextDouble() - 0.5) * 0.015; // ±0.75% noise
             double change = trend + noise;
             prices[i] = prices[i-1] * (1 + change);
         }
@@ -209,11 +213,11 @@ public class FinancialAnalysisDemo {
         for (int i = 1; i < prices.length; i++) {
             if (i < 32) {
                 // First regime: low volatility, slight upward trend
-                double change = 0.001 + (Math.random() - 0.5) * 0.005;
+                double change = 0.001 + (RANDOM.nextDouble() - 0.5) * 0.005;
                 prices[i] = prices[i-1] * (1 + change);
             } else {
                 // Second regime: higher volatility, different trend
-                double change = -0.002 + (Math.random() - 0.5) * 0.025;
+                double change = -0.002 + (RANDOM.nextDouble() - 0.5) * 0.025;
                 prices[i] = prices[i-1] * (1 + change);
             }
         }
