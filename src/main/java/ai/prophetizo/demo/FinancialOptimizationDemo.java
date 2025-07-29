@@ -47,17 +47,7 @@ public class FinancialOptimizationDemo {
             TransformResult result = transform.forward(noisyPrices);
             
             // Apply soft thresholding to reduce noise
-            double[] denoisedApprox = applySoftThresholding(result, 0.1);
-            double[] denoisedDetail = new double[result.detailCoeffs().length];
-            System.arraycopy(result.detailCoeffs(), 0, denoisedDetail, 0, denoisedDetail.length);
-            
-            // Create a new result with denoised coefficients using the existing implementation
-            // Since TransformResult is sealed, create it through the transform operation
-            double[] tempSignal = new double[denoisedApprox.length * 2];
-            System.arraycopy(denoisedApprox, 0, tempSignal, 0, denoisedApprox.length);
-            System.arraycopy(denoisedDetail, 0, tempSignal, denoisedApprox.length, denoisedDetail.length);
-            
-            TransformResult denoisedResult = transform.forward(tempSignal);
+            TransformResult denoisedResult = applySoftThresholding(result, 0.1);
             double[] reconstructed = transform.inverse(denoisedResult);
             
             double noiseReduction = calculateNoiseReduction(noisyPrices, reconstructed);
@@ -208,9 +198,9 @@ public class FinancialOptimizationDemo {
         return returns;
     }
     
-    private static double[] applySoftThresholding(TransformResult result, double threshold) {
-        double[] approx = result.approximationCoeffs();
-        double[] details = result.detailCoeffs();
+    private static TransformResult applySoftThresholding(TransformResult result, double threshold) {
+        double[] approx = result.approximationCoeffs().clone();
+        double[] details = result.detailCoeffs().clone();
         
         // Apply soft thresholding to detail coefficients
         for (int i = 0; i < details.length; i++) {
@@ -221,7 +211,8 @@ public class FinancialOptimizationDemo {
             }
         }
         
-        return approx; // Return approximation coefficients for reconstruction
+        // Create a new TransformResult with the thresholded coefficients
+        return TransformResult.create(approx, details);
     }
     
     private static double calculateNoiseReduction(double[] original, double[] denoised) {
