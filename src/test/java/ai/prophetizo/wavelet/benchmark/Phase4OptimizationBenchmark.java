@@ -82,7 +82,7 @@ public class Phase4OptimizationBenchmark {
         
         // Create optimized transform
         transform = new WaveletTransformFactory()
-                .withBoundaryMode(BoundaryMode.PERIODIC)
+                .boundaryMode(BoundaryMode.PERIODIC)
                 .create(wavelet);
     }
     
