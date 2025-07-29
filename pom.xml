@@ -39,7 +39,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- JMH dependencies for benchmarking -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
@@ -83,7 +83,7 @@
                     <argLine>@{argLine} --add-modules jdk.incubator.vector</argLine>
                 </configuration>
             </plugin>
-            
+
             <!-- JaCoCo Plugin for code coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -132,23 +132,23 @@
                                         <exclude>ai.prophetizo.FinancialOptimizationDemo</exclude>
                                         <exclude>ai.prophetizo.OptimizationDemo</exclude>
                                         <exclude>ai.prophetizo.demo.**</exclude>
-                                        
+
                                         <!-- Abstract interfaces (minimal code to test) -->
                                         <exclude>ai.prophetizo.wavelet.api.Wavelet</exclude>
                                         <exclude>ai.prophetizo.wavelet.api.DiscreteWavelet</exclude>
                                         <exclude>ai.prophetizo.wavelet.api.ContinuousWavelet</exclude>
                                         <exclude>ai.prophetizo.wavelet.api.BiorthogonalWavelet</exclude>
-                                        
+
                                         <!-- Inner classes (already excluded above, but be explicit) -->
                                         <exclude>ai.prophetizo.wavelet.streaming.StreamingWaveletTransform</exclude>
                                         <exclude>ai.prophetizo.wavelet.streaming.SlidingWindowTransform.WindowedTransformResult</exclude>
-                                        
+
                                         <!-- GatherScatterOps - vector paths never executed since gather/scatter not universally supported -->
                                         <exclude>ai.prophetizo.wavelet.internal.GatherScatterOps</exclude>
-                                        
+
                                         <!-- Additional demo class -->
                                         <exclude>ai.prophetizo.wavelet.demo.OptimizationDemo</exclude>
-                                        
+
                                     </excludes>
                                     <limits>
                                         <limit>
@@ -163,7 +163,7 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <!-- Maven Shade Plugin for creating benchmark JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

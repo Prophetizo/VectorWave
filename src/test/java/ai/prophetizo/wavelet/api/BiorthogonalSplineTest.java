@@ -31,17 +31,17 @@ class BiorthogonalSplineTest {
     void testBior1_3_FilterValues() {
         BiorthogonalSpline bior = BiorthogonalSpline.BIOR1_3;
         
-        // Test decomposition low-pass filter
+        // Test decomposition low-pass filter (normalized to L2 norm = 1)
         double[] expectedLowPassDecomp = {
-            -0.08838834764831845, 0.08838834764831845,
-            0.7071067811865476, 0.7071067811865476,
-            0.08838834764831845, -0.08838834764831845
+            -0.08703882797784893, 0.08703882797784893,
+            0.6963106238227914, 0.6963106238227914,
+            0.08703882797784893, -0.08703882797784893
         };
         assertArrayEquals(expectedLowPassDecomp, bior.lowPassDecomposition(), 1e-15);
         
-        // Test reconstruction low-pass filter
+        // Test reconstruction low-pass filter (normalized to L2 norm = 1)
         double[] expectedLowPassRecon = {
-            0.35355339059327373, 0.35355339059327373
+            0.7071067811865476, 0.7071067811865476
         };
         assertArrayEquals(expectedLowPassRecon, bior.lowPassReconstruction(), 1e-15);
     }
@@ -54,19 +54,19 @@ class BiorthogonalSplineTest {
         double[] highPassDecomp = bior.highPassDecomposition();
         assertEquals(2, highPassDecomp.length);
         
-        // Verify alternating sign pattern
-        assertEquals(0.35355339059327373, highPassDecomp[0], 1e-15);
-        assertEquals(-0.35355339059327373, highPassDecomp[1], 1e-15);
+        // Verify alternating sign pattern (using normalized values)
+        assertEquals(0.7071067811865476, highPassDecomp[0], 1e-15);
+        assertEquals(-0.7071067811865476, highPassDecomp[1], 1e-15);
         
         // High-pass reconstruction is generated from low-pass decomposition
         double[] highPassRecon = bior.highPassReconstruction();
         assertEquals(6, highPassRecon.length);
         
         // Check first and last values to verify the generation logic
-        // highPassRecon[0] = (0 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-0] = 1 * lowPassDecomp[5] = 1 * (-0.08838834764831845) = -0.08838834764831845
-        assertEquals(-0.08838834764831845, highPassRecon[0], 1e-15);
-        // highPassRecon[5] = (5 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-5] = -1 * lowPassDecomp[0] = -1 * (-0.08838834764831845) = 0.08838834764831845
-        assertEquals(0.08838834764831845, highPassRecon[5], 1e-15);
+        // highPassRecon[0] = (0 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-0] = 1 * lowPassDecomp[5] = 1 * (-0.08703882797784893) = -0.08703882797784893
+        assertEquals(-0.08703882797784893, highPassRecon[0], 1e-15);
+        // highPassRecon[5] = (5 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-5] = -1 * lowPassDecomp[0] = -1 * (-0.08703882797784893) = 0.08703882797784893
+        assertEquals(0.08703882797784893, highPassRecon[5], 1e-15);
     }
 
     @Test
@@ -142,12 +142,12 @@ class BiorthogonalSplineTest {
         assertNotEquals(lowDecomp.length, lowRecon.length);
         assertNotEquals(highDecomp.length, highRecon.length);
         
-        // Check that filters are normalized (sum of squares ≈ 1 for some filters)
+        // Check that filters are normalized (sum of squares = 1 for L2 normalized filters)
         double sumSquaresRecon = 0;
         for (double v : lowRecon) {
             sumSquaresRecon += v * v;
         }
-        assertEquals(0.25, sumSquaresRecon, 1e-10); // For this specific filter
+        assertEquals(1.0, sumSquaresRecon, 1e-10); // L2 normalized filter
     }
 
     @Test
