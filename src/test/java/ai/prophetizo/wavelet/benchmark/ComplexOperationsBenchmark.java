@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit;
  * <p><b>Memory Requirements:</b> The benchmark allocates arrays based on the size
  * parameter. Default sizes are optimized for CI environments:
  * <ul>
- *   <li>Default sizes (256-4096): ~200KB per thread, suitable for CI</li>
- *   <li>Large sizes (16384+): ~768KB+ per thread, recommended for local testing</li>
- *   <li>Recommended heap: -Xmx512M for default, -Xmx2G for large sizes</li>
+ *   <li>Default sizes (256-4096): ~200KB per thread for array allocation, plus JMH overhead (~50KB), suitable for CI</li>
+ *   <li>Large sizes (16384+): ~768KB per thread for array allocation, plus JMH overhead (~100KB), recommended for local testing</li>
+ *   <li>Recommended heap: -Xmx512M for default, -Xmx2G for large sizes, depending on the number of threads and concurrent benchmark methods</li>
  * </ul>
  * </p>
  * 
