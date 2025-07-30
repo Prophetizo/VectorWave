@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 @Fork(value = 2, jvmArgs = {"--add-modules=jdk.incubator.vector"})
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
