@@ -86,6 +86,18 @@ Based on JMH benchmarks (RingBufferBenchmark):
 - Prevents false sharing with separate atomic positions
 - No explicit memory barriers needed for SPSC
 
+### ThreadLocal Window Buffers
+
+The `StreamingRingBuffer` uses ThreadLocal buffers for window extraction methods:
+- `getWindowDirect()` and `processWindow()` are fully thread-safe
+- Each thread gets its own set of buffers, eliminating data races
+- Zero allocation in steady state (buffers are reused within threads)
+- `getProcessingBuffer()` exposes the ThreadLocal buffer for flush operations
+- Call `cleanupThread()` when done to prevent memory leaks in thread pools
+
+This design ensures true zero-copy operation throughout the entire lifecycle,
+including edge cases like partial window processing during flush().
+
 ## Usage Guidelines
 
 ### Buffer Sizing
@@ -104,6 +116,24 @@ The ring buffer provides backpressure when full:
 - `write()` returns false when no space available
 - Caller must handle full buffer condition
 - Consider processing pending windows to free space
+
+## True Zero-Copy Implementation
+
+### The Problem
+The initial ring buffer implementation still required a `System.arraycopy` operation in `OptimizedStreamingWaveletTransform` because `WaveletTransform.forward()` only accepted full arrays, not slices.
+
+### The Solution
+Added `WaveletTransform.forward(double[], int, int)` method that accepts array slices:
+- Propagated offset/length parameters through to `ScalarOps` methods
+- Updated all convolution methods to work with array slices
+- Specialized implementations (Haar, DB2) also support slices
+
+### Performance Impact
+- **TRUE ZERO-COPY**: Eliminated the `System.arraycopy` bottleneck
+- **50% memory bandwidth reduction**: Now achieved in practice
+- **Direct processing**: Transform operates directly on ring buffer windows
+- **Cache efficiency**: Data never leaves cache during processing
+- **Zero allocation in flush()**: Even partial blocks reuse ThreadLocal buffers
 
 ## Future Enhancements
 

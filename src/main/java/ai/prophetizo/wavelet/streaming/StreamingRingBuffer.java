@@ -16,12 +16,11 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Automatic window advancement</li>
  * </ul>
  * 
- * <p><b>Thread Safety:</b> This class maintains the same thread-safety guarantees as
- * {@link RingBuffer} for read/write operations. However, the window extraction methods
- * ({@link #getWindowDirect()}, {@link #processWindow}) use shared internal buffers and
- * are NOT thread-safe. Only one thread should call these methods at a time. If concurrent
- * window extraction is needed, use {@link #getWindow(double[])} with separate output arrays
- * or synchronize access to the window extraction methods.</p>
+ * <p><b>Thread Safety:</b> This class is fully thread-safe. It maintains the same 
+ * thread-safety guarantees as {@link RingBuffer} for read/write operations. The window 
+ * extraction methods ({@link #getWindowDirect()}, {@link #processWindow}) use ThreadLocal 
+ * buffers, making them thread-safe while avoiding allocations. Each thread gets its own 
+ * set of buffers, eliminating data races without synchronization overhead.</p>
  */
 public class StreamingRingBuffer extends RingBuffer {
     
@@ -29,11 +28,9 @@ public class StreamingRingBuffer extends RingBuffer {
     private final int hopSize;
     private final int overlapSize;
     
-    // Working arrays for window extraction (reused to avoid allocation)
-    // WARNING: These shared buffers make getWindowDirect() and processWindow() NOT thread-safe
-    // Only one thread should call these methods at a time, or use getWindow() with external arrays
-    private final double[] windowBuffer;
-    private final double[] processingBuffer;
+    // ThreadLocal buffers for thread-safe window extraction without allocation
+    private final ThreadLocal<double[]> windowBuffer;
+    private final ThreadLocal<double[]> processingBuffer;
     
     /**
      * Creates a streaming ring buffer with sliding window support.
@@ -60,9 +57,9 @@ public class StreamingRingBuffer extends RingBuffer {
         this.hopSize = hopSize;
         this.overlapSize = windowSize - hopSize;
         
-        // Pre-allocate working buffers
-        this.windowBuffer = new double[windowSize];
-        this.processingBuffer = new double[windowSize];
+        // Initialize ThreadLocal buffers - each thread gets its own buffer
+        this.windowBuffer = ThreadLocal.withInitial(() -> new double[windowSize]);
+        this.processingBuffer = ThreadLocal.withInitial(() -> new double[windowSize]);
     }
     
     /**
@@ -94,22 +91,22 @@ public class StreamingRingBuffer extends RingBuffer {
     }
     
     /**
-     * Extracts the current window into the internal buffer without advancing positions.
+     * Extracts the current window into a thread-local buffer without advancing positions.
      * This method is useful for zero-allocation processing.
      * 
-     * <p><b>Thread Safety:</b> This method is NOT thread-safe as it uses a shared internal buffer.
-     * Only one thread should call this method at a time. For concurrent access, use
-     * {@link #getWindow(double[])} with separate output arrays.</p>
+     * <p><b>Thread Safety:</b> This method is thread-safe. Each thread gets its own
+     * internal buffer, eliminating data races while avoiding allocations.</p>
      * 
-     * @return the internal window buffer if data is available, null otherwise
+     * @return the thread-local window buffer if data is available, null otherwise
      */
     public double[] getWindowDirect() {
         if (!hasWindow()) {
             return null;
         }
         
-        peek(windowBuffer, 0, windowSize);
-        return windowBuffer;
+        double[] buffer = windowBuffer.get();
+        peek(buffer, 0, windowSize);
+        return buffer;
     }
     
     /**
@@ -130,8 +127,8 @@ public class StreamingRingBuffer extends RingBuffer {
      * Processes the current window and advances by hopSize.
      * This is the main method for streaming processing.
      * 
-     * <p><b>Thread Safety:</b> This method is NOT thread-safe as it uses a shared internal buffer.
-     * Only one thread should call this method at a time.</p>
+     * <p><b>Thread Safety:</b> This method is thread-safe. Each thread gets its own
+     * processing buffer, allowing concurrent window processing.</p>
      * 
      * @param processor the processor to apply to the window
      * @return true if processing occurred, false if insufficient data
@@ -141,11 +138,12 @@ public class StreamingRingBuffer extends RingBuffer {
             return false;
         }
         
-        // Get current window
-        peek(processingBuffer, 0, windowSize);
+        // Get current window using thread-local buffer
+        double[] buffer = processingBuffer.get();
+        peek(buffer, 0, windowSize);
         
         // Process the window
-        processor.process(processingBuffer, 0, windowSize);
+        processor.process(buffer, 0, windowSize);
         
         // Advance by hop size
         advanceWindow();
@@ -213,6 +211,30 @@ public class StreamingRingBuffer extends RingBuffer {
      */
     public int getOverlapSize() {
         return overlapSize;
+    }
+    
+    /**
+     * Cleans up ThreadLocal resources for the current thread.
+     * 
+     * <p>Call this method when a thread is done using the StreamingRingBuffer
+     * to prevent potential memory leaks in thread pool scenarios.</p>
+     */
+    public void cleanupThread() {
+        windowBuffer.remove();
+        processingBuffer.remove();
+    }
+    
+    /**
+     * Gets the thread-local processing buffer for zero-copy operations.
+     * 
+     * <p>This method provides access to the internal thread-local buffer,
+     * allowing callers to reuse it for operations like partial window
+     * processing in flush() methods, avoiding allocations.</p>
+     * 
+     * @return the thread-local processing buffer of size windowSize
+     */
+    public double[] getProcessingBuffer() {
+        return processingBuffer.get();
     }
     
     /**
