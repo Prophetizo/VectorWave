@@ -157,8 +157,8 @@ public final class CWTVectorOps {
         return result;
     }
     
-    // Complex operations handler
-    private final ComplexVectorOps complexOps = new ComplexVectorOps();
+    // Complex operations handler - static since it contains no mutable state
+    private static final ComplexVectorOps complexOps = new ComplexVectorOps();
     
     /**
      * Computes complex convolution for complex wavelets using direct vectorization.
