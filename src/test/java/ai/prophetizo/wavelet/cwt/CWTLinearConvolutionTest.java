@@ -53,8 +53,8 @@ class CWTLinearConvolutionTest {
         double[] signal = new double[64];
         double[] scales = {16.0};  // Large scale to test padding
         
-        // The wavelet support should be ~8 * 16 * bandwidth
-        // For Morlet with bandwidth=1, support ~ 128
+        // The wavelet support is calculated as 8 * scale * bandwidth
+        // For Morlet with bandwidth=1, the full support is exactly 128
         // FFT size should be at least signal_length + support - 1 = 64 + 128 - 1 = 191
         // Next power of 2 is 256
         
