@@ -503,10 +503,10 @@ public final class ComplexVectorOps {
      * 
      * <p>Note: While this method shares a similar loop unrolling pattern with
      * convertToInterleaved(), we intentionally keep them separate rather than
-     * extracting a helper method. This is a performance-critical operation where
-     * any additional method call overhead could impact throughput. The JVM may
-     * not inline a complex helper method, and the operations (reading vs writing
-     * at different indices) are sufficiently different to warrant duplication.</p>
+     * extracting a helper method. This is a performance-critical operation, and
+     * the differences in the operations (reading vs writing at different indices)
+     * justify keeping them separate to optimize throughput based on observed
+     * performance characteristics.</p>
      */
     public void convertToSplit(double[] interleaved, double[] real, double[] imag) {
         int length = real.length;
