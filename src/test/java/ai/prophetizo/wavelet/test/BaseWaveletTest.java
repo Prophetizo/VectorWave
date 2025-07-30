@@ -103,7 +103,7 @@ public abstract class BaseWaveletTest {
      */
     protected WaveletTransform createTransform(Wavelet wavelet, BoundaryMode boundaryMode) {
         return new WaveletTransformFactory()
-            .withBoundaryMode(boundaryMode)
+            .boundaryMode(boundaryMode)
             .create(wavelet);
     }
     
