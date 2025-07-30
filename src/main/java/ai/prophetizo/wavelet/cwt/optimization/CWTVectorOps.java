@@ -179,6 +179,10 @@ public final class CWTVectorOps {
                                        realWavelet, imagWavelet, scale);
         }
         
+        if (scale <= 0) {
+            throw new IllegalArgumentException("Scale must be positive, got: " + scale);
+        }
+        
         double sqrtScale = Math.sqrt(scale);
         double invSqrtScale = 1.0 / sqrtScale;
         int halfWavelet = waveletLen / 2;
@@ -262,6 +266,10 @@ public final class CWTVectorOps {
         int signalLen = realSignal.length;
         int waveletLen = realWavelet.length;
         ComplexMatrix result = new ComplexMatrix(1, signalLen);
+        
+        if (scale <= 0) {
+            throw new IllegalArgumentException("Scale must be positive, got: " + scale);
+        }
         
         double sqrtScale = Math.sqrt(scale);
         int halfWavelet = waveletLen / 2;
