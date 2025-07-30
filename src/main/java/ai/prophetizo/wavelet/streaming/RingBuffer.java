@@ -72,9 +72,9 @@ public class RingBuffer {
      * @return true if written successfully, false if buffer is full
      */
     public boolean write(double value) {
+        int currentRead = readPosition.get(); // Read this first for SPSC consistency
         int currentWrite = writePosition.get();
         int nextWrite = (currentWrite + 1) & mask;
-        int currentRead = readPosition.get(); // Snapshot read position
         
         // Check if buffer is full
         if (nextWrite == currentRead) {
@@ -103,11 +103,11 @@ public class RingBuffer {
         }
         
         int written = 0;
+        int currentRead = readPosition.get(); // Read this first for SPSC consistency
         int currentWrite = writePosition.get();
-        int currentRead = readPosition.get();
         
         // Calculate available space
-        int available = (currentRead - currentWrite - 1) & mask;
+        int available = (currentRead - currentWrite - 1 + capacity) & mask;
         int toWrite = Math.min(available, length);
         
         // Write in up to two chunks (wrap around)
@@ -133,8 +133,8 @@ public class RingBuffer {
      * @return the value read, or Double.NaN if buffer is empty
      */
     public double read() {
+        int currentWrite = writePosition.get(); // Read this first for SPSC consistency
         int currentRead = readPosition.get();
-        int currentWrite = writePosition.get(); // Snapshot write position
         
         // Check if buffer is empty
         if (currentRead == currentWrite) {
@@ -163,8 +163,8 @@ public class RingBuffer {
         }
         
         int read = 0;
+        int currentWrite = writePosition.get(); // Read this first for SPSC consistency
         int currentRead = readPosition.get();
-        int currentWrite = writePosition.get();
         
         // Calculate available data
         int available = (currentWrite - currentRead) & mask;
@@ -203,8 +203,8 @@ public class RingBuffer {
             throw new InvalidArgumentException("Invalid offset or length");
         }
         
+        int currentWrite = writePosition.get(); // Read this first for SPSC consistency
         int currentRead = readPosition.get();
-        int currentWrite = writePosition.get();
         
         // Calculate available data
         int available = (currentWrite - currentRead) & mask;
@@ -235,8 +235,8 @@ public class RingBuffer {
             throw new InvalidArgumentException("Count cannot be negative");
         }
         
+        int currentWrite = writePosition.get(); // Read this first for SPSC consistency
         int currentRead = readPosition.get();
-        int currentWrite = writePosition.get();
         
         int available = (currentWrite - currentRead) & mask;
         int toSkip = Math.min(available, count);
@@ -251,7 +251,7 @@ public class RingBuffer {
      * @return the number of available elements
      */
     public int available() {
-        // Snapshot positions to avoid race conditions
+        // Read in correct order for SPSC consistency
         int currentWrite = writePosition.get();
         int currentRead = readPosition.get();
         return (currentWrite - currentRead) & mask;
@@ -272,9 +272,9 @@ public class RingBuffer {
      * @return true if empty, false otherwise
      */
     public boolean isEmpty() {
-        // Snapshot positions to avoid race conditions
-        int currentRead = readPosition.get();
+        // Read in correct order for SPSC consistency
         int currentWrite = writePosition.get();
+        int currentRead = readPosition.get();
         return currentRead == currentWrite;
     }
     
@@ -284,9 +284,9 @@ public class RingBuffer {
      * @return true if full, false otherwise
      */
     public boolean isFull() {
-        // Snapshot positions to avoid race conditions
+        // Read in correct order for SPSC consistency
+        int currentRead = readPosition.get(); // Writer reads other's position first
         int currentWrite = writePosition.get();
-        int currentRead = readPosition.get();
         int nextWrite = (currentWrite + 1) & mask;
         return nextWrite == currentRead;
     }

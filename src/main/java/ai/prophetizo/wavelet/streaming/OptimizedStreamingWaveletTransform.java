@@ -151,7 +151,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public void process(double[] data) {
+    public synchronized void process(double[] data) {
         if (isClosed.get()) {
             throw InvalidStateException.closed("Transform");
         }
@@ -181,7 +181,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public void process(double sample) {
+    public synchronized void process(double sample) {
         if (isClosed.get()) {
             throw InvalidStateException.closed("Transform");
         }
@@ -203,13 +203,13 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         statistics.addSamples(1);
     }
     
-    private void processAvailableWindows() {
+    private synchronized void processAvailableWindows() {
         while (ringBuffer.hasWindow() && !isClosed.get()) {
             processOneWindow();
         }
     }
     
-    private void processOneWindow() {
+    private synchronized void processOneWindow() {
         if (isClosed.get()) {
             return;
         }
@@ -255,8 +255,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         int remaining = ringBuffer.available();
         if (remaining > 0 && remaining < blockSize) {
             // ZERO-COPY: Reuse the thread-local buffer from ringBuffer
-            // Since we're in flush() and no more data is coming, we can safely
-            // use the processingBuffer without worrying about concurrent access
+            // The buffer itself is thread-safe (ThreadLocal), and since all
+            // critical methods are now synchronized, ring buffer state is protected
             double[] partialData = ringBuffer.getProcessingBuffer();
             
             // Read available data into the buffer
@@ -301,7 +301,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public boolean isReady() {
+    public synchronized boolean isReady() {
         return !isClosed.get() && !ringBuffer.isFull();
     }
 

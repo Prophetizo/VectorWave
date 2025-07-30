@@ -156,14 +156,20 @@ public class StreamingRingBuffer extends RingBuffer {
      * Useful for overlap-add or overlap-save processing.
      * 
      * @param output the array to fill with overlap data
-     * @return true if overlap was extracted, false if insufficient data
+     * @return true if overlap was extracted, false if insufficient data or no overlap configured
+     * @throws InvalidArgumentException if output is null or too small (when overlapSize > 0)
      */
     public boolean getOverlap(double[] output) {
+        // No overlap configured - return false without validation
+        if (overlapSize == 0) {
+            return false;
+        }
+        
         if (output == null || output.length < overlapSize) {
             throw new InvalidArgumentException("Output array must have at least overlapSize elements");
         }
         
-        if (overlapSize == 0 || available() < overlapSize) {
+        if (available() < overlapSize) {
             return false;
         }
         
