@@ -48,16 +48,36 @@ public class RingBuffer {
     
     // Writer's cache line
     private final AtomicInteger writePosition = new AtomicInteger(0);
-    private volatile long p1, p2, p3, p4, p5, p6, p7; // 56 bytes of padding
+    
+    // PADDING: DO NOT REMOVE OR ACCESS THESE FIELDS
+    // These fields exist solely to prevent false sharing between writePosition and readPosition.
+    // They must be:
+    // - volatile: prevents compiler/JVM reordering or optimization
+    // - long: 8 bytes each for predictable size  
+    // - never accessed: any access would defeat their purpose
+    // Total: 7 * 8 = 56 bytes, ensuring separation on 64-byte cache lines
+    @SuppressWarnings("unused") 
+    private volatile long p1, p2, p3, p4, p5, p6, p7;
     
     // Reader's cache line  
     private final AtomicInteger readPosition = new AtomicInteger(0);
-    private volatile long p8, p9, p10, p11, p12, p13, p14; // 56 bytes of padding
+    
+    // PADDING: DO NOT REMOVE OR ACCESS THESE FIELDS (see above)
+    @SuppressWarnings("unused")
+    private volatile long p8, p9, p10, p11, p12, p13, p14;
     
     /**
      * Creates a new ring buffer with the specified capacity.
      * 
-     * @param capacity the buffer capacity (must be power of 2)
+     * <p>The capacity must be a power of 2 (e.g., 16, 32, 64, 128, 256, 512, 1024).
+     * This constraint enables efficient bitwise modulo operations using {@code (index & (capacity - 1))}
+     * instead of the more expensive {@code index % capacity}. This optimization is critical
+     * for high-performance streaming applications where every CPU cycle matters.</p>
+     * 
+     * <p>Example: With capacity 256 (0x100), the mask becomes 255 (0xFF), allowing
+     * wrap-around via simple bitwise AND instead of integer division.</p>
+     * 
+     * @param capacity the buffer capacity (must be power of 2, minimum 2)
      * @throws InvalidArgumentException if capacity is not a power of 2 or less than 2
      */
     public RingBuffer(int capacity) {

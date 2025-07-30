@@ -37,6 +37,11 @@ import java.util.concurrent.atomic.LongAdder;
  * The transform results are published to subscribers in a thread-safe manner via the
  * SubmissionPublisher base class.</p>
  *
+ * <p><b>Backpressure Handling:</b> When the ring buffer is full, the process methods will
+ * automatically process windows to make space. If the buffer remains full without complete
+ * windows (edge case with improper sizing), the methods use Thread.yield() to avoid
+ * busy-waiting and reduce CPU usage.</p>
+ *
  * @see WaveletTransform#forward(double[], int, int) The zero-copy transform method
  * @since 1.1
  */
@@ -179,6 +184,11 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 // Force processing of one window to make space
                 if (ringBuffer.hasWindow()) {
                     processOneWindow();
+                } else {
+                    // Buffer is full but no complete window available
+                    // This shouldn't happen with proper buffer sizing, but if it does,
+                    // yield to avoid busy-waiting
+                    Thread.yield();
                 }
             }
         }
@@ -193,13 +203,19 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         }
 
         // Try to write to ring buffer
+        int retries = 0;
         while (!ringBuffer.write(sample) && !isClosed.get()) {
             // Buffer is full, process one window to make space
             if (ringBuffer.hasWindow()) {
                 processOneWindow();
+                retries = 0; // Reset retries after making progress
             } else {
                 // This shouldn't happen with proper buffer sizing
-                throw new InvalidStateException("Ring buffer full but no window available");
+                // Instead of throwing immediately, try a few times with backoff
+                if (++retries > 3) {
+                    throw new InvalidStateException("Ring buffer full but no window available after retries");
+                }
+                Thread.yield(); // Yield to avoid busy-waiting
             }
         }
         

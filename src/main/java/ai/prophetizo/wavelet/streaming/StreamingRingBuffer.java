@@ -34,6 +34,9 @@ public class StreamingRingBuffer extends RingBuffer {
     private final ThreadLocal<double[]> windowBuffer;
     private final ThreadLocal<double[]> processingBuffer;
     
+    // Concurrent reader detection (only in assertions, zero overhead in production)
+    private volatile Thread currentReader = null;
+    
     /**
      * Creates a streaming ring buffer with sliding window support.
      * 
@@ -108,9 +111,16 @@ public class StreamingRingBuffer extends RingBuffer {
             return null;
         }
         
-        double[] buffer = windowBuffer.get();
-        peek(buffer, 0, windowSize);
-        return buffer;
+        // Detect concurrent readers (only active with -ea flag)
+        assert enterReader() : "Concurrent reader detected! Only one thread should read from StreamingRingBuffer at a time.";
+        
+        try {
+            double[] buffer = windowBuffer.get();
+            peek(buffer, 0, windowSize);
+            return buffer;
+        } finally {
+            assert exitReader();
+        }
     }
     
     /**
@@ -144,17 +154,24 @@ public class StreamingRingBuffer extends RingBuffer {
             return false;
         }
         
-        // Get current window using thread-local buffer
-        double[] buffer = processingBuffer.get();
-        peek(buffer, 0, windowSize);
+        // Detect concurrent readers (only active with -ea flag)
+        assert enterReader() : "Concurrent reader detected! Only one thread should read from StreamingRingBuffer at a time.";
         
-        // Process the window
-        processor.process(buffer, 0, windowSize);
-        
-        // Advance by hop size
-        advanceWindow();
-        
-        return true;
+        try {
+            // Get current window using thread-local buffer
+            double[] buffer = processingBuffer.get();
+            peek(buffer, 0, windowSize);
+            
+            // Process the window
+            processor.process(buffer, 0, windowSize);
+            
+            // Advance by hop size
+            advanceWindow();
+            
+            return true;
+        } finally {
+            assert exitReader();
+        }
     }
     
     /**
@@ -288,5 +305,34 @@ public class StreamingRingBuffer extends RingBuffer {
          * @param length the length of the window
          */
         void process(double[] data, int offset, int length);
+    }
+    
+    /**
+     * Helper method for concurrent reader detection.
+     * Only active when assertions are enabled (-ea flag).
+     * 
+     * @return true if this thread can proceed as reader
+     */
+    private boolean enterReader() {
+        Thread current = Thread.currentThread();
+        Thread existing = currentReader;
+        
+        if (existing != null && existing != current && existing.isAlive()) {
+            // Another thread is currently reading
+            return false;
+        }
+        
+        currentReader = current;
+        return true;
+    }
+    
+    /**
+     * Helper method to exit reader state.
+     * 
+     * @return always true (for assert statement)
+     */
+    private boolean exitReader() {
+        currentReader = null;
+        return true;
     }
 }
