@@ -102,7 +102,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     
     // Ring buffer for zero-copy operations
-    private final StreamingRingBuffer ringBuffer;
+    private final ResizableStreamingRingBuffer ringBuffer;
+    private final boolean enableAdaptiveResizing;
     
     // State management
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
@@ -156,6 +157,23 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      */
     public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize, 
                                             double overlapFactor, int bufferCapacityMultiplier) {
+        this(wavelet, boundaryMode, blockSize, overlapFactor, bufferCapacityMultiplier, true);
+    }
+    
+    /**
+     * Creates an optimized streaming wavelet transform with full configuration control.
+     *
+     * @param wavelet      the wavelet to use
+     * @param boundaryMode the boundary mode
+     * @param blockSize    the block size (must be power of 2)
+     * @param overlapFactor the overlap factor (0.0 = no overlap, 0.5 = 50% overlap, 0.75 = 75% overlap)
+     * @param bufferCapacityMultiplier multiplier for ring buffer capacity (capacity = blockSize * multiplier)
+     * @param enableAdaptiveResizing whether to enable dynamic buffer resizing
+     * @throws InvalidArgumentException if parameters are invalid
+     */
+    public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize, 
+                                            double overlapFactor, int bufferCapacityMultiplier,
+                                            boolean enableAdaptiveResizing) {
         super();
 
         if (wavelet == null) {
@@ -191,8 +209,13 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
             hopSize = 1;
         }
         
-        // Create ring buffer with sufficient capacity for smooth operation
-        this.ringBuffer = new StreamingRingBuffer(blockSize * bufferCapacityMultiplier, blockSize, hopSize);
+        // Create resizable ring buffer with sufficient capacity for smooth operation
+        int initialCapacity = blockSize * bufferCapacityMultiplier;
+        int minCapacity = blockSize * minBufferMultiplier;
+        int maxCapacity = blockSize * maxBufferMultiplier;
+        this.ringBuffer = new ResizableStreamingRingBuffer(
+            initialCapacity, blockSize, hopSize, minCapacity, maxCapacity);
+        this.enableAdaptiveResizing = enableAdaptiveResizing;
 
         // Create transform with the specified wavelet and boundary mode
         this.transform = new WaveletTransform(wavelet, boundaryMode);
@@ -448,6 +471,10 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      * This method implements dynamic buffer sizing to optimize for varying data rates.
      */
     private void checkAndAdaptBufferSize() {
+        if (!enableAdaptiveResizing) {
+            return;
+        }
+        
         long currentTime = System.nanoTime();
         
         // Only check periodically to avoid overhead
@@ -456,42 +483,37 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         }
         
         lastAdaptiveCheck = currentTime;
-        double throughput = statistics.getThroughput();
         
-        // Determine if we should resize
-        boolean shouldResize = false;
-        int newMultiplier = currentBufferMultiplier;
-        
-        if (throughput > THROUGHPUT_HIGH_THRESHOLD && currentBufferMultiplier < maxBufferMultiplier) {
-            // High throughput - increase buffer size
-            newMultiplier = Math.min(currentBufferMultiplier * 2, maxBufferMultiplier);
-            shouldResize = true;
-        } else if (throughput < THROUGHPUT_LOW_THRESHOLD && currentBufferMultiplier > minBufferMultiplier) {
-            // Low throughput - decrease buffer size to save memory
-            newMultiplier = Math.max(currentBufferMultiplier / 2, minBufferMultiplier);
-            shouldResize = true;
-        }
-        
-        // Check buffer utilization
+        // Calculate buffer utilization
         int bufferLevel = ringBuffer.available();
         int bufferCapacity = ringBuffer.getCapacity();
         double utilization = (double) bufferLevel / bufferCapacity;
         
-        // If buffer is consistently full, increase size
-        if (utilization > 0.9 && currentBufferMultiplier < maxBufferMultiplier) {
-            newMultiplier = Math.min(currentBufferMultiplier * 2, maxBufferMultiplier);
-            shouldResize = true;
+        // First, try utilization-based resizing
+        boolean resized = ringBuffer.resizeBasedOnUtilization(utilization);
+        
+        if (!resized) {
+            // If utilization-based resize didn't happen, check throughput
+            double throughput = statistics.getThroughput();
+            int currentCapacity = ringBuffer.getCapacity();
+            int newCapacity = currentCapacity;
+            
+            if (throughput > THROUGHPUT_HIGH_THRESHOLD) {
+                // High throughput - increase buffer size
+                newCapacity = Math.min(currentCapacity * 2, blockSize * maxBufferMultiplier);
+            } else if (throughput < THROUGHPUT_LOW_THRESHOLD) {
+                // Low throughput - decrease buffer size to save memory
+                newCapacity = Math.max(currentCapacity / 2, blockSize * minBufferMultiplier);
+            }
+            
+            if (newCapacity != currentCapacity) {
+                resized = ringBuffer.resize(newCapacity);
+            }
         }
         
-        // Note: In a real implementation, we would need to implement buffer resizing
-        // For now, we just track what the optimal size would be
-        if (shouldResize && newMultiplier != currentBufferMultiplier) {
-            // Log the recommendation (in production, this could trigger actual resizing)
-            currentBufferMultiplier = newMultiplier;
-            // In a full implementation, we would:
-            // 1. Create a new larger/smaller ring buffer
-            // 2. Transfer existing data
-            // 3. Swap the buffers atomically
+        // Update current multiplier to reflect actual capacity
+        if (resized) {
+            currentBufferMultiplier = ringBuffer.getCapacity() / blockSize;
         }
     }
     

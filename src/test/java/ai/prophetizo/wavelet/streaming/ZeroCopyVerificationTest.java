@@ -188,11 +188,28 @@ class ZeroCopyVerificationTest {
                                           int blockSize, StreamingRingBuffer ringBuffer) {
             super(wavelet, boundaryMode, blockSize);
             // Replace the ring buffer using reflection (for testing only)
+            // Since ringBuffer is now ResizableStreamingRingBuffer, we need to wrap it
             try {
-                java.lang.reflect.Field field = OptimizedStreamingWaveletTransform.class
+                // Create a ResizableStreamingRingBuffer that wraps our test buffer
+                ResizableStreamingRingBuffer resizableBuffer = new ResizableStreamingRingBuffer(
+                    ringBuffer.getCapacity(), blockSize, blockSize,
+                    ringBuffer.getCapacity(), ringBuffer.getCapacity()
+                );
+                
+                // Now inject our testable buffer into the resizable buffer
+                java.lang.reflect.Field bufferRefField = ResizableStreamingRingBuffer.class
+                    .getDeclaredField("bufferRef");
+                bufferRefField.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                java.util.concurrent.atomic.AtomicReference<StreamingRingBuffer> bufferRef = 
+                    (java.util.concurrent.atomic.AtomicReference<StreamingRingBuffer>) bufferRefField.get(resizableBuffer);
+                bufferRef.set(ringBuffer);
+                
+                // Now inject the resizable buffer into the transform
+                java.lang.reflect.Field transformField = OptimizedStreamingWaveletTransform.class
                     .getDeclaredField("ringBuffer");
-                field.setAccessible(true);
-                field.set(this, ringBuffer);
+                transformField.setAccessible(true);
+                transformField.set(this, resizableBuffer);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to inject test ring buffer", e);
             }
