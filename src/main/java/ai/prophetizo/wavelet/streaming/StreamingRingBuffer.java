@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.streaming;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Specialized ring buffer for streaming wavelet transforms with sliding window support.
@@ -37,6 +38,10 @@ public class StreamingRingBuffer extends RingBuffer {
     
     // Concurrent reader detection (only in assertions, zero overhead in production)
     private final AtomicReference<Thread> currentReader = new AtomicReference<>(null);
+    
+    // Timestamp-based reader tracking to handle dead thread detection more robustly
+    private volatile long readerAcquiredTime = 0;
+    private static final long READER_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30); // 30 second timeout
     
     /**
      * Creates a streaming ring buffer with sliding window support.
@@ -312,6 +317,11 @@ public class StreamingRingBuffer extends RingBuffer {
      * Helper method for concurrent reader detection.
      * Only active when assertions are enabled (-ea flag).
      * 
+     * <p>This implementation uses a timeout-based approach to handle the race condition
+     * where a thread might appear dead but then become active again. If a reader has
+     * held the lock for more than READER_TIMEOUT_NANOS, we consider it expired and
+     * allow takeover regardless of thread state.</p>
+     * 
      * @return true if this thread can proceed as reader
      */
     private boolean enterReader() {
@@ -319,21 +329,38 @@ public class StreamingRingBuffer extends RingBuffer {
         
         // Try to atomically set ourselves as the reader
         if (currentReader.compareAndSet(null, current)) {
+            readerAcquiredTime = System.nanoTime();
             return true; // We acquired reader status
         }
         
-        // Someone else might be reading, check if it's us or if they're still alive
+        // Someone else might be reading
         Thread existing = currentReader.get();
         if (existing == current) {
             return true; // Re-entrant call from same thread
         }
         
-        if (existing != null && existing.isAlive()) {
-            return false; // Another thread is actively reading
+        // Check if the existing reader has expired (timeout-based approach)
+        long currentTime = System.nanoTime();
+        long timeSinceAcquired = currentTime - readerAcquiredTime;
+        
+        if (existing != null && timeSinceAcquired < READER_TIMEOUT_NANOS) {
+            // Reader is still within timeout period
+            if (existing.isAlive()) {
+                return false; // Another thread is actively reading
+            }
+            // Thread is dead but within timeout - still deny access to be safe
+            return false;
         }
         
-        // The previous reader thread is dead, try to take over
-        return currentReader.compareAndSet(existing, current);
+        // Reader has expired (either null, timed out, or dead beyond timeout)
+        // Try to take over atomically
+        if (currentReader.compareAndSet(existing, current)) {
+            readerAcquiredTime = currentTime;
+            return true;
+        }
+        
+        // Someone else took over while we were checking
+        return false;
     }
     
     /**
@@ -342,8 +369,11 @@ public class StreamingRingBuffer extends RingBuffer {
      * @return always true (for assert statement)
      */
     private boolean exitReader() {
+        Thread current = Thread.currentThread();
         // Only clear if we are the current reader
-        currentReader.compareAndSet(Thread.currentThread(), null);
+        if (currentReader.compareAndSet(current, null)) {
+            readerAcquiredTime = 0; // Clear the timestamp
+        }
         return true;
     }
 }

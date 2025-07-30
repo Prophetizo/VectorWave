@@ -45,9 +45,30 @@ public final class ScalarOps {
      * @param length The number of elements to process.
      * @param filter The filter (wavelet coefficients) to apply.
      * @param output The array to store the results.
+     * @throws IllegalArgumentException if signal, filter, or output is null
+     * @throws IndexOutOfBoundsException if offset or length are invalid
      */
     public static void convolveAndDownsamplePeriodic(double[] signal, int offset, int length, 
                                                      double[] filter, double[] output) {
+        // Validate parameters
+        if (signal == null) {
+            throw new IllegalArgumentException("Signal cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
+        if (output == null) {
+            throw new IllegalArgumentException("Output cannot be null");
+        }
+        if (offset < 0 || length < 0 || offset + length > signal.length) {
+            throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
+                ", length=" + length + ", array length=" + signal.length);
+        }
+        if (output.length != length / 2) {
+            throw new IllegalArgumentException("Output array must have length " + (length / 2) + 
+                ", but has length " + output.length);
+        }
+        
         int filterLen = filter.length;
 
         // Use specialized implementations for small filters and signals
@@ -98,9 +119,30 @@ public final class ScalarOps {
      * @param length The number of elements to process.
      * @param filter The filter (wavelet coefficients) to apply.
      * @param output The array to store the results.
+     * @throws IllegalArgumentException if signal, filter, or output is null
+     * @throws IndexOutOfBoundsException if offset or length are invalid
      */
     public static void convolveAndDownsampleDirect(double[] signal, int offset, int length,
                                                    double[] filter, double[] output) {
+        // Validate parameters
+        if (signal == null) {
+            throw new IllegalArgumentException("Signal cannot be null");
+        }
+        if (filter == null) {
+            throw new IllegalArgumentException("Filter cannot be null");
+        }
+        if (output == null) {
+            throw new IllegalArgumentException("Output cannot be null");
+        }
+        if (offset < 0 || length < 0 || offset + length > signal.length) {
+            throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
+                ", length=" + length + ", array length=" + signal.length);
+        }
+        if (output.length != length / 2) {
+            throw new IllegalArgumentException("Output array must have length " + (length / 2) + 
+                ", but has length " + output.length);
+        }
+        
         int filterLen = filter.length;
 
         for (int i = 0; i < output.length; i++) {
@@ -357,10 +399,44 @@ public final class ScalarOps {
      * @param highFilter   The high-pass filter.
      * @param approxCoeffs Output array for approximation coefficients.
      * @param detailCoeffs Output array for detail coefficients.
+     * @throws IllegalArgumentException if any array is null or output arrays have wrong length
+     * @throws IndexOutOfBoundsException if offset or length are invalid
      */
     public static void combinedTransformPeriodic(double[] signal, int offset, int length,
                                                  double[] lowFilter, double[] highFilter,
                                                  double[] approxCoeffs, double[] detailCoeffs) {
+        // Validate parameters
+        if (signal == null) {
+            throw new IllegalArgumentException("Signal cannot be null");
+        }
+        if (lowFilter == null) {
+            throw new IllegalArgumentException("Low filter cannot be null");
+        }
+        if (highFilter == null) {
+            throw new IllegalArgumentException("High filter cannot be null");
+        }
+        if (approxCoeffs == null) {
+            throw new IllegalArgumentException("Approximation coefficients array cannot be null");
+        }
+        if (detailCoeffs == null) {
+            throw new IllegalArgumentException("Detail coefficients array cannot be null");
+        }
+        if (offset < 0 || length < 0 || offset + length > signal.length) {
+            throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
+                ", length=" + length + ", array length=" + signal.length);
+        }
+        if (approxCoeffs.length != length / 2) {
+            throw new IllegalArgumentException("Approximation coefficients array must have length " + 
+                (length / 2) + ", but has length " + approxCoeffs.length);
+        }
+        if (detailCoeffs.length != length / 2) {
+            throw new IllegalArgumentException("Detail coefficients array must have length " + 
+                (length / 2) + ", but has length " + detailCoeffs.length);
+        }
+        if (lowFilter.length != highFilter.length) {
+            throw new IllegalArgumentException("Low and high filters must have the same length");
+        }
+        
         int filterLen = lowFilter.length;
 
         if (length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(length)) {

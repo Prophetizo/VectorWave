@@ -61,6 +61,12 @@ public class RingBuffer {
     // - long: 8 bytes each for predictable size  
     // - never accessed: any access would defeat their purpose
     // Total: PADDING_LONGS * 8 = 56 bytes, ensuring separation on CACHE_LINE_SIZE-byte cache lines
+    //
+    // @SuppressWarnings("unused") is required because:
+    // - IDEs and static analysis tools will flag these fields as unused (which is correct)
+    // - We WANT them to be unused - their only purpose is to occupy memory space
+    // - Without this annotation, developers might be tempted to remove them as "dead code"
+    // - The annotation serves as additional documentation that the unused state is intentional
     @SuppressWarnings("unused") 
     private volatile long p1, p2, p3, p4, p5, p6, p7;
     
@@ -68,6 +74,7 @@ public class RingBuffer {
     private final AtomicInteger readPosition = new AtomicInteger(0);
     
     // PADDING: DO NOT REMOVE OR ACCESS THESE FIELDS (see above)
+    // @SuppressWarnings("unused") - Same reasoning as p1-p7: these fields must remain unused
     @SuppressWarnings("unused")
     private volatile long p8, p9, p10, p11, p12, p13, p14;
     

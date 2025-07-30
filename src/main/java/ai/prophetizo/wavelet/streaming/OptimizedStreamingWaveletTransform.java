@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
-import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
@@ -156,11 +155,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         // Create ring buffer with sufficient capacity for smooth operation
         this.ringBuffer = new StreamingRingBuffer(blockSize * bufferCapacityMultiplier, blockSize, hopSize);
 
-        // Create transform with optimized config
-        TransformConfig config = TransformConfig.builder()
-                .boundaryMode(boundaryMode)
-                .build();
-        this.transform = new WaveletTransform(wavelet, boundaryMode, config);
+        // Create transform with the specified wavelet and boundary mode
+        this.transform = new WaveletTransform(wavelet, boundaryMode);
     }
 
     @Override
@@ -201,10 +197,18 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                     }
                     
                     // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                    long backoffNanos = Math.min(
-                        initialBackoffNanos << (backoffAttempts - 1),
-                        1_000_000 // Cap at 1ms
-                    );
+                    // Use safe multiplication to prevent overflow
+                    long backoffNanos;
+                    try {
+                        // Calculate 2^(attempts-1) * initialBackoff
+                        long multiplier = 1L << Math.min(backoffAttempts - 1, 20); // Cap shift to prevent overflow
+                        backoffNanos = Math.min(
+                            Math.multiplyExact(initialBackoffNanos, multiplier),
+                            1_000_000L // Cap at 1ms
+                        );
+                    } catch (ArithmeticException e) {
+                        backoffNanos = 1_000_000L; // Cap at 1ms on overflow
+                    }
                     LockSupport.parkNanos(backoffNanos);
                 }
             } else if (written > 0) {
@@ -240,10 +244,18 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 }
                 
                 // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                long backoffNanos = Math.min(
-                    initialBackoffNanos << (backoffAttempts - 1),
-                    1_000_000 // Cap at 1ms
-                );
+                // Use safe multiplication to prevent overflow
+                long backoffNanos;
+                try {
+                    // Calculate 2^(attempts-1) * initialBackoff
+                    long multiplier = 1L << Math.min(backoffAttempts - 1, 20); // Cap shift to prevent overflow
+                    backoffNanos = Math.min(
+                        Math.multiplyExact(initialBackoffNanos, multiplier),
+                        1_000_000L // Cap at 1ms
+                    );
+                } catch (ArithmeticException e) {
+                    backoffNanos = 1_000_000L; // Cap at 1ms on overflow
+                }
                 LockSupport.parkNanos(backoffNanos);
             }
         }
