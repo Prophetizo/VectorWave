@@ -565,8 +565,8 @@ public final class CWTTransform {
             ComplexNumber[] convResult = ifftComplex(product);
             
             // Extract valid portion with proper offset for linear convolution
-            int waveletSupport = (int)(WAVELET_SUPPORT_FACTOR * scale * wavelet.bandwidth());
-            int halfSupport = waveletSupport / 2;
+            int waveletSupport = getWaveletSupport(scale);
+            int halfSupport = getHalfSupport(scale);
             
             for (int t = 0; t < signalLength; t++) {
                 int idx = t + halfSupport;
