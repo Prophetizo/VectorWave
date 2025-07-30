@@ -10,14 +10,35 @@ import java.util.concurrent.TimeUnit;
 /**
  * JMH benchmark for complex number operations.
  * 
- * Compares vectorized vs scalar implementations of complex arithmetic.
+ * <p>Compares vectorized vs scalar implementations of complex arithmetic.
+ * This benchmark evaluates the performance of various complex number operations
+ * including multiplication, magnitude computation, conjugation, and addition.</p>
  * 
- * Run with: ./jmh-runner.sh ComplexOperationsBenchmark
+ * <p><b>Memory Requirements:</b> The benchmark allocates arrays based on the size
+ * parameter. For the largest size (16384), it requires approximately:
+ * <ul>
+ *   <li>6 arrays × 16384 elements × 8 bytes = ~768KB per thread</li>
+ *   <li>Recommended heap size: -Xmx1G for default parameters</li>
+ *   <li>For larger sizes, adjust heap accordingly</li>
+ * </ul>
+ * </p>
+ * 
+ * <p><b>Running the benchmark:</b></p>
+ * <pre>
+ * # With default heap (1GB):
+ * ./jmh-runner.sh ComplexOperationsBenchmark
+ * 
+ * # With custom heap size:
+ * JAVA_OPTS="-Xmx4G" ./jmh-runner.sh ComplexOperationsBenchmark
+ * 
+ * # With specific array sizes:
+ * ./jmh-runner.sh ComplexOperationsBenchmark -p size=65536,131072
+ * </pre>
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G", "--add-modules=jdk.incubator.vector"})
+@Fork(value = 2, jvmArgs = {"--add-modules=jdk.incubator.vector"})
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class ComplexOperationsBenchmark {

@@ -30,6 +30,15 @@ FULL_CP="target/test-classes:target/classes:$CP"
 echo "Running benchmark: $BENCHMARK_CLASS"
 echo ""
 
+# Set default JVM options if not provided
+DEFAULT_JAVA_OPTS="-Xmx1G --add-modules=jdk.incubator.vector"
+
+# Use custom JAVA_OPTS if provided, otherwise use defaults
+JVM_OPTS="${JAVA_OPTS:-$DEFAULT_JAVA_OPTS}"
+
+echo "JVM Options: $JVM_OPTS"
+echo ""
+
 # Run JMH
-java -cp "$FULL_CP" \
+java -cp "$FULL_CP" $JVM_OPTS \
     org.openjdk.jmh.Main "$BENCHMARK_CLASS" "$@"
