@@ -40,7 +40,8 @@ public final class ComplexVectorOps {
     // 4 elements provides good balance between instruction-level parallelism and code size
     private static final int UNROLL_FACTOR = 4;
     
-    // Static assertion to ensure unrolled code matches UNROLL_FACTOR
+    // Static assertion to ensure UNROLL_FACTOR is set to 4.
+    // Note: This does not validate that the unrolled code uses the same number of iterations.
     static {
         if (UNROLL_FACTOR != 4) {
             throw new AssertionError("UNROLL_FACTOR must be 4 to match hardcoded unrolling in convertToSplit/convertToInterleaved");
