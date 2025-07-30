@@ -279,20 +279,20 @@ public final class ComplexVectorOps {
         }
         
         ComplexMatrix result = new ComplexMatrix(m, n);
+        
         double[][] aReal = a.getReal();
         double[][] aImag = a.getImaginary();
         double[][] bReal = b.getReal();
         double[][] bImag = b.getImaginary();
         
-        // For better cache efficiency with column access, we can either:
-        // 1. Transpose B first (best for multiple operations)
-        // 2. Use a different loop order (implemented here)
-        // 3. Process multiple columns at once to amortize gather cost
+        // Create accumulators to avoid redundant getReal/getImaginary calls
+        double[][] accumReal = new double[m][n];
+        double[][] accumImag = new double[m][n];
         
         // Block size for cache efficiency
         int blockSize = Math.min(32, Math.min(m, Math.min(n, k)));
         
-        // Alternative approach: process in tiles to maximize cache reuse
+        // Process in tiles to maximize cache reuse
         for (int i0 = 0; i0 < m; i0 += blockSize) {
             for (int k0 = 0; k0 < k; k0 += blockSize) {
                 for (int j0 = 0; j0 < n; j0 += blockSize) {
@@ -340,15 +340,15 @@ public final class ComplexVectorOps {
                                 sumImag3 += ar * bi3 + ai * br3;
                             }
                             
-                            // Accumulate results
-                            result.set(i, j, result.getReal(i, j) + sumReal0, 
-                                      result.getImaginary(i, j) + sumImag0);
-                            result.set(i, j + 1, result.getReal(i, j + 1) + sumReal1, 
-                                      result.getImaginary(i, j + 1) + sumImag1);
-                            result.set(i, j + 2, result.getReal(i, j + 2) + sumReal2, 
-                                      result.getImaginary(i, j + 2) + sumImag2);
-                            result.set(i, j + 3, result.getReal(i, j + 3) + sumReal3, 
-                                      result.getImaginary(i, j + 3) + sumImag3);
+                            // Accumulate results into our arrays
+                            accumReal[i][j] += sumReal0;
+                            accumImag[i][j] += sumImag0;
+                            accumReal[i][j + 1] += sumReal1;
+                            accumImag[i][j + 1] += sumImag1;
+                            accumReal[i][j + 2] += sumReal2;
+                            accumImag[i][j + 2] += sumImag2;
+                            accumReal[i][j + 3] += sumReal3;
+                            accumImag[i][j + 3] += sumImag3;
                         }
                         
                         // Handle remaining columns
@@ -365,11 +365,18 @@ public final class ComplexVectorOps {
                                 sumImag += ar * bi + ai * br;
                             }
                             
-                            result.set(i, j, result.getReal(i, j) + sumReal, 
-                                      result.getImaginary(i, j) + sumImag);
+                            accumReal[i][j] += sumReal;
+                            accumImag[i][j] += sumImag;
                         }
                     }
                 }
+            }
+        }
+        
+        // Copy accumulated results to result matrix
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                result.set(i, j, accumReal[i][j], accumImag[i][j]);
             }
         }
         
