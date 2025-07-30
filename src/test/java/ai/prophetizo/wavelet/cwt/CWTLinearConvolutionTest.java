@@ -40,8 +40,6 @@ class CWTLinearConvolutionTest {
         double beginValue = Math.abs(coefficients[0][0]);
         double impulseValue = Math.abs(coefficients[0][signalLength - 5]);
         
-        System.out.printf("Begin value: %.6f, Impulse value: %.6f%n", beginValue, impulseValue);
-        
         // Beginning should have negligible response compared to impulse location
         assertTrue(beginValue < impulseValue * 0.01, 
             String.format("Beginning value %.6f should be much smaller than impulse value %.6f", 
@@ -67,11 +65,6 @@ class CWTLinearConvolutionTest {
         
         // If FFT size is correct, we shouldn't see wrapping artifacts
         double[][] coeffs = result.getCoefficients();
-        
-        // Check edges - they should be near zero
-        System.out.printf("Left edge value: %.6f%n", coeffs[0][0]);
-        System.out.printf("Right edge value: %.6f%n", coeffs[0][63]);
-        System.out.printf("Peak value at center: %.6f%n", coeffs[0][32]);
         
         // The edge values are from the wavelet transform itself, not circular artifacts
         // With proper zero padding, these should match direct convolution

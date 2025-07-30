@@ -206,9 +206,6 @@ class CWTEdgeHandlingTest {
         double beginResponse = Math.abs(coeffsEnd[0][0]);
         double endResponse = Math.abs(coeffsBegin[0][signalLength - 1]);
         
-        System.out.printf("Real FFT test - Begin response from end impulse: %.6f%n", beginResponse);
-        System.out.printf("Real FFT test - End response from begin impulse: %.6f%n", endResponse);
-        
         // Both should be near zero (no circular wrapping)
         assertTrue(beginResponse < 0.001, 
             "Beginning should have no response from end impulse");

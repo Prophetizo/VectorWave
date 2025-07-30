@@ -17,6 +17,13 @@ import java.util.stream.IntStream;
  */
 public final class CWTTransform {
     
+    /**
+     * Factor used to calculate wavelet support from scale and bandwidth.
+     * The support is calculated as: WAVELET_SUPPORT_FACTOR * scale * bandwidth.
+     * This ensures adequate coverage of the wavelet's significant values.
+     */
+    private static final int WAVELET_SUPPORT_FACTOR = 8;
+    
     private final ContinuousWavelet wavelet;
     private final CWTConfig config;
     private final CWTVectorOps vectorOps;
@@ -157,7 +164,7 @@ public final class CWTTransform {
             double scale = scales[s];
             double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
             
-            int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+            int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
             
             for (int tau = 0; tau < signalLength; tau++) {
                 double sumReal = 0.0;
@@ -201,7 +208,7 @@ public final class CWTTransform {
         // Calculate maximum wavelet support across all scales
         int maxWaveletSupport = 0;
         for (double scale : scales) {
-            int support = (int)(8 * scale * wavelet.bandwidth());
+            int support = (int)(WAVELET_SUPPORT_FACTOR * scale * wavelet.bandwidth());
             maxWaveletSupport = Math.max(maxWaveletSupport, support);
         }
         
@@ -262,7 +269,7 @@ public final class CWTTransform {
         // The wavelet was placed at the beginning, centered at halfSupport
         // So the convolution result needs to be shifted by halfSupport
         double[] result = new double[signalLength];
-        int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+        int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
         
         for (int i = 0; i < signalLength; i++) {
             int idx = i + halfSupport;
@@ -276,23 +283,6 @@ public final class CWTTransform {
         return result;
     }
     
-    /**
-     * Generates a scaled wavelet for FFT (circular convolution).
-     * @deprecated Use generateScaledWaveletLinear for proper edge handling
-     */
-    @Deprecated
-    private double[] generateScaledWavelet(double scale, int length) {
-        double[] waveletArray = new double[length];
-        int halfSupport = (int)(4 * scale * wavelet.bandwidth());
-        int center = length / 2;
-        
-        for (int i = -halfSupport; i <= halfSupport; i++) {
-            int idx = (center + i + length) % length; // Circular wrap
-            waveletArray[idx] = wavelet.psi(i / scale);
-        }
-        
-        return waveletArray;
-    }
     
     /**
      * Generates a scaled wavelet for linear convolution.
@@ -300,7 +290,7 @@ public final class CWTTransform {
      */
     private double[] generateScaledWaveletLinear(double scale, int length) {
         double[] waveletArray = new double[length];
-        int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+        int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
         
         // Place wavelet at the beginning of the array
         // This ensures no wrap-around occurs
@@ -329,7 +319,7 @@ public final class CWTTransform {
         
         for (int s = 0; s < scales.length; s++) {
             double scale = scales[s];
-            int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
+            int waveletSupport = (int)(WAVELET_SUPPORT_FACTOR * scale * wavelet.bandwidth());
             double[] scaledWavelet = new double[waveletSupport];
             
             // Sample wavelet at scale
@@ -484,7 +474,7 @@ public final class CWTTransform {
             double scale = scales[s];
             double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
             
-            int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+            int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
             
             for (int tau = 0; tau < signalLength; tau++) {
                 double sumReal = 0.0;
@@ -541,7 +531,7 @@ public final class CWTTransform {
         // Calculate maximum wavelet support across all scales
         int maxWaveletSupport = 0;
         for (double scale : scales) {
-            int support = (int)(8 * scale * wavelet.bandwidth());
+            int support = (int)(WAVELET_SUPPORT_FACTOR * scale * wavelet.bandwidth());
             maxWaveletSupport = Math.max(maxWaveletSupport, support);
         }
         
@@ -567,7 +557,7 @@ public final class CWTTransform {
             ComplexNumber[] convResult = ifftComplex(product);
             
             // Extract valid portion with proper offset for linear convolution
-            int waveletSupport = (int)(8 * scale * wavelet.bandwidth());
+            int waveletSupport = (int)(WAVELET_SUPPORT_FACTOR * scale * wavelet.bandwidth());
             int halfSupport = waveletSupport / 2;
             
             for (int t = 0; t < signalLength; t++) {
@@ -591,7 +581,7 @@ public final class CWTTransform {
      */
     private Complex[] computeWaveletFFTComplex(double scale, int fftSize) {
         ComplexNumber[] waveletArray = new ComplexNumber[fftSize];
-        int halfSupport = (int)(4 * scale * wavelet.bandwidth());
+        int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
         
         ComplexContinuousWavelet complexWavelet = wavelet instanceof ComplexContinuousWavelet cw ? cw : null;
         
