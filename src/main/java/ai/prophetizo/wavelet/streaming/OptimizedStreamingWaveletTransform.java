@@ -200,23 +200,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
             
             // If no data was written and buffer is full, we need to process
             if (written == 0 && ringBuffer.isFull()) {
-                // Force processing of one window to make space
-                if (ringBuffer.hasWindow()) {
-                    processOneWindow();
-                    backoffAttempts = 0; // Reset backoff after making progress
-                } else {
-                    // Buffer is full but no complete window available
-                    // This shouldn't happen with proper buffer sizing
-                    if (++backoffAttempts > MAX_BACKOFF_ATTEMPTS) {
-                        throw new InvalidStateException(
-                            "Ring buffer deadlock: buffer full but no complete window available. " +
-                            "Consider increasing buffer size or reducing block size.");
-                    }
-                    
-                    // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                    long backoffNanos = calculateBackoffNanos(backoffAttempts, INITIAL_BACKOFF_NANOS);
-                    LockSupport.parkNanos(backoffNanos);
-                }
+                backoffAttempts = handleBufferFull(backoffAttempts);
             } else if (written > 0) {
                 backoffAttempts = 0; // Reset backoff after making progress
             }
@@ -235,22 +219,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         int backoffAttempts = 0;
         
         while (!ringBuffer.write(sample) && !isClosed.get()) {
-            // Buffer is full, process one window to make space
-            if (ringBuffer.hasWindow()) {
-                processOneWindow();
-                backoffAttempts = 0; // Reset backoff after making progress
-            } else {
-                // This shouldn't happen with proper buffer sizing
-                if (++backoffAttempts > MAX_BACKOFF_ATTEMPTS) {
-                    throw new InvalidStateException(
-                        "Ring buffer deadlock: buffer full but no complete window available. " +
-                        "Consider increasing buffer size or reducing block size.");
-                }
-                
-                // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                long backoffNanos = calculateBackoffNanos(backoffAttempts, INITIAL_BACKOFF_NANOS);
-                LockSupport.parkNanos(backoffNanos);
-            }
+            backoffAttempts = handleBufferFull(backoffAttempts);
         }
         
         // Process any available windows
@@ -263,6 +232,38 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         while (ringBuffer.hasWindow() && !isClosed.get()) {
             processOneWindow();
         }
+    }
+    
+    /**
+     * Handles the case when the ring buffer is full.
+     * 
+     * <p>This method encapsulates the backoff logic to simplify the main processing loops.
+     * It attempts to process a window if available, otherwise applies exponential backoff.</p>
+     * 
+     * @param currentAttempts the current number of backoff attempts
+     * @return the updated number of backoff attempts
+     * @throws InvalidStateException if maximum backoff attempts exceeded
+     */
+    private int handleBufferFull(int currentAttempts) {
+        if (ringBuffer.hasWindow()) {
+            processOneWindow();
+            return 0; // Reset backoff after making progress
+        }
+        
+        // Buffer is full but no complete window available
+        // This shouldn't happen with proper buffer sizing
+        int newAttempts = currentAttempts + 1;
+        if (newAttempts > MAX_BACKOFF_ATTEMPTS) {
+            throw new InvalidStateException(
+                "Ring buffer deadlock: buffer full but no complete window available. " +
+                "Consider increasing buffer size or reducing block size.");
+        }
+        
+        // Apply exponential backoff
+        long backoffNanos = calculateBackoffNanos(newAttempts, INITIAL_BACKOFF_NANOS);
+        LockSupport.parkNanos(backoffNanos);
+        
+        return newAttempts;
     }
     
     private void processOneWindow() {
@@ -378,17 +379,23 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      * @return the calculated backoff time in nanoseconds, capped at 1ms
      */
     private static long calculateBackoffNanos(int backoffAttempts, long initialBackoffNanos) {
+        // Handle edge cases first
+        if (backoffAttempts <= 0) {
+            return initialBackoffNanos;
+        }
+        if (backoffAttempts > 20) {
+            return 1_000_000L; // Cap at 1ms for large attempts
+        }
+        
+        // Calculate exponential backoff with overflow protection
         try {
-            // Calculate 2^(attempts-1) * initialBackoff
-            // Cap shift to 20 to prevent overflow (2^20 * 1000ns = ~1ms)
-            long multiplier = 1L << Math.min(backoffAttempts - 1, 20);
+            long multiplier = 1L << (backoffAttempts - 1);
             return Math.min(
                 Math.multiplyExact(initialBackoffNanos, multiplier),
-                1_000_000L // Cap at 1ms
+                1_000_000L
             );
         } catch (ArithmeticException e) {
-            // On overflow, return the cap
-            return 1_000_000L;
+            return 1_000_000L; // On overflow, return the cap
         }
     }
 

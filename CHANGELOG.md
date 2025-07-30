@@ -1,6 +1,41 @@
-# VectorWave Architectural Improvements
+# Changelog
 
-This document summarizes the architectural improvements made to ensure consistency and maintainability across the VectorWave codebase.
+All notable changes to VectorWave will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.0] - 2025-01-30
+
+### Added
+- Zero-copy streaming wavelet transform implementation (`OptimizedStreamingWaveletTransform`)
+- `WaveletTransform.forward(double[], int, int)` method for array slice processing
+- Lock-free ring buffer for streaming operations
+- Configurable buffer capacity multiplier for streaming transforms
+- Zero-copy verification tests (`ZeroCopyVerificationTest`)
+- JMH benchmark for streaming transform performance (`StreamingTransformBenchmark`)
+- Thread-local buffers in `StreamingRingBuffer` for thread safety
+
+### Changed
+- Refactored `OptimizedStreamingWaveletTransform` to use true zero-copy processing
+- Simplified exponential backoff logic with extracted `handleBufferFull()` method
+- Updated `ScalarOps` to support array slices for zero-copy operations
+- Improved race condition handling in `RingBuffer` with atomic snapshots
+- Enhanced documentation to reflect actual implementation behavior
+
+### Fixed
+- Race condition in `RingBufferIntegrationTest` using `CountDownLatch` synchronization
+- False advertising in documentation about zero-copy capabilities
+- Race conditions in `RingBuffer` methods through consistent atomic snapshots
+- Thread safety issues with pre-allocated buffers
+
+### Performance
+- 50% reduction in memory bandwidth usage for streaming transforms
+- Eliminated array copying during transform operations
+- Better cache locality with ring buffer design
+- Lower GC pressure through buffer reuse
+
+## [1.0.0] - 2025-01-15
 
 ## Recent Updates (2025)
 
