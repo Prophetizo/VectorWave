@@ -38,11 +38,15 @@ class ComplexOperationsComparisonTest {
                 imag2[i] = random.nextGaussian();
             }
             
-            // Warm up
+            // Warm up - use results to prevent dead code elimination
+            double warmupCheck = 0.0;
             for (int i = 0; i < 100; i++) {
                 scalarComplexMultiply(real1, imag1, real2, imag2, resultReal, resultImag);
+                warmupCheck += resultReal[0] + resultImag[0];
                 vectorOps.complexMultiply(real1, imag1, real2, imag2, resultReal, resultImag);
+                warmupCheck += resultReal[0] + resultImag[0];
             }
+            assertTrue(Double.isFinite(warmupCheck), "Warmup check");
             
             // Time scalar implementation
             long scalarTime = 0;
@@ -107,11 +111,16 @@ class ComplexOperationsComparisonTest {
         // Time convolution operations
         ComplexVectorOps vectorOps = new ComplexVectorOps();
         
-        // Warm up
+        // Warm up - accumulate results to prevent dead code elimination
+        double warmupSum = 0.0;
         for (int i = 0; i < 10; i++) {
-            performScalarConvolution(realSignal, imagSignal, realWavelet, imagWavelet);
-            performVectorConvolution(realSignal, imagSignal, realWavelet, imagWavelet, vectorOps);
+            double[] scalarWarmup = performScalarConvolution(realSignal, imagSignal, realWavelet, imagWavelet);
+            double[] vectorWarmup = performVectorConvolution(realSignal, imagSignal, realWavelet, imagWavelet, vectorOps);
+            // Use results to prevent optimization
+            warmupSum += scalarWarmup[0] + vectorWarmup[0];
         }
+        // Use warmupSum to ensure it's not optimized away
+        assertTrue(Double.isFinite(warmupSum), "Warmup should produce finite results");
         
         // Measure scalar convolution
         long scalarStart = System.nanoTime();
@@ -160,11 +169,15 @@ class ComplexOperationsComparisonTest {
             imag2[i] = random.nextGaussian();
         }
         
-        // Warm up
+        // Warm up - use results to prevent dead code elimination
+        double warmupCheck = 0.0;
         for (int i = 0; i < 50; i++) {
             scalarComplexMultiply(real1, imag1, real2, imag2, resultReal, resultImag);
+            warmupCheck += resultReal[i % resultReal.length] + resultImag[i % resultImag.length];
             vectorOps.complexMultiply(real1, imag1, real2, imag2, resultReal, resultImag);
+            warmupCheck += resultReal[i % resultReal.length] + resultImag[i % resultImag.length];
         }
+        assertTrue(Double.isFinite(warmupCheck), "Warmup should produce finite results");
         
         // Time operations
         long scalarTime = 0;
