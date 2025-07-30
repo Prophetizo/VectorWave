@@ -23,6 +23,27 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 mvn clean package
 ```
 
+### Running demo applications
+```bash
+# Main comprehensive demo
+java -cp target/classes ai.prophetizo.Main
+
+# Error handling demo
+java -cp target/classes ai.prophetizo.demo.ErrorHandlingDemo
+
+# Financial optimization demo
+java -cp target/classes ai.prophetizo.demo.FinancialOptimizationDemo
+
+# General optimization demo
+java -cp target/classes ai.prophetizo.demo.OptimizationDemo
+
+# CWT performance demo
+java -cp target/classes ai.prophetizo.demo.cwt.CWTPerformanceDemo
+
+# IFFT demo
+java -cp target/classes ai.prophetizo.demo.IFFTDemo
+```
+
 ## Architecture Overview
 
 VectorWave is a comprehensive Fast Wavelet Transform (FWT) library supporting multiple wavelet families through a flexible, type-safe architecture.
@@ -72,8 +93,15 @@ Wavelet (sealed base interface)
    - `ScalarOps`: Core mathematical operations for wavelet transforms
    - Handles convolution, downsampling, upsampling for both boundary modes
 
+5. **Demo Applications** (`demo/`):
+   - `ErrorHandlingDemo`: Demonstrates error handling and validation
+   - `FinancialOptimizationDemo`: Financial signal processing and optimization
+   - `OptimizationDemo`: General wavelet optimization techniques
+   - `IFFTDemo`: Inverse FFT demonstrations
+   - `demo/cwt/CWTPerformanceDemo`: CWT performance analysis and benchmarking
+
 ### Important Technical Notes
-- Requires Java 21 or later
+- Requires Java 17 or later (updated for compatibility)
 - Power-of-2 signal lengths required for transforms
 - Currently implements single-level transforms only
 - No external dependencies (pure Java implementation)
