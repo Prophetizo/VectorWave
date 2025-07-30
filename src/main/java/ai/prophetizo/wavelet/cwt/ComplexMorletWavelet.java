@@ -6,8 +6,13 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
  * Complex Morlet wavelet implementation.
  * 
  * <p>The complex Morlet wavelet is defined as:
- * ψ(t) = (πfb)^(-1/2) * exp(2πifc*t) * exp(-t²/fb)
- * where fb is the bandwidth parameter and fc is the center frequency.</p>
+ * ψ(t) = (1/π^(1/4)) * (1/√σ) * exp(2πifc*t) * exp(-t²/(2σ²))
+ * where σ is the bandwidth parameter and fc is the center frequency.</p>
+ * 
+ * <p>Note: This implementation uses 'bandwidth' as the parameter name,
+ * which corresponds to σ in the standard formula. The canonical Morlet
+ * wavelet includes a correction term exp(-σ²/2) to ensure zero mean,
+ * but this simplified version omits it for computational efficiency.</p>
  */
 public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     
@@ -31,12 +36,13 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
         
         this.bandwidth = bandwidth;
         this.centerFrequency = centerFrequency;
-        this.normFactor = Math.pow(Math.PI * bandwidth, -0.5);
+        // Normalization factor: 1/(π^(1/4) * √σ)
+        this.normFactor = 1.0 / (Math.pow(Math.PI, 0.25) * Math.sqrt(bandwidth));
     }
     
     @Override
     public ComplexNumber psiComplex(double t) {
-        double gaussian = Math.exp(-t * t / (2 * bandwidth));
+        double gaussian = Math.exp(-0.5 * t * t / (bandwidth * bandwidth));
         double real = normFactor * gaussian * Math.cos(2 * Math.PI * centerFrequency * t);
         double imag = normFactor * gaussian * Math.sin(2 * Math.PI * centerFrequency * t);
         return new ComplexNumber(real, imag);
@@ -45,14 +51,14 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     @Override
     public double psi(double t) {
         // Real part only
-        return normFactor * Math.exp(-t * t / (2 * bandwidth)) * 
+        return normFactor * Math.exp(-0.5 * t * t / (bandwidth * bandwidth)) * 
                Math.cos(2 * Math.PI * centerFrequency * t);
     }
     
     @Override
     public double psiImaginary(double t) {
         // Imaginary part
-        return normFactor * Math.exp(-t * t / (2 * bandwidth)) * 
+        return normFactor * Math.exp(-0.5 * t * t / (bandwidth * bandwidth)) * 
                Math.sin(2 * Math.PI * centerFrequency * t);
     }
     
