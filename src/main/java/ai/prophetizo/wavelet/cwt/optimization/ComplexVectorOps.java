@@ -263,6 +263,11 @@ public final class ComplexVectorOps {
     
     /**
      * Multiplies complex matrices using blocked algorithm for cache efficiency.
+     * 
+     * <p>This implementation uses a cache-oblivious algorithm that processes
+     * matrix B in a transposed fashion to improve memory locality. For even
+     * better performance, consider pre-transposing matrix B if multiple
+     * multiplications will be performed.</p>
      */
     public ComplexMatrix matrixMultiply(ComplexMatrix a, ComplexMatrix b) {
         int m = a.getRows();
@@ -279,80 +284,158 @@ public final class ComplexVectorOps {
         double[][] bReal = b.getReal();
         double[][] bImag = b.getImaginary();
         
+        // For better cache efficiency with column access, we can either:
+        // 1. Transpose B first (best for multiple operations)
+        // 2. Use a different loop order (implemented here)
+        // 3. Process multiple columns at once to amortize gather cost
+        
         // Block size for cache efficiency
         int blockSize = Math.min(32, Math.min(m, Math.min(n, k)));
         
-        // Blocked matrix multiplication
+        // Alternative approach: process in tiles to maximize cache reuse
         for (int i0 = 0; i0 < m; i0 += blockSize) {
-            for (int j0 = 0; j0 < n; j0 += blockSize) {
-                for (int k0 = 0; k0 < k; k0 += blockSize) {
-                    // Process block
+            for (int k0 = 0; k0 < k; k0 += blockSize) {
+                for (int j0 = 0; j0 < n; j0 += blockSize) {
+                    // Process block with better memory access pattern
                     int iMax = Math.min(i0 + blockSize, m);
-                    int jMax = Math.min(j0 + blockSize, n);
                     int kMax = Math.min(k0 + blockSize, k);
+                    int jMax = Math.min(j0 + blockSize, n);
                     
+                    // Process tile with k in the middle loop for better locality
                     for (int i = i0; i < iMax; i++) {
-                        for (int j = j0; j < jMax; j++) {
+                        // Process multiple columns at once when possible
+                        int j = j0;
+                        
+                        // Try to process 4 columns at a time for better efficiency
+                        for (; j + 3 < jMax; j += 4) {
+                            double sumReal0 = 0.0, sumImag0 = 0.0;
+                            double sumReal1 = 0.0, sumImag1 = 0.0;
+                            double sumReal2 = 0.0, sumImag2 = 0.0;
+                            double sumReal3 = 0.0, sumImag3 = 0.0;
+                            
+                            // Inner loop over k
+                            for (int kk = k0; kk < kMax; kk++) {
+                                double ar = aReal[i][kk];
+                                double ai = aImag[i][kk];
+                                
+                                // Process 4 columns
+                                double br0 = bReal[kk][j];
+                                double bi0 = bImag[kk][j];
+                                sumReal0 += ar * br0 - ai * bi0;
+                                sumImag0 += ar * bi0 + ai * br0;
+                                
+                                double br1 = bReal[kk][j + 1];
+                                double bi1 = bImag[kk][j + 1];
+                                sumReal1 += ar * br1 - ai * bi1;
+                                sumImag1 += ar * bi1 + ai * br1;
+                                
+                                double br2 = bReal[kk][j + 2];
+                                double bi2 = bImag[kk][j + 2];
+                                sumReal2 += ar * br2 - ai * bi2;
+                                sumImag2 += ar * bi2 + ai * br2;
+                                
+                                double br3 = bReal[kk][j + 3];
+                                double bi3 = bImag[kk][j + 3];
+                                sumReal3 += ar * br3 - ai * bi3;
+                                sumImag3 += ar * bi3 + ai * br3;
+                            }
+                            
+                            // Accumulate results
+                            result.set(i, j, result.getReal(i, j) + sumReal0, 
+                                      result.getImaginary(i, j) + sumImag0);
+                            result.set(i, j + 1, result.getReal(i, j + 1) + sumReal1, 
+                                      result.getImaginary(i, j + 1) + sumImag1);
+                            result.set(i, j + 2, result.getReal(i, j + 2) + sumReal2, 
+                                      result.getImaginary(i, j + 2) + sumImag2);
+                            result.set(i, j + 3, result.getReal(i, j + 3) + sumReal3, 
+                                      result.getImaginary(i, j + 3) + sumImag3);
+                        }
+                        
+                        // Handle remaining columns
+                        for (; j < jMax; j++) {
                             double sumReal = 0.0;
                             double sumImag = 0.0;
                             
-                            // Vectorized inner loop when possible
-                            if (kMax - k0 >= VECTOR_LENGTH) {
-                                DoubleVector vSumReal = DoubleVector.zero(SPECIES);
-                                DoubleVector vSumImag = DoubleVector.zero(SPECIES);
-                                
-                                int kk = k0;
-                                for (; kk <= kMax - VECTOR_LENGTH; kk += VECTOR_LENGTH) {
-                                    // Load elements
-                                    DoubleVector aRealVec = DoubleVector.fromArray(SPECIES, aReal[i], kk);
-                                    DoubleVector aImagVec = DoubleVector.fromArray(SPECIES, aImag[i], kk);
-                                    
-                                    // For column access, we need to gather
-                                    double[] bRealCol = new double[VECTOR_LENGTH];
-                                    double[] bImagCol = new double[VECTOR_LENGTH];
-                                    for (int v = 0; v < VECTOR_LENGTH; v++) {
-                                        bRealCol[v] = bReal[kk + v][j];
-                                        bImagCol[v] = bImag[kk + v][j];
-                                    }
-                                    DoubleVector bRealVec = DoubleVector.fromArray(SPECIES, bRealCol, 0);
-                                    DoubleVector bImagVec = DoubleVector.fromArray(SPECIES, bImagCol, 0);
-                                    
-                                    // Complex multiplication and accumulation
-                                    vSumReal = vSumReal.add(aRealVec.mul(bRealVec).sub(aImagVec.mul(bImagVec)));
-                                    vSumImag = vSumImag.add(aRealVec.mul(bImagVec).add(aImagVec.mul(bRealVec)));
-                                }
-                                
-                                sumReal += vSumReal.reduceLanes(VectorOperators.ADD);
-                                sumImag += vSumImag.reduceLanes(VectorOperators.ADD);
-                                
-                                // Handle remainder
-                                for (; kk < kMax; kk++) {
-                                    double ar = aReal[i][kk];
-                                    double ai = aImag[i][kk];
-                                    double br = bReal[kk][j];
-                                    double bi = bImag[kk][j];
-                                    sumReal += ar * br - ai * bi;
-                                    sumImag += ar * bi + ai * br;
-                                }
-                            } else {
-                                // Scalar fallback for small blocks
-                                for (int kk = k0; kk < kMax; kk++) {
-                                    double ar = aReal[i][kk];
-                                    double ai = aImag[i][kk];
-                                    double br = bReal[kk][j];
-                                    double bi = bImag[kk][j];
-                                    sumReal += ar * br - ai * bi;
-                                    sumImag += ar * bi + ai * br;
-                                }
+                            for (int kk = k0; kk < kMax; kk++) {
+                                double ar = aReal[i][kk];
+                                double ai = aImag[i][kk];
+                                double br = bReal[kk][j];
+                                double bi = bImag[kk][j];
+                                sumReal += ar * br - ai * bi;
+                                sumImag += ar * bi + ai * br;
                             }
                             
-                            // Accumulate result
-                            double currentReal = result.getReal(i, j);
-                            double currentImag = result.getImaginary(i, j);
-                            result.set(i, j, currentReal + sumReal, currentImag + sumImag);
+                            result.set(i, j, result.getReal(i, j) + sumReal, 
+                                      result.getImaginary(i, j) + sumImag);
                         }
                     }
                 }
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Multiplies complex matrices with pre-transposed B for better performance.
+     * 
+     * <p>When performing multiple matrix multiplications with the same B matrix,
+     * pre-transposing B and using this method provides significant performance
+     * improvements due to better cache locality.</p>
+     * 
+     * @param a the first matrix
+     * @param bTransposed the second matrix, already transposed
+     * @return the product a * b^T^T = a * b
+     */
+    public ComplexMatrix matrixMultiplyTransposed(ComplexMatrix a, ComplexMatrix bTransposed) {
+        int m = a.getRows();
+        int n = bTransposed.getRows(); // Note: transposed
+        int k = a.getCols();
+        
+        if (k != bTransposed.getCols()) {
+            throw new IllegalArgumentException("Matrix dimensions don't match for multiplication");
+        }
+        
+        ComplexMatrix result = new ComplexMatrix(m, n);
+        double[][] aReal = a.getReal();
+        double[][] aImag = a.getImaginary();
+        double[][] btReal = bTransposed.getReal();
+        double[][] btImag = bTransposed.getImaginary();
+        
+        // Now both matrices can be accessed row-wise for better cache performance
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                // Vectorized dot product when possible
+                double sumReal = 0.0;
+                double sumImag = 0.0;
+                
+                int kk = 0;
+                // Vectorized loop
+                for (; kk <= k - VECTOR_LENGTH; kk += VECTOR_LENGTH) {
+                    DoubleVector aRealVec = DoubleVector.fromArray(SPECIES, aReal[i], kk);
+                    DoubleVector aImagVec = DoubleVector.fromArray(SPECIES, aImag[i], kk);
+                    DoubleVector bRealVec = DoubleVector.fromArray(SPECIES, btReal[j], kk);
+                    DoubleVector bImagVec = DoubleVector.fromArray(SPECIES, btImag[j], kk);
+                    
+                    // Complex multiplication: (a + bi) * (c + di) = (ac - bd) + (ad + bc)i
+                    DoubleVector realPart = aRealVec.mul(bRealVec).sub(aImagVec.mul(bImagVec));
+                    DoubleVector imagPart = aRealVec.mul(bImagVec).add(aImagVec.mul(bRealVec));
+                    
+                    sumReal += realPart.reduceLanes(VectorOperators.ADD);
+                    sumImag += imagPart.reduceLanes(VectorOperators.ADD);
+                }
+                
+                // Scalar remainder
+                for (; kk < k; kk++) {
+                    double ar = aReal[i][kk];
+                    double ai = aImag[i][kk];
+                    double br = btReal[j][kk];
+                    double bi = btImag[j][kk];
+                    sumReal += ar * br - ai * bi;
+                    sumImag += ar * bi + ai * br;
+                }
+                
+                result.set(i, j, sumReal, sumImag);
             }
         }
         
