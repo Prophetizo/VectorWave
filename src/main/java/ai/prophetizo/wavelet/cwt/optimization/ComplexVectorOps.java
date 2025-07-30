@@ -36,6 +36,10 @@ public final class ComplexVectorOps {
     private static final int SIMD_THRESHOLD = 64;
     private static final int CACHE_LINE_SIZE = 64;
     
+    // Loop unrolling factor for layout conversion operations
+    // 4 elements provides good balance between instruction-level parallelism and code size
+    private static final int UNROLL_FACTOR = 4;
+    
     /**
      * Complex number layout for vectorization.
      */
@@ -306,8 +310,8 @@ public final class ComplexVectorOps {
                         // Process multiple columns at once when possible
                         int j = j0;
                         
-                        // Try to process 4 columns at a time for better efficiency
-                        for (; j + 3 < jMax; j += 4) {
+                        // Try to process UNROLL_FACTOR columns at a time for better efficiency
+                        for (; j + UNROLL_FACTOR - 1 < jMax; j += UNROLL_FACTOR) {
                             double sumReal0 = 0.0, sumImag0 = 0.0;
                             double sumReal1 = 0.0, sumImag1 = 0.0;
                             double sumReal2 = 0.0, sumImag2 = 0.0;
@@ -526,9 +530,9 @@ public final class ComplexVectorOps {
         // Skip vectorization for interleaved-to-split as manual gather has overhead
         // Jump directly to unrolled loop which is more efficient
         
-        // Process 4 elements at a time for better performance
+        // Process UNROLL_FACTOR elements at a time for better performance
         // Interleave real/imaginary assignments for better instruction-level parallelism
-        for (; i + 3 < length; i += 4) {
+        for (; i + UNROLL_FACTOR - 1 < length; i += UNROLL_FACTOR) {
                 real[i] = interleaved[2 * i];
                 imag[i] = interleaved[2 * i + 1];
                 real[i + 1] = interleaved[2 * i + 2];
@@ -572,8 +576,8 @@ public final class ComplexVectorOps {
         // Vectorized implementation with loop unrolling
         int i = 0;
         
-        // Process 4 elements at a time for better performance
-        for (; i + 3 < length; i += 4) {
+        // Process UNROLL_FACTOR elements at a time for better performance
+        for (; i + UNROLL_FACTOR - 1 < length; i += UNROLL_FACTOR) {
             // Load 4 real and 4 imaginary values
             double r0 = real[i], r1 = real[i + 1], r2 = real[i + 2], r3 = real[i + 3];
             double i0 = imag[i], i1 = imag[i + 1], i2 = imag[i + 2], i3 = imag[i + 3];

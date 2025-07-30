@@ -194,8 +194,8 @@ class ComplexVectorOpsTest {
             assertEquals(expectedImag, resultImag[i], EPSILON);
         }
         
-        System.out.printf("Complex multiply %d elements: %.2f µs%n", 
-                         size, vectorTime / 1000.0);
+        // Performance timing is validated by ensuring operation completes without error
+        assertTrue(vectorTime > 0, "Operation should take measurable time");
     }
     
     @Test
@@ -288,8 +288,5 @@ class ComplexVectorOpsTest {
         assertTrue(stats.simdThreshold() > 0);
         assertTrue(stats.availableProcessors() > 0);
         assertNotNull(stats.vectorSpecies());
-        
-        System.out.printf("Complex Vector Ops - Species: %s, Length: %d, Processors: %d%n",
-                         stats.vectorSpecies(), stats.vectorLength(), stats.availableProcessors());
     }
 }

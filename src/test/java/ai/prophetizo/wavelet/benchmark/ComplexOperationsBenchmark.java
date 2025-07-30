@@ -14,12 +14,16 @@ import java.util.concurrent.TimeUnit;
  * This benchmark evaluates the performance of various complex number operations
  * including multiplication, magnitude computation, conjugation, and addition.</p>
  * 
- * <p><b>Memory Requirements:</b> The benchmark allocates arrays based on the size
- * parameter. Default sizes are optimized for CI environments:
+ * <p><b>Memory Requirements:</b> The benchmark allocates 6 arrays (real1, imag1, real2, imag2, 
+ * resultReal, resultImag) based on the size parameter:
  * <ul>
- *   <li>Default sizes (256-4096): ~200KB per thread for array allocation, plus JMH overhead (~50KB), suitable for CI</li>
- *   <li>Large sizes (16384+): ~768KB per thread for array allocation, plus JMH overhead (~100KB), recommended for local testing</li>
- *   <li>Recommended heap: -Xmx512M for default, -Xmx2G for large sizes, depending on the number of threads and concurrent benchmark methods</li>
+ *   <li>Size 256: 6 × 256 × 8 bytes = ~12KB per benchmark instance</li>
+ *   <li>Size 1024: 6 × 1024 × 8 bytes = ~48KB per benchmark instance</li>
+ *   <li>Size 4096: 6 × 4096 × 8 bytes = ~192KB per benchmark instance</li>
+ *   <li>Size 16384: 6 × 16384 × 8 bytes = ~768KB per benchmark instance</li>
+ *   <li>JMH overhead: Additional memory for framework, measurement, and thread management</li>
+ *   <li>Fork configuration: With fork=2, benchmarks run in separate JVMs</li>
+ *   <li>Recommended heap: -Xmx512M for default sizes, -Xmx2G for larger sizes</li>
  * </ul>
  * </p>
  * 
