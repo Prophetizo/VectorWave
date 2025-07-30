@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 1)
 public class ComplexOperationsBenchmark {
     
+    // Default sizes exclude 16384 to keep the benchmark CI-friendly and avoid memory-related issues in constrained environments.
     @Param({"256", "1024", "4096"})
     private int size;
     
