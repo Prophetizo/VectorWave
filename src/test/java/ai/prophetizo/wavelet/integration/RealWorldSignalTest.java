@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -25,10 +26,10 @@ class RealWorldSignalTest extends BaseWaveletTest {
     
     private WaveletTransformFactory factory;
     
-    // Test tolerance constants
-    private static final double TOLERANCE = 1e-10;
-    private static final double BOUNDARY_EFFECT_TOLERANCE = 0.2;
-    private static final double PEAK_SHARPNESS_TOLERANCE = 0.01;
+    // Test tolerance constants - now using centralized values
+    private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
+    private static final double BOUNDARY_EFFECT_TOLERANCE = ToleranceConstants.BOUNDARY_EFFECT_TOLERANCE;
+    private static final double PEAK_SHARPNESS_TOLERANCE = ToleranceConstants.PEAK_SHARPNESS_TOLERANCE;
     private static final double NOISE_AMPLITUDE = 0.1;
     private static final double SINE_WAVE_FREQUENCY = 0.05;
     

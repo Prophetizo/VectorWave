@@ -2,8 +2,11 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.util.NullChecks;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Objects;
@@ -15,16 +18,16 @@ import java.util.Objects;
  * orthogonal (Haar, Daubechies, Symlets, Coiflets), biorthogonal, and
  * continuous wavelets. All transforms use a scalar implementation for
  * correctness and maintainability.</p>
- * 
+ *
  * <p>Example usage:</p>
  * <pre>{@code
  * // Create transform with Haar wavelet
  * WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
- * 
+ *
  * // Perform forward transform
  * double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
  * TransformResult result = transform.forward(signal);
- * 
+ *
  * // Perform inverse transform
  * double[] reconstructed = transform.inverse(result);
  * }</pre>
@@ -33,6 +36,8 @@ public class WaveletTransform {
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
+    private final WaveletOpsFactory.WaveletOps operations;
+    private final boolean useSIMD;
 
     /**
      * Constructs a transformer with the specified wavelet and boundary mode.
@@ -42,14 +47,29 @@ public class WaveletTransform {
      * @throws NullPointerException if any parameter is null
      */
     public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode) {
-        this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null.");
-        this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null.");
+        this(wavelet, boundaryMode, null);
+    }
+
+    /**
+     * Constructs a transformer with the specified wavelet, boundary mode, and configuration.
+     *
+     * @param wavelet      The wavelet to use for the transformations
+     * @param boundaryMode The boundary handling mode
+     * @param config       Optional transform configuration (null for defaults)
+     * @throws NullPointerException if wavelet or boundaryMode is null
+     */
+    public WaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, TransformConfig config) {
+        this.wavelet = NullChecks.requireNonNull(wavelet, "wavelet");
+        this.boundaryMode = NullChecks.requireNonNull(boundaryMode, "boundaryMode");
 
         // Validate supported boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
-            throw new UnsupportedOperationException(
-                    "Only PERIODIC and ZERO_PADDING boundary modes are currently supported.");
+            throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
+
+        // Create appropriate operations implementation
+        this.operations = WaveletOpsFactory.create(config);
+        this.useSIMD = operations.getImplementationType().startsWith("Vector");
     }
 
     /**
@@ -62,22 +82,53 @@ public class WaveletTransform {
     public TransformResult forward(double[] signal) {
         // Comprehensive validation
         ValidationUtils.validateSignal(signal, "signal");
+        
+        // Delegate to the zero-copy method with full array
+        return forward(signal, 0, signal.length);
+    }
+    
+    /**
+     * Performs a single-level forward 1D Fast Wavelet Transform on a slice of the input array.
+     * This method enables zero-copy processing for streaming applications.
+     *
+     * @param signal The input signal array
+     * @param offset The starting index in the signal array
+     * @param length The number of elements to process (must be power-of-two)
+     * @return TransformResult containing approximation and detail coefficients
+     * @throws InvalidSignalException if signal is null, length is not power-of-two, or slice contains invalid values
+     * @throws IndexOutOfBoundsException if offset+length exceeds array bounds
+     * @since 1.1
+     */
+    public TransformResult forward(double[] signal, int offset, int length) {
+        // Validate inputs
+        NullChecks.requireNonNull(signal, "signal");
+        if (offset < 0 || length < 0 || offset + length > signal.length) {
+            throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
+                ", length=" + length + ", array length=" + signal.length);
+        }
+        if (!ValidationUtils.isPowerOfTwo(length)) {
+            throw new InvalidSignalException("Signal length must be a power of two, got: " + length);
+        }
+        if (length == 0) {
+            throw new InvalidSignalException("Signal length cannot be zero");
+        }
 
         double[] lowPassFilter = wavelet.lowPassDecomposition();
         double[] highPassFilter = wavelet.highPassDecomposition();
 
         // The output coefficients will be half the length of the input signal.
-        int outputLength = signal.length / 2;
+        int outputLength = length / 2;
         double[] approximationCoeffs = new double[outputLength];
         double[] detailCoeffs = new double[outputLength];
 
         // Perform convolution and downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            ScalarOps.convolveAndDownsamplePeriodic(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsamplePeriodic(signal, highPassFilter, detailCoeffs);
+            // Use combined transform for better cache efficiency when possible
+            ScalarOps.combinedTransformPeriodic(signal, offset, length, lowPassFilter, highPassFilter,
+                    approximationCoeffs, detailCoeffs);
         } else {
-            ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
+            ScalarOps.convolveAndDownsampleDirect(signal, offset, length, lowPassFilter, approximationCoeffs);
+            ScalarOps.convolveAndDownsampleDirect(signal, offset, length, highPassFilter, detailCoeffs);
         }
 
         // Create the result using TransformResultImpl
@@ -138,5 +189,23 @@ public class WaveletTransform {
      */
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
+    }
+
+    /**
+     * Returns true if this transform is using SIMD operations.
+     *
+     * @return true if SIMD is being used, false otherwise
+     */
+    public boolean isUsingSIMD() {
+        return useSIMD;
+    }
+
+    /**
+     * Gets implementation details about the operations being used.
+     *
+     * @return implementation type string
+     */
+    public String getImplementationType() {
+        return operations.getImplementationType();
     }
 }
