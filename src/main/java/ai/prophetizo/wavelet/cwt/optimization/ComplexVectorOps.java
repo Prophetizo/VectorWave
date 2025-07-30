@@ -545,6 +545,8 @@ public final class ComplexVectorOps {
         // Process UNROLL_FACTOR elements at a time for better performance
         // Interleave real/imaginary assignments for better instruction-level parallelism
         for (; i + UNROLL_FACTOR - 1 < length; i += UNROLL_FACTOR) {
+                // IMPORTANT: If UNROLL_FACTOR changes, update the unrolled operations below
+                // Currently unrolled for UNROLL_FACTOR = 4
                 real[i] = interleaved[2 * i];
                 imag[i] = interleaved[2 * i + 1];
                 real[i + 1] = interleaved[2 * i + 2];
@@ -599,6 +601,8 @@ public final class ComplexVectorOps {
         
         // Process UNROLL_FACTOR elements at a time for better performance
         for (; i + UNROLL_FACTOR - 1 < length; i += UNROLL_FACTOR) {
+            // IMPORTANT: If UNROLL_FACTOR changes, update the unrolled operations below
+            // Currently unrolled for UNROLL_FACTOR = 4
             // Load 4 real and 4 imaginary values
             double r0 = real[i], r1 = real[i + 1], r2 = real[i + 2], r3 = real[i + 3];
             double i0 = imag[i], i1 = imag[i + 1], i2 = imag[i + 2], i3 = imag[i + 3];
