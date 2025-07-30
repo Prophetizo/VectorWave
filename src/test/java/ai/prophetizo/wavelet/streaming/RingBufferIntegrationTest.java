@@ -11,6 +11,8 @@ import org.junit.jupiter.api.DisplayName;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Flow;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,6 +34,8 @@ class RingBufferIntegrationTest {
         
         // Track blocks processed
         AtomicInteger blocksProcessed = new AtomicInteger(0);
+        CountDownLatch completionLatch = new CountDownLatch(1);
+        
         transform.subscribe(new Flow.Subscriber<TransformResult>() {
             @Override
             public void onSubscribe(Flow.Subscription subscription) {
@@ -47,7 +51,9 @@ class RingBufferIntegrationTest {
             public void onError(Throwable throwable) {}
             
             @Override
-            public void onComplete() {}
+            public void onComplete() {
+                completionLatch.countDown();
+            }
         });
         
         // Generate test data
@@ -60,6 +66,17 @@ class RingBufferIntegrationTest {
         // Process data
         transform.process(data);
         
+        // Close the transform to ensure all processing is complete
+        transform.close();
+        
+        // Wait for completion signal
+        try {
+            assertTrue(completionLatch.await(1, TimeUnit.SECONDS), "Transform did not complete in time");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Test interrupted");
+        }
+        
         // Verify blocks were processed (may be 3 or 4 due to async processing)
         assertTrue(blocksProcessed.get() >= 3);
         
@@ -68,8 +85,6 @@ class RingBufferIntegrationTest {
         assertEquals(1024, stats.getSamplesProcessed());
         assertTrue(stats.getBlocksEmitted() >= 3);
         assertTrue(stats.getAverageProcessingTime() > 0);
-        
-        transform.close();
     }
     
     @Test
