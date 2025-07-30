@@ -19,6 +19,16 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Good frequency resolution</li>
  * </ul>
  * </p>
+ * 
+ * <p><strong>Canonical References:</strong></p>
+ * <ul>
+ *   <li>Morlet, J., Arens, G., Fourgeau, E., & Glard, D. (1982). "Wave propagation 
+ *       and sampling theory." Geophysics, 47(2), 203-221.</li>
+ *   <li>Mallat, S. (2008). "A Wavelet Tour of Signal Processing: The Sparse Way" 
+ *       (3rd ed., pp. 88-91). Academic Press.</li>
+ *   <li>Addison, P. S. (2002). "The Illustrated Wavelet Transform Handbook" 
+ *       (pp. 50-58). IOP Publishing.</li>
+ * </ul>
  */
 public final class MorletWavelet implements ComplexContinuousWavelet {
 

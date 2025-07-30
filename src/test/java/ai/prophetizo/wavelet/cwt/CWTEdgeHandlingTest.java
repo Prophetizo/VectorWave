@@ -14,6 +14,8 @@ class CWTEdgeHandlingTest {
     private CWTTransform transform;
     private MorletWavelet wavelet;
     private static final double EPSILON = 1e-10;
+    private static final double MIN_TOLERANCE = 0.001;  // Minimum absolute tolerance
+    private static final double RELATIVE_TOLERANCE_FACTOR = 0.01;  // 1% relative tolerance
     
     @BeforeEach
     void setUp() {
@@ -102,7 +104,7 @@ class CWTEdgeHandlingTest {
             
             // Use relative tolerance
             double avgValue = (Math.abs(val0) + Math.abs(val1) + Math.abs(val2)) / 3.0;
-            double tolerance = Math.max(0.001, avgValue * 0.01); // 1% relative tolerance
+            double tolerance = Math.max(MIN_TOLERANCE, avgValue * RELATIVE_TOLERANCE_FACTOR);
             
             assertEquals(val0, val1, tolerance, 
                 String.format("Wavelet shape should be invariant at offset %d", i));

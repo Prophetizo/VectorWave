@@ -13,12 +13,25 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
  * which corresponds to σ in the standard formula. The canonical Morlet
  * wavelet includes a correction term exp(-σ²/2) to ensure zero mean,
  * but this simplified version omits it for computational efficiency.</p>
+ * 
+ * <p><strong>Canonical References:</strong></p>
+ * <ul>
+ *   <li>Morlet, J., Arens, G., Fourgeau, E., & Glard, D. (1982). "Wave propagation 
+ *       and sampling theory—Part I: Complex signal and scattering in multilayered media." 
+ *       Geophysics, 47(2), 203-221.</li>
+ *   <li>Goupillaud, P., Grossmann, A., & Morlet, J. (1984). "Cycle-octave and related 
+ *       transforms in seismic signal analysis." Geoexploration, 23(1), 85-102.</li>
+ * </ul>
  */
 public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     
     private final double bandwidth;
     private final double centerFrequency;
     private final double normFactor;
+    
+    // Discretization constants
+    private static final double DISCRETIZATION_RANGE = 8.0;  // Total range in standard deviations
+    private static final double DISCRETIZATION_START = -4.0; // Start at -4 standard deviations
     
     /**
      * Creates a complex Morlet wavelet.
@@ -80,10 +93,10 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     @Override
     public double[] discretize(int numCoeffs) {
         double[] coeffs = new double[numCoeffs];
-        double step = 8.0 / (numCoeffs - 1); // Sample from -4 to 4
+        double step = DISCRETIZATION_RANGE / (numCoeffs - 1); // Sample across full range
         
         for (int i = 0; i < numCoeffs; i++) {
-            double t = -4.0 + i * step;
+            double t = DISCRETIZATION_START + i * step;
             coeffs[i] = psi(t);
         }
         

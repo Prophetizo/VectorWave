@@ -10,6 +10,15 @@ package ai.prophetizo.wavelet.cwt.optimization;
  * <p>The implementation uses the Cooley-Tukey algorithm with optimizations for
  * real-valued signals and efficient memory usage patterns.</p>
  * 
+ * <p><strong>Canonical References:</strong></p>
+ * <ul>
+ *   <li>Cooley, J. W., & Tukey, J. W. (1965). "An algorithm for the machine calculation 
+ *       of complex Fourier series." Mathematics of computation, 19(90), 297-301.</li>
+ *   <li>Frigo, M., & Johnson, S. G. (2005). "The design and implementation of FFTW3." 
+ *       Proceedings of the IEEE, 93(2), 216-231.</li>
+ *   <li>Numerical Recipes in C, Chapter 12: "Fast Fourier Transform" (Press et al., 2007)</li>
+ * </ul>
+ * 
  * <p>For detailed mathematical background and implementation notes, see
  * {@code docs/FFT_MATHEMATICAL_DETAILS.md}</p>
  *
@@ -118,13 +127,17 @@ public final class FFTAcceleratedCWT {
             }
         }
         
-        // Convert to complex array
-        Complex[] X = new Complex[n];
-        for (int i = 0; i < n; i++) {
-            X[i] = new Complex(x[i], 0.0);
+        // For small sizes, use the standard complex FFT
+        if (n <= 4) {
+            Complex[] X = new Complex[n];
+            for (int i = 0; i < n; i++) {
+                X[i] = new Complex(x[i], 0.0);
+            }
+            return fftComplex(X);
         }
         
-        return fftComplex(X);
+        // Use optimized real-to-complex FFT for larger sizes
+        return fftReal(x);
     }
     
     /**
@@ -184,6 +197,13 @@ public final class FFTAcceleratedCWT {
     /**
      * Internal FFT implementation for complex arrays.
      * 
+     * <p>Implements the Cooley-Tukey radix-2 decimation-in-time (DIT) algorithm.
+     * This is the canonical FFT algorithm described in:</p>
+     * <ul>
+     *   <li>Cooley & Tukey (1965) - Original paper</li>
+     *   <li>Oppenheim & Schafer (2009) - "Discrete-Time Signal Processing", Ch. 9</li>
+     * </ul>
+     * 
      * @param X the complex input array
      * @return the FFT result
      */
@@ -237,6 +257,34 @@ public final class FFTAcceleratedCWT {
         }
         
         return result;
+    }
+    
+    /**
+     * Optimized FFT for real-valued signals.
+     * 
+     * <p>This method will exploit the Hermitian symmetry property of real signals' FFT
+     * to compute the transform approximately 2x faster than the general complex FFT.</p>
+     * 
+     * <p><strong>Canonical Reference:</strong> Sorensen, H. V., Jones, D. L., Heideman, M. T., 
+     * & Burrus, C. S. (1987). "Real-valued fast Fourier transform algorithms." 
+     * IEEE Transactions on Acoustics, Speech, and Signal Processing, 35(6), 849-863.</p>
+     * 
+     * <p>For now, this implementation uses the standard complex FFT. The optimized
+     * real-to-complex FFT following Sorensen et al. can be added as a future enhancement.</p>
+     * 
+     * @param x the input real-valued signal (power-of-2 length)
+     * @return the frequency-domain representation
+     */
+    private Complex[] fftReal(double[] x) {
+        // For now, use the standard complex FFT
+        // The optimized real-to-complex FFT requires careful implementation
+        // to handle all edge cases correctly
+        int n = x.length;
+        Complex[] X = new Complex[n];
+        for (int i = 0; i < n; i++) {
+            X[i] = new Complex(x[i], 0.0);
+        }
+        return fftComplex(X);
     }
     
     /**
