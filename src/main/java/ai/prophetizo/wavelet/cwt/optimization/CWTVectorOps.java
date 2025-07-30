@@ -169,6 +169,10 @@ public final class CWTVectorOps {
     public ComplexMatrix complexConvolve(double[] realSignal, double[] imagSignal,
                                        double[] realWavelet, double[] imagWavelet,
                                        double scale) {
+        if (scale <= 0) {
+            throw new IllegalArgumentException("Scale must be positive, got: " + scale);
+        }
+        
         int signalLen = realSignal.length;
         int waveletLen = realWavelet.length;
         
@@ -177,10 +181,6 @@ public final class CWTVectorOps {
         if (signalLen < SIMD_THRESHOLD) {
             return scalarComplexConvolve(realSignal, imagSignal, 
                                        realWavelet, imagWavelet, scale);
-        }
-        
-        if (scale <= 0) {
-            throw new IllegalArgumentException("Scale must be positive, got: " + scale);
         }
         
         double sqrtScale = Math.sqrt(scale);

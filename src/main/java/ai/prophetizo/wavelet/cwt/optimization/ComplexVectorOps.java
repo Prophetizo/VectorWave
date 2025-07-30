@@ -521,15 +521,15 @@ public final class ComplexVectorOps {
         // Jump directly to unrolled loop which is more efficient
         
         // Process 4 elements at a time for better performance
+        // Interleave real/imaginary assignments for better instruction-level parallelism
         for (; i + 3 < length; i += 4) {
                 real[i] = interleaved[2 * i];
-                real[i + 1] = interleaved[2 * i + 2];
-                real[i + 2] = interleaved[2 * i + 4];
-                real[i + 3] = interleaved[2 * i + 6];
-                
                 imag[i] = interleaved[2 * i + 1];
+                real[i + 1] = interleaved[2 * i + 2];
                 imag[i + 1] = interleaved[2 * i + 3];
+                real[i + 2] = interleaved[2 * i + 4];
                 imag[i + 2] = interleaved[2 * i + 5];
+                real[i + 3] = interleaved[2 * i + 6];
                 imag[i + 3] = interleaved[2 * i + 7];
             }
             
