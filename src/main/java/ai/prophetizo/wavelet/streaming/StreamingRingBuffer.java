@@ -37,10 +37,8 @@ public class StreamingRingBuffer extends RingBuffer {
     private final ThreadLocal<double[]> processingBuffer;
     
     // Concurrent reader detection (only in assertions, zero overhead in production)
-    private final AtomicReference<Thread> currentReader = new AtomicReference<>(null);
-    
-    // Timestamp-based reader tracking to handle dead thread detection more robustly
-    private volatile long readerAcquiredTime = 0;
+    // Uses a ReaderState object to atomically track both thread and timestamp
+    private final AtomicReference<ReaderState> currentReaderState = new AtomicReference<>(null);
     private static final long READER_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30); // 30 second timeout
     
     /**
@@ -326,41 +324,41 @@ public class StreamingRingBuffer extends RingBuffer {
      */
     private boolean enterReader() {
         Thread current = Thread.currentThread();
+        long currentTime = System.nanoTime();
+        ReaderState newState = new ReaderState(current, currentTime);
         
         // Try to atomically set ourselves as the reader
-        if (currentReader.compareAndSet(null, current)) {
-            readerAcquiredTime = System.nanoTime();
+        if (currentReaderState.compareAndSet(null, newState)) {
             return true; // We acquired reader status
         }
         
-        // Someone else might be reading
-        Thread existing = currentReader.get();
-        if (existing == current) {
+        // Someone else might be reading - get a consistent snapshot
+        ReaderState existingState = currentReaderState.get();
+        if (existingState == null) {
+            // State became null, try again
+            return currentReaderState.compareAndSet(null, newState);
+        }
+        
+        // Check if it's a re-entrant call
+        if (existingState.thread == current) {
             return true; // Re-entrant call from same thread
         }
         
         // Check if the existing reader has expired (timeout-based approach)
-        long currentTime = System.nanoTime();
-        long timeSinceAcquired = currentTime - readerAcquiredTime;
+        long timeSinceAcquired = currentTime - existingState.timestamp;
         
-        if (existing != null && timeSinceAcquired < READER_TIMEOUT_NANOS) {
+        if (timeSinceAcquired < READER_TIMEOUT_NANOS) {
             // Reader is still within timeout period
-            if (existing.isAlive()) {
+            if (existingState.thread.isAlive()) {
                 return false; // Another thread is actively reading
             }
             // Thread is dead but within timeout - still deny access to be safe
             return false;
         }
         
-        // Reader has expired (either null, timed out, or dead beyond timeout)
+        // Reader has expired (timed out or dead beyond timeout)
         // Try to take over atomically
-        if (currentReader.compareAndSet(existing, current)) {
-            readerAcquiredTime = currentTime;
-            return true;
-        }
-        
-        // Someone else took over while we were checking
-        return false;
+        return currentReaderState.compareAndSet(existingState, newState);
     }
     
     /**
@@ -370,10 +368,26 @@ public class StreamingRingBuffer extends RingBuffer {
      */
     private boolean exitReader() {
         Thread current = Thread.currentThread();
+        ReaderState currentState = currentReaderState.get();
+        
         // Only clear if we are the current reader
-        if (currentReader.compareAndSet(current, null)) {
-            readerAcquiredTime = 0; // Clear the timestamp
+        if (currentState != null && currentState.thread == current) {
+            currentReaderState.compareAndSet(currentState, null);
         }
         return true;
+    }
+    
+    /**
+     * Immutable state object for atomic reader tracking.
+     * This ensures thread and timestamp are always consistent.
+     */
+    private static class ReaderState {
+        final Thread thread;
+        final long timestamp;
+        
+        ReaderState(Thread thread, long timestamp) {
+            this.thread = thread;
+            this.timestamp = timestamp;
+        }
     }
 }

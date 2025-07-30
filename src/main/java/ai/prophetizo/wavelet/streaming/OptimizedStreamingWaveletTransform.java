@@ -197,18 +197,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                     }
                     
                     // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                    // Use safe multiplication to prevent overflow
-                    long backoffNanos;
-                    try {
-                        // Calculate 2^(attempts-1) * initialBackoff
-                        long multiplier = 1L << Math.min(backoffAttempts - 1, 20); // Cap shift to prevent overflow
-                        backoffNanos = Math.min(
-                            Math.multiplyExact(initialBackoffNanos, multiplier),
-                            1_000_000L // Cap at 1ms
-                        );
-                    } catch (ArithmeticException e) {
-                        backoffNanos = 1_000_000L; // Cap at 1ms on overflow
-                    }
+                    long backoffNanos = calculateBackoffNanos(backoffAttempts, initialBackoffNanos);
                     LockSupport.parkNanos(backoffNanos);
                 }
             } else if (written > 0) {
@@ -244,18 +233,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 }
                 
                 // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                // Use safe multiplication to prevent overflow
-                long backoffNanos;
-                try {
-                    // Calculate 2^(attempts-1) * initialBackoff
-                    long multiplier = 1L << Math.min(backoffAttempts - 1, 20); // Cap shift to prevent overflow
-                    backoffNanos = Math.min(
-                        Math.multiplyExact(initialBackoffNanos, multiplier),
-                        1_000_000L // Cap at 1ms
-                    );
-                } catch (ArithmeticException e) {
-                    backoffNanos = 1_000_000L; // Cap at 1ms on overflow
-                }
+                long backoffNanos = calculateBackoffNanos(backoffAttempts, initialBackoffNanos);
                 LockSupport.parkNanos(backoffNanos);
             }
         }
@@ -371,6 +349,32 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     @Override
     public StreamingStatistics getStatistics() {
         return statistics;
+    }
+    
+    /**
+     * Calculates exponential backoff time with overflow protection.
+     * 
+     * <p>This method implements exponential backoff starting from initialBackoffNanos
+     * and doubling with each attempt, up to a maximum of 1ms. The calculation is
+     * protected against integer overflow.</p>
+     * 
+     * @param backoffAttempts the number of attempts (1-based)
+     * @param initialBackoffNanos the initial backoff time in nanoseconds
+     * @return the calculated backoff time in nanoseconds, capped at 1ms
+     */
+    private static long calculateBackoffNanos(int backoffAttempts, long initialBackoffNanos) {
+        try {
+            // Calculate 2^(attempts-1) * initialBackoff
+            // Cap shift to 20 to prevent overflow (2^20 * 1000ns = ~1ms)
+            long multiplier = 1L << Math.min(backoffAttempts - 1, 20);
+            return Math.min(
+                Math.multiplyExact(initialBackoffNanos, multiplier),
+                1_000_000L // Cap at 1ms
+            );
+        } catch (ArithmeticException e) {
+            // On overflow, return the cap
+            return 1_000_000L;
+        }
     }
 
     /**
