@@ -161,7 +161,10 @@ public final class CWTVectorOps {
     private final ComplexVectorOps complexOps = new ComplexVectorOps();
     
     /**
-     * Computes complex convolution for complex wavelets.
+     * Computes complex convolution for complex wavelets using direct vectorization.
+     * 
+     * <p>This implementation avoids temporary array allocations by processing
+     * data directly from the source arrays using a sliding window approach.</p>
      */
     public ComplexMatrix complexConvolve(double[] realSignal, double[] imagSignal,
                                        double[] realWavelet, double[] imagWavelet,
@@ -177,99 +180,74 @@ public final class CWTVectorOps {
         }
         
         double sqrtScale = Math.sqrt(scale);
+        double invSqrtScale = 1.0 / sqrtScale;
         int halfWavelet = waveletLen / 2;
         
         // Pre-scale wavelets using vectorized operations
         double[] scaledRealWav = new double[waveletLen];
         double[] scaledImagWav = new double[waveletLen];
         complexOps.complexScalarMultiply(realWavelet, imagWavelet, 
-                                        1.0 / sqrtScale, 0.0,
+                                        invSqrtScale, 0.0,
                                         scaledRealWav, scaledImagWav);
         
-        // Use optimized complex operations for convolution
-        double[] resultReal = new double[signalLen];
-        double[] resultImag = new double[signalLen];
-        
-        // Process in blocks for better cache efficiency
-        int blockSize = Math.min(BLOCK_SIZE, signalLen);
-        
-        for (int blockStart = 0; blockStart < signalLen; blockStart += blockSize) {
-            int blockEnd = Math.min(blockStart + blockSize, signalLen);
+        // Process convolution directly without temporary arrays
+        for (int tau = 0; tau < signalLen; tau++) {
+            // Find valid range for this position
+            int startIdx = Math.max(0, tau - halfWavelet);
+            int endIdx = Math.min(signalLen, tau + halfWavelet + 1);
+            int waveletStart = Math.max(0, halfWavelet - tau);
             
-            // Complex convolution for this block
-            for (int tau = blockStart; tau < blockEnd; tau++) {
-                double realSum = 0.0;
-                double imagSum = 0.0;
+            // Direct vectorized accumulation
+            DoubleVector vRealSum = DoubleVector.zero(SPECIES);
+            DoubleVector vImagSum = DoubleVector.zero(SPECIES);
+            
+            int sigIdx = startIdx;
+            int wavIdx = waveletStart;
+            int remaining = endIdx - startIdx;
+            
+            // Process with SIMD where possible
+            while (remaining >= VECTOR_LENGTH && wavIdx + VECTOR_LENGTH <= waveletLen) {
+                // Load signal values directly from arrays
+                DoubleVector sigReal = DoubleVector.fromArray(SPECIES, realSignal, sigIdx);
+                DoubleVector sigImag = (imagSignal != null) ? 
+                    DoubleVector.fromArray(SPECIES, imagSignal, sigIdx) : 
+                    DoubleVector.zero(SPECIES);
                 
-                // Find valid range for this position
-                int startIdx = Math.max(0, tau - halfWavelet);
-                int endIdx = Math.min(signalLen, tau + halfWavelet + 1);
-                int waveletStart = Math.max(0, halfWavelet - tau);
-                int waveletEnd = Math.min(waveletLen, waveletStart + (endIdx - startIdx));
+                // Load wavelet values directly from arrays
+                DoubleVector wavReal = DoubleVector.fromArray(SPECIES, scaledRealWav, wavIdx);
+                DoubleVector wavImag = DoubleVector.fromArray(SPECIES, scaledImagWav, wavIdx);
                 
-                int length = waveletEnd - waveletStart;
+                // Complex multiplication and accumulation in one step
+                // real += sigReal * wavReal - sigImag * wavImag
+                // imag += sigReal * wavImag + sigImag * wavReal
+                vRealSum = vRealSum.add(sigReal.mul(wavReal).sub(sigImag.mul(wavImag)));
+                vImagSum = vImagSum.add(sigReal.mul(wavImag).add(sigImag.mul(wavReal)));
                 
-                if (length >= VECTOR_LENGTH) {
-                    // Use vectorized complex multiplication for valid range
-                    double[] tempRealSig = new double[length];
-                    double[] tempImagSig = new double[length];
-                    double[] tempRealWav = new double[length];
-                    double[] tempImagWav = new double[length];
-                    double[] tempRealResult = new double[length];
-                    double[] tempImagResult = new double[length];
-                    
-                    // Copy data to temporary arrays
-                    System.arraycopy(realSignal, startIdx, tempRealSig, 0, length);
-                    if (imagSignal != null) {
-                        System.arraycopy(imagSignal, startIdx, tempImagSig, 0, length);
-                    }
-                    System.arraycopy(scaledRealWav, waveletStart, tempRealWav, 0, length);
-                    System.arraycopy(scaledImagWav, waveletStart, tempImagWav, 0, length);
-                    
-                    // Vectorized complex multiplication
-                    complexOps.complexMultiply(tempRealSig, tempImagSig,
-                                             tempRealWav, tempImagWav,
-                                             tempRealResult, tempImagResult);
-                    
-                    // Sum the results
-                    DoubleVector vRealSum = DoubleVector.zero(SPECIES);
-                    DoubleVector vImagSum = DoubleVector.zero(SPECIES);
-                    
-                    int i = 0;
-                    for (; i <= length - VECTOR_LENGTH; i += VECTOR_LENGTH) {
-                        vRealSum = vRealSum.add(DoubleVector.fromArray(SPECIES, tempRealResult, i));
-                        vImagSum = vImagSum.add(DoubleVector.fromArray(SPECIES, tempImagResult, i));
-                    }
-                    
-                    realSum = vRealSum.reduceLanes(VectorOperators.ADD);
-                    imagSum = vImagSum.reduceLanes(VectorOperators.ADD);
-                    
-                    // Handle remainder
-                    for (; i < length; i++) {
-                        realSum += tempRealResult[i];
-                        imagSum += tempImagResult[i];
-                    }
-                } else {
-                    // Scalar fallback for small ranges
-                    for (int i = 0; i < length; i++) {
-                        double sigR = realSignal[startIdx + i];
-                        double sigI = (imagSignal != null) ? imagSignal[startIdx + i] : 0.0;
-                        double wavR = scaledRealWav[waveletStart + i];
-                        double wavI = scaledImagWav[waveletStart + i];
-                        
-                        realSum += sigR * wavR - sigI * wavI;
-                        imagSum += sigR * wavI + sigI * wavR;
-                    }
-                }
-                
-                resultReal[tau] = realSum;
-                resultImag[tau] = imagSum;
+                sigIdx += VECTOR_LENGTH;
+                wavIdx += VECTOR_LENGTH;
+                remaining -= VECTOR_LENGTH;
             }
-        }
-        
-        // Copy results to ComplexMatrix
-        for (int i = 0; i < signalLen; i++) {
-            result.set(0, i, resultReal[i], resultImag[i]);
+            
+            // Reduce vector accumulators
+            double realSum = vRealSum.reduceLanes(VectorOperators.ADD);
+            double imagSum = vImagSum.reduceLanes(VectorOperators.ADD);
+            
+            // Handle remainder with scalar operations
+            while (remaining > 0 && wavIdx < waveletLen) {
+                double sigR = realSignal[sigIdx];
+                double sigI = (imagSignal != null) ? imagSignal[sigIdx] : 0.0;
+                double wavR = scaledRealWav[wavIdx];
+                double wavI = scaledImagWav[wavIdx];
+                
+                realSum += sigR * wavR - sigI * wavI;
+                imagSum += sigR * wavI + sigI * wavR;
+                
+                sigIdx++;
+                wavIdx++;
+                remaining--;
+            }
+            
+            result.set(0, tau, realSum, imagSum);
         }
         
         return result;
