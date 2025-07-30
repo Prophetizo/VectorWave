@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import ai.prophetizo.wavelet.test.WaveletAssertions;
 import ai.prophetizo.wavelet.test.WaveletTestUtils;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -114,7 +115,7 @@ class DaubechiesWaveletTest extends BaseWaveletTest {
         testBothImplementations(wavelet, (transform, implType) -> {
             assertTrue(
                 WaveletTestUtils.verifyPerfectReconstruction(
-                    transform, signal, WaveletTestUtils.DEFAULT_TOLERANCE),
+                    transform, signal, ToleranceConstants.DEFAULT_TOLERANCE),
                 name + " perfect reconstruction failed with " + 
                 implType + " implementation");
         });
@@ -134,7 +135,7 @@ class DaubechiesWaveletTest extends BaseWaveletTest {
         double[] reconstructed = transform.inverse(result);
         
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     // === Energy Preservation Tests ===
@@ -318,5 +319,19 @@ class DaubechiesWaveletTest extends BaseWaveletTest {
                 signal, reconstructed, tolerance,
                 name + " step function reconstruction with " + implType);
         });
+    }
+    
+    @Test
+    @DisplayName("DB2 coefficients satisfy mathematical properties")
+    void testDB2CoefficientVerification() {
+        assertTrue(Daubechies.DB2.verifyCoefficients(), 
+            "DB2 coefficients should satisfy all mathematical properties");
+    }
+    
+    @Test
+    @DisplayName("DB4 coefficients satisfy mathematical properties")
+    void testDB4CoefficientVerification() {
+        assertTrue(Daubechies.DB4.verifyCoefficients(), 
+            "DB4 coefficients should satisfy all mathematical properties");
     }
 }
