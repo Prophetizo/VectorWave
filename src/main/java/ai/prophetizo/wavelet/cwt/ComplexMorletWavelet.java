@@ -36,7 +36,7 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     
     @Override
     public ComplexNumber psiComplex(double t) {
-        double gaussian = Math.exp(-t * t / bandwidth);
+        double gaussian = Math.exp(-t * t / (2 * bandwidth));
         double real = normFactor * gaussian * Math.cos(2 * Math.PI * centerFrequency * t);
         double imag = normFactor * gaussian * Math.sin(2 * Math.PI * centerFrequency * t);
         return new ComplexNumber(real, imag);

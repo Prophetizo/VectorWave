@@ -181,8 +181,6 @@ class CWTEdgeHandlingTest {
     @DisplayName("Should handle real-only FFT without circular artifacts")
     void testRealFFTNoCircularArtifacts() {
         // Test that the real FFT path doesn't have circular artifacts
-        MorletWavelet wavelet = new MorletWavelet(6.0, 1.0);
-        
         // Create test signals
         int signalLength = 128;
         double[] signalBegin = new double[signalLength];
