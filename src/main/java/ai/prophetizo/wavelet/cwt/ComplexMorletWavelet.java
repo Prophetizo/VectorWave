@@ -31,7 +31,7 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
         
         this.bandwidth = bandwidth;
         this.centerFrequency = centerFrequency;
-        this.normFactor = Math.pow(Math.PI * bandwidth, -0.25);
+        this.normFactor = Math.pow(Math.PI * bandwidth, -0.5);
     }
     
     @Override
