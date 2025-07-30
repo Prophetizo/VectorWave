@@ -23,6 +23,9 @@ import java.util.*;
  */
 public class FinancialWaveletAnalyzer {
     
+    // Object pool for memory optimization
+    private final FinancialAnalysisObjectPool pool;
+    
     // Analysis result classes
     
     public record CrashDetectionResult(
@@ -170,6 +173,7 @@ public class FinancialWaveletAnalyzer {
     public FinancialWaveletAnalyzer(CWTConfig config, FinancialAnalysisParameters parameters) {
         this.config = config;
         this.parameters = parameters;
+        this.pool = new FinancialAnalysisObjectPool();
     }
     
     /**
@@ -186,75 +190,125 @@ public class FinancialWaveletAnalyzer {
             parameters.getCrashNumScales());
         CWTResult result = transform.analyze(priceData, scales);
         
-        // Analyze coefficients for asymmetric patterns
-        List<Integer> crashPoints = new ArrayList<>();
-        double[] severity = new double[priceData.length];
-        Map<Integer, Double> crashProbabilities = new HashMap<>();
+        // Use pooled array for severity calculations
+        FinancialAnalysisObjectPool.ArrayHolder severityHolder = pool.borrowArray(priceData.length);
         
-        double[][] coeffs = result.getCoefficients();
-        
-        // Look for large negative coefficients indicating sharp drops
-        for (int t = 1; t < priceData.length - 1; t++) {
-            double asymmetryScore = 0;
+        try {
+            double[] severity = severityHolder.array;
             
-            for (int s = 0; s < scales.getNumScales(); s++) {
-                double coeff = coeffs[s][t];
-                // Paul wavelet responds strongly to asymmetric patterns
-                if (coeff < 0) {
-                    asymmetryScore += Math.abs(coeff) * scales.getScale(s);
+            // Use pooled int list for crash points
+            FinancialAnalysisObjectPool.IntListBuilder crashPointsBuilder = pool.borrowIntList();
+            Map<Integer, Double> crashProbabilities = new HashMap<>();
+            
+            try {
+                double[][] coeffs = result.getCoefficients();
+                
+                // Look for large negative coefficients indicating sharp drops
+                for (int t = 1; t < priceData.length - 1; t++) {
+                    double asymmetryScore = 0;
+                    
+                    for (int s = 0; s < scales.getNumScales(); s++) {
+                        double coeff = coeffs[s][t];
+                        // Paul wavelet responds strongly to asymmetric patterns
+                        if (coeff < 0) {
+                            asymmetryScore += Math.abs(coeff) * scales.getScale(s);
+                        }
+                    }
+                    
+                    severity[t] = asymmetryScore;
+                    
+                    // Detect crash if asymmetry score exceeds threshold
+                    if (asymmetryScore > parameters.getCrashAsymmetryThreshold() && isLocalMaximum(severity, t)) {
+                        crashPointsBuilder.add(t);
+                        crashProbabilities.put(t, Math.min(asymmetryScore / parameters.getCrashProbabilityNormalization(), 1.0));
+                    }
                 }
+                
+                // Calculate max severity
+                double maxSeverity = 0;
+                for (int i = 0; i < priceData.length; i++) {
+                    maxSeverity = Math.max(maxSeverity, severity[i]);
+                }
+                
+                // Return result with copied data
+                return new CrashDetectionResult(
+                    crashPointsBuilder.toList(), 
+                    Arrays.copyOfRange(severity, 0, priceData.length), 
+                    maxSeverity, 
+                    crashProbabilities
+                );
+            } finally {
+                pool.returnIntList(crashPointsBuilder);
             }
-            
-            severity[t] = asymmetryScore;
-            
-            // Detect crash if asymmetry score exceeds threshold
-            if (asymmetryScore > parameters.getCrashAsymmetryThreshold() && isLocalMaximum(severity, t)) {
-                crashPoints.add(t);
-                crashProbabilities.put(t, Math.min(asymmetryScore / parameters.getCrashProbabilityNormalization(), 1.0));
-            }
+        } finally {
+            pool.returnArray(severityHolder);
         }
-        
-        double maxSeverity = Arrays.stream(severity).max().orElse(0.0);
-        
-        return new CrashDetectionResult(crashPoints, severity, maxSeverity, crashProbabilities);
     }
     
     /**
      * Analyzes volatility clusters using DOG wavelet.
      */
     public VolatilityAnalysisResult analyzeVolatility(double[] priceData, double samplingRate) {
-        // Calculate absolute returns as volatility proxy
-        double[] absReturns = new double[priceData.length - 1];
-        for (int i = 0; i < absReturns.length; i++) {
-            absReturns[i] = Math.abs((priceData[i + 1] - priceData[i]) / priceData[i]);
-        }
+        // Use pooled array for absolute returns
+        FinancialAnalysisObjectPool.ArrayHolder absReturnsHolder = pool.borrowArray(priceData.length - 1);
         
-        DOGWavelet dog = new DOGWavelet(2); // Mexican Hat for volatility
-        CWTTransform transform = new CWTTransform(dog, config);
-        
-        // Scales for different volatility horizons
-        ScaleSpace scales = ScaleSpace.logarithmic(1.0, 30.0, 15);
-        CWTResult result = transform.analyze(absReturns, scales);
-        
-        // Calculate instantaneous volatility
-        double[] instantaneousVolatility = new double[absReturns.length];
-        double[][] magnitude = result.getMagnitude();
-        
-        for (int t = 0; t < absReturns.length; t++) {
-            double vol = 0;
-            for (int s = 0; s < scales.getNumScales(); s++) {
-                vol += magnitude[s][t] * magnitude[s][t];
+        try {
+            double[] absReturns = absReturnsHolder.array;
+            int absReturnsLength = priceData.length - 1;
+            
+            // Calculate absolute returns as volatility proxy
+            for (int i = 0; i < absReturnsLength; i++) {
+                absReturns[i] = Math.abs((priceData[i + 1] - priceData[i]) / priceData[i]);
             }
-            instantaneousVolatility[t] = Math.sqrt(vol);
+            
+            DOGWavelet dog = new DOGWavelet(2); // Mexican Hat for volatility
+            CWTTransform transform = new CWTTransform(dog, config);
+            
+            // Scales for different volatility horizons
+            ScaleSpace scales = ScaleSpace.logarithmic(1.0, 30.0, 15);
+            CWTResult result = transform.analyze(Arrays.copyOfRange(absReturns, 0, absReturnsLength), scales);
+            
+            // Use pooled array for instantaneous volatility
+            FinancialAnalysisObjectPool.ArrayHolder volHolder = pool.borrowArray(absReturnsLength);
+            
+            try {
+                double[] instantaneousVolatility = volHolder.array;
+                double[][] magnitude = result.getMagnitude();
+                
+                for (int t = 0; t < absReturnsLength; t++) {
+                    double vol = 0;
+                    for (int s = 0; s < scales.getNumScales(); s++) {
+                        vol += magnitude[s][t] * magnitude[s][t];
+                    }
+                    instantaneousVolatility[t] = Math.sqrt(vol);
+                }
+                
+                // Identify volatility clusters
+                List<VolatilityCluster> clusters = identifyVolatilityClusters(
+                    Arrays.copyOfRange(instantaneousVolatility, 0, absReturnsLength));
+                
+                // Calculate statistics
+                double avgVol = 0;
+                double maxVol = 0;
+                for (int i = 0; i < absReturnsLength; i++) {
+                    avgVol += instantaneousVolatility[i];
+                    maxVol = Math.max(maxVol, instantaneousVolatility[i]);
+                }
+                avgVol /= absReturnsLength;
+                
+                // Return result with a copy of the volatility array
+                return new VolatilityAnalysisResult(
+                    clusters, 
+                    Arrays.copyOfRange(instantaneousVolatility, 0, absReturnsLength), 
+                    avgVol, 
+                    maxVol
+                );
+            } finally {
+                pool.returnArray(volHolder);
+            }
+        } finally {
+            pool.returnArray(absReturnsHolder);
         }
-        
-        // Identify volatility clusters
-        List<VolatilityCluster> clusters = identifyVolatilityClusters(instantaneousVolatility);
-        
-        double avgVol = Arrays.stream(instantaneousVolatility).average().orElse(0.0);
-        double maxVol = Arrays.stream(instantaneousVolatility).max().orElse(0.0);
-        
-        return new VolatilityAnalysisResult(clusters, instantaneousVolatility, avgVol, maxVol);
     }
     
     /**
@@ -421,56 +475,64 @@ public class FinancialWaveletAnalyzer {
      * Generates trading signals based on wavelet analysis.
      */
     public TradingSignalResult generateTradingSignals(double[] priceData, double samplingRate) {
-        List<TradingSignal> signals = new ArrayList<>();
+        // Use pooled signal builder
+        FinancialAnalysisObjectPool.TradingSignalBuilder signalBuilder = pool.borrowSignalBuilder();
         
-        // Get all analyses
-        CrashDetectionResult crashes = detectMarketCrashes(priceData, samplingRate);
-        VolatilityAnalysisResult volatility = analyzeVolatility(priceData, samplingRate);
-        CyclicalAnalysisResult cycles = analyzeCyclicalPatterns(priceData, samplingRate);
-        
-        // Generate signals based on combined analysis
-        // Ensure we don't exceed volatility array bounds (length = priceData.length - 1)
-        // and handle cases where priceData is too short for forward-looking predictions
-        // Math.max(0, ...) prevents negative indices when priceData.length < CRASH_PREDICTION_FORWARD_WINDOW
-        int maxIndex = Math.max(0, Math.min(priceData.length - parameters.getCrashPredictionForwardWindow(), 
-                                           volatility.instantaneousVolatility.length));
-        for (int i = parameters.getSignalGenerationMinHistory(); i < maxIndex; i++) {
-            // Sell signal before potential crash
-            if (crashes.crashProbabilities.containsKey(i + parameters.getCrashPredictionForwardWindow())) {
-                double prob = crashes.crashProbabilities.get(i + parameters.getCrashPredictionForwardWindow());
-                if (prob > 0.7) {
-                    signals.add(new TradingSignal(i, SignalType.SELL, prob,
-                        "High crash probability detected"));
-                }
-            }
+        try {
+            // Get all analyses
+            CrashDetectionResult crashes = detectMarketCrashes(priceData, samplingRate);
+            VolatilityAnalysisResult volatility = analyzeVolatility(priceData, samplingRate);
+            CyclicalAnalysisResult cycles = analyzeCyclicalPatterns(priceData, samplingRate);
             
-            // Buy signal after crash in low volatility
-            boolean recentCrash = false;
-            int lookbackStart = Math.max(0, i - parameters.getRecentCrashLookbackWindow());
-            int lookbackEnd = Math.max(0, i - parameters.getCrashPredictionForwardWindow());
-            
-            // Only check for recent crashes if we have a valid range
-            if (lookbackStart < lookbackEnd) {
-                for (int j = lookbackStart; j < lookbackEnd; j++) {
-                    if (crashes.crashPoints.contains(j)) {
-                        recentCrash = true;
-                        break;
+            // Generate signals based on combined analysis
+            // Ensure we don't exceed volatility array bounds (length = priceData.length - 1)
+            // and handle cases where priceData is too short for forward-looking predictions
+            // Math.max(0, ...) prevents negative indices when priceData.length < CRASH_PREDICTION_FORWARD_WINDOW
+            int maxIndex = Math.max(0, Math.min(priceData.length - parameters.getCrashPredictionForwardWindow(), 
+                                               volatility.instantaneousVolatility.length));
+            for (int i = parameters.getSignalGenerationMinHistory(); i < maxIndex; i++) {
+                // Sell signal before potential crash
+                if (crashes.crashProbabilities.containsKey(i + parameters.getCrashPredictionForwardWindow())) {
+                    double prob = crashes.crashProbabilities.get(i + parameters.getCrashPredictionForwardWindow());
+                    if (prob > 0.7) {
+                        signalBuilder.addSignal(i, SignalType.SELL, prob,
+                            "High crash probability detected");
                     }
                 }
+                
+                // Buy signal after crash in low volatility
+                boolean recentCrash = false;
+                int lookbackStart = Math.max(0, i - parameters.getRecentCrashLookbackWindow());
+                int lookbackEnd = Math.max(0, i - parameters.getCrashPredictionForwardWindow());
+                
+                // Only check for recent crashes if we have a valid range
+                if (lookbackStart < lookbackEnd) {
+                    for (int j = lookbackStart; j < lookbackEnd; j++) {
+                        if (crashes.crashPoints.contains(j)) {
+                            recentCrash = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (recentCrash && volatility.instantaneousVolatility[i] < 
+                    volatility.averageVolatility * 0.8) {
+                    signalBuilder.addSignal(i, SignalType.BUY, 0.75,
+                        "Post-crash recovery opportunity");
+                }
             }
             
-            if (recentCrash && volatility.instantaneousVolatility[i] < 
-                volatility.averageVolatility * 0.8) {
-                signals.add(new TradingSignal(i, SignalType.BUY, 0.75,
-                    "Post-crash recovery opportunity"));
-            }
+            // Build the signals list
+            List<TradingSignal> signals = signalBuilder.build();
+            
+            // Calculate performance metrics
+            double sharpeRatio = calculateSharpeRatio(signals, priceData);
+            double winRate = calculateWinRate(signals, priceData);
+            
+            return new TradingSignalResult(signals, sharpeRatio, winRate);
+        } finally {
+            pool.returnSignalBuilder(signalBuilder);
         }
-        
-        // Calculate performance metrics
-        double sharpeRatio = calculateSharpeRatio(signals, priceData);
-        double winRate = calculateWinRate(signals, priceData);
-        
-        return new TradingSignalResult(signals, sharpeRatio, winRate);
     }
     
     /**
@@ -589,7 +651,13 @@ public class FinancialWaveletAnalyzer {
     
     private List<VolatilityCluster> identifyVolatilityClusters(double[] volatility) {
         List<VolatilityCluster> clusters = new ArrayList<>();
-        double avgVol = Arrays.stream(volatility).average().orElse(0.0);
+        
+        // Calculate average volatility without streams
+        double avgVol = 0;
+        for (double v : volatility) {
+            avgVol += v;
+        }
+        avgVol /= volatility.length;
         
         int startIdx = -1;
         VolatilityLevel currentLevel = VolatilityLevel.LOW;
@@ -737,69 +805,77 @@ public class FinancialWaveletAnalyzer {
             return 0.0;
         }
         
-        // Calculate returns from signals
-        List<Double> returns = new ArrayList<>();
-        double position = 0; // 0 = no position, 1 = long, -1 = short
-        int entryIndex = -1;
-        double entryPrice = 0;
+        // Use pooled primitive list for returns to avoid boxing
+        FinancialAnalysisObjectPool.DoubleListBuilder returnsBuilder = pool.borrowDoubleList();
         
-        for (TradingSignal signal : signals) {
-            if (signal.timeIndex() >= prices.length) continue;
+        try {
+            double position = 0; // 0 = no position, 1 = long, -1 = short
+            int entryIndex = -1;
+            double entryPrice = 0;
             
-            if (signal.type() == SignalType.BUY && position <= 0) {
-                if (position < 0) {
-                    // Close short position
-                    double returnPct = (entryPrice - prices[signal.timeIndex()]) / entryPrice;
-                    returns.add(returnPct);
-                }
-                // Open long position
-                position = 1;
-                entryIndex = signal.timeIndex();
-                entryPrice = prices[entryIndex];
+            for (TradingSignal signal : signals) {
+                if (signal.timeIndex() >= prices.length) continue;
                 
-            } else if (signal.type() == SignalType.SELL && position >= 0) {
-                if (position > 0) {
-                    // Close long position
-                    double returnPct = (prices[signal.timeIndex()] - entryPrice) / entryPrice;
-                    returns.add(returnPct);
+                if (signal.type() == SignalType.BUY && position <= 0) {
+                    if (position < 0) {
+                        // Close short position
+                        double returnPct = (entryPrice - prices[signal.timeIndex()]) / entryPrice;
+                        returnsBuilder.add(returnPct);
+                    }
+                    // Open long position
+                    position = 1;
+                    entryIndex = signal.timeIndex();
+                    entryPrice = prices[entryIndex];
+                    
+                } else if (signal.type() == SignalType.SELL && position >= 0) {
+                    if (position > 0) {
+                        // Close long position
+                        double returnPct = (prices[signal.timeIndex()] - entryPrice) / entryPrice;
+                        returnsBuilder.add(returnPct);
+                    }
+                    // Open short position
+                    position = -1;
+                    entryIndex = signal.timeIndex();
+                    entryPrice = prices[entryIndex];
                 }
-                // Open short position
-                position = -1;
-                entryIndex = signal.timeIndex();
-                entryPrice = prices[entryIndex];
             }
-        }
-        
-        // Close any open position at the end
-        if (position != 0 && entryIndex >= 0 && entryIndex < prices.length - 1) {
-            double finalPrice = prices[prices.length - 1];
-            double returnPct = position > 0 
-                ? (finalPrice - entryPrice) / entryPrice
-                : (entryPrice - finalPrice) / entryPrice;
-            returns.add(returnPct);
-        }
-        
-        if (returns.isEmpty()) {
-            return 0.0;
-        }
-        
-        // Calculate mean and standard deviation
-        double meanReturn = returns.stream()
-            .mapToDouble(Double::doubleValue)
-            .average()
-            .orElse(0.0);
             
-        double variance = returns.stream()
-            .mapToDouble(r -> Math.pow(r - meanReturn, 2))
-            .average()
-            .orElse(0.0);
+            // Close any open position at the end
+            if (position != 0 && entryIndex >= 0 && entryIndex < prices.length - 1) {
+                double finalPrice = prices[prices.length - 1];
+                double returnPct = position > 0 
+                    ? (finalPrice - entryPrice) / entryPrice
+                    : (entryPrice - finalPrice) / entryPrice;
+                returnsBuilder.add(returnPct);
+            }
             
-        double stdDev = Math.sqrt(variance);
-        
-        // Sharpe ratio with risk-free rate of 0 for simplicity
-        // Annualize assuming 252 trading days
-        double dailySharpe = stdDev > 0 ? meanReturn / stdDev : 0.0;
-        return dailySharpe * Math.sqrt(252);
+            if (returnsBuilder.size() == 0) {
+                return 0.0;
+            }
+            
+            // Calculate mean and standard deviation using primitive operations
+            double meanReturn = 0;
+            for (int i = 0; i < returnsBuilder.size(); i++) {
+                meanReturn += returnsBuilder.get(i);
+            }
+            meanReturn /= returnsBuilder.size();
+            
+            double variance = 0;
+            for (int i = 0; i < returnsBuilder.size(); i++) {
+                double diff = returnsBuilder.get(i) - meanReturn;
+                variance += diff * diff;
+            }
+            variance /= returnsBuilder.size();
+            
+            double stdDev = Math.sqrt(variance);
+            
+            // Sharpe ratio with risk-free rate of 0 for simplicity
+            // Annualize assuming 252 trading days
+            double dailySharpe = stdDev > 0 ? meanReturn / stdDev : 0.0;
+            return dailySharpe * Math.sqrt(252);
+        } finally {
+            pool.returnDoubleList(returnsBuilder);
+        }
     }
     
     /**
@@ -1005,5 +1081,13 @@ public class FinancialWaveletAnalyzer {
      */
     public CWTConfig getConfig() {
         return config;
+    }
+    
+    /**
+     * Gets the object pool statistics for monitoring.
+     * @return the pool statistics
+     */
+    public FinancialAnalysisObjectPool.PoolStatistics getPoolStatistics() {
+        return pool.getStatistics();
     }
 }
