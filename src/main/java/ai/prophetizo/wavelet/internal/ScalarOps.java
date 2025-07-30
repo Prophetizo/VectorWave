@@ -67,9 +67,9 @@ public final class ScalarOps {
         // Standard implementation for large signals or non-power-of-2
         for (int i = 0; i < output.length; i++) {
             double sum = 0.0;
-            int kStart = offset + (2 * i);
 
             for (int j = 0; j < filterLen; j++) {
+                // Calculate index relative to the slice, wrap within [0, length), then add offset
                 int localIndex = (2 * i + j) % length;
                 sum += signal[offset + localIndex] * filter[j];
             }

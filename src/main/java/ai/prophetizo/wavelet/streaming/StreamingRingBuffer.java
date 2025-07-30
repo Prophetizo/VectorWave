@@ -16,11 +16,13 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Automatic window advancement</li>
  * </ul>
  * 
- * <p><b>Thread Safety:</b> This class is fully thread-safe. It maintains the same 
- * thread-safety guarantees as {@link RingBuffer} for read/write operations. The window 
- * extraction methods ({@link #getWindowDirect()}, {@link #processWindow}) use ThreadLocal 
- * buffers, making them thread-safe while avoiding allocations. Each thread gets its own 
- * set of buffers, eliminating data races without synchronization overhead.</p>
+ * <p><b>Thread Safety:</b> This class inherits the SPSC (Single Producer, Single Consumer) 
+ * thread-safety model from {@link RingBuffer}. The window extraction methods 
+ * ({@link #getWindowDirect()}, {@link #processWindow}) use ThreadLocal buffers to avoid 
+ * allocations, but they are NOT safe for concurrent use by multiple reader threads. 
+ * Only one thread should perform read operations (including window extraction) at a time. 
+ * The ThreadLocal buffers only provide memory isolation, not thread-safe access to the 
+ * underlying ring buffer data.</p>
  */
 public class StreamingRingBuffer extends RingBuffer {
     
@@ -94,8 +96,10 @@ public class StreamingRingBuffer extends RingBuffer {
      * Extracts the current window into a thread-local buffer without advancing positions.
      * This method is useful for zero-allocation processing.
      * 
-     * <p><b>Thread Safety:</b> This method is thread-safe. Each thread gets its own
-     * internal buffer, eliminating data races while avoiding allocations.</p>
+     * <p><b>Thread Safety:</b> This method is NOT safe for concurrent use by multiple threads.
+     * While each thread gets its own buffer (via ThreadLocal), the underlying peek operation
+     * is not synchronized. Use this method only in SPSC scenarios where a single thread
+     * performs all read operations.</p>
      * 
      * @return the thread-local window buffer if data is available, null otherwise
      */
@@ -127,8 +131,10 @@ public class StreamingRingBuffer extends RingBuffer {
      * Processes the current window and advances by hopSize.
      * This is the main method for streaming processing.
      * 
-     * <p><b>Thread Safety:</b> This method is thread-safe. Each thread gets its own
-     * processing buffer, allowing concurrent window processing.</p>
+     * <p><b>Thread Safety:</b> This method is NOT safe for concurrent use by multiple threads.
+     * While each thread gets its own buffer (via ThreadLocal), the underlying peek and skip
+     * operations are not synchronized. Use this method only in SPSC scenarios where a single
+     * thread performs all read operations.</p>
      * 
      * @param processor the processor to apply to the window
      * @return true if processing occurred, false if insufficient data
@@ -224,6 +230,32 @@ public class StreamingRingBuffer extends RingBuffer {
      * 
      * <p>Call this method when a thread is done using the StreamingRingBuffer
      * to prevent potential memory leaks in thread pool scenarios.</p>
+     * 
+     * <p><b>When to call:</b></p>
+     * <ul>
+     *   <li>Before a thread pool worker thread is returned to the pool</li>
+     *   <li>In finally blocks when using temporary threads</li>
+     *   <li>When switching between different StreamingRingBuffer instances on the same thread</li>
+     * </ul>
+     * 
+     * <p><b>Consequences of not calling:</b></p>
+     * <ul>
+     *   <li>Each thread retains references to windowSize-sized double arrays (16-64KB typically)</li>
+     *   <li>In thread pools, these references persist across task boundaries</li>
+     *   <li>Can cause ClassLoader leaks in application servers if the buffer references classes from a webapp</li>
+     * </ul>
+     * 
+     * <p><b>Example usage:</b></p>
+     * <pre>{@code
+     * StreamingRingBuffer buffer = new StreamingRingBuffer(1024, 256, 128);
+     * try {
+     *     // Use buffer for processing
+     *     double[] window = buffer.getWindowDirect();
+     *     // ... process window ...
+     * } finally {
+     *     buffer.cleanupThread(); // Clean up ThreadLocal storage
+     * }
+     * }</pre>
      */
     public void cleanupThread() {
         windowBuffer.remove();

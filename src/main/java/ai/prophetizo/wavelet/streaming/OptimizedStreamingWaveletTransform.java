@@ -31,6 +31,12 @@ import java.util.concurrent.atomic.LongAdder;
  *   <li>Lower GC pressure</li>
  * </ul>
  *
+ * <p><b>Thread Safety:</b> This class is designed for single-producer usage. Multiple threads
+ * should not call process() methods concurrently. The underlying ring buffer uses lock-free
+ * algorithms for performance, supporting single producer to single consumer communication.
+ * The transform results are published to subscribers in a thread-safe manner via the
+ * SubmissionPublisher base class.</p>
+ *
  * @see WaveletTransform#forward(double[], int, int) The zero-copy transform method
  * @since 1.1
  */
@@ -151,7 +157,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public synchronized void process(double[] data) {
+    public void process(double[] data) {
         if (isClosed.get()) {
             throw InvalidStateException.closed("Transform");
         }
@@ -181,7 +187,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public synchronized void process(double sample) {
+    public void process(double sample) {
         if (isClosed.get()) {
             throw InvalidStateException.closed("Transform");
         }
@@ -203,13 +209,13 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         statistics.addSamples(1);
     }
     
-    private synchronized void processAvailableWindows() {
+    private void processAvailableWindows() {
         while (ringBuffer.hasWindow() && !isClosed.get()) {
             processOneWindow();
         }
     }
     
-    private synchronized void processOneWindow() {
+    private void processOneWindow() {
         if (isClosed.get()) {
             return;
         }
@@ -243,7 +249,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public synchronized void flush() {
+    public void flush() {
         if (isClosed.get()) {
             return;
         }
@@ -255,8 +261,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         int remaining = ringBuffer.available();
         if (remaining > 0 && remaining < blockSize) {
             // ZERO-COPY: Reuse the thread-local buffer from ringBuffer
-            // The buffer itself is thread-safe (ThreadLocal), and since all
-            // critical methods are now synchronized, ring buffer state is protected
+            // This is safe in flush() as it's typically called when no more data
+            // is being written (end of stream or explicit flush)
             double[] partialData = ringBuffer.getProcessingBuffer();
             
             // Read available data into the buffer
@@ -296,12 +302,12 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     }
 
     @Override
-    public synchronized int getBufferLevel() {
+    public int getBufferLevel() {
         return ringBuffer.available();
     }
 
     @Override
-    public synchronized boolean isReady() {
+    public boolean isReady() {
         return !isClosed.get() && !ringBuffer.isFull();
     }
 

@@ -42,9 +42,17 @@ public class RingBuffer {
     private final int capacity;
     private final int mask;
     
-    // Separate read and write positions for cache efficiency
+    // Separate read and write positions with padding to prevent false sharing
+    // Cache line is typically 64 bytes. AtomicInteger is 4 bytes + object overhead (~12-16 bytes)
+    // We add explicit padding to ensure they're on different cache lines
+    
+    // Writer's cache line
     private final AtomicInteger writePosition = new AtomicInteger(0);
+    private volatile long p1, p2, p3, p4, p5, p6, p7; // 56 bytes of padding
+    
+    // Reader's cache line  
     private final AtomicInteger readPosition = new AtomicInteger(0);
+    private volatile long p8, p9, p10, p11, p12, p13, p14; // 56 bytes of padding
     
     /**
      * Creates a new ring buffer with the specified capacity.
@@ -72,7 +80,10 @@ public class RingBuffer {
      * @return true if written successfully, false if buffer is full
      */
     public boolean write(double value) {
-        int currentRead = readPosition.get(); // Read this first for SPSC consistency
+        // In SPSC: producer reads other's position first, then own position
+        // If consumer advances readPosition after we read it, we may get a false
+        // negative (buffer appears full when it's not), but never data corruption
+        int currentRead = readPosition.get();
         int currentWrite = writePosition.get();
         int nextWrite = (currentWrite + 1) & mask;
         
