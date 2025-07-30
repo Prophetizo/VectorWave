@@ -68,6 +68,25 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      * </ul>
      */
     private static final int BUFFER_CAPACITY_MULTIPLIER = 4;
+    
+    /**
+     * Initial backoff time in nanoseconds for exponential backoff.
+     * 
+     * <p>When the ring buffer is full and no complete windows are available,
+     * the process methods use exponential backoff starting from this value.
+     * 1000 nanoseconds = 1 microsecond provides a good starting point that
+     * minimizes CPU usage while maintaining responsiveness.</p>
+     */
+    private static final long INITIAL_BACKOFF_NANOS = 1000L; // 1 microsecond
+    
+    /**
+     * Maximum number of backoff attempts before giving up.
+     * 
+     * <p>With exponential backoff starting at 1 microsecond, 10 attempts
+     * results in a maximum total wait time of approximately 1 millisecond
+     * before throwing an exception.</p>
+     */
+    private static final int MAX_BACKOFF_ATTEMPTS = 10;
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -171,8 +190,6 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         // Write data to ring buffer
         int offset = 0;
         int backoffAttempts = 0;
-        final int maxBackoffAttempts = 10;
-        final long initialBackoffNanos = 1000; // 1 microsecond
         
         while (offset < data.length && !isClosed.get()) {
             int written = ringBuffer.write(data, offset, data.length - offset);
@@ -190,14 +207,14 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 } else {
                     // Buffer is full but no complete window available
                     // This shouldn't happen with proper buffer sizing
-                    if (++backoffAttempts > maxBackoffAttempts) {
+                    if (++backoffAttempts > MAX_BACKOFF_ATTEMPTS) {
                         throw new InvalidStateException(
                             "Ring buffer deadlock: buffer full but no complete window available. " +
                             "Consider increasing buffer size or reducing block size.");
                     }
                     
                     // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                    long backoffNanos = calculateBackoffNanos(backoffAttempts, initialBackoffNanos);
+                    long backoffNanos = calculateBackoffNanos(backoffAttempts, INITIAL_BACKOFF_NANOS);
                     LockSupport.parkNanos(backoffNanos);
                 }
             } else if (written > 0) {
@@ -216,8 +233,6 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
 
         // Try to write to ring buffer
         int backoffAttempts = 0;
-        final int maxBackoffAttempts = 10;
-        final long initialBackoffNanos = 1000; // 1 microsecond
         
         while (!ringBuffer.write(sample) && !isClosed.get()) {
             // Buffer is full, process one window to make space
@@ -226,14 +241,14 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 backoffAttempts = 0; // Reset backoff after making progress
             } else {
                 // This shouldn't happen with proper buffer sizing
-                if (++backoffAttempts > maxBackoffAttempts) {
+                if (++backoffAttempts > MAX_BACKOFF_ATTEMPTS) {
                     throw new InvalidStateException(
                         "Ring buffer deadlock: buffer full but no complete window available. " +
                         "Consider increasing buffer size or reducing block size.");
                 }
                 
                 // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
-                long backoffNanos = calculateBackoffNanos(backoffAttempts, initialBackoffNanos);
+                long backoffNanos = calculateBackoffNanos(backoffAttempts, INITIAL_BACKOFF_NANOS);
                 LockSupport.parkNanos(backoffNanos);
             }
         }
