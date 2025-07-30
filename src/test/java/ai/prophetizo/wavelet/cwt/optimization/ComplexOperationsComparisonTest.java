@@ -144,7 +144,7 @@ class ComplexOperationsComparisonTest {
         
         // Note: Vector operation benefits vary by platform and typically require larger arrays
         // The convolution test uses moderate sizes, so speedup may be < 1
-        System.out.println("Note: Speedup depends on array size and platform. Some architectures show benefits only with larger arrays (>16K elements).");
+        System.out.println("Note: Speedup depends on array size and platform. Some platforms show benefits only with larger arrays (>16K elements).");
     }
     
     @Test

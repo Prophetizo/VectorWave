@@ -501,6 +501,12 @@ public final class ComplexVectorOps {
      * extract real and imaginary parts from interleaved data. For platforms
      * without gather support, it falls back to an optimized scalar approach.</p>
      * 
+     * <p>Note: While this method shares a similar loop unrolling pattern with
+     * convertToInterleaved(), we intentionally keep them separate rather than
+     * extracting a helper method. This is a performance-critical operation where
+     * any additional method call overhead could impact throughput. The JVM may
+     * not inline a complex helper method, and the operations (reading vs writing
+     * at different indices) are sufficiently different to warrant duplication.</p>
      */
     public void convertToSplit(double[] interleaved, double[] real, double[] imag) {
         int length = real.length;
