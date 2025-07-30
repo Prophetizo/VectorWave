@@ -19,9 +19,23 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *   <li>Configurable capacity (must be power of 2)</li>
  * </ul>
  * 
- * <p>Thread safety: This class is thread-safe for single producer,
- * single consumer scenarios. Multiple producers or consumers require
- * external synchronization.</p>
+ * <p><b>Thread Safety Guarantees:</b></p>
+ * <ul>
+ *   <li><b>SPSC (Single Producer, Single Consumer):</b> Fully thread-safe without
+ *       external synchronization. One thread can write while another reads concurrently.</li>
+ *   <li><b>MPSC (Multiple Producer, Single Consumer):</b> Requires external synchronization
+ *       on the write methods. Read operations remain lock-free.</li>
+ *   <li><b>SPMC (Single Producer, Multiple Consumer):</b> Requires external synchronization
+ *       on the read methods. Write operations remain lock-free.</li>
+ *   <li><b>MPMC (Multiple Producer, Multiple Consumer):</b> Not supported. Use a proper
+ *       MPMC queue implementation instead.</li>
+ * </ul>
+ * 
+ * <p><b>Memory Ordering:</b> Uses acquire/release semantics for atomic operations to ensure
+ * proper visibility of data across threads. No explicit memory barriers needed for SPSC usage.</p>
+ * 
+ * <p><b>False Sharing Prevention:</b> Read and write positions are in separate AtomicInteger
+ * instances to prevent false sharing between producer and consumer threads.</p>
  */
 public class RingBuffer {
     

@@ -165,9 +165,10 @@ class StreamingRingBufferTest {
         assertTrue(buffer.processWindow(processor));
         assertTrue(buffer.processWindow(processor));
         assertTrue(buffer.processWindow(processor));
-        assertFalse(buffer.processWindow(processor)); // Not enough data
+        assertTrue(buffer.processWindow(processor)); // 4th window fits
+        assertFalse(buffer.processWindow(processor)); // Now not enough data
         
-        assertEquals(List.of(1.0, 5.0, 9.0), firstValues);
+        assertEquals(List.of(1.0, 5.0, 9.0, 13.0), firstValues);
     }
     
     @Test
