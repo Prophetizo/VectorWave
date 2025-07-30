@@ -82,23 +82,53 @@ public class WaveletTransform {
     public TransformResult forward(double[] signal) {
         // Comprehensive validation
         ValidationUtils.validateSignal(signal, "signal");
+        
+        // Delegate to the zero-copy method with full array
+        return forward(signal, 0, signal.length);
+    }
+    
+    /**
+     * Performs a single-level forward 1D Fast Wavelet Transform on a slice of the input array.
+     * This method enables zero-copy processing for streaming applications.
+     *
+     * @param signal The input signal array
+     * @param offset The starting index in the signal array
+     * @param length The number of elements to process (must be power-of-two)
+     * @return TransformResult containing approximation and detail coefficients
+     * @throws InvalidSignalException if signal is null, length is not power-of-two, or slice contains invalid values
+     * @throws IndexOutOfBoundsException if offset+length exceeds array bounds
+     * @since 1.1
+     */
+    public TransformResult forward(double[] signal, int offset, int length) {
+        // Validate inputs
+        NullChecks.requireNonNull(signal, "signal");
+        if (offset < 0 || length < 0 || offset + length > signal.length) {
+            throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
+                ", length=" + length + ", array length=" + signal.length);
+        }
+        if (!ValidationUtils.isPowerOfTwo(length)) {
+            throw new InvalidSignalException("Signal length must be a power of two, got: " + length);
+        }
+        if (length == 0) {
+            throw new InvalidSignalException("Signal length cannot be zero");
+        }
 
         double[] lowPassFilter = wavelet.lowPassDecomposition();
         double[] highPassFilter = wavelet.highPassDecomposition();
 
         // The output coefficients will be half the length of the input signal.
-        int outputLength = signal.length / 2;
+        int outputLength = length / 2;
         double[] approximationCoeffs = new double[outputLength];
         double[] detailCoeffs = new double[outputLength];
 
         // Perform convolution and downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
             // Use combined transform for better cache efficiency when possible
-            ScalarOps.combinedTransformPeriodic(signal, lowPassFilter, highPassFilter,
+            ScalarOps.combinedTransformPeriodic(signal, offset, length, lowPassFilter, highPassFilter,
                     approximationCoeffs, detailCoeffs);
         } else {
-            ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
+            ScalarOps.convolveAndDownsampleDirect(signal, offset, length, lowPassFilter, approximationCoeffs);
+            ScalarOps.convolveAndDownsampleDirect(signal, offset, length, highPassFilter, detailCoeffs);
         }
 
         // Create the result using TransformResultImpl

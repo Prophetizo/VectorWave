@@ -149,7 +149,7 @@ double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 
 ### Streaming
 ```java
-// Real-time streaming transform
+// Real-time streaming transform with zero-copy ring buffer
 StreamingWaveletTransform stream = StreamingWaveletTransform.create(
     Daubechies.DB4,
     BoundaryMode.PERIODIC,
@@ -158,6 +158,15 @@ StreamingWaveletTransform stream = StreamingWaveletTransform.create(
 
 stream.subscribe(result -> processResult(result));
 stream.process(dataChunk);
+
+// Zero-copy optimized streaming with configurable overlap
+OptimizedStreamingWaveletTransform optimizedStream = new OptimizedStreamingWaveletTransform(
+    Daubechies.DB4,
+    BoundaryMode.PERIODIC,
+    512,  // block size
+    0.5,  // overlap factor (0.0-1.0)
+    8     // buffer capacity multiplier
+);
 
 // Streaming denoiser with automatic mode selection
 StreamingDenoiser denoiser = StreamingDenoiserFactory.create(

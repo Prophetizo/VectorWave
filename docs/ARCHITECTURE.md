@@ -56,10 +56,22 @@ ai.prophetizo.wavelet.internal/
 - Publisher/Subscriber pattern for real-time data
 - Backpressure support
 - Configurable block sizes
+- Zero-copy ring buffer implementation
 
-**Dual Implementation Strategy:**
-- FastStreamingDenoiser: < 1 µs/sample latency
-- QualityStreamingDenoiser: Better SNR with overlap
+**Streaming Implementations:**
+- **OptimizedStreamingWaveletTransform**: Zero-copy processing with ring buffer
+  - True zero-copy using WaveletTransform.forward(double[], int, int)
+  - Lock-free SPSC (Single Producer, Single Consumer) design
+  - Configurable overlap support (0-100%)
+  - Exponential backoff for buffer full conditions
+- **FastStreamingDenoiser**: < 1 µs/sample latency
+- **QualityStreamingDenoiser**: Better SNR with overlap
+
+**Ring Buffer Design:**
+- Lock-free atomic operations for thread safety
+- Thread-local buffers for window extraction
+- Configurable capacity multiplier for smooth operation
+- Race condition prevention through atomic snapshots
 
 ### 5. Memory Management
 
