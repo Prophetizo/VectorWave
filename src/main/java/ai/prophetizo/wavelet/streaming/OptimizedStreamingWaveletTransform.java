@@ -14,6 +14,7 @@ import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Zero-copy streaming wavelet transform implementation using ring buffer.
@@ -39,8 +40,9 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <p><b>Backpressure Handling:</b> When the ring buffer is full, the process methods will
  * automatically process windows to make space. If the buffer remains full without complete
- * windows (edge case with improper sizing), the methods use Thread.yield() to avoid
- * busy-waiting and reduce CPU usage.</p>
+ * windows (edge case with improper sizing), the methods use exponential backoff with
+ * LockSupport.parkNanos() to minimize CPU usage. After 10 attempts (~1ms total wait time),
+ * an InvalidStateException is thrown to prevent indefinite blocking.</p>
  *
  * @see WaveletTransform#forward(double[], int, int) The zero-copy transform method
  * @since 1.1
@@ -172,6 +174,10 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
 
         // Write data to ring buffer
         int offset = 0;
+        int backoffAttempts = 0;
+        final int maxBackoffAttempts = 10;
+        final long initialBackoffNanos = 1000; // 1 microsecond
+        
         while (offset < data.length && !isClosed.get()) {
             int written = ringBuffer.write(data, offset, data.length - offset);
             offset += written;
@@ -184,12 +190,25 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 // Force processing of one window to make space
                 if (ringBuffer.hasWindow()) {
                     processOneWindow();
+                    backoffAttempts = 0; // Reset backoff after making progress
                 } else {
                     // Buffer is full but no complete window available
-                    // This shouldn't happen with proper buffer sizing, but if it does,
-                    // yield to avoid busy-waiting
-                    Thread.yield();
+                    // This shouldn't happen with proper buffer sizing
+                    if (++backoffAttempts > maxBackoffAttempts) {
+                        throw new InvalidStateException(
+                            "Ring buffer deadlock: buffer full but no complete window available. " +
+                            "Consider increasing buffer size or reducing block size.");
+                    }
+                    
+                    // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
+                    long backoffNanos = Math.min(
+                        initialBackoffNanos << (backoffAttempts - 1),
+                        1_000_000 // Cap at 1ms
+                    );
+                    LockSupport.parkNanos(backoffNanos);
                 }
+            } else if (written > 0) {
+                backoffAttempts = 0; // Reset backoff after making progress
             }
         }
 
@@ -203,19 +222,29 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         }
 
         // Try to write to ring buffer
-        int retries = 0;
+        int backoffAttempts = 0;
+        final int maxBackoffAttempts = 10;
+        final long initialBackoffNanos = 1000; // 1 microsecond
+        
         while (!ringBuffer.write(sample) && !isClosed.get()) {
             // Buffer is full, process one window to make space
             if (ringBuffer.hasWindow()) {
                 processOneWindow();
-                retries = 0; // Reset retries after making progress
+                backoffAttempts = 0; // Reset backoff after making progress
             } else {
                 // This shouldn't happen with proper buffer sizing
-                // Instead of throwing immediately, try a few times with backoff
-                if (++retries > 3) {
-                    throw new InvalidStateException("Ring buffer full but no window available after retries");
+                if (++backoffAttempts > maxBackoffAttempts) {
+                    throw new InvalidStateException(
+                        "Ring buffer deadlock: buffer full but no complete window available. " +
+                        "Consider increasing buffer size or reducing block size.");
                 }
-                Thread.yield(); // Yield to avoid busy-waiting
+                
+                // Exponential backoff: 1us, 2us, 4us, 8us, ..., up to ~1ms
+                long backoffNanos = Math.min(
+                    initialBackoffNanos << (backoffAttempts - 1),
+                    1_000_000 // Cap at 1ms
+                );
+                LockSupport.parkNanos(backoffNanos);
             }
         }
         

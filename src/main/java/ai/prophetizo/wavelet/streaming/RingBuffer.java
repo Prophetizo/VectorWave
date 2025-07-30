@@ -38,6 +38,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class RingBuffer {
     
+    // Cache line size constant for false sharing prevention
+    private static final int CACHE_LINE_SIZE = 64; // bytes
+    private static final int ATOMIC_INT_SIZE = 4;  // bytes (not counting object overhead)
+    private static final int PADDING_LONGS = 7;    // 7 * 8 bytes = 56 bytes of padding
+    
     private final double[] buffer;
     private final int capacity;
     private final int mask;
@@ -55,7 +60,7 @@ public class RingBuffer {
     // - volatile: prevents compiler/JVM reordering or optimization
     // - long: 8 bytes each for predictable size  
     // - never accessed: any access would defeat their purpose
-    // Total: 7 * 8 = 56 bytes, ensuring separation on 64-byte cache lines
+    // Total: PADDING_LONGS * 8 = 56 bytes, ensuring separation on CACHE_LINE_SIZE-byte cache lines
     @SuppressWarnings("unused") 
     private volatile long p1, p2, p3, p4, p5, p6, p7;
     

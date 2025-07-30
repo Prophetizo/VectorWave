@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.streaming;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Specialized ring buffer for streaming wavelet transforms with sliding window support.
@@ -35,7 +36,7 @@ public class StreamingRingBuffer extends RingBuffer {
     private final ThreadLocal<double[]> processingBuffer;
     
     // Concurrent reader detection (only in assertions, zero overhead in production)
-    private volatile Thread currentReader = null;
+    private final AtomicReference<Thread> currentReader = new AtomicReference<>(null);
     
     /**
      * Creates a streaming ring buffer with sliding window support.
@@ -315,15 +316,24 @@ public class StreamingRingBuffer extends RingBuffer {
      */
     private boolean enterReader() {
         Thread current = Thread.currentThread();
-        Thread existing = currentReader;
         
-        if (existing != null && existing != current && existing.isAlive()) {
-            // Another thread is currently reading
-            return false;
+        // Try to atomically set ourselves as the reader
+        if (currentReader.compareAndSet(null, current)) {
+            return true; // We acquired reader status
         }
         
-        currentReader = current;
-        return true;
+        // Someone else might be reading, check if it's us or if they're still alive
+        Thread existing = currentReader.get();
+        if (existing == current) {
+            return true; // Re-entrant call from same thread
+        }
+        
+        if (existing != null && existing.isAlive()) {
+            return false; // Another thread is actively reading
+        }
+        
+        // The previous reader thread is dead, try to take over
+        return currentReader.compareAndSet(existing, current);
     }
     
     /**
@@ -332,7 +342,8 @@ public class StreamingRingBuffer extends RingBuffer {
      * @return always true (for assert statement)
      */
     private boolean exitReader() {
-        currentReader = null;
+        // Only clear if we are the current reader
+        currentReader.compareAndSet(Thread.currentThread(), null);
         return true;
     }
 }
