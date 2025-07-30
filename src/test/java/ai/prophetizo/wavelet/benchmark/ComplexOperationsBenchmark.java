@@ -29,10 +29,13 @@ import java.util.concurrent.TimeUnit;
  * 
  * <p><b>Running the benchmark:</b></p>
  * <pre>
- * # Default (CI-friendly):
+ * # Default (CI-friendly, excludes 16384):
  * ./jmh-runner.sh ComplexOperationsBenchmark
  * 
- * # Local testing with larger sizes:
+ * # Include 16384 size to see vectorization benefits:
+ * JAVA_OPTS="-Xmx1G" ./jmh-runner.sh ComplexOperationsBenchmark -p size=256,1024,4096,16384
+ * 
+ * # Local testing with even larger sizes:
  * JAVA_OPTS="-Xmx2G" ./jmh-runner.sh ComplexOperationsBenchmark -p size=16384,32768,65536
  * 
  * # Custom size combinations:
