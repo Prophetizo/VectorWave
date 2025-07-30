@@ -3,7 +3,6 @@ package ai.prophetizo.wavelet.streaming;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Lock-free ring buffer implementation for high-performance streaming.

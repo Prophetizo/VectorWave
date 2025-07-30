@@ -88,6 +88,78 @@ class RingBufferIntegrationTest {
     }
     
     @Test
+    @DisplayName("Should process streaming data with overlap")
+    void testStreamingWithOverlap() {
+        Wavelet wavelet = new Haar();
+        int blockSize = 256;
+        double overlapFactor = 0.5; // 50% overlap
+        
+        // Create optimized streaming transform with overlap
+        OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTransform(
+            wavelet, BoundaryMode.PERIODIC, blockSize, overlapFactor
+        );
+        
+        // Track blocks processed
+        AtomicInteger blocksProcessed = new AtomicInteger(0);
+        CountDownLatch completionLatch = new CountDownLatch(1);
+        
+        transform.subscribe(new Flow.Subscriber<TransformResult>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+            
+            @Override
+            public void onNext(TransformResult item) {
+                blocksProcessed.incrementAndGet();
+            }
+            
+            @Override
+            public void onError(Throwable throwable) {}
+            
+            @Override
+            public void onComplete() {
+                completionLatch.countDown();
+            }
+        });
+        
+        // Generate test data
+        Random random = new Random(42);
+        double[] data = new double[1024];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = random.nextGaussian();
+        }
+        
+        // Process data
+        transform.process(data);
+        
+        // Close the transform to ensure all processing is complete
+        transform.close();
+        
+        // Wait for completion signal
+        try {
+            assertTrue(completionLatch.await(1, TimeUnit.SECONDS), "Transform did not complete in time");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Test interrupted");
+        }
+        
+        // With 50% overlap and 1024 samples:
+        // First block: 0-255 (256 samples)
+        // Second block: 128-383 (256 samples, 128 overlap)
+        // Third block: 256-511 (256 samples, 128 overlap)
+        // etc...
+        // Expected: ~7 blocks (more than without overlap)
+        assertTrue(blocksProcessed.get() >= 7, "Expected at least 7 blocks with 50% overlap, but got: " + blocksProcessed.get());
+        
+        // Check statistics
+        StreamingStatistics stats = transform.getStatistics();
+        assertEquals(1024, stats.getSamplesProcessed());
+        assertTrue(stats.getBlocksEmitted() >= 7);
+        assertTrue(stats.getAverageProcessingTime() > 0);
+    }
+    
+    @Test
     @DisplayName("Should handle sliding window processing efficiently")
     void testSlidingWindowProcessing() {
         StreamingRingBuffer buffer = new StreamingRingBuffer(1024, 128, 64);

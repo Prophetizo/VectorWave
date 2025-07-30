@@ -16,18 +16,22 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Optimized streaming wavelet transform using ring buffer for zero-copy operations.
+ * Optimized streaming wavelet transform using ring buffer for reduced memory allocations.
  *
- * <p>This implementation eliminates array copying by using a ring buffer,
- * significantly reducing memory bandwidth usage and improving performance.</p>
+ * <p>This implementation uses a ring buffer to minimize memory allocations and improve
+ * cache locality. While the ring buffer provides zero-copy window extraction, a single
+ * copy is still required for the wavelet transform operation due to API constraints.</p>
  *
  * <p>Key improvements over StreamingWaveletTransformImpl:</p>
  * <ul>
- *   <li>Zero-copy buffer management</li>
- *   <li>50% reduction in memory bandwidth</li>
+ *   <li>Ring buffer eliminates repeated allocations</li>
+ *   <li>Single copy operation per block (vs multiple in naive implementation)</li>
  *   <li>Better cache locality</li>
  *   <li>Lower GC pressure</li>
  * </ul>
+ *
+ * <p>Note: True zero-copy operation would require modifying WaveletTransform to accept
+ * array slices, which would impact the entire codebase.</p>
  */
 public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<TransformResult>
         implements StreamingWaveletTransform {
@@ -50,7 +54,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     private final double[] processingBuffer;
 
     /**
-     * Creates an optimized streaming wavelet transform.
+     * Creates an optimized streaming wavelet transform with no overlap.
      *
      * @param wavelet      the wavelet to use
      * @param boundaryMode the boundary mode
@@ -58,6 +62,19 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      * @throws InvalidArgumentException if parameters are invalid
      */
     public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize) {
+        this(wavelet, boundaryMode, blockSize, 0.0);
+    }
+    
+    /**
+     * Creates an optimized streaming wavelet transform with configurable overlap.
+     *
+     * @param wavelet      the wavelet to use
+     * @param boundaryMode the boundary mode
+     * @param blockSize    the block size (must be power of 2)
+     * @param overlapFactor the overlap factor (0.0 = no overlap, 0.5 = 50% overlap, 0.75 = 75% overlap)
+     * @throws InvalidArgumentException if parameters are invalid
+     */
+    public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize, double overlapFactor) {
         super();
 
         if (wavelet == null) {
@@ -70,13 +87,25 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         if (blockSize < 16) {
             throw new InvalidArgumentException("Block size must be at least 16, got: " + blockSize);
         }
+        if (overlapFactor < 0.0 || overlapFactor >= 1.0) {
+            throw new InvalidArgumentException("Overlap factor must be in range [0.0, 1.0), got: " + overlapFactor);
+        }
 
         this.wavelet = wavelet;
         this.boundaryMode = boundaryMode;
         this.blockSize = blockSize;
         
+        // Calculate hop size based on overlap factor
+        // overlap = 0.0 -> hopSize = blockSize (no overlap)
+        // overlap = 0.5 -> hopSize = blockSize/2 (50% overlap)
+        // overlap = 0.75 -> hopSize = blockSize/4 (75% overlap)
+        int hopSize = (int) Math.round(blockSize * (1.0 - overlapFactor));
+        if (hopSize < 1) {
+            hopSize = 1;
+        }
+        
         // Create ring buffer with 4x block size for smooth operation
-        this.ringBuffer = new StreamingRingBuffer(blockSize * 4, blockSize, blockSize);
+        this.ringBuffer = new StreamingRingBuffer(blockSize * 4, blockSize, hopSize);
         
         // Pre-allocate processing buffer
         this.processingBuffer = new double[blockSize];
@@ -155,13 +184,14 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         long startTime = System.nanoTime();
         
         try {
-            // Get window data directly from ring buffer (zero-copy)
+            // Get window data directly from ring buffer (zero-copy from buffer)
             double[] windowData = ringBuffer.getWindowDirect();
             if (windowData == null) {
                 return;
             }
             
-            // Copy to processing buffer (required for transform)
+            // Copy to processing buffer (required because WaveletTransform doesn't support array slices)
+            // TODO: Future optimization - modify WaveletTransform to accept (array, offset, length)
             System.arraycopy(windowData, 0, processingBuffer, 0, blockSize);
             
             // Perform wavelet transform
