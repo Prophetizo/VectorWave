@@ -67,7 +67,7 @@ public class RingBuffer {
     // - We WANT them to be unused - their only purpose is to occupy memory space
     // - Without this annotation, developers might be tempted to remove them as "dead code"
     // - The annotation serves as additional documentation that the unused state is intentional
-    @SuppressWarnings("unused: padding fields to prevent false sharing") 
+    @SuppressWarnings("unused") 
     private volatile long p1, p2, p3, p4, p5, p6, p7;
     
     // Reader's cache line  
