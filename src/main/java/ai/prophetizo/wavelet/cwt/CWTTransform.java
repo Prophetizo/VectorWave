@@ -266,8 +266,11 @@ public final class CWTTransform {
         double[] convResult = ifft(product);
         
         // Extract valid portion with proper offset
-        // The wavelet was placed at the beginning, centered at halfSupport
-        // So the convolution result needs to be shifted by halfSupport
+        // The wavelet was placed at the beginning of the array with its center at index halfSupport
+        // In the convolution result:
+        //   - Index halfSupport corresponds to the wavelet centered at signal position 0
+        //   - Index halfSupport + i corresponds to the wavelet centered at signal position i
+        // Therefore, we extract starting from index halfSupport
         double[] result = new double[signalLength];
         int halfSupport = (int)(WAVELET_SUPPORT_FACTOR / 2 * scale * wavelet.bandwidth());
         
