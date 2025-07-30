@@ -125,6 +125,10 @@ public class RingBuffer {
         }
         
         buffer[currentWrite] = value;
+        
+        // Prefetch next cache line for future writes
+        prefetchForWrite((currentWrite + CACHE_LINE_SIZE / 8) & mask);
+        
         writePosition.set(nextWrite);
         return true;
     }
@@ -167,6 +171,12 @@ public class RingBuffer {
         }
         
         writePosition.set((currentWrite + written) & mask);
+        
+        // Prefetch for next write operation
+        if (written > 0) {
+            prefetchForWrite(((currentWrite + written) & mask));
+        }
+        
         return written;
     }
     
@@ -185,8 +195,101 @@ public class RingBuffer {
         }
         
         double value = buffer[currentRead];
+        
+        // Prefetch next elements for sequential reads
+        prefetchForRead(currentRead, 8);
+        
         readPosition.set((currentRead + 1) & mask);
         return value;
+    }
+    
+    /**
+     * Writes multiple batches of data to the buffer in a single operation.
+     * This method optimizes for multiple small writes by minimizing atomic operations.
+     * 
+     * @param batches array of data batches to write
+     * @return total number of elements written across all batches
+     */
+    public int writeBatch(double[][] batches) {
+        if (batches == null || batches.length == 0) {
+            return 0;
+        }
+        
+        // Calculate total size needed
+        int totalSize = 0;
+        for (double[] batch : batches) {
+            if (batch != null) {
+                totalSize += batch.length;
+            }
+        }
+        
+        if (totalSize == 0) {
+            return 0;
+        }
+        
+        // Read positions once for consistency
+        int currentRead = readPosition.get();
+        int currentWrite = writePosition.get();
+        
+        // Calculate available space
+        int available = (currentRead - currentWrite - 1 + capacity) & mask;
+        if (available < totalSize) {
+            // Not enough space for all batches - write what we can
+            return writeBatchPartial(batches, available);
+        }
+        
+        // Fast path: write all batches in one go
+        int written = 0;
+        int writePos = currentWrite;
+        
+        for (double[] batch : batches) {
+            if (batch == null || batch.length == 0) {
+                continue;
+            }
+            
+            int remaining = batch.length;
+            int srcOffset = 0;
+            
+            while (remaining > 0) {
+                int chunkSize = Math.min(remaining, capacity - writePos);
+                System.arraycopy(batch, srcOffset, buffer, writePos, chunkSize);
+                
+                written += chunkSize;
+                remaining -= chunkSize;
+                srcOffset += chunkSize;
+                writePos = (writePos + chunkSize) & mask;
+            }
+        }
+        
+        // Single atomic update for all batches
+        writePosition.set(writePos);
+        return written;
+    }
+    
+    /**
+     * Helper method to write partial batches when buffer space is limited.
+     */
+    private int writeBatchPartial(double[][] batches, int availableSpace) {
+        int written = 0;
+        int remaining = availableSpace;
+        
+        for (double[] batch : batches) {
+            if (batch == null || batch.length == 0 || remaining == 0) {
+                continue;
+            }
+            
+            int toWrite = Math.min(batch.length, remaining);
+            int actuallyWritten = write(batch, 0, toWrite);
+            written += actuallyWritten;
+            remaining -= actuallyWritten;
+            
+            if (actuallyWritten < toWrite) {
+                // Buffer became full
+                break;
+            }
+        }
+        
+        return written;
     }
     
     /**
@@ -349,5 +452,39 @@ public class RingBuffer {
      */
     public int getCapacity() {
         return capacity;
+    }
+    
+    /**
+     * Prefetches data for writing by accessing the memory location.
+     * This triggers the CPU's hardware prefetcher to load the cache line.
+     * 
+     * @param index the buffer index to prefetch
+     */
+    private void prefetchForWrite(int index) {
+        // Touch the memory location to trigger hardware prefetch
+        // This is a portable way to hint the CPU without using Unsafe
+        // The JIT compiler may optimize this to a prefetch instruction
+        if (index >= 0 && index < capacity) {
+            @SuppressWarnings("unused")
+            double dummy = buffer[index];
+        }
+    }
+    
+    /**
+     * Prefetches data for reading by accessing future memory locations.
+     * This is called during read operations to warm up the cache.
+     * 
+     * @param startIndex the starting buffer index
+     * @param count number of elements that will be read
+     */
+    private void prefetchForRead(int startIndex, int count) {
+        // Prefetch ahead by one cache line
+        int prefetchDistance = Math.min(CACHE_LINE_SIZE / 8, count);
+        int prefetchIndex = (startIndex + prefetchDistance) & mask;
+        
+        if (prefetchIndex < capacity) {
+            @SuppressWarnings("unused")
+            double dummy = buffer[prefetchIndex];
+        }
     }
 }

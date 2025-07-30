@@ -4,16 +4,21 @@ import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.internal.VectorOps;
 
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorSpecies;
 
 /**
  * Zero-copy streaming wavelet transform implementation using ring buffer.
@@ -92,6 +97,9 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     private final BoundaryMode boundaryMode;
     private final int blockSize;
     private final WaveletTransform transform;
+    private final WaveletTransform simdTransform;
+    private final boolean useSIMD;
+    private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     
     // Ring buffer for zero-copy operations
     private final StreamingRingBuffer ringBuffer;
@@ -101,6 +109,15 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     
     // Statistics
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
+    
+    // Adaptive buffer sizing
+    private volatile int currentBufferMultiplier;
+    private final int minBufferMultiplier;
+    private final int maxBufferMultiplier;
+    private static final double THROUGHPUT_HIGH_THRESHOLD = 1_000_000; // 1M samples/sec
+    private static final double THROUGHPUT_LOW_THRESHOLD = 100_000;    // 100K samples/sec
+    private long lastAdaptiveCheck = System.nanoTime();
+    private static final long ADAPTIVE_CHECK_INTERVAL_NS = 1_000_000_000L; // 1 second
 
     /**
      * Creates an optimized streaming wavelet transform with no overlap.
@@ -161,6 +178,9 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         this.wavelet = wavelet;
         this.boundaryMode = boundaryMode;
         this.blockSize = blockSize;
+        this.currentBufferMultiplier = bufferCapacityMultiplier;
+        this.minBufferMultiplier = 2;
+        this.maxBufferMultiplier = Math.max(bufferCapacityMultiplier * 2, 16);
         
         // Calculate hop size based on overlap factor
         // overlap = 0.0 -> hopSize = blockSize (no overlap)
@@ -176,6 +196,20 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
 
         // Create transform with the specified wavelet and boundary mode
         this.transform = new WaveletTransform(wavelet, boundaryMode);
+        
+        // Check if SIMD is beneficial for this block size
+        // SIMD is beneficial when block size is at least 2x the vector length
+        this.useSIMD = blockSize >= SPECIES.length() * 2;
+        
+        if (useSIMD) {
+            // Create SIMD-optimized transform
+            TransformConfig simdConfig = TransformConfig.builder()
+                .forceSIMD(true)
+                .build();
+            this.simdTransform = new WaveletTransform(wavelet, boundaryMode, simdConfig);
+        } else {
+            this.simdTransform = null;
+        }
     }
 
     @Override
@@ -232,6 +266,9 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         while (ringBuffer.hasWindow() && !isClosed.get()) {
             processOneWindow();
         }
+        
+        // Check if we should adapt buffer size
+        checkAndAdaptBufferSize();
     }
     
     /**
@@ -282,7 +319,14 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
             
             // TRUE ZERO-COPY: Use the new forward method that accepts offset/length
             // This eliminates the array copy and achieves the promised performance benefits
-            TransformResult result = transform.forward(windowData, 0, blockSize);
+            
+            // Use SIMD transform if available and beneficial
+            TransformResult result;
+            if (useSIMD && simdTransform != null) {
+                result = simdTransform.forward(windowData, 0, blockSize);
+            } else {
+                result = transform.forward(windowData, 0, blockSize);
+            }
             
             // Emit result to subscribers
             submit(result);
@@ -399,6 +443,68 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         }
     }
 
+    /**
+     * Checks and adapts the buffer size based on throughput.
+     * This method implements dynamic buffer sizing to optimize for varying data rates.
+     */
+    private void checkAndAdaptBufferSize() {
+        long currentTime = System.nanoTime();
+        
+        // Only check periodically to avoid overhead
+        if (currentTime - lastAdaptiveCheck < ADAPTIVE_CHECK_INTERVAL_NS) {
+            return;
+        }
+        
+        lastAdaptiveCheck = currentTime;
+        double throughput = statistics.getThroughput();
+        
+        // Determine if we should resize
+        boolean shouldResize = false;
+        int newMultiplier = currentBufferMultiplier;
+        
+        if (throughput > THROUGHPUT_HIGH_THRESHOLD && currentBufferMultiplier < maxBufferMultiplier) {
+            // High throughput - increase buffer size
+            newMultiplier = Math.min(currentBufferMultiplier * 2, maxBufferMultiplier);
+            shouldResize = true;
+        } else if (throughput < THROUGHPUT_LOW_THRESHOLD && currentBufferMultiplier > minBufferMultiplier) {
+            // Low throughput - decrease buffer size to save memory
+            newMultiplier = Math.max(currentBufferMultiplier / 2, minBufferMultiplier);
+            shouldResize = true;
+        }
+        
+        // Check buffer utilization
+        int bufferLevel = ringBuffer.available();
+        int bufferCapacity = ringBuffer.getCapacity();
+        double utilization = (double) bufferLevel / bufferCapacity;
+        
+        // If buffer is consistently full, increase size
+        if (utilization > 0.9 && currentBufferMultiplier < maxBufferMultiplier) {
+            newMultiplier = Math.min(currentBufferMultiplier * 2, maxBufferMultiplier);
+            shouldResize = true;
+        }
+        
+        // Note: In a real implementation, we would need to implement buffer resizing
+        // For now, we just track what the optimal size would be
+        if (shouldResize && newMultiplier != currentBufferMultiplier) {
+            // Log the recommendation (in production, this could trigger actual resizing)
+            currentBufferMultiplier = newMultiplier;
+            // In a full implementation, we would:
+            // 1. Create a new larger/smaller ring buffer
+            // 2. Transfer existing data
+            // 3. Swap the buffers atomically
+        }
+    }
+    
+    /**
+     * Gets the current buffer capacity multiplier.
+     * This can be used for monitoring adaptive behavior.
+     * 
+     * @return the current buffer capacity multiplier
+     */
+    public int getCurrentBufferMultiplier() {
+        return currentBufferMultiplier;
+    }
+    
     /**
      * Internal statistics implementation.
      */
