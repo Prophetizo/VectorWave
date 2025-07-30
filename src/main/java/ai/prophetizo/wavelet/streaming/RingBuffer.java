@@ -74,9 +74,10 @@ public class RingBuffer {
     public boolean write(double value) {
         int currentWrite = writePosition.get();
         int nextWrite = (currentWrite + 1) & mask;
+        int currentRead = readPosition.get(); // Snapshot read position
         
         // Check if buffer is full
-        if (nextWrite == readPosition.get()) {
+        if (nextWrite == currentRead) {
             return false;
         }
         
@@ -133,9 +134,10 @@ public class RingBuffer {
      */
     public double read() {
         int currentRead = readPosition.get();
+        int currentWrite = writePosition.get(); // Snapshot write position
         
         // Check if buffer is empty
-        if (currentRead == writePosition.get()) {
+        if (currentRead == currentWrite) {
             return Double.NaN;
         }
         
@@ -249,7 +251,10 @@ public class RingBuffer {
      * @return the number of available elements
      */
     public int available() {
-        return (writePosition.get() - readPosition.get()) & mask;
+        // Snapshot positions to avoid race conditions
+        int currentWrite = writePosition.get();
+        int currentRead = readPosition.get();
+        return (currentWrite - currentRead) & mask;
     }
     
     /**
@@ -267,7 +272,10 @@ public class RingBuffer {
      * @return true if empty, false otherwise
      */
     public boolean isEmpty() {
-        return readPosition.get() == writePosition.get();
+        // Snapshot positions to avoid race conditions
+        int currentRead = readPosition.get();
+        int currentWrite = writePosition.get();
+        return currentRead == currentWrite;
     }
     
     /**
@@ -276,8 +284,11 @@ public class RingBuffer {
      * @return true if full, false otherwise
      */
     public boolean isFull() {
-        int nextWrite = (writePosition.get() + 1) & mask;
-        return nextWrite == readPosition.get();
+        // Snapshot positions to avoid race conditions
+        int currentWrite = writePosition.get();
+        int currentRead = readPosition.get();
+        int nextWrite = (currentWrite + 1) & mask;
+        return nextWrite == currentRead;
     }
     
     /**

@@ -15,6 +15,13 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Direct buffer access for SIMD operations</li>
  *   <li>Automatic window advancement</li>
  * </ul>
+ * 
+ * <p><b>Thread Safety:</b> This class maintains the same thread-safety guarantees as
+ * {@link RingBuffer} for read/write operations. However, the window extraction methods
+ * ({@link #getWindowDirect()}, {@link #processWindow}) use shared internal buffers and
+ * are NOT thread-safe. Only one thread should call these methods at a time. If concurrent
+ * window extraction is needed, use {@link #getWindow(double[])} with separate output arrays
+ * or synchronize access to the window extraction methods.</p>
  */
 public class StreamingRingBuffer extends RingBuffer {
     
@@ -23,6 +30,8 @@ public class StreamingRingBuffer extends RingBuffer {
     private final int overlapSize;
     
     // Working arrays for window extraction (reused to avoid allocation)
+    // WARNING: These shared buffers make getWindowDirect() and processWindow() NOT thread-safe
+    // Only one thread should call these methods at a time, or use getWindow() with external arrays
     private final double[] windowBuffer;
     private final double[] processingBuffer;
     
@@ -88,6 +97,10 @@ public class StreamingRingBuffer extends RingBuffer {
      * Extracts the current window into the internal buffer without advancing positions.
      * This method is useful for zero-allocation processing.
      * 
+     * <p><b>Thread Safety:</b> This method is NOT thread-safe as it uses a shared internal buffer.
+     * Only one thread should call this method at a time. For concurrent access, use
+     * {@link #getWindow(double[])} with separate output arrays.</p>
+     * 
      * @return the internal window buffer if data is available, null otherwise
      */
     public double[] getWindowDirect() {
@@ -116,6 +129,9 @@ public class StreamingRingBuffer extends RingBuffer {
     /**
      * Processes the current window and advances by hopSize.
      * This is the main method for streaming processing.
+     * 
+     * <p><b>Thread Safety:</b> This method is NOT thread-safe as it uses a shared internal buffer.
+     * Only one thread should call this method at a time.</p>
      * 
      * @param processor the processor to apply to the window
      * @return true if processing occurred, false if insufficient data

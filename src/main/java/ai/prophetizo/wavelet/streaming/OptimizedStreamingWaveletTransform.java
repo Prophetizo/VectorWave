@@ -16,25 +16,48 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Optimized streaming wavelet transform using ring buffer for reduced memory allocations.
+ * Streaming wavelet transform with ring buffer for reduced memory allocations.
  *
  * <p>This implementation uses a ring buffer to minimize memory allocations and improve
- * cache locality. While the ring buffer provides zero-copy window extraction, a single
- * copy is still required for the wavelet transform operation due to API constraints.</p>
+ * cache locality. However, due to current API limitations, a memory copy is still required
+ * for each transform operation.</p>
  *
  * <p>Key improvements over StreamingWaveletTransformImpl:</p>
  * <ul>
  *   <li>Ring buffer eliminates repeated allocations</li>
- *   <li>Single copy operation per block (vs multiple in naive implementation)</li>
- *   <li>Better cache locality</li>
- *   <li>Lower GC pressure</li>
+ *   <li>Reused processing buffer reduces GC pressure</li>
+ *   <li>Better cache locality for buffer management</li>
  * </ul>
  *
- * <p>Note: True zero-copy operation would require modifying WaveletTransform to accept
- * array slices, which would impact the entire codebase.</p>
+ * <p><b>IMPORTANT:</b> This is NOT a true zero-copy implementation. Each block requires
+ * a System.arraycopy operation which represents a significant performance bottleneck.
+ * True zero-copy would require refactoring WaveletTransform to accept array slices
+ * (offset + length parameters).</p>
+ *
+ * @see WaveletTransform#forward(double[]) The method that forces the copy operation
  */
 public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<TransformResult>
         implements StreamingWaveletTransform {
+
+    /**
+     * Buffer capacity multiplier for the ring buffer.
+     * 
+     * <p>The ring buffer capacity is set to blockSize * BUFFER_CAPACITY_MULTIPLIER.
+     * A value of 4 provides a good balance between:</p>
+     * <ul>
+     *   <li>Memory usage (not too large)</li>
+     *   <li>Smooth operation without blocking (can buffer ahead)</li>
+     *   <li>Tolerance for processing delays (producer can get ahead of consumer)</li>
+     * </ul>
+     * 
+     * <p>With a multiplier of 4:</p>
+     * <ul>
+     *   <li>No overlap: Can buffer 4 complete blocks</li>
+     *   <li>50% overlap: Can buffer ~7 windows (with hop size = blockSize/2)</li>
+     *   <li>75% overlap: Can buffer ~13 windows (with hop size = blockSize/4)</li>
+     * </ul>
+     */
+    private static final int BUFFER_CAPACITY_MULTIPLIER = 4;
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -75,6 +98,21 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
      * @throws InvalidArgumentException if parameters are invalid
      */
     public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize, double overlapFactor) {
+        this(wavelet, boundaryMode, blockSize, overlapFactor, BUFFER_CAPACITY_MULTIPLIER);
+    }
+    
+    /**
+     * Creates an optimized streaming wavelet transform with full configuration control.
+     *
+     * @param wavelet      the wavelet to use
+     * @param boundaryMode the boundary mode
+     * @param blockSize    the block size (must be power of 2)
+     * @param overlapFactor the overlap factor (0.0 = no overlap, 0.5 = 50% overlap, 0.75 = 75% overlap)
+     * @param bufferCapacityMultiplier multiplier for ring buffer capacity (capacity = blockSize * multiplier)
+     * @throws InvalidArgumentException if parameters are invalid
+     */
+    public OptimizedStreamingWaveletTransform(Wavelet wavelet, BoundaryMode boundaryMode, int blockSize, 
+                                            double overlapFactor, int bufferCapacityMultiplier) {
         super();
 
         if (wavelet == null) {
@@ -90,6 +128,9 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         if (overlapFactor < 0.0 || overlapFactor >= 1.0) {
             throw new InvalidArgumentException("Overlap factor must be in range [0.0, 1.0), got: " + overlapFactor);
         }
+        if (bufferCapacityMultiplier < 2) {
+            throw new InvalidArgumentException("Buffer capacity multiplier must be at least 2, got: " + bufferCapacityMultiplier);
+        }
 
         this.wavelet = wavelet;
         this.boundaryMode = boundaryMode;
@@ -104,8 +145,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
             hopSize = 1;
         }
         
-        // Create ring buffer with 4x block size for smooth operation
-        this.ringBuffer = new StreamingRingBuffer(blockSize * 4, blockSize, hopSize);
+        // Create ring buffer with sufficient capacity for smooth operation
+        this.ringBuffer = new StreamingRingBuffer(blockSize * bufferCapacityMultiplier, blockSize, hopSize);
         
         // Pre-allocate processing buffer
         this.processingBuffer = new double[blockSize];
@@ -190,8 +231,13 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
                 return;
             }
             
-            // Copy to processing buffer (required because WaveletTransform doesn't support array slices)
-            // TODO: Future optimization - modify WaveletTransform to accept (array, offset, length)
+            // PERFORMANCE BOTTLENECK: This copy operation defeats the zero-copy goal
+            // The ring buffer provides the window without allocation, but we must copy it
+            // because WaveletTransform.forward() requires owning the entire array.
+            // 
+            // TODO: To achieve true zero-copy, WaveletTransform needs a new method:
+            //   forward(double[] data, int offset, int length)
+            // This would require updating all underlying operations (ScalarOps, VectorOps, etc.)
             System.arraycopy(windowData, 0, processingBuffer, 0, blockSize);
             
             // Perform wavelet transform
@@ -224,7 +270,9 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         // Handle partial window if needed
         int remaining = ringBuffer.available();
         if (remaining > 0 && remaining < blockSize) {
-            // Read remaining data
+            // ALLOCATION: This creates a new array for the partial window
+            // Unlike the main processing loop, we can't reuse processingBuffer here
+            // because it might still be in use by the last transform
             double[] partialData = new double[blockSize];
             int read = ringBuffer.read(partialData, 0, remaining);
             

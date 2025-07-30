@@ -160,6 +160,54 @@ class RingBufferIntegrationTest {
     }
     
     @Test
+    @DisplayName("Should handle custom buffer capacity multiplier")
+    void testCustomBufferCapacity() {
+        Wavelet wavelet = new Haar();
+        int blockSize = 128;
+        double overlapFactor = 0.5;
+        int bufferCapacityMultiplier = 8; // Larger buffer for testing
+        
+        // Create transform with custom buffer capacity
+        OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTransform(
+            wavelet, BoundaryMode.PERIODIC, blockSize, overlapFactor, bufferCapacityMultiplier
+        );
+        
+        // The buffer should be able to handle more data without blocking
+        AtomicInteger blocksProcessed = new AtomicInteger(0);
+        transform.subscribe(new Flow.Subscriber<TransformResult>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+            
+            @Override
+            public void onNext(TransformResult item) {
+                blocksProcessed.incrementAndGet();
+            }
+            
+            @Override
+            public void onError(Throwable throwable) {}
+            
+            @Override
+            public void onComplete() {}
+        });
+        
+        // Generate test data - more than default buffer could handle
+        double[] data = new double[blockSize * 6]; // 6 blocks worth
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i;
+        }
+        
+        // Process all data at once
+        transform.process(data);
+        
+        // Should be able to buffer all data without issues
+        assertTrue(transform.getBufferLevel() > 0, "Buffer should contain data");
+        
+        transform.close();
+    }
+    
+    @Test
     @DisplayName("Should handle sliding window processing efficiently")
     void testSlidingWindowProcessing() {
         StreamingRingBuffer buffer = new StreamingRingBuffer(1024, 128, 64);
