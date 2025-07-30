@@ -15,24 +15,24 @@ import java.util.concurrent.TimeUnit;
  * including multiplication, magnitude computation, conjugation, and addition.</p>
  * 
  * <p><b>Memory Requirements:</b> The benchmark allocates arrays based on the size
- * parameter. For the largest size (16384), it requires approximately:
+ * parameter. Default sizes are optimized for CI environments:
  * <ul>
- *   <li>6 arrays × 16384 elements × 8 bytes = ~768KB per thread</li>
- *   <li>Recommended heap size: -Xmx1G for default parameters</li>
- *   <li>For larger sizes, adjust heap accordingly</li>
+ *   <li>Default sizes (256-4096): ~200KB per thread, suitable for CI</li>
+ *   <li>Large sizes (16384+): ~768KB+ per thread, recommended for local testing</li>
+ *   <li>Recommended heap: -Xmx512M for default, -Xmx2G for large sizes</li>
  * </ul>
  * </p>
  * 
  * <p><b>Running the benchmark:</b></p>
  * <pre>
- * # With default heap (1GB):
+ * # Default (CI-friendly):
  * ./jmh-runner.sh ComplexOperationsBenchmark
  * 
- * # With custom heap size:
- * JAVA_OPTS="-Xmx4G" ./jmh-runner.sh ComplexOperationsBenchmark
+ * # Local testing with larger sizes:
+ * JAVA_OPTS="-Xmx2G" ./jmh-runner.sh ComplexOperationsBenchmark -p size=16384,32768,65536
  * 
- * # With specific array sizes:
- * ./jmh-runner.sh ComplexOperationsBenchmark -p size=65536,131072
+ * # Custom size combinations:
+ * ./jmh-runner.sh ComplexOperationsBenchmark -p size=1024,8192
  * </pre>
  */
 @BenchmarkMode(Mode.Throughput)
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 1)
 public class ComplexOperationsBenchmark {
     
-    @Param({"256", "1024", "4096", "16384"})
+    @Param({"256", "1024", "4096"})
     private int size;
     
     private double[] real1, imag1, real2, imag2;

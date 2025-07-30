@@ -500,6 +500,13 @@ public final class ComplexVectorOps {
      * <p>This method uses SIMD gather operations when available to efficiently
      * extract real and imaginary parts from interleaved data. For platforms
      * without gather support, it falls back to an optimized scalar approach.</p>
+     * 
+     * <p>Note: While this method shares a similar loop unrolling pattern with
+     * convertToInterleaved(), we intentionally keep them separate rather than
+     * extracting a helper method. This is a performance-critical operation where
+     * any additional method call overhead could impact throughput. The JVM may
+     * not inline a complex helper method, and the operations (reading vs writing
+     * at different indices) are sufficiently different to warrant duplication.</p>
      */
     public void convertToSplit(double[] interleaved, double[] real, double[] imag) {
         int length = real.length;
@@ -545,6 +552,10 @@ public final class ComplexVectorOps {
      * <p>This method uses SIMD scatter operations when available to efficiently
      * interleave real and imaginary parts. For platforms without scatter support,
      * it uses an optimized approach with loop unrolling.</p>
+     * 
+     * <p>Note: See convertToSplit() for rationale on why we don't extract the
+     * common loop unrolling pattern into a helper method. Performance is critical
+     * here, and the slight code duplication is an acceptable trade-off.</p>
      */
     public void convertToInterleaved(double[] real, double[] imag, double[] interleaved) {
         int length = real.length;
