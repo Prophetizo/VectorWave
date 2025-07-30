@@ -40,7 +40,7 @@ public record MarketAnalysisRequest(
                 true,  // analyzeVolatility
                 true,  // findCycles
                 true,  // generateSignals
-                FinancialAnalysisConfig.CRASH_ASYMMETRY_THRESHOLD,
+                10.0,  // crashThreshold (default asymmetry threshold)
                 30.0,  // volatilityWindow (days)
                 5,     // maxCycles
                 0.8    // signalConfidence
@@ -55,7 +55,7 @@ public record MarketAnalysisRequest(
             private boolean analyzeVolatility = true;
             private boolean findCycles = true;
             private boolean generateSignals = true;
-            private double crashThreshold = FinancialAnalysisConfig.CRASH_ASYMMETRY_THRESHOLD;
+            private double crashThreshold = 10.0;
             private double volatilityWindow = 30.0;
             private int maxCycles = 5;
             private double signalConfidence = 0.8;

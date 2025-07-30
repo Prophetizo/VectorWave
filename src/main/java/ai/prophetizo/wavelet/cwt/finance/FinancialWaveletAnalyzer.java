@@ -6,8 +6,6 @@ import ai.prophetizo.wavelet.cwt.finance.MarketAnalysisRequest.AnalysisOptions;
 
 import java.util.*;
 
-import static ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisConfig.*;
-
 /**
  * Comprehensive financial analysis using specialized wavelets.
  * 
@@ -150,13 +148,28 @@ public class FinancialWaveletAnalyzer {
     
     // Configuration
     private final CWTConfig config;
+    private final FinancialAnalysisParameters parameters;
     
+    /**
+     * Creates analyzer with default CWT and financial parameters.
+     */
     public FinancialWaveletAnalyzer() {
-        this(CWTConfig.defaultConfig());
+        this(FinancialAnalysisParameters.defaultParameters());
     }
     
-    public FinancialWaveletAnalyzer(CWTConfig config) {
+    /**
+     * Creates analyzer with custom financial parameters and default CWT config.
+     */
+    public FinancialWaveletAnalyzer(FinancialAnalysisParameters parameters) {
+        this(CWTConfig.defaultConfig(), parameters);
+    }
+    
+    /**
+     * Creates analyzer with custom CWT and financial parameters.
+     */
+    public FinancialWaveletAnalyzer(CWTConfig config, FinancialAnalysisParameters parameters) {
         this.config = config;
+        this.parameters = parameters;
     }
     
     /**
@@ -167,7 +180,10 @@ public class FinancialWaveletAnalyzer {
         CWTTransform transform = new CWTTransform(paul, config);
         
         // Use scales that capture sharp drops (1-10 day movements)
-        ScaleSpace scales = ScaleSpace.logarithmic(CRASH_MIN_SCALE, CRASH_MAX_SCALE, CRASH_NUM_SCALES);
+        ScaleSpace scales = ScaleSpace.logarithmic(
+            parameters.getCrashMinScale(), 
+            parameters.getCrashMaxScale(), 
+            parameters.getCrashNumScales());
         CWTResult result = transform.analyze(priceData, scales);
         
         // Analyze coefficients for asymmetric patterns
@@ -192,9 +208,9 @@ public class FinancialWaveletAnalyzer {
             severity[t] = asymmetryScore;
             
             // Detect crash if asymmetry score exceeds threshold
-            if (asymmetryScore > CRASH_ASYMMETRY_THRESHOLD && isLocalMaximum(severity, t)) {
+            if (asymmetryScore > parameters.getCrashAsymmetryThreshold() && isLocalMaximum(severity, t)) {
                 crashPoints.add(t);
-                crashProbabilities.put(t, Math.min(asymmetryScore / CRASH_PROBABILITY_NORMALIZATION, 1.0));
+                crashProbabilities.put(t, Math.min(asymmetryScore / parameters.getCrashProbabilityNormalization(), 1.0));
             }
         }
         
@@ -252,7 +268,7 @@ public class FinancialWaveletAnalyzer {
         Map<Double, Double> periodogram = new HashMap<>();
         
         // Test multiple Shannon wavelets with different frequency bands
-        double[] testFrequencies = CYCLE_TEST_FREQUENCIES; // 5, 10, 22, 50 day cycles
+        double[] testFrequencies = parameters.getCycleTestFrequencies(); // 5, 10, 22, 50 day cycles
         
         for (double testFreq : testFrequencies) {
             double bandwidth = 0.2 * testFreq; // Narrow band around test frequency
@@ -350,7 +366,7 @@ public class FinancialWaveletAnalyzer {
         // Note: volatility.instantaneousVolatility has length priceData.length - 1
         // Use explicit bounds check to ensure we never exceed array limits
         int maxIndex = Math.min(priceData.length - 1, volatility.instantaneousVolatility.length);
-        for (int i = REGIME_DETECTION_LOOKBACK_PERIOD; i < maxIndex; i++) {
+        for (int i = parameters.getRegimeDetectionLookbackPeriod(); i < maxIndex; i++) {
             MarketRegime newRegime = detectRegime(priceData, i, volatility.instantaneousVolatility[i]);
             if (newRegime != currentRegime) {
                 regimeChanges.add(i);
@@ -360,7 +376,7 @@ public class FinancialWaveletAnalyzer {
         }
         
         // Handle the last price point separately (no volatility data for it)
-        if (priceData.length >= REGIME_DETECTION_LOOKBACK_PERIOD) {
+        if (priceData.length >= parameters.getRegimeDetectionLookbackPeriod()) {
             regimeMap.put(priceData.length - 1, currentRegime);
         }
         
@@ -372,7 +388,7 @@ public class FinancialWaveletAnalyzer {
             double priceChange = Math.abs(priceData[i] - priceData[i-1]) / priceData[i-1];
             double volumeChange = Math.abs(volumeData[i] - volumeData[i-1]) / volumeData[i-1];
             
-            if (volumeChange > VOLUME_DIVERGENCE_THRESHOLD && priceChange < PRICE_DIVERGENCE_THRESHOLD) {
+            if (volumeChange > parameters.getVolumeDivergenceThreshold() && priceChange < parameters.getPriceDivergenceThreshold()) {
                 anomalies.add(new MarketAnomaly(i, AnomalyType.VOLUME_PRICE_DIVERGENCE, 
                     volumeChange, "High volume with minimal price movement"));
             }
@@ -416,12 +432,12 @@ public class FinancialWaveletAnalyzer {
         // Ensure we don't exceed volatility array bounds (length = priceData.length - 1)
         // and handle cases where priceData is too short for forward-looking predictions
         // Math.max(0, ...) prevents negative indices when priceData.length < CRASH_PREDICTION_FORWARD_WINDOW
-        int maxIndex = Math.max(0, Math.min(priceData.length - CRASH_PREDICTION_FORWARD_WINDOW, 
+        int maxIndex = Math.max(0, Math.min(priceData.length - parameters.getCrashPredictionForwardWindow(), 
                                            volatility.instantaneousVolatility.length));
-        for (int i = SIGNAL_GENERATION_MIN_HISTORY; i < maxIndex; i++) {
+        for (int i = parameters.getSignalGenerationMinHistory(); i < maxIndex; i++) {
             // Sell signal before potential crash
-            if (crashes.crashProbabilities.containsKey(i + CRASH_PREDICTION_FORWARD_WINDOW)) {
-                double prob = crashes.crashProbabilities.get(i + CRASH_PREDICTION_FORWARD_WINDOW);
+            if (crashes.crashProbabilities.containsKey(i + parameters.getCrashPredictionForwardWindow())) {
+                double prob = crashes.crashProbabilities.get(i + parameters.getCrashPredictionForwardWindow());
                 if (prob > 0.7) {
                     signals.add(new TradingSignal(i, SignalType.SELL, prob,
                         "High crash probability detected"));
@@ -430,8 +446,8 @@ public class FinancialWaveletAnalyzer {
             
             // Buy signal after crash in low volatility
             boolean recentCrash = false;
-            int lookbackStart = Math.max(0, i - RECENT_CRASH_LOOKBACK_WINDOW);
-            int lookbackEnd = Math.max(0, i - CRASH_PREDICTION_FORWARD_WINDOW);
+            int lookbackStart = Math.max(0, i - parameters.getRecentCrashLookbackWindow());
+            int lookbackEnd = Math.max(0, i - parameters.getCrashPredictionForwardWindow());
             
             // Only check for recent crashes if we have a valid range
             if (lookbackStart < lookbackEnd) {
@@ -470,7 +486,10 @@ public class FinancialWaveletAnalyzer {
         // Use Paul wavelet for trend and momentum
         PaulWavelet paul = new PaulWavelet(3);
         CWTTransform paulTransform = new CWTTransform(paul, config);
-        ScaleSpace trendScales = ScaleSpace.logarithmic(TREND_MIN_SCALE, TREND_MAX_SCALE, TREND_NUM_SCALES);
+        ScaleSpace trendScales = ScaleSpace.logarithmic(
+            parameters.getTrendMinScale(), 
+            parameters.getTrendMaxScale(), 
+            parameters.getTrendNumScales());
         CWTResult paulResult = paulTransform.analyze(priceData, trendScales);
         
         // Use DOG wavelet for volatility - analyze absolute returns
@@ -518,34 +537,35 @@ public class FinancialWaveletAnalyzer {
      */
     public OptimalParameters optimizeParameters(double[] priceData, AnalysisObjective objective) {
         // Simplified parameter optimization
+        OptimizationParameters opt = parameters.getOptimization();
         OptimalParameters params = switch (objective) {
             case CRASH_DETECTION -> new OptimalParameters(
-                OptimizationDefaults.CRASH_PAUL_ORDER, 
-                OptimizationDefaults.CRASH_DOG_ORDER, 
-                OptimizationDefaults.CRASH_THRESHOLD_FACTOR, 
-                OptimizationDefaults.CRASH_SEVERITY_EXPONENT, 
-                OptimizationDefaults.CRASH_SCALE_RANGE
+                opt.getCrashPaulOrder(), 
+                opt.getCrashDogOrder(), 
+                opt.getCrashThresholdFactor(), 
+                opt.getCrashSeverityExponent(), 
+                opt.getCrashScaleRange()
             );
             case VOLATILITY_ANALYSIS -> new OptimalParameters(
-                OptimizationDefaults.VOLATILITY_PAUL_ORDER, 
-                OptimizationDefaults.VOLATILITY_DOG_ORDER, 
-                OptimizationDefaults.VOLATILITY_THRESHOLD_FACTOR, 
-                OptimizationDefaults.VOLATILITY_EXPONENT, 
-                OptimizationDefaults.VOLATILITY_SCALE_RANGE
+                opt.getVolatilityPaulOrder(), 
+                opt.getVolatilityDogOrder(), 
+                opt.getVolatilityThresholdFactor(), 
+                opt.getVolatilityExponent(), 
+                opt.getVolatilityScaleRange()
             );
             case CYCLE_DETECTION -> new OptimalParameters(
-                OptimizationDefaults.CYCLE_SHANNON_FB, 
-                OptimizationDefaults.CYCLE_SHANNON_FC, 
-                OptimizationDefaults.CYCLE_THRESHOLD_FACTOR, 
-                OptimizationDefaults.CYCLE_EXPONENT, 
-                OptimizationDefaults.CYCLE_SCALE_RANGE
+                opt.getCycleShannonFb(), 
+                opt.getCycleShannonFc(), 
+                opt.getCycleThresholdFactor(), 
+                opt.getCycleExponent(), 
+                opt.getCycleScaleRange()
             );
             case SIGNAL_GENERATION -> new OptimalParameters(
-                OptimizationDefaults.SIGNAL_PAUL_ORDER, 
-                OptimizationDefaults.SIGNAL_DOG_ORDER, 
-                OptimizationDefaults.SIGNAL_THRESHOLD_FACTOR, 
-                OptimizationDefaults.SIGNAL_EXPONENT, 
-                OptimizationDefaults.SIGNAL_SCALE_RANGE
+                opt.getSignalPaulOrder(), 
+                opt.getSignalDogOrder(), 
+                opt.getSignalThresholdFactor(), 
+                opt.getSignalExponent(), 
+                opt.getSignalScaleRange()
             );
         };
         
@@ -610,9 +630,9 @@ public class FinancialWaveletAnalyzer {
     }
     
     private VolatilityLevel classifyVolatility(double vol, double avgVol) {
-        if (vol < avgVol * VOLATILITY_LOW_THRESHOLD) return VolatilityLevel.LOW;
-        if (vol < avgVol * VOLATILITY_MEDIUM_THRESHOLD) return VolatilityLevel.MEDIUM;
-        if (vol < avgVol * VOLATILITY_HIGH_THRESHOLD) return VolatilityLevel.HIGH;
+        if (vol < avgVol * parameters.getVolatilityLowThreshold()) return VolatilityLevel.LOW;
+        if (vol < avgVol * parameters.getVolatilityMediumThreshold()) return VolatilityLevel.MEDIUM;
+        if (vol < avgVol * parameters.getVolatilityHighThreshold()) return VolatilityLevel.HIGH;
         return VolatilityLevel.EXTREME;
     }
     
@@ -651,17 +671,17 @@ public class FinancialWaveletAnalyzer {
     
     private MarketRegime detectRegime(double[] prices, int index, double volatility) {
         // Simple regime detection based on recent price movement and volatility
-        if (index < REGIME_DETECTION_LOOKBACK_PERIOD) return MarketRegime.RANGING;
+        if (index < parameters.getRegimeDetectionLookbackPeriod()) return MarketRegime.RANGING;
         
-        double recentReturn = (prices[index] - prices[index - REGIME_DETECTION_LOOKBACK_PERIOD]) / 
-                             prices[index - REGIME_DETECTION_LOOKBACK_PERIOD];
-        double avgVolatility = DEFAULT_AVERAGE_VOLATILITY; // Assumed average
+        double recentReturn = (prices[index] - prices[index - parameters.getRegimeDetectionLookbackPeriod()]) / 
+                             prices[index - parameters.getRegimeDetectionLookbackPeriod()];
+        double avgVolatility = parameters.getDefaultAverageVolatility(); // Assumed average
         
         if (volatility > avgVolatility * 2) {
             return MarketRegime.VOLATILE;
-        } else if (recentReturn > REGIME_TREND_THRESHOLD) {
+        } else if (recentReturn > parameters.getRegimeTrendThreshold()) {
             return MarketRegime.TRENDING_UP;
-        } else if (recentReturn < -REGIME_TREND_THRESHOLD) {
+        } else if (recentReturn < -parameters.getRegimeTrendThreshold()) {
             return MarketRegime.TRENDING_DOWN;
         } else {
             return MarketRegime.RANGING;
@@ -670,7 +690,7 @@ public class FinancialWaveletAnalyzer {
     
     private double calculateRiskLevel(VolatilityAnalysisResult volatility, 
                                     CrashDetectionResult crashes, int currentIndex) {
-        double riskLevel = BASE_RISK_LEVEL; // Base risk
+        double riskLevel = parameters.getBaseRiskLevel(); // Base risk
         
         // Increase risk based on current volatility
         if (currentIndex < volatility.instantaneousVolatility.length) {
@@ -680,7 +700,7 @@ public class FinancialWaveletAnalyzer {
         
         // Increase risk if recent crash
         for (int crashPoint : crashes.crashPoints) {
-            if (Math.abs(crashPoint - currentIndex) < RISK_ASSESSMENT_CRASH_WINDOW) {
+            if (Math.abs(crashPoint - currentIndex) < parameters.getRiskAssessmentCrashWindow()) {
                 riskLevel += 0.2;
                 break;
             }
@@ -845,7 +865,7 @@ public class FinancialWaveletAnalyzer {
         int structureScaleEnd = Math.min(10, paulCoeffs.length);
         
         // Look for local extrema in a window around current point
-        int windowSize = SUPPORT_RESISTANCE_WINDOW;
+        int windowSize = parameters.getSupportResistanceWindow();
         int startIdx = Math.max(0, currentIndex - windowSize);
         int endIdx = Math.min(paulCoeffs[0].length - 1, currentIndex + windowSize);
         
@@ -969,5 +989,21 @@ public class FinancialWaveletAnalyzer {
             0.0,             // averageVolatility
             0.0              // maxVolatility
         );
+    }
+    
+    /**
+     * Gets the current financial analysis parameters.
+     * @return the parameters configuration
+     */
+    public FinancialAnalysisParameters getParameters() {
+        return parameters;
+    }
+    
+    /**
+     * Gets the CWT configuration.
+     * @return the CWT config
+     */
+    public CWTConfig getConfig() {
+        return config;
     }
 }

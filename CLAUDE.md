@@ -140,10 +140,14 @@ ComplexCWTResult result = cwt.analyzeComplex(signal, scales);
 double[][] phase = result.getPhase();
 double[][] instFreq = result.getInstantaneousFrequency();
 
-// Financial analysis
-PaulWavelet paul = new PaulWavelet(4);
-FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
-var crashes = analyzer.detectMarketCrashes(priceData, threshold);
+// Financial analysis with configurable parameters
+FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
+    .crashAsymmetryThreshold(15.0)  // More sensitive for volatile markets
+    .volatilityThresholds(0.3, 1.2, 2.5)  // Custom volatility bands
+    .build();
+
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(params);
+var crashes = analyzer.detectMarketCrashes(priceData, samplingRate);
 ```
 
 ### CWT Performance Tips
