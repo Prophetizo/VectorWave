@@ -37,21 +37,14 @@ class ThreadSafeRingBufferTest {
     @Test
     @DisplayName("Should provide separate buffers for each thread using getWindowDirect")
     void testThreadLocalWindowBuffers() throws InterruptedException {
-        StreamingRingBuffer buffer = new StreamingRingBuffer(256, 64, 32);
+        // Test that ThreadLocal provides separate buffers for each thread
+        // Note: This test uses separate StreamingRingBuffer instances per thread
+        // to respect the SPSC contract
         
-        // Fill buffer with test data
-        double[] testData = new double[128];
-        for (int i = 0; i < testData.length; i++) {
-            testData[i] = i;
-        }
-        buffer.write(testData, 0, testData.length);
-        
-        // Track unique buffer instances seen by each thread
         Set<Integer> bufferIdentities = Collections.synchronizedSet(new HashSet<>());
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(4);
         
-        // Create multiple threads that will call getWindowDirect
         executor = Executors.newFixedThreadPool(4);
         
         for (int i = 0; i < 4; i++) {
@@ -59,7 +52,17 @@ class ThreadSafeRingBufferTest {
                 try {
                     startLatch.await(); // Wait for all threads to be ready
                     
-                    // Each thread should get its own buffer
+                    // Each thread gets its own StreamingRingBuffer (SPSC contract)
+                    StreamingRingBuffer buffer = new StreamingRingBuffer(256, 64, 32);
+                    
+                    // Fill buffer with test data
+                    double[] testData = new double[128];
+                    for (int j = 0; j < testData.length; j++) {
+                        testData[j] = j;
+                    }
+                    buffer.write(testData, 0, testData.length);
+                    
+                    // Each thread should get its own ThreadLocal buffer
                     double[] window = buffer.getWindowDirect();
                     assertNotNull(window);
                     
