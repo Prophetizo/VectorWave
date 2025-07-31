@@ -350,8 +350,19 @@ public final class OptimizedFFT {
                     data[i] *= norm;
                 }
             }
-        } catch (Throwable e) {
-            // Fall back to scalar implementation
+        } catch (RuntimeException e) {
+            // For runtime exceptions (e.g., Vector API not available at runtime),
+            // fall back to scalar implementation
+            // This includes UnsupportedOperationException, IllegalArgumentException, etc.
+            // that might be thrown by Vector API operations
+            fftRadix2Scalar(data, n, inverse);
+        } catch (OutOfMemoryError | StackOverflowError e) {
+            // Re-throw serious errors that should not be caught
+            throw e;
+        } catch (Error e) {
+            // For other errors, fall back to scalar implementation
+            // This handles LinkageError, NoClassDefFoundError, etc. that might occur
+            // if Vector API is not properly linked at runtime
             fftRadix2Scalar(data, n, inverse);
         }
     }

@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.util;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.test.ComplexArrayTestUtils;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

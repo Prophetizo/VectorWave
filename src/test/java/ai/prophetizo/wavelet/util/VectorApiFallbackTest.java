@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
+import ai.prophetizo.wavelet.test.ComplexArrayTestUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -102,27 +103,15 @@ class VectorApiFallbackTest {
     @DisplayName("FFT should handle various sizes correctly")
     @ValueSource(ints = {1, 7, 15, 31, 100, 127})
     void testNonPowerOfTwoSizes(int size) {
-        double[] data = new double[2 * size];
         Random rand = new Random(42);
-        // Initialize complex array with random real values and zero imaginary parts
-        for (int i = 0; i < size; i++) {
-            data[2 * i] = rand.nextGaussian();     // Real part: random
-            data[2 * i + 1] = 0;                    // Imaginary part: zero
-        }
+        double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
         
         // Should use Bluestein algorithm for non-power-of-2 sizes
         assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(data, size, false));
         
         // Verify it's not all zeros or NaN
-        boolean hasNonZero = false;
-        for (double v : data) {
-            assertFalse(Double.isNaN(v), "FFT produced NaN values");
-            assertFalse(Double.isInfinite(v), "FFT produced infinite values");
-            if (Math.abs(v) > EPSILON) {
-                hasNonZero = true;
-            }
-        }
-        assertTrue(hasNonZero, "FFT should produce non-zero results");
+        assertTrue(ComplexArrayTestUtils.allFinite(data), "FFT should not produce NaN or Inf values");
+        assertTrue(ComplexArrayTestUtils.hasNonZero(data, EPSILON), "FFT should produce non-zero results");
     }
     
     @Test
@@ -130,15 +119,10 @@ class VectorApiFallbackTest {
     void testFFTOperationsComplete() {
         // Test various sizes to ensure no exceptions
         int[] sizes = {8, 16, 32, 64, 128};
+        Random rand = new Random(42);
         
         for (int size : sizes) {
-            double[] data = new double[2 * size];
-            Random rand = new Random(42);
-            // Initialize complex array with random real values and zero imaginary parts
-            for (int i = 0; i < size; i++) {
-                data[2 * i] = rand.nextGaussian();     // Real part: random
-                data[2 * i + 1] = 0;                    // Imaginary part: zero
-            }
+            double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
             
             // Forward FFT should complete
             assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(data, size, false),
@@ -155,22 +139,14 @@ class VectorApiFallbackTest {
     void testSplitRadixFallback() {
         // Test size that triggers split-radix (>= 32)
         int size = 64;
-        double[] data = new double[2 * size];
         Random rand = new Random(42);
-        // Initialize complex array with random real values and zero imaginary parts
-        for (int i = 0; i < size; i++) {
-            data[2 * i] = rand.nextGaussian();     // Real part: random
-            data[2 * i + 1] = 0;                    // Imaginary part: zero
-        }
+        double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
         
         // This uses split-radix algorithm
         assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(data, size, false));
         
         // Verify it produced valid output (no NaN or Inf)
-        for (double v : data) {
-            assertFalse(Double.isNaN(v), "FFT should not produce NaN");
-            assertFalse(Double.isInfinite(v), "FFT should not produce Inf");
-        }
+        assertTrue(ComplexArrayTestUtils.allFinite(data), "FFT should not produce NaN or Inf");
     }
     
     @Test
@@ -217,11 +193,6 @@ class VectorApiFallbackTest {
      * Sets real parts to the provided values and imaginary parts to zero.
      */
     private double[] createComplexData(double[] real) {
-        double[] complex = new double[2 * real.length];
-        for (int i = 0; i < real.length; i++) {
-            complex[2 * i] = real[i];           // Real part from input
-            complex[2 * i + 1] = 0;             // Imaginary part: zero
-        }
-        return complex;
+        return ComplexArrayTestUtils.createComplexFromReal(real);
     }
 }
