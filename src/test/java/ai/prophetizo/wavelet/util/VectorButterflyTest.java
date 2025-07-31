@@ -146,7 +146,7 @@ class VectorButterflyTest {
         
         // Performance assertion to track regressions
         // This serves as documentation of expected performance without console output
-        assertTrue(averageTimeMs < 1.0, 
-            "FFT performance check: average time " + averageTimeMs + " ms (< 1.0 ms expected for size " + size + ")");
+        assertTrue(averageTimeMs < PERFORMANCE_THRESHOLD_MS, 
+            "FFT performance check: average time " + averageTimeMs + " ms (< " + PERFORMANCE_THRESHOLD_MS + " ms expected for size " + size + ")");
     }
 }
