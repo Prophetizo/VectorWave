@@ -72,10 +72,16 @@ public final class OptimizedFFT {
             // Verify it works by creating a zero vector
             DoubleVector.zero(speciesTemp);
             vectorAvailable = true;
-        } catch (Throwable e) {
+        } catch (RuntimeException | LinkageError e) {
             // Vector API not available or not functional
+            // This catches:
+            // - RuntimeException: UnsupportedOperationException, etc.
+            // - LinkageError: NoClassDefFoundError, UnsatisfiedLinkError,
+            //   and also ExceptionInInitializerError (which extends LinkageError)
             // Use scalar fallback
         }
+        // Note: If OutOfMemoryError or other serious errors occur during
+        // static initialization, we let them propagate to fail fast
         
         VECTOR_API_AVAILABLE = vectorAvailable;
         SPECIES = speciesTemp;
@@ -390,15 +396,21 @@ public final class OptimizedFFT {
             // This includes UnsupportedOperationException, IllegalArgumentException, etc.
             // that might be thrown by Vector API operations
             fftRadix2Scalar(data, n, inverse);
-        } catch (OutOfMemoryError | StackOverflowError e) {
-            // Re-throw serious errors that should not be caught
-            throw e;
-        } catch (Error e) {
-            // For other errors, fall back to scalar implementation
-            // This handles LinkageError, NoClassDefFoundError, etc. that might occur
-            // if Vector API is not properly linked at runtime
+        } catch (LinkageError e) {
+            // Handle specific errors that might occur during Vector API initialization:
+            // - LinkageError hierarchy includes:
+            //   - NoClassDefFoundError: class not found at runtime
+            //   - UnsatisfiedLinkError: native library issues
+            //   - ExceptionInInitializerError: static initialization failures
+            // These are recoverable by falling back to scalar implementation
             fftRadix2Scalar(data, n, inverse);
         }
+        // Note: We intentionally do NOT catch:
+        // - OutOfMemoryError: JVM is out of memory
+        // - StackOverflowError: Stack overflow
+        // - ThreadDeath: Thread termination (deprecated)
+        // - VirtualMachineError: Internal JVM errors
+        // These indicate serious JVM issues that should propagate
     }
     
     /**
@@ -581,16 +593,29 @@ public final class OptimizedFFT {
             0
         );
         
-        // Runtime validation of the mathematical assumption
-        assert packed.length >= 2 * halfN : "Packed array must have at least 2*halfN elements";
+        // Runtime validation of array bounds
+        // We use explicit validation instead of assertions because:
+        // 1. Assertions are disabled by default in production (unless -ea flag is used)
+        // 2. These bounds checks are critical for correctness and preventing crashes
+        // 3. The performance impact is negligible compared to the FFT computation itself
+        if (packed.length < 2 * halfN) {
+            throw new IllegalStateException("Internal error: Packed array has insufficient size. " +
+                "Expected at least " + (2 * halfN) + " elements, but got " + packed.length);
+        }
         
         // For n=2 (halfN=1), the loop doesn't execute, which is correct
         // since we already handled DC and Nyquist components above
         for (int k = 1; k < halfN; k++) { // Use k < halfN to ensure indices k and halfN - k are distinct, as required by FFT butterfly operations
-            // Runtime assertion to validate our boundary condition
-            assert k < halfN && (halfN - k) > 0 : "Invalid indices: k=" + k + ", halfN-k=" + (halfN - k);
-            assert 2 * k < packed.length && 2 * (halfN - k) < packed.length : 
-                "Index out of bounds: 2*k=" + (2 * k) + ", 2*(halfN-k)=" + (2 * (halfN - k));
+            // Validate indices are within bounds - these checks ensure safety in production
+            // where assertions may be disabled
+            int idx1 = 2 * k;
+            int idx2 = 2 * (halfN - k);
+            
+            if (idx1 >= packed.length || idx2 >= packed.length || idx1 + 1 >= packed.length || idx2 + 1 >= packed.length) {
+                throw new IllegalStateException("Internal error: Array index out of bounds. " +
+                    "k=" + k + ", halfN=" + halfN + ", packed.length=" + packed.length + 
+                    ", attempting to access indices " + idx1 + ", " + idx2);
+            }
             
             double wr = Math.cos(Math.PI * k / halfN);
             double wi = -Math.sin(Math.PI * k / halfN);
