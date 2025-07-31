@@ -29,7 +29,7 @@ class SIMDTest {
         
         // Test forced SIMD (if available)
         TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .build();
         WaveletTransform simdTransform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, simdConfig);
         System.out.println("SIMD implementation: " + simdTransform.getImplementationType());

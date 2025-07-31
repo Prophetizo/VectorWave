@@ -77,7 +77,7 @@ public class ScalarVsVectorDemo {
 
         // Create configuration that forces SIMD operations
         TransformConfig simdConfig = TransformConfig.builder()
-                .forceSIMD(true)
+                .forceVector(true)
                 .boundaryMode(BoundaryMode.ZERO_PADDING)
                 .build();
 
@@ -149,7 +149,7 @@ public class ScalarVsVectorDemo {
 
         // SIMD configuration
         TransformConfig simdConfig = TransformConfig.builder()
-                .forceSIMD(true)
+                .forceVector(true)
                 .build();
 
         // Auto configuration
@@ -215,7 +215,7 @@ public class ScalarVsVectorDemo {
             // This will throw an exception - can't force both scalar and SIMD
             TransformConfig invalidConfig = TransformConfig.builder()
                     .forceScalar(true)
-                    .forceSIMD(true)
+                    .forceVector(true)
                     .build();
         } catch (Exception e) {
             System.out.println("Expected error when forcing both scalar and SIMD:");
@@ -235,7 +235,7 @@ public class ScalarVsVectorDemo {
 
         // Example 2: Force SIMD for performance testing
         TransformConfig perfConfig = TransformConfig.builder()
-                .forceSIMD(true)
+                .forceVector(true)
                 .boundaryMode(BoundaryMode.ZERO_PADDING)
                 .build();
         System.out.println("Performance config: " + perfConfig);
@@ -251,7 +251,7 @@ public class ScalarVsVectorDemo {
         // Show how to check configuration
         System.out.println("Checking configuration properties:");
         System.out.println("Is scalar forced? " + debugConfig.isForceScalar());
-        System.out.println("Is SIMD forced? " + perfConfig.isForceSIMD());
+        System.out.println("Is Vector API forced? " + perfConfig.isForceVector());
         System.out.println("Boundary mode: " + customConfig.getBoundaryMode());
         System.out.println("Max decomposition levels: " + customConfig.getMaxDecompositionLevels());
     }

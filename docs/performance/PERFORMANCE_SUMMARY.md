@@ -131,7 +131,7 @@ All benchmarks run with:
 
 ### 1. **SIMD Vectorization** (✓ Completed)
 - Java Vector API integration for parallel processing
-- Configurable via TransformConfig (forceScalar/forceSIMD)
+- Configurable via TransformConfig (forceScalar/forceVector)
 - Automatic selection between scalar and vector operations
 - **Status**: Implemented with minimal overhead for small signals
 - **Note**: Requires JVM flag `--add-modules jdk.incubator.vector` (automatically configured)
@@ -174,7 +174,7 @@ All benchmarks run with:
    TransformConfig.builder().forceScalar(true).build()
    
    // Force SIMD for maximum performance
-   TransformConfig.builder().forceSIMD(true).build()
+   TransformConfig.builder().forceVector(true).build()
    
    // Auto-detect (default)
    TransformConfig.builder().build()

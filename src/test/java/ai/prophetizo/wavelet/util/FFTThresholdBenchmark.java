@@ -38,7 +38,7 @@ public class FFTThresholdBenchmark {
             .build();
         
         TransformConfig vectorConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .build();
         
         int recommendedThreshold = Integer.MAX_VALUE;

@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class VectorButterflyTest {
     
     private static final double TOLERANCE = TestConstants.DEFAULT_TOLERANCE;
+    private static final double PERFORMANCE_THRESHOLD_MS = 10.0;
     
     @Test
     @DisplayName("Vector butterfly operations should produce identical results to scalar")

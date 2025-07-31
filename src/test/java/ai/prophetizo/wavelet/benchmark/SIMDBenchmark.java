@@ -87,7 +87,7 @@ public class SIMDBenchmark {
             .build();
             
         TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .boundaryMode(mode)
             .build();
         
@@ -129,7 +129,7 @@ public class SIMDBenchmark {
     @Benchmark
     public void db2SIMDForward(Blackhole bh) {
         WaveletTransform transform = new WaveletTransform(db2, BoundaryMode.valueOf(boundaryMode),
-            TransformConfig.builder().forceSIMD(true).build());
+            TransformConfig.builder().forceVector(true).build());
         TransformResult result = transform.forward(signal);
         bh.consume(result);
     }

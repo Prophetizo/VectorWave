@@ -181,14 +181,14 @@ public final class OptimizedFFT {
     
     private static void fftRadix2(double[] data, int n, boolean inverse, TransformConfig config) {
         boolean forceScalar = config != null && config.isForceScalar();
-        boolean forceSIMD = config != null && config.isForceSIMD();
+        boolean forceVector = config != null && config.isForceVector();
         
         // Determine which implementation to use
         if (forceScalar) {
             // Explicitly forced to use scalar
             fftRadix2Scalar(data, n, inverse);
-        } else if (forceSIMD && VECTOR_API_AVAILABLE) {
-            // Explicitly forced to use SIMD (ignore threshold)
+        } else if (forceVector && VECTOR_API_AVAILABLE) {
+            // Explicitly forced to use Vector API (ignore threshold)
             fftRadix2Vector(data, n, inverse);
         } else if (!VECTOR_API_AVAILABLE || n < VECTOR_THRESHOLD) {
             // Use scalar for small signals or when vector API not available

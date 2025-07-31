@@ -201,7 +201,7 @@ StreamingDenoiser denoiser = StreamingDenoiserFactory.create(
 ```java
 // Force specific optimization path
 TransformConfig config = TransformConfig.builder()
-    .forceSIMD(true)  // or forceScalar(true)
+    .forceVector(true)  // or forceScalar(true)
     .enablePrefetch(true)
     .cacheOptimized(true)
     .build();
