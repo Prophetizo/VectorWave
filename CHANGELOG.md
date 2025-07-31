@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed duplicate implementations from OptimizedFFT and SignalProcessor
   - Added comprehensive utility methods: nextPowerOf2, isPowerOf2, log2, previousPowerOf2, moduloPowerOf2
   - Improved overflow protection and error handling
+- Simplified FFT implementation by removing split-radix algorithm
+  - Unified all power-of-2 FFT operations to use radix-2 algorithm
+  - Reduced from 4 implementations to 2 (radix-2 and Bluestein)
+  - Maintained automatic vectorization for performance
 
 ### Documentation
 - Clarified Vector API compilation requirements in OptimizedFFT

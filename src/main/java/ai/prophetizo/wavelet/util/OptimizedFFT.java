@@ -19,23 +19,20 @@ import jdk.incubator.vector.VectorSpecies;
  * module (JDK 16 or later). However, at runtime it will gracefully fall back to
  * scalar implementations if the Vector API is not available.</p>
  * 
- * <p>This class extends the basic FFT with:</p>
+ * <p>This class provides optimized FFT implementations:</p>
  * <ul>
- *   <li>Mixed-radix FFT for non-power-of-2 sizes</li>
- *   <li>Split-radix FFT for better performance</li>
- *   <li>SIMD vectorization using Vector API</li>
- *   <li>Extended twiddle factor caching</li>
- *   <li>Real-to-complex FFT optimization</li>
+ *   <li>Radix-2 FFT for power-of-2 sizes with automatic SIMD vectorization</li>
+ *   <li>Bluestein's algorithm for arbitrary (non-power-of-2) sizes</li>
+ *   <li>Extended twiddle factor caching for performance</li>
+ *   <li>Real-to-complex FFT optimization using Hermitian symmetry</li>
  * </ul>
  * 
- * <p><strong>Canonical References:</strong></p>
+ * <p><strong>References:</strong></p>
  * <ul>
- *   <li>Duhamel, P., & Hollmann, H. (1984). "Split radix FFT algorithm." 
- *       Electronics letters, 20(1), 14-16.</li>
+ *   <li>Cooley, J. W., & Tukey, J. W. (1965). "An algorithm for the machine calculation 
+ *       of complex Fourier series." Mathematics of computation, 19(90), 297-301.</li>
  *   <li>Bluestein, L. (1970). "A linear filtering approach to the computation 
  *       of discrete Fourier transform." IEEE Transactions on Audio and Electroacoustics.</li>
- *   <li>Johnson, S. G., & Frigo, M. (2007). "A modified split-radix FFT with 
- *       fewer arithmetic operations." IEEE Trans. Signal Processing, 55(1), 111-119.</li>
  * </ul>
  * 
  * @since 1.0.0
@@ -101,16 +98,9 @@ public final class OptimizedFFT {
         if (n <= 1) return;
         
         if (PowerOf2Utils.isPowerOf2(n)) {
-            // Use split-radix for power-of-2
-            if (n >= 32) {
-                fftSplitRadix(data, n, inverse);
-            } else {
-                if (VECTOR_API_AVAILABLE) {
-                    fftRadix2Vector(data, n, inverse);
-                } else {
-                    fftRadix2Scalar(data, n, inverse);
-                }
-            }
+            // Use radix-2 for all power-of-2 sizes
+            // The implementation will automatically use vectorization if available
+            fftRadix2(data, n, inverse);
         } else {
             // Use Bluestein for arbitrary sizes
             fftBluestein(data, n, inverse);
@@ -126,115 +116,23 @@ public final class OptimizedFFT {
     }
     
     /**
-     * Split-radix FFT for improved performance.
+     * Unified radix-2 FFT implementation with automatic vectorization.
      * 
-     * <p>Split-radix combines radix-2 and radix-4 to minimize operations.
-     * It requires ~25% fewer operations than pure radix-2.</p>
+     * <p>This method automatically uses SIMD operations when available,
+     * falling back to scalar operations otherwise.</p>
+     * 
+     * @param data input data (real and imaginary interleaved)
+     * @param n number of complex samples (must be power of 2)
+     * @param inverse true for inverse FFT
      */
-    private static void fftSplitRadix(double[] data, int n, boolean inverse) {
-        // Bit reversal
-        bitReverseVector(data, n);
-        
-        // Split-radix butterflies
-        int sign = inverse ? 1 : -1;
-        
-        // Stage 1: Handle n=2 base case
-        for (int i = 0; i < n; i += 2) {
-            int i1 = 2 * i;
-            int i2 = i1 + 2;
-            double xr = data[i2];
-            double xi = data[i2 + 1];
-            data[i2] = data[i1] - xr;
-            data[i2 + 1] = data[i1 + 1] - xi;
-            data[i1] += xr;
-            data[i1 + 1] += xi;
-        }
-        
-        // Remaining stages
-        for (int len = 4; len <= n; len <<= 1) {
-            int halfLen = len >> 1;
-            int quarterLen = len >> 2;
-            
-            TwiddleFactors twiddle = getTwiddleFactors(len);
-            
-            // Radix-2 butterflies
-            for (int i = 0; i < n; i += len) {
-                for (int j = 0; j < quarterLen; j++) {
-                    int idx1 = 2 * (i + j);
-                    int idx2 = 2 * (i + j + halfLen);
-                    
-                    double wr = twiddle.cos[j];
-                    double wi = sign * twiddle.sin[j];
-                    
-                    double xr = data[idx2] * wr - data[idx2 + 1] * wi;
-                    double xi = data[idx2] * wi + data[idx2 + 1] * wr;
-                    
-                    data[idx2] = data[idx1] - xr;
-                    data[idx2 + 1] = data[idx1 + 1] - xi;
-                    data[idx1] += xr;
-                    data[idx1 + 1] += xi;
-                }
-            }
-            
-            // Radix-4 butterflies for odd indices
-            if (quarterLen > 1) {
-                for (int i = 0; i < n; i += len) {
-                    for (int j = 1; j < quarterLen; j += 2) {
-                        int idx0 = 2 * (i + j);
-                        int idx1 = 2 * (i + j + quarterLen);
-                        int idx2 = 2 * (i + j + halfLen);
-                        int idx3 = 2 * (i + j + halfLen + quarterLen);
-                        
-                        // Complex butterflies with twiddle factors
-                        // For split-radix, we need to compute twiddle factors directly
-                        double angle1 = -2.0 * Math.PI * j / len;
-                        double angle2 = -2.0 * Math.PI * (2 * j) / len;
-                        double angle3 = -2.0 * Math.PI * (3 * j) / len;
-                        
-                        if (inverse) {
-                            angle1 = -angle1;
-                            angle2 = -angle2;
-                            angle3 = -angle3;
-                        }
-                        
-                        double w1r = Math.cos(angle1);
-                        double w1i = Math.sin(angle1);
-                        double w2r = Math.cos(angle2);
-                        double w2i = Math.sin(angle2);
-                        double w3r = Math.cos(angle3);
-                        double w3i = Math.sin(angle3);
-                        
-                        // Apply twiddle factors
-                        double x1r = data[idx1] * w1r - data[idx1 + 1] * w1i;
-                        double x1i = data[idx1] * w1i + data[idx1 + 1] * w1r;
-                        double x2r = data[idx2] * w2r - data[idx2 + 1] * w2i;
-                        double x2i = data[idx2] * w2i + data[idx2 + 1] * w2r;
-                        double x3r = data[idx3] * w3r - data[idx3 + 1] * w3i;
-                        double x3i = data[idx3] * w3i + data[idx3 + 1] * w3r;
-                        
-                        // Radix-4 butterfly
-                        double t0r = data[idx0] + x2r;
-                        double t0i = data[idx0 + 1] + x2i;
-                        double t1r = data[idx0] - x2r;
-                        double t1i = data[idx0 + 1] - x2i;
-                        double t2r = x1r + x3r;
-                        double t2i = x1i + x3i;
-                        double t3r = sign * (x1i - x3i);
-                        double t3i = -sign * (x1r - x3r);
-                        
-                        data[idx0] = t0r + t2r;
-                        data[idx0 + 1] = t0i + t2i;
-                        data[idx1] = t1r + t3r;
-                        data[idx1 + 1] = t1i + t3i;
-                        data[idx2] = t0r - t2r;
-                        data[idx2 + 1] = t0i - t2i;
-                        data[idx3] = t1r - t3r;
-                        data[idx3 + 1] = t1i - t3i;
-                    }
-                }
-            }
+    private static void fftRadix2(double[] data, int n, boolean inverse) {
+        if (VECTOR_API_AVAILABLE) {
+            fftRadix2Vector(data, n, inverse);
+        } else {
+            fftRadix2Scalar(data, n, inverse);
         }
     }
+    
     
     /**
      * Scalar radix-2 FFT implementation (fallback when Vector API is not available).
@@ -417,13 +315,8 @@ public final class OptimizedFFT {
         }
         
         // Convolve using FFT
-        if (VECTOR_API_AVAILABLE) {
-            fftRadix2Vector(a, m, false);
-            fftRadix2Vector(b, m, false);
-        } else {
-            fftRadix2Scalar(a, m, false);
-            fftRadix2Scalar(b, m, false);
-        }
+        fftRadix2(a, m, false);
+        fftRadix2(b, m, false);
         
         // Multiply in frequency domain
         for (int i = 0; i < m; i++) {
@@ -437,11 +330,7 @@ public final class OptimizedFFT {
         }
         
         // Inverse FFT (use false to avoid double normalization)
-        if (VECTOR_API_AVAILABLE) {
-            fftRadix2Vector(a, m, false);
-        } else {
-            fftRadix2Scalar(a, m, false);
-        }
+        fftRadix2(a, m, false);
         // Apply conjugation and scaling manually for inverse
         double scale = 1.0 / m;
         for (int i = 0; i < m; i++) {
