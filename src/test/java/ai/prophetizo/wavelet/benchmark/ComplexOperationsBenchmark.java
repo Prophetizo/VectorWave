@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 2, jvmArgs = {"--add-modules=jdk.incubator.vector"})
+@Fork(value = 2)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class ComplexOperationsBenchmark {

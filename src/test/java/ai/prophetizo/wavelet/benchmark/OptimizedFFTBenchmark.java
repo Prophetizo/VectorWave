@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G", "--add-modules=jdk.incubator.vector"})
+@Fork(value = 2, jvmArgsAppend = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
 public class OptimizedFFTBenchmark {

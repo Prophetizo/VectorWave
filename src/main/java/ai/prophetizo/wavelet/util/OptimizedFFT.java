@@ -1,10 +1,11 @@
 package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
-import jdk.incubator.vector.*;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
+
+// Conditional import - handled at runtime
+import jdk.incubator.vector.*;
 
 /**
  * Highly optimized FFT implementation with advanced algorithms.
@@ -37,8 +38,28 @@ public final class OptimizedFFT {
     private static final ConcurrentHashMap<Integer, TwiddleFactors> TWIDDLE_CACHE = 
         new ConcurrentHashMap<>();
     
-    // Vector species for SIMD operations
-    private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
+    // Vector API availability check
+    private static final boolean VECTOR_API_AVAILABLE;
+    private static final VectorSpecies<Double> SPECIES;
+    
+    static {
+        boolean vectorAvailable = false;
+        VectorSpecies<Double> speciesTemp = null;
+        
+        try {
+            // Try to access Vector API
+            speciesTemp = DoubleVector.SPECIES_PREFERRED;
+            // Verify it works by creating a zero vector
+            DoubleVector.zero(speciesTemp);
+            vectorAvailable = true;
+        } catch (Throwable e) {
+            // Vector API not available or not functional
+            // Use scalar fallback
+        }
+        
+        VECTOR_API_AVAILABLE = vectorAvailable;
+        SPECIES = speciesTemp;
+    }
     
     /**
      * Cached twiddle factors for a specific FFT size.
@@ -75,7 +96,11 @@ public final class OptimizedFFT {
             if (n >= 32) {
                 fftSplitRadix(data, n, inverse);
             } else {
-                fftRadix2Vector(data, n, inverse);
+                if (VECTOR_API_AVAILABLE) {
+                    fftRadix2Vector(data, n, inverse);
+                } else {
+                    fftRadix2Scalar(data, n, inverse);
+                }
             }
         } else {
             // Use Bluestein for arbitrary sizes
@@ -203,46 +228,20 @@ public final class OptimizedFFT {
     }
     
     /**
-     * Vectorized radix-2 FFT using SIMD operations.
+     * Scalar radix-2 FFT implementation (fallback when Vector API is not available).
+     * Package-private for testing.
      */
-    private static void fftRadix2Vector(double[] data, int n, boolean inverse) {
+    static void fftRadix2Scalar(double[] data, int n, boolean inverse) {
         bitReverseVector(data, n);
         
         int sign = inverse ? 1 : -1;
-        int vecLen = SPECIES.length();
         
         for (int len = 2; len <= n; len <<= 1) {
             int halfLen = len >> 1;
             TwiddleFactors twiddle = getTwiddleFactors(len);
             
             for (int i = 0; i < n; i += len) {
-                // Vectorized loop for j
-                int j = 0;
-                for (; j + vecLen <= halfLen; j += vecLen) {
-                    // Load twiddle factors
-                    DoubleVector wr = DoubleVector.fromArray(SPECIES, twiddle.cos, j);
-                    DoubleVector wi = DoubleVector.fromArray(SPECIES, twiddle.sin, j)
-                        .mul(sign);
-                    
-                    // Process vecLen butterflies at once
-                    for (int k = 0; k < vecLen; k++) {
-                        int idx1 = 2 * (i + j + k);
-                        int idx2 = 2 * (i + j + k + halfLen);
-                        
-                        double xr = data[idx2] * twiddle.cos[j + k] - 
-                                   data[idx2 + 1] * sign * twiddle.sin[j + k];
-                        double xi = data[idx2] * sign * twiddle.sin[j + k] + 
-                                   data[idx2 + 1] * twiddle.cos[j + k];
-                        
-                        data[idx2] = data[idx1] - xr;
-                        data[idx2 + 1] = data[idx1 + 1] - xi;
-                        data[idx1] += xr;
-                        data[idx1 + 1] += xi;
-                    }
-                }
-                
-                // Handle remaining elements
-                for (; j < halfLen; j++) {
+                for (int j = 0; j < halfLen; j++) {
                     int idx1 = 2 * (i + j);
                     int idx2 = 2 * (i + j + halfLen);
                     
@@ -262,17 +261,121 @@ public final class OptimizedFFT {
     }
     
     /**
+     * Vectorized radix-2 FFT using SIMD operations.
+     */
+    private static void fftRadix2Vector(double[] data, int n, boolean inverse) {
+        if (!VECTOR_API_AVAILABLE) {
+            fftRadix2Scalar(data, n, inverse);
+            return;
+        }
+        
+        try {
+            bitReverseVector(data, n);
+            
+            int sign = inverse ? 1 : -1;
+            int vecLen = SPECIES.length();
+            
+            for (int len = 2; len <= n; len <<= 1) {
+                int halfLen = len >> 1;
+                TwiddleFactors twiddle = getTwiddleFactors(len);
+                
+                for (int i = 0; i < n; i += len) {
+                    // Vectorized loop for j - process elements in chunks
+                    int j = 0;
+                    for (; j + vecLen <= halfLen; j += vecLen) {
+                        // Load twiddle factors
+                        DoubleVector wr = DoubleVector.fromArray(SPECIES, twiddle.cos, j);
+                        DoubleVector wi = DoubleVector.fromArray(SPECIES, twiddle.sin, j)
+                            .mul(sign);
+                        
+                        // Process vecLen butterfly operations using vectorized computation
+                        // For efficiency, we'll use temporary arrays to batch the operations
+                        double[] tempReal1 = new double[vecLen];
+                        double[] tempImag1 = new double[vecLen];
+                        double[] tempReal2 = new double[vecLen];
+                        double[] tempImag2 = new double[vecLen];
+                        
+                        // Gather data for vectorization (minimize scatter-gather overhead)
+                        for (int k = 0; k < vecLen; k++) {
+                            int idx1 = 2 * (i + j + k);
+                            int idx2 = 2 * (i + j + k + halfLen);
+                            
+                            tempReal1[k] = data[idx1];
+                            tempImag1[k] = data[idx1 + 1];
+                            tempReal2[k] = data[idx2];
+                            tempImag2[k] = data[idx2 + 1];
+                        }
+                        
+                        // Vectorized butterfly computation
+                        DoubleVector vReal1 = DoubleVector.fromArray(SPECIES, tempReal1, 0);
+                        DoubleVector vImag1 = DoubleVector.fromArray(SPECIES, tempImag1, 0);
+                        DoubleVector vReal2 = DoubleVector.fromArray(SPECIES, tempReal2, 0);
+                        DoubleVector vImag2 = DoubleVector.fromArray(SPECIES, tempImag2, 0);
+                        
+                        // Complex multiplication: t = (real2 + i*imag2) * (wr + i*wi)
+                        DoubleVector tReal = vReal2.mul(wr).sub(vImag2.mul(wi));
+                        DoubleVector tImag = vReal2.mul(wi).add(vImag2.mul(wr));
+                        
+                        // Butterfly operation: 
+                        // First pair:  (real1, imag1) = (real1, imag1) + t
+                        // Second pair: (real2, imag2) = (real1, imag1) - t
+                        DoubleVector resultReal1 = vReal1.add(tReal);
+                        DoubleVector resultImag1 = vImag1.add(tImag);
+                        DoubleVector resultReal2 = vReal1.sub(tReal);
+                        DoubleVector resultImag2 = vImag1.sub(tImag);
+                        
+                        // Store results back to temporary arrays
+                        resultReal1.intoArray(tempReal1, 0);
+                        resultImag1.intoArray(tempImag1, 0);
+                        resultReal2.intoArray(tempReal2, 0);
+                        resultImag2.intoArray(tempImag2, 0);
+                        
+                        // Scatter results back to original data array
+                        for (int k = 0; k < vecLen; k++) {
+                            int idx1 = 2 * (i + j + k);
+                            int idx2 = 2 * (i + j + k + halfLen);
+                            
+                            data[idx1] = tempReal1[k];
+                            data[idx1 + 1] = tempImag1[k];
+                            data[idx2] = tempReal2[k];
+                            data[idx2 + 1] = tempImag2[k];
+                        }
+                    }
+                    
+                    // Handle remaining elements
+                    for (; j < halfLen; j++) {
+                        int idx1 = 2 * (i + j);
+                        int idx2 = 2 * (i + j + halfLen);
+                        
+                        double wr = twiddle.cos[j];
+                        double wi = sign * twiddle.sin[j];
+                        
+                        double xr = data[idx2] * wr - data[idx2 + 1] * wi;
+                        double xi = data[idx2] * wi + data[idx2 + 1] * wr;
+                        
+                        data[idx2] = data[idx1] - xr;
+                        data[idx2 + 1] = data[idx1 + 1] - xi;
+                        data[idx1] += xr;
+                        data[idx1 + 1] += xi;
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            // Fall back to scalar implementation
+            fftRadix2Scalar(data, n, inverse);
+        }
+    }
+    
+    /**
      * Bluestein's algorithm for arbitrary-size FFT.
      * 
      * <p>Converts arbitrary-size DFT to convolution, which can be
      * computed using power-of-2 FFT.</p>
      */
     private static void fftBluestein(double[] data, int n, boolean inverse) {
-        // Find next power of 2 >= 2n - 1
-        int m = 1;
-        while (m < 2 * n - 1) {
-            m <<= 1;
-        }
+        // Find next power of 2 >= 2n - 1 using bit operations for optimal performance
+        int target = 2 * n - 1;
+        int m = target <= 1 ? 1 : Integer.highestOneBit(target - 1) << 1;
         
         // Chirp sequence
         double[] chirp = new double[2 * n];
@@ -305,8 +408,13 @@ public final class OptimizedFFT {
         }
         
         // Convolve using FFT
-        fftRadix2Vector(a, m, false);
-        fftRadix2Vector(b, m, false);
+        if (VECTOR_API_AVAILABLE) {
+            fftRadix2Vector(a, m, false);
+            fftRadix2Vector(b, m, false);
+        } else {
+            fftRadix2Scalar(a, m, false);
+            fftRadix2Scalar(b, m, false);
+        }
         
         // Multiply in frequency domain
         for (int i = 0; i < m; i++) {
@@ -320,7 +428,11 @@ public final class OptimizedFFT {
         }
         
         // Inverse FFT (use false to avoid double normalization)
-        fftRadix2Vector(a, m, false);
+        if (VECTOR_API_AVAILABLE) {
+            fftRadix2Vector(a, m, false);
+        } else {
+            fftRadix2Scalar(a, m, false);
+        }
         // Apply conjugation and scaling manually for inverse
         double scale = 1.0 / m;
         for (int i = 0; i < m; i++) {
@@ -366,7 +478,10 @@ public final class OptimizedFFT {
      */
     public static ComplexNumber[] fftRealOptimized(double[] real) {
         int n = real.length;
-        if (n <= 1) {
+        if (n == 0) {
+            return new ComplexNumber[0];
+        }
+        if (n == 1) {
             return new ComplexNumber[]{new ComplexNumber(real[0], 0)};
         }
         
@@ -407,6 +522,9 @@ public final class OptimizedFFT {
             0
         );
         
+        // IMPORTANT: Loop bound must be k < halfN (not k <= halfN)
+        // When k = halfN, packed[2 * (halfN - k)] = packed[0], which would cause
+        // incorrect calculations due to accessing the same element twice
         for (int k = 1; k < halfN; k++) {
             double wr = Math.cos(Math.PI * k / halfN);
             double wi = -Math.sin(Math.PI * k / halfN);
@@ -443,6 +561,28 @@ public final class OptimizedFFT {
     
     private static boolean isPowerOf2(int n) {
         return n > 0 && (n & (n - 1)) == 0;
+    }
+    
+    /**
+     * Returns true if Vector API is available and functional on this platform.
+     * 
+     * @return true if Vector API is available, false otherwise
+     */
+    public static boolean isVectorApiAvailable() {
+        return VECTOR_API_AVAILABLE;
+    }
+    
+    /**
+     * Returns information about Vector API availability.
+     * 
+     * @return a string describing the Vector API status
+     */
+    public static String getVectorApiInfo() {
+        if (VECTOR_API_AVAILABLE && SPECIES != null) {
+            return "Vector API available with vector length: " + SPECIES.length();
+        } else {
+            return "Vector API not available - using scalar fallback";
+        }
     }
     
     private OptimizedFFT() {}

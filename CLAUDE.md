@@ -21,6 +21,9 @@ mvn clean package
 
 # Run main demo
 java -cp target/classes ai.prophetizo.Main
+
+# Check Vector API availability
+java -cp target/classes ai.prophetizo.wavelet.util.OptimizedFFT
 ```
 
 ## Architecture
@@ -86,9 +89,10 @@ GitHub Actions workflow (`ci.yml`):
 ## Important Notes
 
 - Java 21+ required (CI currently uses Java 21)
-- Vector API is incubating - expect warnings
+- Vector API is incubating - expect warnings but graceful fallback is implemented
 - Use JMH for all performance measurements
 - Coverage goal: >80% (excluding demos)
+- Vector API automatically falls back to scalar operations when not available
 
 ## Common Tasks
 

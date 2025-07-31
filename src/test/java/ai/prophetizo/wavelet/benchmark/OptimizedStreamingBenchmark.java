@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G", "--add-modules=jdk.incubator.vector"})
+@Fork(value = 2, jvmArgsAppend = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class OptimizedStreamingBenchmark {

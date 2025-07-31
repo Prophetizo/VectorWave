@@ -1,6 +1,6 @@
 # VectorWave
 
-High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehensive wavelet family support and SIMD optimizations.
+High-performance wavelet transform library for Java 21+ with comprehensive wavelet family support, SIMD optimizations, and both Discrete (DWT) and Continuous (CWT) wavelet transforms.
 
 ## Features
 
@@ -18,9 +18,15 @@ High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehe
 - **Flexible Boundary Handling**: Periodic, Zero, Symmetric, and Reflect padding modes
 
 ### Performance
-- **SIMD Optimizations**: Platform-specific Vector API support (x86 AVX2/AVX512, ARM NEON, Apple Silicon)
-- **FFT Acceleration**: O(n log n) convolution for CWT using Cooley-Tukey FFT algorithm
-- **Cache-Aware Operations**: Platform-adaptive cache configuration (auto-detects Apple Silicon vs x86)
+- **SIMD Optimizations**: Platform-specific Vector API support with automatic fallback
+  - x86: AVX2/AVX512 when available
+  - ARM: NEON support, optimized for Apple Silicon
+  - Graceful scalar fallback for unsupported platforms
+- **FFT Acceleration**: O(n log n) convolution for CWT
+  - Split-radix FFT for optimal performance
+  - Bluestein algorithm for arbitrary sizes
+  - Pre-computed twiddle factor caching
+- **Cache-Aware Operations**: Platform-adaptive cache configuration
 - **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
 - **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
 - **Parallel Processing**: Fork-join framework for batch operations
@@ -45,6 +51,12 @@ High-performance Fast Wavelet Transform (FWT) library for Java 23+ with comprehe
   - O(N log N) complexity
   - Ideal for financial applications and real-time processing
 
+## Requirements
+
+- Java 21 or later
+- Maven 3.6+
+- Optional: Java Vector API support (included in Java 16+ as incubator module)
+
 ## Quick Start
 
 ```bash
@@ -54,8 +66,11 @@ mvn clean compile
 # Run tests
 mvn test
 
-# Run benchmarks
+# Run benchmarks (automatically detects Vector API availability)
 ./jmh-runner.sh
+
+# Run specific benchmark
+./jmh-runner.sh OptimizedFFTBenchmark
 ```
 
 ## Usage

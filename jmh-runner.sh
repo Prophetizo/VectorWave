@@ -30,8 +30,17 @@ FULL_CP="target/test-classes:target/classes:$CP"
 echo "Running benchmark: $BENCHMARK_CLASS"
 echo ""
 
+# Check if Vector API module is available
+VECTOR_MODULE=""
+if java --list-modules 2>/dev/null | grep -q "jdk.incubator.vector"; then
+    VECTOR_MODULE="--add-modules=jdk.incubator.vector"
+    echo "Vector API module detected and will be enabled"
+else
+    echo "Vector API module not available - benchmarks will use scalar fallback"
+fi
+
 # Set default JVM options if not provided
-DEFAULT_JAVA_OPTS="-Xmx1G --add-modules=jdk.incubator.vector"
+DEFAULT_JAVA_OPTS="-Xmx1G $VECTOR_MODULE"
 
 # Use custom JAVA_OPTS if provided, otherwise use defaults
 JVM_OPTS="${JAVA_OPTS:-$DEFAULT_JAVA_OPTS}"

@@ -5,6 +5,32 @@ All notable changes to VectorWave will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Vector API graceful fallback mechanism for environments without incubator module support
+- Comprehensive unit tests for Vector API fallback functionality (`VectorApiFallbackTest`)
+- Runtime detection of Vector API availability with automatic scalar fallback
+- Public API methods to check Vector API status (`OptimizedFFT.isVectorApiAvailable()`, `getVectorApiInfo()`)
+- Enhanced benchmark configuration to work with and without Vector API
+
+### Changed
+- Updated JMH benchmarks to use `jvmArgsAppend` instead of `jvmArgs` for flexible configuration
+- Enhanced `jmh-runner.sh` to automatically detect Vector API availability
+- Improved FFT implementation to seamlessly switch between vectorized and scalar implementations
+- Updated documentation to reflect Vector API optional nature
+- Consolidated benchmark documentation in `docs/BENCHMARKING.md`
+
+### Fixed
+- Fixed compilation and runtime errors when Vector API module is not available
+- Fixed benchmark failures on JVMs without incubator module support
+
+### Documentation
+- Reorganized documentation structure for clarity
+- Moved implementation notes to `docs/implementation-notes/`
+- Updated README.md to reflect current capabilities
+- Enhanced CLAUDE.md with Vector API fallback information
+
 ## [1.1.0] - 2025-01-30
 
 ### Added

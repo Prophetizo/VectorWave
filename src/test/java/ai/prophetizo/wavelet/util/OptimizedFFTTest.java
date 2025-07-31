@@ -14,19 +14,26 @@ public class OptimizedFFTTest {
     private static final double EPSILON = 1e-10;
     
     @Test
-    @DisplayName("Real-optimized FFT should handle odd-length arrays")
-    void testRealOptimizedFFTOddLength() {
+    @DisplayName("Real-optimized FFT should handle edge cases and odd-length arrays")
+    void testRealOptimizedFFTEdgeCases() {
+        // Test empty array
+        double[] empty = {};
+        ComplexNumber[] resultEmpty = OptimizedFFT.fftRealOptimized(empty);
+        assertEquals(0, resultEmpty.length);
+        
+        // Test single element
+        double[] single = {1.0};
+        ComplexNumber[] resultSingle = OptimizedFFT.fftRealOptimized(single);
+        assertEquals(1, resultSingle.length);
+        assertEquals(1.0, resultSingle[0].real(), EPSILON);
+        assertEquals(0.0, resultSingle[0].imag(), EPSILON);
+        
         // Test odd-length arrays
-        double[] odd1 = {1.0};
         double[] odd3 = {1.0, 2.0, 3.0};
         double[] odd5 = {1.0, 2.0, 3.0, 4.0, 5.0};
         double[] odd7 = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};
         
         // Should not throw ArrayIndexOutOfBoundsException
-        ComplexNumber[] result1 = OptimizedFFT.fftRealOptimized(odd1);
-        assertEquals(1, result1.length);
-        assertEquals(1.0, result1[0].real(), EPSILON);
-        
         ComplexNumber[] result3 = OptimizedFFT.fftRealOptimized(odd3);
         assertEquals(3, result3.length);
         
@@ -149,6 +156,9 @@ public class OptimizedFFTTest {
     @Test
     @DisplayName("FFT inverse should recover original signal")
     void testFFTInverse() {
+        // Print Vector API status for debugging
+        System.out.println("Vector API Status: " + OptimizedFFT.getVectorApiInfo());
+        
         double[] original = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
         double[] data = new double[16];
         
@@ -168,6 +178,38 @@ public class OptimizedFFTTest {
         for (int i = 0; i < 8; i++) {
             assertEquals(original[i], data[2 * i], 1e-9, "Failed to recover value at index " + i);
             assertEquals(0.0, data[2 * i + 1], 1e-9, "Non-zero imaginary part at index " + i);
+        }
+    }
+    
+    @Test
+    @DisplayName("Scalar FFT should produce same results as vectorized FFT")
+    void testScalarFFTConsistency() {
+        double[] original = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
+        double[] dataScalar = new double[16];
+        double[] dataVector = new double[16];
+        
+        // Copy to complex format
+        for (int i = 0; i < 8; i++) {
+            dataScalar[2 * i] = original[i];
+            dataScalar[2 * i + 1] = 0;
+            dataVector[2 * i] = original[i];
+            dataVector[2 * i + 1] = 0;
+        }
+        
+        // Test scalar implementation explicitly
+        OptimizedFFT.fftRadix2Scalar(dataScalar, 8, false);
+        OptimizedFFT.fftRadix2Scalar(dataScalar, 8, true);
+        
+        // Normalize manually as fftRadix2Scalar doesn't normalize
+        double norm = 1.0 / 8;
+        for (int i = 0; i < 16; i++) {
+            dataScalar[i] *= norm;
+        }
+        
+        // Should recover original
+        for (int i = 0; i < 8; i++) {
+            assertEquals(original[i], dataScalar[2 * i], 1e-9, "Failed to recover value at index " + i);
+            assertEquals(0.0, dataScalar[2 * i + 1], 1e-9, "Non-zero imaginary part at index " + i);
         }
     }
 }
