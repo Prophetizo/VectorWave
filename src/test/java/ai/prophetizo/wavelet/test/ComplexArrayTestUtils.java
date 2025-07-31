@@ -132,9 +132,9 @@ public final class ComplexArrayTestUtils {
     public static boolean hasNonZero(double[] data, double epsilon) {
         for (double v : data) {
             if (Math.abs(v) > epsilon) {
-                return true;
+                return true; // Return early if a non-zero value is found
             }
         }
-        return false;
+        return false; // Return false if no non-zero value is found
     }
 }
