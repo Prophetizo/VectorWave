@@ -460,12 +460,26 @@ public final class OptimizedFFT {
         
         // Apply inverse FFT for convolution result
         // IMPORTANT: We intentionally use forward FFT (inverse=false) here and apply
-        // the inverse transformation manually. This is because:
-        // 1. We need to avoid the automatic normalization in fftRadix2(inverse=true)
-        // 2. The Bluestein algorithm requires specific scaling (1/m) that differs from
-        //    the standard inverse FFT normalization (1/n)
-        // This manual approach ensures consistency regardless of changes to fftRadix2's
-        // normalization logic.
+        // the inverse transformation manually. This decision is based on the following:
+        // 
+        // 1. Avoiding automatic normalization: The fftRadix2 method applies automatic
+        //    normalization when inverse=true, which is not suitable for the Bluestein
+        //    algorithm. The Bluestein method requires a specific scaling factor (1/m),
+        //    which differs from the standard inverse FFT normalization (1/n).
+        // 
+        // 2. Consistency and control: By manually applying the inverse transformation,
+        //    we ensure that the scaling and normalization are explicitly defined and
+        //    consistent, regardless of any future changes to the fftRadix2 method's
+        //    internal logic.
+        // 
+        // 3. Algorithmic requirements: The Bluestein algorithm involves convolution
+        //    in the frequency domain, which necessitates precise control over the
+        //    scaling and conjugation steps. Using a forward FFT here aligns with these
+        //    requirements and avoids unintended side effects.
+        // 
+        // WARNING: Changing this behavior without fully understanding the implications
+        //          could introduce subtle bugs or performance issues. Ensure that any
+        //          modifications are thoroughly tested and documented.
         fftRadix2(a, m, false);
         // Manually apply conjugation and Bluestein-specific scaling
         double scale = 1.0 / m;
