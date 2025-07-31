@@ -8,7 +8,8 @@ import java.util.Arrays;
 // The code will compile only on JDKs that include the jdk.incubator.vector module.
 // At runtime, the code gracefully falls back to scalar implementation if Vector API
 // is not available or not functional.
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorSpecies;
 
 /**
  * Highly optimized FFT implementation with advanced algorithms.
