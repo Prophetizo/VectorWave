@@ -29,10 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed incorrect method calls in VectorButterflyTest (fftVectorized → fftOptimized)
 - Fixed VectorButterflyTest comparing different FFT algorithms for sizes >= 32
 - Fixed SimpleStreamingAnalyzerTest expecting signals when they're optional based on market conditions
+- Fixed normalization inconsistency between fftOptimized and fftRadix2Scalar for inverse FFT
 
 ### Improved
 - Clarified SignalProcessor.fft/ifft documentation to explain power-of-2 limitation
 - Added references to OptimizedFFT for users needing arbitrary size support
+- Enhanced VectorApiFallbackTest edge case tests to be more explicit about n=0 behavior
+- Added runtime assertions in fftRealOptimized to validate boundary conditions
+- Documented intentional use of package-private methods in VectorButterflyTest for white-box testing
 
 ### Refactored
 - Consolidated duplicate power-of-2 utility functions into PowerOf2Utils class

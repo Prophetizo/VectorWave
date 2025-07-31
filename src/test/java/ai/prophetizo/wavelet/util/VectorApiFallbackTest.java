@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.util;
 
+import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,11 +61,14 @@ class VectorApiFallbackTest {
     @Test
     @DisplayName("Scalar implementation should be accessible and functional")
     void testScalarImplementationWorks() {
-        // Test that we can call the scalar implementation directly
+        // Test that we can force scalar implementation using TransformConfig
         double[] data = createComplexData(new double[]{1, 2, 3, 4, 5, 6, 7, 8});
         
-        // This should work even if Vector API is available
-        assertDoesNotThrow(() -> OptimizedFFT.fftRadix2Scalar(data, 8, false));
+        // Force scalar implementation even if Vector API is available
+        TransformConfig scalarConfig = TransformConfig.builder()
+            .forceScalar(true)
+            .build();
+        assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(data, 8, false, scalarConfig));
         
         // Should have transformed the data (not all zeros)
         boolean hasNonZero = false;
@@ -187,11 +191,17 @@ class VectorApiFallbackTest {
     @Test
     @DisplayName("Fallback should handle edge cases gracefully")
     void testEdgeCases() {
-        // Empty array
+        // Test n=0 case (returns early without processing)
         double[] empty = new double[0];
         assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(empty, 0, false));
         
-        // Single element
+        // Test with non-empty array but n=0 (should return early)
+        double[] nonEmpty = {1.0, 2.0, 3.0, 4.0};
+        double[] original = nonEmpty.clone();
+        assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(nonEmpty, 0, false));
+        assertArrayEquals(original, nonEmpty, EPSILON, "Array should not be modified when n=0");
+        
+        // Single element (n=1, returns early without processing)
         double[] single = {1.0, 0.0};
         assertDoesNotThrow(() -> OptimizedFFT.fftOptimized(single, 1, false));
         assertEquals(1.0, single[0], EPSILON);

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.util;
 
+import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -196,15 +197,12 @@ public class OptimizedFFTTest {
             dataVector[2 * i + 1] = 0;
         }
         
-        // Test scalar implementation explicitly
-        OptimizedFFT.fftRadix2Scalar(dataScalar, 8, false);
-        OptimizedFFT.fftRadix2Scalar(dataScalar, 8, true);
-        
-        // Normalize manually as fftRadix2Scalar doesn't normalize
-        double norm = 1.0 / 8;
-        for (int i = 0; i < 16; i++) {
-            dataScalar[i] *= norm;
-        }
+        // Test scalar implementation explicitly using TransformConfig
+        TransformConfig scalarConfig = TransformConfig.builder()
+            .forceScalar(true)
+            .build();
+        OptimizedFFT.fftOptimized(dataScalar, 8, false, scalarConfig);
+        OptimizedFFT.fftOptimized(dataScalar, 8, true, scalarConfig);
         
         // Should recover original
         for (int i = 0; i < 8; i++) {

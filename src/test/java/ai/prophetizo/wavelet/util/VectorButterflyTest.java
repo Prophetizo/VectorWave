@@ -2,12 +2,16 @@ package ai.prophetizo.wavelet.util;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import ai.prophetizo.wavelet.config.TransformConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests to verify that vector butterfly operations are implemented correctly.
  * This test ensures that the vectorized FFT produces the same results as scalar FFT
  * while potentially providing performance benefits.
+ * 
+ * <p>This test uses the public API with TransformConfig to control scalar/vector paths,
+ * ensuring proper encapsulation and avoiding tight coupling between test and implementation.</p>
  */
 class VectorButterflyTest {
     
@@ -32,12 +36,15 @@ class VectorButterflyTest {
             double[] vectorData = original.clone();
             double[] scalarData = original.clone();
             
-            // Both will use the same radix-2 algorithm now
-            // fftOptimized will use vectorization if available
+            // Use the public API with TransformConfig to control scalar/vector paths
+            // Default behavior: use vectorization if available
             OptimizedFFT.fftOptimized(vectorData, size, false);
             
-            // Force scalar path for comparison
-            OptimizedFFT.fftRadix2Scalar(scalarData, size, false);
+            // Force scalar path for comparison using TransformConfig
+            TransformConfig scalarConfig = TransformConfig.builder()
+                .forceScalar(true)
+                .build();
+            OptimizedFFT.fftOptimized(scalarData, size, false, scalarConfig);
             
             // Results should be identical (or very close due to floating point precision)
             for (int i = 0; i < vectorData.length; i++) {
@@ -45,9 +52,9 @@ class VectorButterflyTest {
                     "Vector and scalar FFT results differ at index " + i + " for size " + size);
             }
             
-            // Test inverse as well
+            // Test inverse as well - apply inverse to the same data that had forward FFT applied
             OptimizedFFT.fftOptimized(vectorData, size, true);
-            OptimizedFFT.fftOptimized(scalarData, size, true);
+            OptimizedFFT.fftOptimized(scalarData, size, true, scalarConfig);
             
             for (int i = 0; i < vectorData.length; i++) {
                 assertEquals(vectorData[i], scalarData[i], TOLERANCE,
