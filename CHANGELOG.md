@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed inconsistent null checking pattern in SignalProcessor by extracting common validation helper
 - Fixed misleading comments and inconsistent initialization in VectorApiFallbackTest
 - Fixed incorrect method calls in VectorButterflyTest (fftVectorized → fftOptimized)
+- Fixed VectorButterflyTest comparing different FFT algorithms for sizes >= 32
+- Fixed SimpleStreamingAnalyzerTest expecting signals when they're optional based on market conditions
 
 ### Improved
 - Clarified SignalProcessor.fft/ifft documentation to explain power-of-2 limitation
