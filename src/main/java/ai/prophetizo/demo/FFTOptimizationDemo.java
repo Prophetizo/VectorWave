@@ -64,10 +64,15 @@ public class FFTOptimizationDemo {
             realData[i] = rand.nextGaussian();
         }
         
-        // Warm up
+        // Warm up - consume results to prevent dead code elimination
+        double checksum = 0;
         for (int i = 0; i < 10; i++) {
-            ComplexNumber[] temp = FFTUtils.fftReal(realData);
+            ComplexNumber[] temp = FFTUtils.fftReal(realData.clone());
+            // Consume result to prevent optimization
+            checksum += temp[0].real();
         }
+        // Use checksum to prevent entire warmup from being eliminated
+        if (checksum == Double.NaN) System.out.println("Warmup failed");
         
         // Basic FFT
         long startBasic = System.nanoTime();

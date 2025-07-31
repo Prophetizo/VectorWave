@@ -143,7 +143,7 @@ public final class OptimizedFFT {
             }
             
             // Radix-4 butterflies for odd indices
-            if (quarterLen >= 1) {
+            if (quarterLen > 1) {
                 for (int i = 0; i < n; i += len) {
                     for (int j = 1; j < quarterLen; j += 2) {
                         int idx0 = 2 * (i + j);
@@ -152,12 +152,23 @@ public final class OptimizedFFT {
                         int idx3 = 2 * (i + j + halfLen + quarterLen);
                         
                         // Complex butterflies with twiddle factors
-                        double w1r = twiddle.cos[j];
-                        double w1i = sign * twiddle.sin[j];
-                        double w2r = twiddle.cos[2 * j];
-                        double w2i = sign * twiddle.sin[2 * j];
-                        double w3r = twiddle.cos[3 * j];
-                        double w3i = sign * twiddle.sin[3 * j];
+                        // For split-radix, we need to compute twiddle factors directly
+                        double angle1 = -2.0 * Math.PI * j / len;
+                        double angle2 = -2.0 * Math.PI * (2 * j) / len;
+                        double angle3 = -2.0 * Math.PI * (3 * j) / len;
+                        
+                        if (inverse) {
+                            angle1 = -angle1;
+                            angle2 = -angle2;
+                            angle3 = -angle3;
+                        }
+                        
+                        double w1r = Math.cos(angle1);
+                        double w1i = Math.sin(angle1);
+                        double w2r = Math.cos(angle2);
+                        double w2i = Math.sin(angle2);
+                        double w3r = Math.cos(angle3);
+                        double w3i = Math.sin(angle3);
                         
                         // Apply twiddle factors
                         double x1r = data[idx1] * w1r - data[idx1 + 1] * w1i;
@@ -308,8 +319,15 @@ public final class OptimizedFFT {
             a[idx + 1] = ar * bi + ai * br;
         }
         
-        // Inverse FFT
-        fftRadix2Vector(a, m, true);
+        // Inverse FFT (use false to avoid double normalization)
+        fftRadix2Vector(a, m, false);
+        // Apply conjugation and scaling manually for inverse
+        double scale = 1.0 / m;
+        for (int i = 0; i < m; i++) {
+            double temp = a[2 * i + 1];
+            a[2 * i] *= scale;
+            a[2 * i + 1] = -temp * scale;
+        }
         
         // Extract result: y[k] = a[k] * chirp[k]
         for (int i = 0; i < n; i++) {
@@ -350,6 +368,21 @@ public final class OptimizedFFT {
         int n = real.length;
         if (n <= 1) {
             return new ComplexNumber[]{new ComplexNumber(real[0], 0)};
+        }
+        
+        // For odd-length arrays, use standard FFT
+        if (n % 2 != 0) {
+            double[] complexData = new double[2 * n];
+            for (int i = 0; i < n; i++) {
+                complexData[2 * i] = real[i];
+                complexData[2 * i + 1] = 0;
+            }
+            fftOptimized(complexData, n, false);
+            ComplexNumber[] result = new ComplexNumber[n];
+            for (int i = 0; i < n; i++) {
+                result[i] = new ComplexNumber(complexData[2 * i], complexData[2 * i + 1]);
+            }
+            return result;
         }
         
         // Pack real data into complex array (even in real, odd in imag)
