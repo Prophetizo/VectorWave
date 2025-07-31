@@ -100,9 +100,10 @@ class VectorApiFallbackTest {
     void testNonPowerOfTwoSizes(int size) {
         double[] data = new double[2 * size];
         Random rand = new Random(42);
+        // Initialize complex array with random real values and zero imaginary parts
         for (int i = 0; i < size; i++) {
-            data[2 * i] = rand.nextGaussian();
-            data[2 * i + 1] = 0;
+            data[2 * i] = rand.nextGaussian();     // Real part: random
+            data[2 * i + 1] = 0;                    // Imaginary part: zero
         }
         
         // Should use Bluestein algorithm for non-power-of-2 sizes
@@ -127,10 +128,12 @@ class VectorApiFallbackTest {
         int[] sizes = {8, 16, 32, 64, 128};
         
         for (int size : sizes) {
-            double[] data = createComplexData(new double[size]);
+            double[] data = new double[2 * size];
             Random rand = new Random(42);
+            // Initialize complex array with random real values and zero imaginary parts
             for (int i = 0; i < size; i++) {
-                data[2 * i] = rand.nextGaussian();
+                data[2 * i] = rand.nextGaussian();     // Real part: random
+                data[2 * i + 1] = 0;                    // Imaginary part: zero
             }
             
             // Forward FFT should complete
@@ -148,10 +151,12 @@ class VectorApiFallbackTest {
     void testSplitRadixFallback() {
         // Test size that triggers split-radix (>= 32)
         int size = 64;
-        double[] data = createComplexData(new double[size]);
+        double[] data = new double[2 * size];
         Random rand = new Random(42);
+        // Initialize complex array with random real values and zero imaginary parts
         for (int i = 0; i < size; i++) {
-            data[2 * i] = rand.nextGaussian();
+            data[2 * i] = rand.nextGaussian();     // Real part: random
+            data[2 * i + 1] = 0;                    // Imaginary part: zero
         }
         
         // This uses split-radix algorithm
@@ -199,12 +204,13 @@ class VectorApiFallbackTest {
     
     /**
      * Helper method to create complex array from real values.
+     * Sets real parts to the provided values and imaginary parts to zero.
      */
     private double[] createComplexData(double[] real) {
         double[] complex = new double[2 * real.length];
         for (int i = 0; i < real.length; i++) {
-            complex[2 * i] = real[i];
-            complex[2 * i + 1] = 0;
+            complex[2 * i] = real[i];           // Real part from input
+            complex[2 * i + 1] = 0;             // Imaginary part: zero
         }
         return complex;
     }

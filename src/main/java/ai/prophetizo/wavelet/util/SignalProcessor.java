@@ -60,12 +60,18 @@ public final class SignalProcessor {
     /**
      * Performs forward FFT on complex data.
      * 
+     * <p>Note: This method currently requires power-of-2 sizes for compatibility
+     * with the ComplexNumber array interface. For arbitrary sizes, use
+     * {@link OptimizedFFT#fftOptimized} with double arrays.</p>
+     * 
      * @param data complex input/output array
+     * @throws IllegalArgumentException if data length is not a power of 2
      */
     public static void fft(ComplexNumber[] data) {
         validateInput(data, "FFT");
-        if ((data.length & (data.length - 1)) != 0) {
-            throw new IllegalArgumentException("FFT input length must be a power of 2, got: " + data.length);
+        if (!PowerOf2Utils.isPowerOf2(data.length)) {
+            throw new IllegalArgumentException("FFT input length must be a power of 2, got: " + data.length + 
+                ". For arbitrary sizes, use OptimizedFFT.fftOptimized with double arrays.");
         }
         fftRadix2(data, false);
     }
@@ -73,10 +79,18 @@ public final class SignalProcessor {
     /**
      * Performs inverse FFT on complex data.
      * 
+     * <p>Note: This method currently requires power-of-2 sizes for compatibility
+     * with the ComplexNumber array interface. For arbitrary sizes, use
+     * {@link OptimizedFFT#fftOptimized} with double arrays.</p>
+     * 
      * @param data complex input/output array
      */
     public static void ifft(ComplexNumber[] data) {
         validateInput(data, "IFFT");
+        if (!PowerOf2Utils.isPowerOf2(data.length)) {
+            throw new IllegalArgumentException("IFFT input length must be a power of 2, got: " + data.length + 
+                ". For arbitrary sizes, use OptimizedFFT.fftOptimized with double arrays.");
+        }
         fftRadix2(data, true);
         // Normalize
         double norm = 1.0 / data.length;

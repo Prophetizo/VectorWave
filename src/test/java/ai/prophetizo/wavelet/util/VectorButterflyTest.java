@@ -33,11 +33,11 @@ class VectorButterflyTest {
             double[] scalarData = original.clone();
             
             // Force vector path (if available)
-            // Force vector path (explicitly use vectorized implementation)
-            OptimizedFFT.fftVectorized(vectorData, size, false);
+            // Note: fftRadix2Vector is package-private, so we use fftOptimized which will choose the best path
+            OptimizedFFT.fftOptimized(vectorData, size, false);
             
             // Force scalar path (explicitly use scalar implementation)
-            OptimizedFFT.fftScalar(scalarData, size, false);
+            OptimizedFFT.fftRadix2Scalar(scalarData, size, false);
             
             // Results should be identical (or very close due to floating point precision)
             for (int i = 0; i < vectorData.length; i++) {
