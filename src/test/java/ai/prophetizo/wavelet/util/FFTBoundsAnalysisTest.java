@@ -69,11 +69,11 @@ class FFTBoundsAnalysisTest {
             // Verify array bounds for the actual loop indices
             int validIndicesCount = 0;
             for (int k = 1; k < halfN; k++) {
-                // These are the actual array accesses from the implementation
-                int idx1 = 2 * k;                    // packed[2 * k]
-                int idx2 = 2 * (halfN - k);          // packed[2 * (halfN - k)]
-                int idx3 = 2 * k + 1;                // packed[2 * k + 1]
-                int idx4 = 2 * (halfN - k) + 1;      // packed[2 * (halfN - k) + 1]
+                // Use helper method to calculate indices
+                int idx1 = calculateIndex(k, halfN, false, false);  // packed[2 * k]
+                int idx2 = calculateIndex(k, halfN, true, false);   // packed[2 * (halfN - k)]
+                int idx3 = calculateIndex(k, halfN, false, true);   // packed[2 * k + 1]
+                int idx4 = calculateIndex(k, halfN, true, true);    // packed[2 * (halfN - k) + 1]
                 
                 // All indices must be within [0, packedArrayLength)
                 assertTrue(idx1 >= 0 && idx1 < packedArrayLength, 
