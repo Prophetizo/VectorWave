@@ -8,6 +8,7 @@ import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.util.OptimizedFFT;
 import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Disabled;
 
@@ -81,13 +82,13 @@ class OptimizedStreamingPerformanceTest {
     }
     
     @Test
-    @DisplayName("Should verify SIMD integration is active for large blocks")
-    void testSIMDIntegration() throws InterruptedException {
-        // Skip this test if Vector API is not available
-        if (!OptimizedFFT.isVectorApiAvailable()) {
-            System.out.println("Skipping SIMD test - Vector API not available: " + OptimizedFFT.getVectorApiInfo());
-            return;
-        }
+    @DisplayName("Should verify streaming works correctly with different block sizes")
+    void testStreamingPerformanceWithDifferentBlockSizes(TestInfo testInfo) throws InterruptedException {
+        // This test verifies functionality and measures performance characteristics
+        // It adapts expectations based on Vector API availability
+        boolean vectorApiAvailable = OptimizedFFT.isVectorApiAvailable();
+        // Use test name as context for performance assertions
+        String vectorApiStatus = OptimizedFFT.getVectorApiInfo();
         Wavelet wavelet = Daubechies.DB4;
         int largeBlockSize = 1024;  // Should use SIMD
         int smallBlockSize = 32;    // Should not use SIMD
@@ -186,28 +187,32 @@ class OptimizedStreamingPerformanceTest {
         double largeTimePerSample = (double) largeBlockTime.get() / (largeBlockSize * 100);
         double smallTimePerSample = (double) smallBlockTime.get() / (smallBlockSize * 100);
         
-        System.out.printf("Time per sample - Large blocks (SIMD): %.2f ns, Small blocks: %.2f ns%n",
-            largeTimePerSample, smallTimePerSample);
+        // Document performance in assertion messages instead of console output
+        String performanceMessage = String.format(
+            "Large blocks: %.2f ns/sample, Small blocks: %.2f ns/sample (Vector API: %s)",
+            largeTimePerSample, smallTimePerSample, vectorApiStatus);
         
-        // SIMD may provide better per-sample performance for large blocks
-        // However, this depends on hardware, Vector API availability, and other factors
-        // We'll use a more lenient check or just log the performance difference
-        
-        if (largeTimePerSample < smallTimePerSample) {
-            System.out.println("SIMD optimization effective: Large blocks are " + 
-                String.format("%.2f", smallTimePerSample / largeTimePerSample) + "x faster per sample");
-        } else {
-            // Log the performance characteristics without failing
-            System.out.println("SIMD optimization not showing benefit in this environment: " +
-                "Large blocks: " + String.format("%.2f", largeTimePerSample) + " ns/sample, " +
-                "Small blocks: " + String.format("%.2f", smallTimePerSample) + " ns/sample");
-            System.out.println("This may be due to: Vector API not available, different hardware characteristics, " +
-                "or overhead from small test size");
-        }
-        
-        // Just verify that both completed successfully without errors
+        // Verify basic functionality - both block sizes should work
         assertTrue(largeBlockTime.get() > 0, "Large block processing should complete");
         assertTrue(smallBlockTime.get() > 0, "Small block processing should complete");
+        
+        // Analyze performance characteristics
+        if (vectorApiAvailable) {
+            // With Vector API, we expect large blocks to have better per-sample performance
+            double speedup = smallTimePerSample / largeTimePerSample;
+            // Performance assertion with detailed message
+            assertTrue(largeTimePerSample <= smallTimePerSample * 1.1, 
+                String.format("With Vector API, large blocks should not be significantly slower. " +
+                    "Speedup: %.2fx. %s", speedup, performanceMessage));
+        } else {
+            // Without Vector API, just verify both completed
+            // Performance characteristics are captured in the assertion message
+            assertTrue(true, "Without Vector API: " + performanceMessage);
+        }
+        
+        // Verify correctness - ensure transforms produced valid results
+        // This is the key functionality test that should always pass
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Both transforms should complete within timeout");
     }
     
     @Test

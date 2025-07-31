@@ -140,10 +140,13 @@ class VectorButterflyTest {
         
         double averageTimeMs = (endTime - startTime) / (iterations * 1_000_000.0);
         
-        // Just verify it completes in reasonable time (not a strict performance test)
+        // Verify it completes in reasonable time
         assertTrue(averageTimeMs < 10.0, 
             "FFT should complete in reasonable time, got: " + averageTimeMs + " ms");
         
-        System.out.println("Vector butterfly FFT average time: " + averageTimeMs + " ms");
+        // Performance assertion to track regressions
+        // This serves as documentation of expected performance without console output
+        assertTrue(averageTimeMs < 1.0, 
+            "FFT performance check: average time " + averageTimeMs + " ms (< 1.0 ms expected for size " + size + ")");
     }
 }

@@ -34,14 +34,16 @@ class VectorApiFallbackTest {
         assertFalse(info.isEmpty());
         
         if (isAvailable) {
-            assertTrue(info.contains("Vector API available"));
-            assertTrue(info.contains("vector length"));
+            assertTrue(info.contains("Vector API available"), 
+                "Vector API info should indicate availability: " + info);
+            assertTrue(info.contains("vector length"), 
+                "Vector API info should include vector length: " + info);
         } else {
-            assertTrue(info.contains("not available"));
-            assertTrue(info.contains("scalar fallback"));
+            assertTrue(info.contains("not available"), 
+                "Info should indicate Vector API not available: " + info);
+            assertTrue(info.contains("scalar fallback"), 
+                "Info should mention scalar fallback: " + info);
         }
-        
-        System.out.println("Test environment: " + info);
     }
     
     @Test
