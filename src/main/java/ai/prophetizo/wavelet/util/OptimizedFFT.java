@@ -5,8 +5,8 @@ import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
 
-// IMPORTANT: This import requires JDK with Vector API support (JDK 16+)
-// The code will compile only on JDKs that include the jdk.incubator.vector module.
+// IMPORTANT: This import requires JDK with Vector API support.
+// The Vector API was introduced as an incubating feature in JDK 16 and became stable in JDK 21.
 // At runtime, the code gracefully falls back to scalar implementation if Vector API
 // is not available or not functional.
 import jdk.incubator.vector.DoubleVector;
