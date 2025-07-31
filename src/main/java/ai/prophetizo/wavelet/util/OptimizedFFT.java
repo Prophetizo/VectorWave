@@ -58,6 +58,10 @@ public final class OptimizedFFT {
     // Conservative default: 256 (can be tuned per platform)
     private static final int VECTOR_THRESHOLD = 256;
     
+    // Thread-local storage for temporary arrays to avoid repeated allocations
+    // Each thread gets its own set of temporary arrays, sized for the vector length
+    private static final ThreadLocal<VectorTempArrays> VECTOR_TEMP_ARRAYS;
+    
     static {
         boolean vectorAvailable = false;
         VectorSpecies<Double> speciesTemp = null;
@@ -75,6 +79,29 @@ public final class OptimizedFFT {
         
         VECTOR_API_AVAILABLE = vectorAvailable;
         SPECIES = speciesTemp;
+        
+        // Initialize thread-local arrays after determining vector availability
+        VECTOR_TEMP_ARRAYS = ThreadLocal.withInitial(() -> 
+            VECTOR_API_AVAILABLE && SPECIES != null ? 
+                new VectorTempArrays(SPECIES.length()) : null);
+    }
+    
+    /**
+     * Container for thread-local temporary arrays used in vectorized FFT.
+     * This avoids repeated allocations in the hot path.
+     */
+    private static class VectorTempArrays {
+        final double[] tempReal1;
+        final double[] tempImag1;
+        final double[] tempReal2;
+        final double[] tempImag2;
+        
+        VectorTempArrays(int vecLen) {
+            tempReal1 = new double[vecLen];
+            tempImag1 = new double[vecLen];
+            tempReal2 = new double[vecLen];
+            tempImag2 = new double[vecLen];
+        }
     }
     
     /**
@@ -223,6 +250,19 @@ public final class OptimizedFFT {
             int sign = inverse ? 1 : -1;
             int vecLen = SPECIES.length();
             
+            // Get thread-local temporary arrays to avoid allocations
+            VectorTempArrays tempArrays = VECTOR_TEMP_ARRAYS.get();
+            if (tempArrays == null) {
+                // Fallback if thread-local initialization failed
+                fftRadix2Scalar(data, n, inverse);
+                return;
+            }
+            
+            double[] tempReal1 = tempArrays.tempReal1;
+            double[] tempImag1 = tempArrays.tempImag1;
+            double[] tempReal2 = tempArrays.tempReal2;
+            double[] tempImag2 = tempArrays.tempImag2;
+            
             for (int len = 2; len <= n; len <<= 1) {
                 int halfLen = len >> 1;
                 TwiddleFactors twiddle = getTwiddleFactors(len);
@@ -230,12 +270,6 @@ public final class OptimizedFFT {
                 for (int i = 0; i < n; i += len) {
                     // Vectorized loop for j - process elements in chunks
                     int j = 0;
-                    
-                    // Pre-allocate temporary arrays outside the inner loop to reduce allocation overhead
-                    double[] tempReal1 = new double[vecLen];
-                    double[] tempImag1 = new double[vecLen];
-                    double[] tempReal2 = new double[vecLen];
-                    double[] tempImag2 = new double[vecLen];
                     
                     for (; j + vecLen <= halfLen; j += vecLen) {
                         // Load twiddle factors
@@ -409,6 +443,7 @@ public final class OptimizedFFT {
         }
         
         // Convolve using FFT
+        // Note: We use forward FFT (inverse=false) for both sequences
         fftRadix2(a, m, false);
         fftRadix2(b, m, false);
         
@@ -423,9 +458,16 @@ public final class OptimizedFFT {
             a[idx + 1] = ar * bi + ai * br;
         }
         
-        // Inverse FFT (use false to avoid double normalization)
+        // Apply inverse FFT for convolution result
+        // IMPORTANT: We intentionally use forward FFT (inverse=false) here and apply
+        // the inverse transformation manually. This is because:
+        // 1. We need to avoid the automatic normalization in fftRadix2(inverse=true)
+        // 2. The Bluestein algorithm requires specific scaling (1/m) that differs from
+        //    the standard inverse FFT normalization (1/n)
+        // This manual approach ensures consistency regardless of changes to fftRadix2's
+        // normalization logic.
         fftRadix2(a, m, false);
-        // Apply conjugation and scaling manually for inverse
+        // Manually apply conjugation and Bluestein-specific scaling
         double scale = 1.0 / m;
         for (int i = 0; i < m; i++) {
             double temp = a[2 * i + 1];
