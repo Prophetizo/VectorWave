@@ -3,7 +3,9 @@ package ai.prophetizo.wavelet.cwt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,6 +39,7 @@ class CWTLinearConvolutionBenchmark {
     @Test
     @DisplayName("Compare FFT performance")
     @EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     void benchmarkFFTPerformance() {
         // Warm up
         for (int i = 0; i < 5; i++) {

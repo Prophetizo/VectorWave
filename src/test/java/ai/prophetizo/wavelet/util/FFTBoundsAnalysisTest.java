@@ -46,6 +46,21 @@ class FFTBoundsAnalysisTest {
         }
     }
     
+    /**
+     * Helper method to calculate packed array indices for FFT operations.
+     * 
+     * @param k the loop index
+     * @param halfN half the array size
+     * @param useHalfNMinusK whether to use (halfN - k) instead of k
+     * @param addOne whether to add 1 to the final index (for imaginary parts)
+     * @return the calculated index
+     */
+    private int calculateIndex(int k, int halfN, boolean useHalfNMinusK, boolean addOne) {
+        int base = useHalfNMinusK ? (halfN - k) : k;
+        int index = 2 * base;
+        return addOne ? index + 1 : index;
+    }
+    
     @Test
     @DisplayName("Analyze theoretical bounds of packed array indexing in fftRealOptimized")
     void analyzePackedArrayIndexing() {

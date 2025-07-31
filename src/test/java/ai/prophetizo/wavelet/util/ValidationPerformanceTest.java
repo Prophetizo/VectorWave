@@ -3,6 +3,8 @@ package ai.prophetizo.wavelet.util;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Timeout;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Performance benchmark to demonstrate the impact of removing redundant validation checks.
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
  * and protection against JVM optimizations that could skew results.
  */
 @EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
+@Timeout(value = 60, unit = TimeUnit.SECONDS)
 class ValidationPerformanceTest {
 
     private static final int ARRAY_SIZE = 1024;
