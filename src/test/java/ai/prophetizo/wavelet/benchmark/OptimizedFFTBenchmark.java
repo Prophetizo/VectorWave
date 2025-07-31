@@ -39,16 +39,17 @@ public class OptimizedFFTBenchmark {
     public void setup() {
         Random rand = new Random(42);
         
-        // Create test size: use exact size for power-of-2, or size-1 for non-power-of-2 tests
-        // This allows testing both power-of-2 optimized paths and arbitrary-size algorithms
-        int testSize = isPowerOf2 ? fftSize : fftSize - 1;
+        // Determine the adjusted FFT size for testing:
+        // - Use the exact size for power-of-2 tests to leverage optimized FFT algorithms.
+        // - Use size-1 for non-power-of-2 tests to evaluate arbitrary-size FFT handling.
+        int adjustedFftSize = isPowerOf2 ? fftSize : fftSize - 1;
         
-        // Initialize data arrays with the test size
-        realData = new double[testSize];
-        complexData = new double[2 * testSize];
-        complexNumbers = new ComplexNumber[testSize];
+        // Initialize data arrays with the adjusted FFT size
+        realData = new double[adjustedFftSize];
+        complexData = new double[2 * adjustedFftSize];
+        complexNumbers = new ComplexNumber[adjustedFftSize];
         
-        for (int i = 0; i < testSize; i++) {
+        for (int i = 0; i < adjustedFftSize; i++) {
             double real = rand.nextGaussian();
             double imag = rand.nextGaussian();
             
