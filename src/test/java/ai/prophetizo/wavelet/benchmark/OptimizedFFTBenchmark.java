@@ -1,9 +1,8 @@
 package ai.prophetizo.wavelet.benchmark;
 
-import ai.prophetizo.wavelet.util.FFTUtils;
+import ai.prophetizo.wavelet.util.SignalProcessor;
 import ai.prophetizo.wavelet.util.OptimizedFFT;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -14,9 +13,8 @@ import java.util.concurrent.TimeUnit;
  * JMH benchmarks comparing different FFT implementations.
  * 
  * Compares:
- * - Basic FFTUtils implementation
- * - OptimizedFFT with split-radix
- * - FFTAcceleratedCWT
+ * - Basic SignalProcessor implementation (delegates to OptimizedFFT)
+ * - OptimizedFFT with automatic algorithm selection
  * - Real-to-complex optimizations
  */
 @BenchmarkMode(Mode.AverageTime)
@@ -36,7 +34,6 @@ public class OptimizedFFTBenchmark {
     private double[] realData;
     private double[] complexData; // Interleaved real/imag
     private ComplexNumber[] complexNumbers;
-    private FFTAcceleratedCWT fftAccelerator;
     
     @Setup
     public void setup() {
@@ -60,15 +57,13 @@ public class OptimizedFFTBenchmark {
             complexData[2 * i + 1] = imag;
             complexNumbers[i] = new ComplexNumber(real, imag);
         }
-        
-        fftAccelerator = new FFTAcceleratedCWT();
     }
     
     @Benchmark
-    public void benchmarkFFTUtils(Blackhole bh) {
+    public void benchmarkSignalProcessor(Blackhole bh) {
         if (isPowerOf2) {
             ComplexNumber[] data = complexNumbers.clone();
-            FFTUtils.fft(data);
+            SignalProcessor.fft(data);
             bh.consume(data);
         }
     }
@@ -78,14 +73,6 @@ public class OptimizedFFTBenchmark {
         double[] data = complexData.clone();
         OptimizedFFT.fftOptimized(data, data.length / 2, false);
         bh.consume(data);
-    }
-    
-    @Benchmark
-    public void benchmarkFFTAcceleratedCWT(Blackhole bh) {
-        if (isPowerOf2) {
-            FFTAcceleratedCWT.Complex[] result = fftAccelerator.fft(realData.clone());
-            bh.consume(result);
-        }
     }
     
     @Benchmark
@@ -154,7 +141,7 @@ public class OptimizedFFTBenchmark {
         
         @Benchmark
         public void benchmarkFFTConvolution(Blackhole bh) {
-            double[] result = FFTUtils.convolveFFT(signal, kernel);
+            double[] result = SignalProcessor.convolveFFT(signal, kernel);
             bh.consume(result);
         }
     }

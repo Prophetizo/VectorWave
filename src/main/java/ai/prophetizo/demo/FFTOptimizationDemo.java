@@ -1,9 +1,8 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.util.FFTUtils;
+import ai.prophetizo.wavelet.util.SignalProcessor;
 import ai.prophetizo.wavelet.util.OptimizedFFT;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 
 import java.util.*;
 
@@ -67,7 +66,7 @@ public class FFTOptimizationDemo {
         // Warm up - consume results to prevent dead code elimination
         double checksum = 0;
         for (int i = 0; i < 10; i++) {
-            ComplexNumber[] temp = FFTUtils.fftReal(realData.clone());
+            ComplexNumber[] temp = SignalProcessor.fftReal(realData.clone());
             // Consume result to prevent optimization
             checksum += temp[0].real();
         }
@@ -77,7 +76,7 @@ public class FFTOptimizationDemo {
         // Basic FFT
         long startBasic = System.nanoTime();
         for (int i = 0; i < 100; i++) {
-            ComplexNumber[] result = FFTUtils.fftReal(realData.clone());
+            ComplexNumber[] result = SignalProcessor.fftReal(realData.clone());
         }
         long timeBasic = (System.nanoTime() - startBasic) / 100_000; // Convert to μs
         
@@ -169,7 +168,7 @@ public class FFTOptimizationDemo {
         long startFFT = System.nanoTime();
         double[] fftResult = null;
         for (int run = 0; run < 10; run++) {
-            fftResult = FFTUtils.convolveFFT(signal, kernel);
+            fftResult = SignalProcessor.convolveFFT(signal, kernel);
         }
         long timeFFT = (System.nanoTime() - startFFT) / 10_000;
         

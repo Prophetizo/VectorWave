@@ -4,7 +4,7 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
-import ai.prophetizo.wavelet.util.FFTUtils;
+import ai.prophetizo.wavelet.util.SignalProcessor;
 import java.util.Arrays;
 
 /**
@@ -250,7 +250,7 @@ public final class InverseCWT {
             for (int i = signalLength; i < fftSize; i++) {
                 coeffFFT[i] = new ComplexNumber(0, 0);
             }
-            FFTUtils.fft(coeffFFT);
+            SignalProcessor.fft(coeffFFT);
             
             // Multiply in frequency domain and accumulate
             for (int i = 0; i < fftSize; i++) {
@@ -260,7 +260,7 @@ public final class InverseCWT {
         }
         
         // Inverse FFT to get time domain signal
-        FFTUtils.ifft(reconstruction);
+        SignalProcessor.ifft(reconstruction);
         
         // Extract real part and normalize
         double[] result = new double[signalLength];
@@ -583,7 +583,7 @@ public final class InverseCWT {
             waveletComplex[i] = new ComplexNumber(waveletTime[i], 0);
         }
         
-        FFTUtils.fft(waveletComplex);
+        SignalProcessor.fft(waveletComplex);
         return waveletComplex;
     }
     

@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 import ai.prophetizo.wavelet.util.OptimizedFFT;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +29,6 @@ public final class CWTTransform {
     private final ContinuousWavelet wavelet;
     private final CWTConfig config;
     private final CWTVectorOps vectorOps;
-    private final FFTAcceleratedCWT fftAccelerator;
     
     // Cache for wavelet support calculations
     private final Map<Double, Integer> waveletSupportCache = new ConcurrentHashMap<>();
@@ -61,7 +59,6 @@ public final class CWTTransform {
         this.wavelet = wavelet;
         this.config = config;
         this.vectorOps = new CWTVectorOps();
-        this.fftAccelerator = new FFTAcceleratedCWT();
     }
     
     /**
@@ -399,9 +396,18 @@ public final class CWTTransform {
     private Complex[] fft(double[] x) {
         FFTAlgorithm algorithm = config.getFFTAlgorithm();
         
-        if (algorithm == FFTAlgorithm.AUTO || algorithm == FFTAlgorithm.SPLIT_RADIX || 
-            algorithm == FFTAlgorithm.RADIX2_VECTOR || algorithm == FFTAlgorithm.BLUESTEIN) {
-            // Use OptimizedFFT for advanced algorithms
+        if (algorithm == FFTAlgorithm.REAL_OPTIMIZED) {
+            // Use real-optimized FFT
+            ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
+            
+            // Convert to internal Complex type
+            Complex[] X = new Complex[result.length];
+            for (int i = 0; i < result.length; i++) {
+                X[i] = new Complex(result[i].real(), result[i].imag());
+            }
+            return X;
+        } else {
+            // Use OptimizedFFT for all other algorithms
             double[] complexData = new double[2 * x.length];
             for (int i = 0; i < x.length; i++) {
                 complexData[2 * i] = x[i];
@@ -416,63 +422,28 @@ public final class CWTTransform {
                 X[i] = new Complex(complexData[2 * i], complexData[2 * i + 1]);
             }
             return X;
-        } else if (algorithm == FFTAlgorithm.REAL_OPTIMIZED) {
-            // Use real-optimized FFT
-            ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
-            
-            // Convert to internal Complex type
-            Complex[] X = new Complex[result.length];
-            for (int i = 0; i < result.length; i++) {
-                X[i] = new Complex(result[i].real(), result[i].imag());
-            }
-            return X;
-        } else {
-            // Fall back to existing FFTAcceleratedCWT
-            FFTAcceleratedCWT.Complex[] result = fftAccelerator.fft(x);
-            
-            // Convert back to internal Complex type
-            Complex[] X = new Complex[result.length];
-            for (int i = 0; i < result.length; i++) {
-                X[i] = new Complex(result[i].real, result[i].imag);
-            }
-            return X;
         }
     }
     
     /**
-     * Inverse FFT implementation using the optimized FFT based on configuration.
+     * Inverse FFT implementation using the optimized FFT.
      */
     private double[] ifft(Complex[] X) {
-        FFTAlgorithm algorithm = config.getFFTAlgorithm();
-        
-        if (algorithm == FFTAlgorithm.AUTO || algorithm == FFTAlgorithm.SPLIT_RADIX || 
-            algorithm == FFTAlgorithm.RADIX2_VECTOR || algorithm == FFTAlgorithm.BLUESTEIN ||
-            algorithm == FFTAlgorithm.REAL_OPTIMIZED) {
-            // Use OptimizedFFT for advanced algorithms
-            double[] complexData = new double[2 * X.length];
-            for (int i = 0; i < X.length; i++) {
-                complexData[2 * i] = X[i].real;
-                complexData[2 * i + 1] = X[i].imag;
-            }
-            
-            OptimizedFFT.fftOptimized(complexData, X.length, true);
-            
-            // Extract real part (for inverse of real signal)
-            double[] result = new double[X.length];
-            for (int i = 0; i < X.length; i++) {
-                result[i] = complexData[2 * i];
-            }
-            return result;
-        } else {
-            // Fall back to existing FFTAcceleratedCWT
-            FFTAcceleratedCWT.Complex[] fftComplex = new FFTAcceleratedCWT.Complex[X.length];
-            for (int i = 0; i < X.length; i++) {
-                fftComplex[i] = new FFTAcceleratedCWT.Complex(X[i].real, X[i].imag);
-            }
-            
-            // Use the optimized inverse FFT
-            return fftAccelerator.ifft(fftComplex);
+        // Always use OptimizedFFT
+        double[] complexData = new double[2 * X.length];
+        for (int i = 0; i < X.length; i++) {
+            complexData[2 * i] = X[i].real;
+            complexData[2 * i + 1] = X[i].imag;
         }
+        
+        OptimizedFFT.fftOptimized(complexData, X.length, true);
+        
+        // Extract real part (for inverse of real signal)
+        double[] result = new double[X.length];
+        for (int i = 0; i < X.length; i++) {
+            result[i] = complexData[2 * i];
+        }
+        return result;
     }
     
     /**
@@ -807,60 +778,23 @@ public final class CWTTransform {
      * FFT implementation for Complex arrays.
      */
     private Complex[] fftComplex(Complex[] x) {
-        FFTAlgorithm algorithm = config.getFFTAlgorithm();
         int n = x.length;
         
-        if (algorithm == FFTAlgorithm.AUTO || algorithm == FFTAlgorithm.SPLIT_RADIX || 
-            algorithm == FFTAlgorithm.RADIX2_VECTOR || algorithm == FFTAlgorithm.BLUESTEIN) {
-            // Use OptimizedFFT for advanced algorithms
-            double[] complexData = new double[2 * n];
-            for (int i = 0; i < n; i++) {
-                complexData[2 * i] = x[i].real;
-                complexData[2 * i + 1] = x[i].imag;
-            }
-            
-            OptimizedFFT.fftOptimized(complexData, n, false);
-            
-            // Convert back to Complex array
-            Complex[] result = new Complex[n];
-            for (int i = 0; i < n; i++) {
-                result[i] = new Complex(complexData[2 * i], complexData[2 * i + 1]);
-            }
-            return result;
-        } else {
-            // Use existing Cooley-Tukey implementation
-            // Base case
-            if (n <= 1) return x;
-            
-            // Radix-2 Cooley-Tukey FFT
-            if (n % 2 != 0) {
-                throw new IllegalArgumentException("Length must be a power of 2");
-            }
-            
-            // Divide
-            Complex[] even = new Complex[n/2];
-            Complex[] odd = new Complex[n/2];
-            for (int k = 0; k < n/2; k++) {
-                even[k] = x[2*k];
-                odd[k] = x[2*k + 1];
-            }
-            
-            // Conquer
-            Complex[] evenFFT = fftComplex(even);
-            Complex[] oddFFT = fftComplex(odd);
-            
-            // Combine
-            Complex[] result = new Complex[n];
-            for (int k = 0; k < n/2; k++) {
-                double theta = -2 * Math.PI * k / n;
-                Complex w = new Complex(Math.cos(theta), Math.sin(theta));
-                Complex t = w.multiply(oddFFT[k]);
-                result[k] = new Complex(evenFFT[k].real + t.real, evenFFT[k].imag + t.imag);
-                result[k + n/2] = new Complex(evenFFT[k].real - t.real, evenFFT[k].imag - t.imag);
-            }
-            
-            return result;
+        // Always use OptimizedFFT
+        double[] complexData = new double[2 * n];
+        for (int i = 0; i < n; i++) {
+            complexData[2 * i] = x[i].real;
+            complexData[2 * i + 1] = x[i].imag;
         }
+        
+        OptimizedFFT.fftOptimized(complexData, n, false);
+        
+        // Convert back to Complex array
+        Complex[] result = new Complex[n];
+        for (int i = 0; i < n; i++) {
+            result[i] = new Complex(complexData[2 * i], complexData[2 * i + 1]);
+        }
+        return result;
     }
     
     /**

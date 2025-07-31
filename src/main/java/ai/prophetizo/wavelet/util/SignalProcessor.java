@@ -4,22 +4,18 @@ import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import java.util.Arrays;
 
 /**
- * Consolidated Fast Fourier Transform utilities.
+ * Signal processing utilities for frequency domain operations.
  * 
- * <p>This class centralizes all FFT implementations to avoid code duplication
- * and provide optimized transforms for different use cases.</p>
+ * <p>This class provides high-level signal processing operations including
+ * FFT, convolution, windowing, and spectral analysis. It serves as a
+ * user-friendly API that delegates complex computations to optimized
+ * implementations.</p>
  * 
- * <p>Features:</p>
- * <ul>
- *   <li>In-place and out-of-place transforms</li>
- *   <li>Real and complex FFT</li>
- *   <li>Optimized for power-of-2 sizes</li>
- *   <li>Thread-safe implementations</li>
- * </ul>
+ * <p>Core FFT computations are performed by {@link OptimizedFFT}.</p>
  * 
  * @since 1.0.0
  */
-public final class FFTUtils {
+public final class SignalProcessor {
     
     // Precomputed constants for common sizes
     private static final int MAX_CACHED_SIZE = 4096;
@@ -45,7 +41,7 @@ public final class FFTUtils {
     /**
      * Performs forward FFT on complex data.
      * 
-     * @param data complex input/output array (must be power of 2 length)
+     * @param data complex input/output array
      */
     public static void fft(ComplexNumber[] data) {
         if (data == null || data.length == 0) {
@@ -63,6 +59,9 @@ public final class FFTUtils {
      * @param data complex input/output array
      */
     public static void ifft(ComplexNumber[] data) {
+        if (data == null || data.length == 0) {
+            throw new IllegalArgumentException("IFFT input cannot be null or empty");
+        }
         fftRadix2(data, true);
         // Normalize
         double norm = 1.0 / data.length;
@@ -81,6 +80,10 @@ public final class FFTUtils {
      * @return complex FFT result
      */
     public static ComplexNumber[] fftReal(double[] real) {
+        if (real == null || real.length == 0) {
+            throw new IllegalArgumentException("FFT input cannot be null or empty");
+        }
+        
         int n = nextPowerOf2(real.length);
         ComplexNumber[] complex = new ComplexNumber[n];
         
@@ -114,18 +117,27 @@ public final class FFTUtils {
     }
     
     /**
-     * Computes circular convolution using FFT.
+     * Computes convolution using FFT.
      * 
      * @param a first signal
      * @param b second signal
      * @return convolution result
      */
     public static double[] convolveFFT(double[] a, double[] b) {
-        int n = nextPowerOf2(a.length + b.length - 1);
+        if (a == null || b == null || a.length == 0 || b.length == 0) {
+            throw new IllegalArgumentException("Convolution inputs cannot be null or empty");
+        }
+        
+        int resultSize = a.length + b.length - 1;
+        int n = nextPowerOf2(resultSize);
+        
+        // Pad signals to next power of 2
+        double[] paddedA = Arrays.copyOf(a, n);
+        double[] paddedB = Arrays.copyOf(b, n);
         
         // FFT of both signals
-        ComplexNumber[] fftA = fftReal(Arrays.copyOf(a, n));
-        ComplexNumber[] fftB = fftReal(Arrays.copyOf(b, n));
+        ComplexNumber[] fftA = fftReal(paddedA);
+        ComplexNumber[] fftB = fftReal(paddedB);
         
         // Multiply in frequency domain
         ComplexNumber[] product = new ComplexNumber[n];
@@ -136,13 +148,69 @@ public final class FFTUtils {
         // Inverse FFT
         ifft(product);
         
-        // Extract real part
-        double[] result = new double[a.length + b.length - 1];
-        for (int i = 0; i < result.length; i++) {
+        // Extract real part of result
+        double[] result = new double[resultSize];
+        for (int i = 0; i < resultSize; i++) {
             result[i] = product[i].real();
         }
         
         return result;
+    }
+    
+    /**
+     * Returns the next power of 2 greater than or equal to n.
+     */
+    public static int nextPowerOf2(int n) {
+        return 1 << (32 - Integer.numberOfLeadingZeros(n - 1));
+    }
+    
+    /**
+     * Checks if n is a power of 2.
+     */
+    public static boolean isPowerOf2(int n) {
+        return n > 0 && (n & (n - 1)) == 0;
+    }
+    
+    /**
+     * Applies a window function to the signal before FFT.
+     */
+    public static double[] applyWindow(double[] signal, WindowType window) {
+        double[] windowed = new double[signal.length];
+        int n = signal.length;
+        
+        switch (window) {
+            case HANN -> {
+                for (int i = 0; i < n; i++) {
+                    double w = 0.5 * (1 - Math.cos(2 * Math.PI * i / (n - 1)));
+                    windowed[i] = signal[i] * w;
+                }
+            }
+            case HAMMING -> {
+                for (int i = 0; i < n; i++) {
+                    double w = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (n - 1));
+                    windowed[i] = signal[i] * w;
+                }
+            }
+            case BLACKMAN -> {
+                for (int i = 0; i < n; i++) {
+                    double w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)) 
+                              + 0.08 * Math.cos(4 * Math.PI * i / (n - 1));
+                    windowed[i] = signal[i] * w;
+                }
+            }
+            case RECTANGULAR -> {
+                System.arraycopy(signal, 0, windowed, 0, n);
+            }
+        }
+        
+        return windowed;
+    }
+    
+    /**
+     * Window function types.
+     */
+    public enum WindowType {
+        RECTANGULAR, HANN, HAMMING, BLACKMAN
     }
     
     /**
@@ -204,64 +272,8 @@ public final class FFTUtils {
         }
     }
     
-    /**
-     * Returns the next power of 2 greater than or equal to n.
-     */
-    public static int nextPowerOf2(int n) {
-        return 1 << (32 - Integer.numberOfLeadingZeros(n - 1));
-    }
-    
-    /**
-     * Checks if n is a power of 2.
-     */
-    public static boolean isPowerOf2(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
-    }
-    
-    /**
-     * Applies a window function to the signal before FFT.
-     */
-    public static double[] applyWindow(double[] signal, WindowType window) {
-        double[] windowed = new double[signal.length];
-        int n = signal.length;
-        
-        switch (window) {
-            case HANN -> {
-                for (int i = 0; i < n; i++) {
-                    double w = 0.5 * (1 - Math.cos(2 * Math.PI * i / (n - 1)));
-                    windowed[i] = signal[i] * w;
-                }
-            }
-            case HAMMING -> {
-                for (int i = 0; i < n; i++) {
-                    double w = 0.54 - 0.46 * Math.cos(2 * Math.PI * i / (n - 1));
-                    windowed[i] = signal[i] * w;
-                }
-            }
-            case BLACKMAN -> {
-                for (int i = 0; i < n; i++) {
-                    double w = 0.42 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)) 
-                              + 0.08 * Math.cos(4 * Math.PI * i / (n - 1));
-                    windowed[i] = signal[i] * w;
-                }
-            }
-            case RECTANGULAR -> {
-                System.arraycopy(signal, 0, windowed, 0, n);
-            }
-        }
-        
-        return windowed;
-    }
-    
-    /**
-     * Window function types.
-     */
-    public enum WindowType {
-        RECTANGULAR, HANN, HAMMING, BLACKMAN
-    }
-    
     // Private constructor to prevent instantiation
-    private FFTUtils() {
+    private SignalProcessor() {
         throw new AssertionError("Utility class should not be instantiated");
     }
 }
