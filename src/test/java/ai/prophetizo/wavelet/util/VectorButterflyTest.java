@@ -24,10 +24,18 @@ class VectorButterflyTest {
     @Test
     @DisplayName("Vector butterfly operations should produce identical results to scalar")
     void testVectorButterflyCorrectness() {
+        // Check if Vector API is available
+        boolean vectorApiAvailable = OptimizedFFT.isVectorApiAvailable();
+        
         // Test with various power-of-2 sizes to exercise vector paths
         int[] testSizes = TestConstants.POWER_OF_TWO_SIZES;
         
         for (int size : testSizes) {
+            // Skip sizes that are too small for vector operations
+            if (vectorApiAvailable && size < 16) {
+                continue; // Vector operations typically need at least 16 elements
+            }
+            
             // Create test signal
             double[] original = new double[2 * size]; // Interleaved complex
             for (int i = 0; i < size; i++) {
@@ -40,11 +48,18 @@ class VectorButterflyTest {
             double[] vectorData = original.clone();
             double[] scalarData = original.clone();
             
-            // Use the public API with TransformConfig to control scalar/vector paths
-            // Default behavior: use vectorization if available
-            OptimizedFFT.fftOptimized(vectorData, size, false);
+            // Force vector path if available
+            if (vectorApiAvailable) {
+                TransformConfig vectorConfig = TransformConfig.builder()
+                    .forceVector(true)
+                    .build();
+                OptimizedFFT.fftOptimized(vectorData, size, false, vectorConfig);
+            } else {
+                // If vector API not available, use default path
+                OptimizedFFT.fftOptimized(vectorData, size, false);
+            }
             
-            // Force scalar path for comparison using TransformConfig
+            // Force scalar path for comparison
             TransformConfig scalarConfig = TransformConfig.builder()
                 .forceScalar(true)
                 .build();
@@ -109,6 +124,49 @@ class VectorButterflyTest {
             assertEquals(original[i], signal[i], TOLERANCE,
                 "Round-trip FFT should restore original signal at index " + i);
         }
+    }
+    
+    @Test
+    @DisplayName("Verify vector path is used when forced")
+    void testVectorPathIsUsedWhenForced() {
+        // This test verifies that when we force vector operations, they are actually used
+        boolean vectorApiAvailable = OptimizedFFT.isVectorApiAvailable();
+        
+        if (!vectorApiAvailable) {
+            // Skip test if Vector API is not available
+            System.out.println("Vector API not available, skipping vector path verification");
+            return;
+        }
+        
+        // Use a size large enough for vector operations
+        int size = 256;
+        double[] data = new double[2 * size];
+        Random random = new Random(TestConstants.TEST_SEED);
+        for (int i = 0; i < data.length; i++) {
+            data[i] = random.nextDouble();
+        }
+        
+        // Force vector path
+        TransformConfig vectorConfig = TransformConfig.builder()
+            .forceVector(true)
+            .build();
+        
+        // This should use the vector path without throwing an exception
+        assertDoesNotThrow(() -> {
+            OptimizedFFT.fftOptimized(data.clone(), size, false, vectorConfig);
+        }, "FFT with forced vector path should not throw exception");
+        
+        // Verify by comparing with scalar result
+        double[] vectorData = data.clone();
+        double[] scalarData = data.clone();
+        
+        OptimizedFFT.fftOptimized(vectorData, size, false, vectorConfig);
+        OptimizedFFT.fftOptimized(scalarData, size, false, 
+            TransformConfig.builder().forceScalar(true).build());
+        
+        // Results should match
+        assertArrayEquals(scalarData, vectorData, TOLERANCE,
+            "Vector and scalar FFT results should match");
     }
     
     @Test

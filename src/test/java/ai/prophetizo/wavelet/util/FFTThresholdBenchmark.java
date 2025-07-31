@@ -4,14 +4,16 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import java.util.Random;
 
 /**
  * Benchmark to determine the optimal threshold for switching between
  * scalar and vector FFT implementations.
+ * 
+ * <p>To run this benchmark, use: {@code -Drun.benchmarks=true}</p>
  */
-@Disabled("Benchmark - run manually to determine optimal threshold")
+@EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
 public class FFTThresholdBenchmark {
     
     @Test

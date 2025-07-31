@@ -3,12 +3,14 @@ package ai.prophetizo.wavelet.cwt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Simple benchmark to verify no significant performance regression from linear convolution.
+ * 
+ * <p>To run this benchmark, use: {@code -Drun.benchmarks=true}</p>
  */
 class CWTLinearConvolutionBenchmark {
     
@@ -34,7 +36,7 @@ class CWTLinearConvolutionBenchmark {
     
     @Test
     @DisplayName("Compare FFT performance")
-    @Disabled("Manual benchmark - enable to run")
+    @EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
     void benchmarkFFTPerformance() {
         // Warm up
         for (int i = 0; i < 5; i++) {

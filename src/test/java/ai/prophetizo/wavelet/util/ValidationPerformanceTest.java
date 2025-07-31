@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.util;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -10,9 +10,9 @@ import org.junit.jupiter.api.DisplayName;
  * <p>This test is disabled by default to avoid running during regular test execution.
  * To run this benchmark manually, you have several options:
  * 
- * <p>Option 1 - Remove @Disabled temporarily and run:
+ * <p>Option 1 - Use system property:
  * <pre>
- * mvn test -Dtest=ValidationPerformanceTest
+ * mvn test -Dtest=ValidationPerformanceTest -Drun.benchmarks=true
  * </pre>
  * 
  * <p>Option 2 - Use the JMH benchmarks instead (recommended):
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.DisplayName;
  * which provides more accurate measurements with proper warm-up, statistical analysis,
  * and protection against JVM optimizations that could skew results.
  */
-@Disabled("Performance benchmark - run manually when needed")
+@EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
 class ValidationPerformanceTest {
 
     private static final int ARRAY_SIZE = 1024;
