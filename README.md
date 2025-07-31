@@ -53,9 +53,14 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 
 ## Requirements
 
-- Java 21 or later
+- Java 21 or later (must include jdk.incubator.vector module for compilation)
 - Maven 3.6+
-- Optional: Java Vector API support (included in Java 16+ as incubator module)
+- Runtime: Vector API is optional (graceful fallback to scalar implementation)
+
+> **Important**: The project requires compilation with a JDK that includes the Vector API
+> (jdk.incubator.vector module), available in JDK 16+. At runtime, the code will automatically
+> fall back to scalar implementations if Vector API is not available. See
+> [Vector API Compilation Requirements](docs/technical-specs/VECTOR_API_COMPILATION.md) for details.
 
 ## Quick Start
 

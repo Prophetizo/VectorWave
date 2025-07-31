@@ -7,13 +7,19 @@ import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test to analyze potential array bounds issues in FFT implementation.
+ * Test to verify array bounds correctness in the fftRealOptimized implementation.
+ * 
+ * <p>This test analyzes the bounds of array accesses in OptimizedFFT.fftRealOptimized
+ * to ensure that the packed array indexing is correct and doesn't cause out-of-bounds
+ * exceptions. The fftRealOptimized method uses a packed array where even-indexed
+ * real values are stored in the real parts and odd-indexed real values are stored
+ * in the imaginary parts of a half-size complex array.</p>
  */
 class FFTBoundsAnalysisTest {
     
     @Test
-    @DisplayName("Analyze array bounds in fftRealOptimized loop")
-    void testArrayBoundsAnalysis() {
+    @DisplayName("Verify array bounds in fftRealOptimized implementation")
+    void testArrayBoundsInActualImplementation() {
         // Test with various even-sized arrays to check bounds
         int[] testSizes = {2, 4, 8, 16, 32, 64, 128};
         
@@ -31,81 +37,98 @@ class FFTBoundsAnalysisTest {
                 ComplexNumber[] result = OptimizedFFT.fftRealOptimized(real);
                 assertEquals(n, result.length);
                 
-                // Test analysis: check the loop bounds logic
-                int halfN = n / 2;
-                System.out.println("  halfN = " + halfN);
-                System.out.println("  packed array length would be: " + (2 * halfN));
-                
-                // Analyze the critical loop: for (int k = 1; k < halfN; k++)
-                for (int k = 1; k < halfN; k++) {
-                    int access1 = 2 * k;                    // packed[2 * k]
-                    int access2 = 2 * (halfN - k);          // packed[2 * (halfN - k)]
-                    int access3 = 2 * k + 1;                // packed[2 * k + 1]
-                    int access4 = 2 * (halfN - k) + 1;      // packed[2 * (halfN - k) + 1]
-                    
-                    int maxValidIndex = 2 * halfN - 1;
-                    
-                    System.out.println("    k=" + k + ": access indices [" + access1 + ", " + access2 + ", " + access3 + ", " + access4 + "], max valid: " + maxValidIndex);
-                    
-                    // All accesses should be within bounds
-                    assertTrue(access1 <= maxValidIndex, "access1 out of bounds");
-                    assertTrue(access2 <= maxValidIndex, "access2 out of bounds");
-                    assertTrue(access3 <= maxValidIndex, "access3 out of bounds");
-                    assertTrue(access4 <= maxValidIndex, "access4 out of bounds");
-                    
-                    assertTrue(access1 >= 0, "access1 negative");
-                    assertTrue(access2 >= 0, "access2 negative");
-                    assertTrue(access3 >= 0, "access3 negative");
-                    assertTrue(access4 >= 0, "access4 negative");
-                }
+                // Verify the actual implementation handles bounds correctly
+                // No additional assertions needed - the test passes if no exception is thrown
             }, "fftRealOptimized failed for size " + n);
         }
     }
     
     @Test
-    @DisplayName("Test boundary condition and verify loop bounds are correct")
-    void testBoundaryConditionDocumentation() {
-        // Document why the loop bound k < halfN is critical
-        int n = 8;  // Even number
-        int halfN = n / 2; // halfN = 4
-        int packedLength = 2 * halfN; // = 8
+    @DisplayName("Analyze theoretical bounds of packed array indexing in fftRealOptimized")
+    void analyzePackedArrayIndexing() {
+        // This test analyzes the theoretical bounds of the packed array indexing
+        // as implemented in OptimizedFFT.fftRealOptimized lines 528-547
         
-        System.out.println("Analysis for n=" + n + ", halfN=" + halfN + ", packedLength=" + packedLength);
+        int[] testSizes = {4, 8, 16, 32};
         
-        // If k reached halfN (which it shouldn't in the current loop):
-        int k = halfN; // k = 4
-        int access = 2 * (halfN - k); // 2 * (4 - 4) = 2 * 0 = 0
-        
-        System.out.println("If k=" + k + " (=halfN), then access index would be: " + access);
-        System.out.println("This would cause packed[2*k] and packed[2*(halfN-k)] to access the same element");
-        System.out.println("Leading to incorrect FFT calculations due to symmetry violation");
-        
-        // Verify current loop bounds prevent this issue
-        System.out.println("Current loop: k from 1 to " + (halfN - 1) + " (k < " + halfN + ")");
-        
-        // Additional verification: ensure that array accesses are valid
-        for (int testK = 1; testK < halfN; testK++) {
-            int symmetric = halfN - testK;
+        for (int n : testSizes) {
+            System.out.println("\nAnalyzing packed array bounds for n=" + n);
+            int halfN = n / 2;
+            int packedArrayLength = 2 * halfN; // Complex array has 2 * halfN doubles
             
-            // When k equals halfN - k (at the center), that's mathematically correct
-            // This happens when k = halfN/2, which is valid for FFT symmetry
-            if (testK == symmetric) {
-                System.out.println("Center symmetry point: k=" + testK + " equals (halfN-k)=" + symmetric);
+            System.out.println("  halfN = " + halfN);
+            System.out.println("  packed array length = " + packedArrayLength);
+            System.out.println("  Loop range: k from 1 to " + (halfN - 1) + " (exclusive)");
+            
+            // The critical insight: the loop MUST use k < halfN (not k <= halfN)
+            // because when k = halfN, we get halfN - k = 0, which would cause
+            // packed[2 * k] and packed[2 * (halfN - k)] to access different but
+            // mathematically incorrect elements for the FFT symmetry
+            
+            // Verify array bounds for the actual loop indices
+            for (int k = 1; k < halfN; k++) {
+                // These are the actual array accesses from the implementation
+                int idx1 = 2 * k;                    // packed[2 * k]
+                int idx2 = 2 * (halfN - k);          // packed[2 * (halfN - k)]
+                int idx3 = 2 * k + 1;                // packed[2 * k + 1]
+                int idx4 = 2 * (halfN - k) + 1;      // packed[2 * (halfN - k) + 1]
+                
+                // All indices must be within [0, packedArrayLength)
+                assertTrue(idx1 >= 0 && idx1 < packedArrayLength, 
+                    "packed[2*k] out of bounds: " + idx1);
+                assertTrue(idx2 >= 0 && idx2 < packedArrayLength, 
+                    "packed[2*(halfN-k)] out of bounds: " + idx2);
+                assertTrue(idx3 >= 0 && idx3 < packedArrayLength, 
+                    "packed[2*k+1] out of bounds: " + idx3);
+                assertTrue(idx4 >= 0 && idx4 < packedArrayLength, 
+                    "packed[2*(halfN-k)+1] out of bounds: " + idx4);
+                
+                // Verify we never access the same indices (except at center for odd halfN)
+                if (k != halfN - k) {
+                    assertNotEquals(idx1, idx2, "Should not access same real part");
+                    assertNotEquals(idx3, idx4, "Should not access same imaginary part");
+                }
             }
             
-            assertTrue(testK >= 1 && testK < halfN, 
-                "k should be in range [1, halfN)");
-            assertTrue(symmetric >= 1 && symmetric < halfN, 
-                "symmetric index should be in range [1, halfN)");
-            
-            // Verify array accesses are within bounds
-            assertTrue(2 * testK < packedLength, "2*k access within bounds");
-            assertTrue(2 * symmetric < packedLength, "2*(halfN-k) access within bounds");
-            assertTrue(2 * testK + 1 < packedLength, "2*k+1 access within bounds");
-            assertTrue(2 * symmetric + 1 < packedLength, "2*(halfN-k)+1 access within bounds");
+            // Demonstrate why k = halfN would be problematic
+            if (halfN > 0) {
+                int problematicK = halfN;
+                int problematicIdx = 2 * (halfN - problematicK); // = 2 * 0 = 0
+                System.out.println("  If k = halfN (" + problematicK + "), then 2*(halfN-k) = " + problematicIdx);
+                System.out.println("  This would incorrectly access packed[0] when we want packed[" + (2 * halfN) + "]");
+            }
         }
+    }
+    
+    @Test
+    @DisplayName("Test edge cases for fftRealOptimized")
+    void testEdgeCases() {
+        // Test empty array
+        assertDoesNotThrow(() -> {
+            ComplexNumber[] result = OptimizedFFT.fftRealOptimized(new double[0]);
+            assertEquals(0, result.length);
+        });
         
-        assertTrue(halfN > 0, "halfN should be positive");
-        assertTrue(packedLength > 0, "packedLength should be positive");
+        // Test single element
+        assertDoesNotThrow(() -> {
+            ComplexNumber[] result = OptimizedFFT.fftRealOptimized(new double[]{1.0});
+            assertEquals(1, result.length);
+            assertEquals(1.0, result[0].real());
+            assertEquals(0.0, result[0].imag());
+        });
+        
+        // Test odd-length arrays (should fall back to standard FFT)
+        int[] oddSizes = {3, 5, 7, 9, 11};
+        for (int n : oddSizes) {
+            double[] real = new double[n];
+            for (int i = 0; i < n; i++) {
+                real[i] = i + 1.0; // Simple test data
+            }
+            
+            assertDoesNotThrow(() -> {
+                ComplexNumber[] result = OptimizedFFT.fftRealOptimized(real);
+                assertEquals(n, result.length);
+            }, "fftRealOptimized failed for odd size " + n);
+        }
     }
 }

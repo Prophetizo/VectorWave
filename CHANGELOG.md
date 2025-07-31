@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed compilation and runtime errors when Vector API module is not available
 - Fixed benchmark failures on JVMs without incubator module support
+- Fixed inconsistent null checking pattern in SignalProcessor by extracting common validation helper
+
+### Refactored
+- Consolidated duplicate power-of-2 utility functions into PowerOf2Utils class
+  - Removed duplicate implementations from OptimizedFFT and SignalProcessor
+  - Added comprehensive utility methods: nextPowerOf2, isPowerOf2, log2, previousPowerOf2, moduloPowerOf2
+  - Improved overflow protection and error handling
+
+### Documentation
+- Clarified Vector API compilation requirements in OptimizedFFT
+- Added VECTOR_API_COMPILATION.md explaining build requirements
+- Updated README to clearly state JDK compilation requirements
+- Improved FFTBoundsAnalysisTest to better reflect actual implementation
 
 ### Documentation
 - Reorganized documentation structure for clarity

@@ -39,14 +39,31 @@ public final class SignalProcessor {
     }
     
     /**
+     * Validates that input data is not null or empty.
+     * 
+     * @param data input array to validate
+     * @param operationName name of the operation for error message
+     * @throws IllegalArgumentException if data is null or empty
+     */
+    private static void validateInput(Object data, String operationName) {
+        if (data == null) {
+            throw new IllegalArgumentException(operationName + " input cannot be null");
+        }
+        if (data instanceof Object[] && ((Object[]) data).length == 0) {
+            throw new IllegalArgumentException(operationName + " input cannot be empty");
+        }
+        if (data instanceof double[] && ((double[]) data).length == 0) {
+            throw new IllegalArgumentException(operationName + " input cannot be empty");
+        }
+    }
+    
+    /**
      * Performs forward FFT on complex data.
      * 
      * @param data complex input/output array
      */
     public static void fft(ComplexNumber[] data) {
-        if (data == null || data.length == 0) {
-            throw new IllegalArgumentException("FFT input cannot be null or empty");
-        }
+        validateInput(data, "FFT");
         if ((data.length & (data.length - 1)) != 0) {
             throw new IllegalArgumentException("FFT input length must be a power of 2, got: " + data.length);
         }
@@ -59,9 +76,7 @@ public final class SignalProcessor {
      * @param data complex input/output array
      */
     public static void ifft(ComplexNumber[] data) {
-        if (data == null || data.length == 0) {
-            throw new IllegalArgumentException("IFFT input cannot be null or empty");
-        }
+        validateInput(data, "IFFT");
         fftRadix2(data, true);
         // Normalize
         double norm = 1.0 / data.length;
@@ -80,11 +95,9 @@ public final class SignalProcessor {
      * @return complex FFT result
      */
     public static ComplexNumber[] fftReal(double[] real) {
-        if (real == null || real.length == 0) {
-            throw new IllegalArgumentException("FFT input cannot be null or empty");
-        }
+        validateInput(real, "FFT");
         
-        int n = nextPowerOf2(real.length);
+        int n = PowerOf2Utils.nextPowerOf2(real.length);
         ComplexNumber[] complex = new ComplexNumber[n];
         
         // Copy real data to complex array
@@ -124,12 +137,11 @@ public final class SignalProcessor {
      * @return convolution result
      */
     public static double[] convolveFFT(double[] a, double[] b) {
-        if (a == null || b == null || a.length == 0 || b.length == 0) {
-            throw new IllegalArgumentException("Convolution inputs cannot be null or empty");
-        }
+        validateInput(a, "Convolution");
+        validateInput(b, "Convolution");
         
         int resultSize = a.length + b.length - 1;
-        int n = nextPowerOf2(resultSize);
+        int n = PowerOf2Utils.nextPowerOf2(resultSize);
         
         // Pad signals to next power of 2
         double[] paddedA = Arrays.copyOf(a, n);
@@ -157,24 +169,15 @@ public final class SignalProcessor {
         return result;
     }
     
-    /**
-     * Returns the next power of 2 greater than or equal to n.
-     */
-    public static int nextPowerOf2(int n) {
-        return 1 << (32 - Integer.numberOfLeadingZeros(n - 1));
-    }
-    
-    /**
-     * Checks if n is a power of 2.
-     */
-    public static boolean isPowerOf2(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
-    }
     
     /**
      * Applies a window function to the signal before FFT.
      */
     public static double[] applyWindow(double[] signal, WindowType window) {
+        validateInput(signal, "Window");
+        if (window == null) {
+            throw new IllegalArgumentException("Window type cannot be null");
+        }
         double[] windowed = new double[signal.length];
         int n = signal.length;
         

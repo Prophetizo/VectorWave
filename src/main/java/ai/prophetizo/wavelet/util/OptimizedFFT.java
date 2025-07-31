@@ -4,11 +4,19 @@ import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
 
-// Conditional import - handled at runtime
+// IMPORTANT: This import requires JDK with Vector API support (JDK 16+)
+// The code will compile only on JDKs that include the jdk.incubator.vector module.
+// At runtime, the code gracefully falls back to scalar implementation if Vector API
+// is not available or not functional.
 import jdk.incubator.vector.*;
 
 /**
  * Highly optimized FFT implementation with advanced algorithms.
+ * 
+ * <p><strong>Compilation Requirements:</strong></p>
+ * <p>This class requires compilation with a JDK that includes the jdk.incubator.vector
+ * module (JDK 16 or later). However, at runtime it will gracefully fall back to
+ * scalar implementations if the Vector API is not available.</p>
  * 
  * <p>This class extends the basic FFT with:</p>
  * <ul>
@@ -91,7 +99,7 @@ public final class OptimizedFFT {
     public static void fftOptimized(double[] data, int n, boolean inverse) {
         if (n <= 1) return;
         
-        if (isPowerOf2(n)) {
+        if (PowerOf2Utils.isPowerOf2(n)) {
             // Use split-radix for power-of-2
             if (n >= 32) {
                 fftSplitRadix(data, n, inverse);
@@ -375,7 +383,7 @@ public final class OptimizedFFT {
     private static void fftBluestein(double[] data, int n, boolean inverse) {
         // Find next power of 2 >= 2n - 1 using bit operations for optimal performance
         int target = 2 * n - 1;
-        int m = target <= 1 ? 1 : Integer.highestOneBit(target - 1) << 1;
+        int m = PowerOf2Utils.nextPowerOf2(target);
         
         // Chirp sequence
         double[] chirp = new double[2 * n];
@@ -561,9 +569,6 @@ public final class OptimizedFFT {
         return new TwiddleFactors(n);
     }
     
-    private static boolean isPowerOf2(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
-    }
     
     /**
      * Returns true if Vector API is available and functional on this platform.
