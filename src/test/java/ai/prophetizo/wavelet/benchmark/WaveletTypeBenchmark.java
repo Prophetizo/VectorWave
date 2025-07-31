@@ -14,6 +14,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark comparing performance across different wavelet types.
  * 
@@ -54,7 +55,7 @@ public class WaveletTypeBenchmark {
     public void setup() {
         // Generate random signal data
         signal = new double[signalSize];
-        Random random = new Random(42); // Fixed seed for reproducibility
+        Random random = new Random(TestConstants.TEST_SEED); // Fixed seed for reproducibility
         for (int i = 0; i < signalSize; i++) {
             signal[i] = random.nextGaussian() * 10.0;
         }

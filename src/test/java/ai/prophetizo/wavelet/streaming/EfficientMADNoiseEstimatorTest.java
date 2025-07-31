@@ -8,6 +8,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class EfficientMADNoiseEstimatorTest {
     
     private EfficientMADNoiseEstimator estimator;
@@ -30,7 +31,7 @@ class EfficientMADNoiseEstimatorTest {
     @Test
     void testBasicNoiseEstimation() {
         // Generate noisy signal
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] coefficients = new double[100];
         double noiseLevel = 0.5;
         
@@ -48,7 +49,7 @@ class EfficientMADNoiseEstimatorTest {
     @Test
     void testStreamingBehavior() {
         // Process coefficients in small batches
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double noiseLevel = 1.0;
         
         for (int batch = 0; batch < 20; batch++) {
@@ -93,7 +94,7 @@ class EfficientMADNoiseEstimatorTest {
         EfficientMADNoiseEstimator lowSmoothing = new EfficientMADNoiseEstimator(256, 0.5);
         
         // Process same data with varying noise
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Low noise period
         for (int i = 0; i < 10; i++) {
@@ -155,7 +156,7 @@ class EfficientMADNoiseEstimatorTest {
         EfficientMADNoiseEstimator efficient = new EfficientMADNoiseEstimator(1024, 0.95);
         MADNoiseEstimator original = new MADNoiseEstimator(1024, 0.95);
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Warm up
         for (int i = 0; i < 5; i++) {
@@ -181,7 +182,7 @@ class EfficientMADNoiseEstimatorTest {
         long efficientTime = System.nanoTime() - efficientStart;
         
         // Reset random seed for fair comparison
-        random = new Random(42);
+        random = new Random(TestConstants.TEST_SEED);
         
         // Measure original version
         long originalStart = System.nanoTime();
@@ -224,7 +225,7 @@ class EfficientMADNoiseEstimatorTest {
     
     // Helper method
     private static double[] generateGaussianNoise(int length, double stdDev) {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] noise = new double[length];
         for (int i = 0; i < length; i++) {
             noise[i] = random.nextGaussian() * stdDev;

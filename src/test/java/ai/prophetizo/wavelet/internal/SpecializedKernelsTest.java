@@ -14,6 +14,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class SpecializedKernelsTest {
     
     private static final double EPSILON = 1e-10;
@@ -89,7 +90,7 @@ class SpecializedKernelsTest {
         double[][] detail = new double[numSignals][signalLength / 2];
         
         // Fill with test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < numSignals; i++) {
             for (int j = 0; j < signalLength; j++) {
                 signals[i][j] = random.nextGaussian();

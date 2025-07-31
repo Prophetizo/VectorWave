@@ -8,6 +8,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class P2QuantileEstimatorTest {
     
     private static final double TOLERANCE = 0.1; // 10% tolerance for estimates
@@ -53,7 +54,7 @@ class P2QuantileEstimatorTest {
         P2QuantileEstimator p2Estimator = P2QuantileEstimator.forMedian();
         
         // Generate random data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[1000];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextGaussian();
@@ -184,7 +185,7 @@ class P2QuantileEstimatorTest {
         P2QuantileEstimator estimator = new P2QuantileEstimator(0.75); // 75th percentile
         
         // Test with large dataset
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         int n = 100000;
         
         for (int i = 0; i < n; i++) {

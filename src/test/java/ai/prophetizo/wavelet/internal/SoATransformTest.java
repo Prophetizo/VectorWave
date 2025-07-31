@@ -14,6 +14,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class SoATransformTest {
     
     private static final double EPSILON = 1e-10;
@@ -217,7 +218,7 @@ class SoATransformTest {
         double[] realInput = new double[numSignals * signalLength];
         double[] imagInput = new double[numSignals * signalLength];
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < realInput.length; i++) {
             realInput[i] = random.nextGaussian();
             imagInput[i] = random.nextGaussian();

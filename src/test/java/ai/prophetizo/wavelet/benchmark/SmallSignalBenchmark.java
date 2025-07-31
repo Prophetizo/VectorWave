@@ -10,6 +10,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark for small signal performance.
  * Tests the integrated optimizations for signals < 1024 samples.
@@ -42,7 +43,7 @@ public class SmallSignalBenchmark {
     @Setup
     public void setup() {
         // Use fixed seed for reproducible benchmarks
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Create test signal with financial-like characteristics
         signal = new double[signalLength];

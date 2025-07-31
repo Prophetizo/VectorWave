@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.util;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import ai.prophetizo.wavelet.test.ComplexArrayTestUtils;
+import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Vector API Fallback Tests")
 class VectorApiFallbackTest {
     
-    private static final double EPSILON = 1e-10;
+    private static final double EPSILON = TestConstants.DEFAULT_TOLERANCE;
     
     @Test
     @DisplayName("Vector API availability check should return consistent result")
@@ -103,7 +104,7 @@ class VectorApiFallbackTest {
     @DisplayName("FFT should handle various sizes correctly")
     @ValueSource(ints = {1, 7, 15, 31, 100, 127})
     void testNonPowerOfTwoSizes(int size) {
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
         
         // Should use Bluestein algorithm for non-power-of-2 sizes
@@ -119,7 +120,7 @@ class VectorApiFallbackTest {
     void testFFTOperationsComplete() {
         // Test various sizes to ensure no exceptions
         int[] sizes = {8, 16, 32, 64, 128};
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         
         for (int size : sizes) {
             double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
@@ -139,7 +140,7 @@ class VectorApiFallbackTest {
     void testSplitRadixFallback() {
         // Test size that triggers split-radix (>= 32)
         int size = 64;
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         double[] data = ComplexArrayTestUtils.createRandomRealComplex(size, rand);
         
         // This uses split-radix algorithm

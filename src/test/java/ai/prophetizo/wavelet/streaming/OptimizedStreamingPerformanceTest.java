@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.util.OptimizedFFT;
+import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Disabled;
@@ -38,7 +39,7 @@ class OptimizedStreamingPerformanceTest {
         int batchSize = 16;
         
         RingBuffer buffer = new RingBuffer(blockSize * 16);
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Generate test data batches
         double[][] batches = new double[batchSize][];
@@ -129,7 +130,7 @@ class OptimizedStreamingPerformanceTest {
         
         // Generate test data
         double[] largeData = new double[largeBlockSize * 100];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < largeData.length; i++) {
             largeData[i] = random.nextGaussian();
         }
@@ -247,7 +248,7 @@ class OptimizedStreamingPerformanceTest {
         assertEquals(4, initialMultiplier);
         
         // Generate high-throughput data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[blockSize * 1000];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextGaussian();
@@ -321,7 +322,7 @@ class OptimizedStreamingPerformanceTest {
         baseline.subscribe(createTimingSubscriber(baselineTime, latch));
         
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[dataSize];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextGaussian();

@@ -1,9 +1,11 @@
 package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Disabled;
+import java.util.Random;
 
 /**
  * Benchmark to determine the optimal threshold for switching between
@@ -42,12 +44,15 @@ public class FFTThresholdBenchmark {
         int recommendedThreshold = Integer.MAX_VALUE;
         boolean foundCrossover = false;
         
+        // Use seeded Random for consistent benchmark results
+        Random random = new Random(TestConstants.TEST_SEED);
+        
         for (int size : sizes) {
-            // Create test data
+            // Create test data with deterministic random values
             double[] data = new double[2 * size];
             for (int i = 0; i < size; i++) {
-                data[2 * i] = Math.random() - 0.5;
-                data[2 * i + 1] = Math.random() - 0.5;
+                data[2 * i] = random.nextDouble() - 0.5;
+                data[2 * i + 1] = random.nextDouble() - 0.5;
             }
             
             // Warmup both paths

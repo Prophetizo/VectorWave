@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Integration tests demonstrating ring buffer usage in streaming components.
  */
@@ -57,7 +58,7 @@ class RingBufferIntegrationTest {
         });
         
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[1024];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextGaussian();
@@ -124,7 +125,7 @@ class RingBufferIntegrationTest {
         });
         
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[1024];
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextGaussian();

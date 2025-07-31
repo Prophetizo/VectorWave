@@ -8,6 +8,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmarks for FFT operations.
  * 
@@ -34,7 +35,7 @@ public class FFTBenchmark {
     
     @Setup
     public void setup() {
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         
         // Initialize complex data
         complexData = new ComplexNumber[fftSize];

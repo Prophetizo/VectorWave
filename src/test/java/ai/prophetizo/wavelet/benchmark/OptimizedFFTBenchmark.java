@@ -9,6 +9,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmarks comparing different FFT implementations.
  * 
@@ -37,7 +38,7 @@ public class OptimizedFFTBenchmark {
     
     @Setup
     public void setup() {
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         
         // Determine the adjusted FFT size for testing:
         // - Use the exact size for power-of-2 tests to leverage optimized FFT algorithms.
@@ -111,7 +112,7 @@ public class OptimizedFFTBenchmark {
         
         @Setup
         public void setup() {
-            Random rand = new Random(42);
+            Random rand = new Random(TestConstants.TEST_SEED);
             signal = new double[signalSize];
             kernel = new double[kernelSize];
             

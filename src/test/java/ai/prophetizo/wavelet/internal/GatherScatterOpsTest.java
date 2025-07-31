@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class GatherScatterOpsTest {
     
     private static final double EPSILON = 1e-10;
@@ -63,7 +64,7 @@ class GatherScatterOpsTest {
         
         // Create test signals
         double[][] signals = new double[numSignals][signalLength];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < numSignals; i++) {
             for (int j = 0; j < signalLength; j++) {
                 signals[i][j] = random.nextGaussian();

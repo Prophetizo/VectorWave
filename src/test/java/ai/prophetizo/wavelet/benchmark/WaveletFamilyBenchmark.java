@@ -9,6 +9,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmarks comparing performance of different wavelet families.
  * 
@@ -42,7 +43,7 @@ public class WaveletFamilyBenchmark {
     @Setup
     public void setup() {
         // Generate random t values for evaluation
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         tValues = new double[evaluationCount];
         for (int i = 0; i < evaluationCount; i++) {
             tValues[i] = -10.0 + 20.0 * rand.nextDouble();

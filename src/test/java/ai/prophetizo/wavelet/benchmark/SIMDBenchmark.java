@@ -10,6 +10,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Benchmarks comparing scalar vs SIMD performance for wavelet transforms.
  * 
@@ -67,7 +68,7 @@ public class SIMDBenchmark {
         }
         
         // Create financial-like signal (random walk with trend)
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         financialSignal = new double[signalSize];
         financialSignal[0] = 100.0;
         double trend = 0.0001;

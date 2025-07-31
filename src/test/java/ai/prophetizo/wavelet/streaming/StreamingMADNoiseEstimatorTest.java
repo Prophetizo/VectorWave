@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class StreamingMADNoiseEstimatorTest {
     
     // Test data sizes - reduced for faster tests while maintaining statistical validity
@@ -214,7 +215,7 @@ class StreamingMADNoiseEstimatorTest {
     
     private static double[] generateGaussianNoise(int length, double mean, double std) {
         double[] noise = new double[length];
-        java.util.Random random = new java.util.Random(42); // Fixed seed for reproducibility
+        java.util.Random random = new java.util.Random(TestConstants.TEST_SEED); // Fixed seed for reproducibility
         
         for (int i = 0; i < length; i++) {
             noise[i] = mean + std * random.nextGaussian();

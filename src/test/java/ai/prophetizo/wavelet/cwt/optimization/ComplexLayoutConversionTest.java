@@ -7,6 +7,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for complex number layout conversion optimizations.
  */
@@ -24,7 +25,7 @@ class ComplexLayoutConversionTest {
             double[] interleaved = new double[2 * size];
             
             // Initialize with test data
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             for (int i = 0; i < size; i++) {
                 real[i] = random.nextDouble();
                 imag[i] = random.nextDouble();
@@ -55,7 +56,7 @@ class ComplexLayoutConversionTest {
             double[] imag = new double[size];
             
             // Initialize with test data
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             for (int i = 0; i < size; i++) {
                 interleaved[2 * i] = random.nextDouble();
                 interleaved[2 * i + 1] = random.nextDouble();
@@ -85,7 +86,7 @@ class ComplexLayoutConversionTest {
         double[] interleaved = new double[2 * size];
         
         // Initialize with random data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < size; i++) {
             real[i] = random.nextDouble();
             imag[i] = random.nextDouble();

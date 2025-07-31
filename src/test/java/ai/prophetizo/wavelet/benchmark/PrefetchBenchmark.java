@@ -13,6 +13,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark to measure the impact of cache prefetching optimizations.
  * 
@@ -54,7 +55,7 @@ public class PrefetchBenchmark {
     @Setup
     public void setup() {
         // Create test signal with realistic characteristics
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         signal = new double[signalLength];
         
         // Generate signal with multiple frequency components
@@ -126,7 +127,7 @@ public class PrefetchBenchmark {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public void randomAccessTransform(Blackhole bh) {
         // Simulate poor cache access pattern
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         int filterLen = lowFilter.length;
         
         for (int i = 0; i < approxCoeffs.length; i++) {

@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.test.ComplexArrayTestUtils;
+import ai.prophetizo.wavelet.test.TestConstants;
+import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -16,13 +18,13 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class VectorButterflyTest {
     
-    private static final double TOLERANCE = 1e-10;
+    private static final double TOLERANCE = TestConstants.DEFAULT_TOLERANCE;
     
     @Test
     @DisplayName("Vector butterfly operations should produce identical results to scalar")
     void testVectorButterflyCorrectness() {
         // Test with various power-of-2 sizes to exercise vector paths
-        int[] testSizes = {8, 16, 32, 64, 128, 256, 512, 1024};
+        int[] testSizes = TestConstants.POWER_OF_TWO_SIZES;
         
         for (int size : testSizes) {
             // Create test signal
@@ -114,11 +116,12 @@ class VectorButterflyTest {
         int size = 1024; // Large enough for meaningful timing
         int iterations = 1000;
         
-        // Create test data
+        // Create test data with seeded Random for consistent performance tests
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] data = new double[2 * size];
         for (int i = 0; i < size; i++) {
-            data[2 * i] = Math.random();
-            data[2 * i + 1] = Math.random();
+            data[2 * i] = random.nextDouble();
+            data[2 * i + 1] = random.nextDouble();
         }
         
         // Warm up

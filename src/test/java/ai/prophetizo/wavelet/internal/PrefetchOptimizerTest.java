@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for the PrefetchOptimizer class.
  */
@@ -50,7 +51,7 @@ class PrefetchOptimizerTest {
         Wavelet wavelet = WaveletRegistry.getWavelet("db4");
         double[] filter = wavelet.lowPassDecomposition();
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         for (int size : sizes) {
             // Create test signal

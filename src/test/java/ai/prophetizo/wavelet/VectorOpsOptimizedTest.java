@@ -13,6 +13,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for optimized vector operations to ensure correctness.
  * 
@@ -78,7 +79,7 @@ class VectorOpsOptimizedTest {
     void testCombinedTransformOptimized() {
         int signalSize = 256;
         double[] signal = new double[signalSize];
-        Random random = new Random(42); // Seed for reproducibility
+        Random random = new Random(TestConstants.TEST_SEED); // Seed for reproducibility
         for (int i = 0; i < signalSize; i++) {
             signal[i] = random.nextDouble() - 0.5;
         }

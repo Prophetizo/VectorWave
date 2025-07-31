@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Integration tests with real-world signal patterns.
  * Tests wavelet transforms on signals commonly found in applications.
@@ -295,7 +296,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
     
     private double[] createGaussianNoise(int length, double stdDev) {
         double[] noise = new double[length];
-        java.util.Random random = new java.util.Random(42);
+        java.util.Random random = new java.util.Random(TestConstants.TEST_SEED);
         for (int i = 0; i < length; i++) {
             noise[i] = stdDev * random.nextGaussian();
         }

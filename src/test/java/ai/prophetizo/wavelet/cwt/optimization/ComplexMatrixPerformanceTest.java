@@ -8,6 +8,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Performance tests for complex matrix operations.
  */
@@ -128,7 +129,7 @@ class ComplexMatrixPerformanceTest {
     
     private ComplexMatrix createRandomMatrix(int rows, int cols) {
         ComplexMatrix matrix = new ComplexMatrix(rows, cols);
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {

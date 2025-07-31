@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark comparing the performance of streaming wavelet transform implementations.
  * 
@@ -50,7 +51,7 @@ public class StreamingTransformBenchmark {
     @Setup(Level.Trial)
     public void setup() {
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         testData = new double[DATA_SIZE];
         for (int i = 0; i < DATA_SIZE; i++) {
             testData[i] = random.nextGaussian();

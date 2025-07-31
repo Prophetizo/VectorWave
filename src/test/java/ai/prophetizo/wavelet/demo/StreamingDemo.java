@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.Random;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Demonstration of streaming wavelet transform capabilities.
  * 
@@ -25,7 +26,7 @@ import java.util.Random;
 public class StreamingDemo {
     
     // Use seeded Random for reproducible demonstrations
-    private static final Random random = new Random(42);
+    private static final Random random = new Random(TestConstants.TEST_SEED);
     
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== VectorWave Streaming Transform Demo ===\n");

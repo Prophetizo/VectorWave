@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Comprehensive test suite for wavelet transforms on financial time series data.
  * Tests various patterns commonly found in financial markets including:
@@ -34,7 +35,7 @@ class FinancialTimeSeriesTest {
     
     @BeforeEach
     void setUp() {
-        random = new Random(42); // Fixed seed for reproducibility
+        random = new Random(TestConstants.TEST_SEED); // Fixed seed for reproducibility
     }
     
     @Test

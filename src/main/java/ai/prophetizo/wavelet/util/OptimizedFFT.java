@@ -418,6 +418,23 @@ public final class OptimizedFFT {
      * 
      * <p>Converts arbitrary-size DFT to convolution, which can be
      * computed using power-of-2 FFT.</p>
+     * 
+     * <p><strong>Implementation Note on Inverse FFT:</strong></p>
+     * <p>This method uses forward FFT (inverse=false) for the convolution step
+     * and manually applies the inverse transformation. This design decision is based on:</p>
+     * <ol>
+     *   <li><strong>Avoiding automatic normalization:</strong> The fftRadix2 method applies 
+     *       automatic normalization when inverse=true, which is not suitable for the Bluestein
+     *       algorithm. Bluestein requires a specific scaling factor (1/m) that differs from
+     *       the standard inverse FFT normalization (1/n).</li>
+     *   <li><strong>Consistency and control:</strong> Manual inverse transformation ensures
+     *       that scaling and normalization are explicitly defined and consistent, regardless
+     *       of future changes to fftRadix2's internal logic.</li>
+     *   <li><strong>Algorithmic requirements:</strong> The Bluestein algorithm's convolution
+     *       in frequency domain requires precise control over scaling and conjugation steps.</li>
+     * </ol>
+     * <p><strong>WARNING:</strong> Modifying this behavior without understanding the implications
+     * could introduce subtle bugs. Any changes must be thoroughly tested.</p>
      */
     private static void fftBluestein(double[] data, int n, boolean inverse) {
         // Find next power of 2 >= 2n - 1 using bit operations for optimal performance
@@ -471,29 +488,9 @@ public final class OptimizedFFT {
         }
         
         // Apply inverse FFT for convolution result
-        // IMPORTANT: We intentionally use forward FFT (inverse=false) here and apply
-        // the inverse transformation manually. This decision is based on the following:
-        // 
-        // 1. Avoiding automatic normalization: The fftRadix2 method applies automatic
-        //    normalization when inverse=true, which is not suitable for the Bluestein
-        //    algorithm. The Bluestein method requires a specific scaling factor (1/m),
-        //    which differs from the standard inverse FFT normalization (1/n).
-        // 
-        // 2. Consistency and control: By manually applying the inverse transformation,
-        //    we ensure that the scaling and normalization are explicitly defined and
-        //    consistent, regardless of any future changes to the fftRadix2 method's
-        //    internal logic.
-        // 
-        // 3. Algorithmic requirements: The Bluestein algorithm involves convolution
-        //    in the frequency domain, which necessitates precise control over the
-        //    scaling and conjugation steps. Using a forward FFT here aligns with these
-        //    requirements and avoids unintended side effects.
-        // 
-        // WARNING: Changing this behavior without fully understanding the implications
-        //          could introduce subtle bugs or performance issues. Ensure that any
-        //          modifications are thoroughly tested and documented.
+        // Use forward FFT and manual inverse (see method JavaDoc for rationale)
         fftRadix2(a, m, false);
-        // Manually apply conjugation and Bluestein-specific scaling
+        // Manually apply conjugation and Bluestein-specific scaling (1/m)
         double scale = 1.0 / m;
         for (int i = 0; i < m; i++) {
             double temp = a[2 * i + 1];
@@ -593,29 +590,22 @@ public final class OptimizedFFT {
             0
         );
         
-        // Runtime validation of array bounds
-        // We use explicit validation instead of assertions because:
-        // 1. Assertions are disabled by default in production (unless -ea flag is used)
-        // 2. These bounds checks are critical for correctness and preventing crashes
-        // 3. The performance impact is negligible compared to the FFT computation itself
-        if (packed.length < 2 * halfN) {
-            throw new IllegalStateException("Internal error: Packed array has insufficient size. " +
-                "Expected at least " + (2 * halfN) + " elements, but got " + packed.length);
-        }
+        // Note: packed array is created with exactly 2 * halfN elements above,
+        // so bounds checking is not needed here
         
         // For n=2 (halfN=1), the loop doesn't execute, which is correct
         // since we already handled DC and Nyquist components above
         for (int k = 1; k < halfN; k++) { // Use k < halfN to ensure indices k and halfN - k are distinct, as required by FFT butterfly operations
-            // Validate indices are within bounds - these checks ensure safety in production
-            // where assertions may be disabled
+            // Compute indices for the butterfly operation
             int idx1 = 2 * k;
             int idx2 = 2 * (halfN - k);
             
-            if (idx1 >= packed.length || idx2 >= packed.length || idx1 + 1 >= packed.length || idx2 + 1 >= packed.length) {
-                throw new IllegalStateException("Internal error: Array index out of bounds. " +
-                    "k=" + k + ", halfN=" + halfN + ", packed.length=" + packed.length + 
-                    ", attempting to access indices " + idx1 + ", " + idx2);
-            }
+            // Mathematical invariant: these indices are always valid due to loop bounds
+            // k ranges from 1 to halfN-1, so:
+            // - idx1 ranges from 2 to 2*(halfN-1) < packed.length
+            // - idx2 ranges from 2 to 2*(halfN-1) < packed.length
+            assert idx1 + 1 < packed.length && idx2 + 1 < packed.length : 
+                "Invalid indices: k=" + k + ", halfN=" + halfN;
             
             double wr = Math.cos(Math.PI * k / halfN);
             double wi = -Math.sin(Math.PI * k / halfN);

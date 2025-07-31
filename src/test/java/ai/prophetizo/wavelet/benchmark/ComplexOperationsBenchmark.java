@@ -7,6 +7,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark for complex number operations.
  * 
@@ -60,7 +61,7 @@ public class ComplexOperationsBenchmark {
     
     @Setup(Level.Trial)
     public void setup() {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Initialize arrays
         real1 = new double[size];

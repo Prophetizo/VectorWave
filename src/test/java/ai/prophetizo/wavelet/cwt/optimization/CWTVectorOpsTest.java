@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class CWTVectorOpsTest {
     
     private static final double TOLERANCE = 1e-10;
@@ -216,7 +217,7 @@ class CWTVectorOpsTest {
         double[] mediumSignal = new double[512];
         double[] largeSignal = new double[4096];
         
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         fillRandom(smallSignal, rand);
         fillRandom(mediumSignal, rand);
         fillRandom(largeSignal, rand);

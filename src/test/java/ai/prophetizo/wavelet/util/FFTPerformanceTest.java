@@ -1,9 +1,11 @@
 package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.test.TestConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Disabled;
+import java.util.Random;
 
 /**
  * Performance comparison between vector and scalar FFT implementations.
@@ -28,12 +30,15 @@ public class FFTPerformanceTest {
             .forceScalar(true)
             .build();
         
+        // Use seeded Random for consistent benchmark results
+        Random random = new Random(TestConstants.TEST_SEED);
+        
         for (int size : sizes) {
-            // Create test data
+            // Create test data with deterministic values
             double[] data = new double[2 * size];
             for (int i = 0; i < size; i++) {
-                data[2 * i] = Math.random();
-                data[2 * i + 1] = Math.random();
+                data[2 * i] = random.nextDouble();
+                data[2 * i + 1] = random.nextDouble();
             }
             
             // Warmup

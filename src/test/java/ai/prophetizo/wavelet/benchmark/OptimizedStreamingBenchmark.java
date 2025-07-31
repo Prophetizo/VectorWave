@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmarks for optimized streaming wavelet transform performance.
  * 
@@ -57,7 +58,7 @@ public class OptimizedStreamingBenchmark {
         wavelet = waveletType.equals("Haar") ? new Haar() : Daubechies.DB4;
         
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         testData = new double[NUM_SAMPLES];
         for (int i = 0; i < NUM_SAMPLES; i++) {
             testData[i] = random.nextGaussian();
@@ -159,7 +160,7 @@ public class OptimizedStreamingBenchmark {
             );
             
             // Generate streaming data
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             streamData = new double[10000];
             for (int i = 0; i < streamData.length; i++) {
                 streamData[i] = random.nextGaussian();
