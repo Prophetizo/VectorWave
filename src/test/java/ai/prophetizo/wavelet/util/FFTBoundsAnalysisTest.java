@@ -65,7 +65,12 @@ class FFTBoundsAnalysisTest {
             // The critical insight: the loop MUST use k < halfN (not k <= halfN)
             // because when k = halfN, we get halfN - k = 0, which would cause
             // packed[2 * k] and packed[2 * (halfN - k)] to access different but
-            // mathematically incorrect elements for the FFT symmetry
+            // mathematically incorrect elements for the FFT symmetry.
+            // For example, if n = 8, then halfN = 4. If k = 4 (halfN), we would compute:
+            //   idx1 = 2 * k = 2 * 4 = 8
+            //   idx2 = 2 * (halfN - k) = 2 * (4 - 4) = 0
+            // This would result in accessing packed[8] and packed[0], which is incorrect
+            // because idx1 = 8 is out of bounds for an array of length 8.
             
             // Verify array bounds for the actual loop indices
             int validIndicesCount = 0;
