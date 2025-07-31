@@ -510,7 +510,7 @@ public final class OptimizedFFT {
         
         // For n=2 (halfN=1), the loop doesn't execute, which is correct
         // since we already handled DC and Nyquist components above
-        for (int k = 1; k < halfN; k++) { // Ensure k remains within bounds to prevent array access violations
+        for (int k = 1; k < halfN; k++) { // Use k < halfN to ensure indices k and halfN - k are distinct, as required by FFT butterfly operations
             // Runtime assertion to validate our boundary condition
             assert k < halfN && (halfN - k) > 0 : "Invalid indices: k=" + k + ", halfN-k=" + (halfN - k);
             assert 2 * k < packed.length && 2 * (halfN - k) < packed.length : 
