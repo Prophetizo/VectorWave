@@ -45,14 +45,27 @@ public final class SignalProcessor {
      * @param operationName name of the operation for error message
      * @throws IllegalArgumentException if data is null or empty
      */
-    private static void validateInput(Object data, String operationName) {
+    private static void validateInput(ComplexNumber[] data, String operationName) {
         if (data == null) {
             throw new IllegalArgumentException(operationName + " input cannot be null");
         }
-        if (data instanceof Object[] && ((Object[]) data).length == 0) {
+        if (data.length == 0) {
             throw new IllegalArgumentException(operationName + " input cannot be empty");
         }
-        if (data instanceof double[] && ((double[]) data).length == 0) {
+    }
+    
+    /**
+     * Validates that input data is not null or empty.
+     * 
+     * @param data input array to validate
+     * @param operationName name of the operation for error message
+     * @throws IllegalArgumentException if data is null or empty
+     */
+    private static void validateInput(double[] data, String operationName) {
+        if (data == null) {
+            throw new IllegalArgumentException(operationName + " input cannot be null");
+        }
+        if (data.length == 0) {
             throw new IllegalArgumentException(operationName + " input cannot be empty");
         }
     }
@@ -60,9 +73,8 @@ public final class SignalProcessor {
     /**
      * Performs forward FFT on complex data.
      * 
-     * <p>Note: This method currently requires power-of-2 sizes for compatibility
-     * with the ComplexNumber array interface. For arbitrary sizes, use
-     * {@link OptimizedFFT#fftOptimized} with double arrays.</p>
+     * <p>Note: This method requires power-of-2 input sizes. If your data length
+     * is not a power of 2, pad it with zeros to the next power of 2.</p>
      * 
      * @param data complex input/output array
      * @throws IllegalArgumentException if data length is not a power of 2
@@ -70,8 +82,9 @@ public final class SignalProcessor {
     public static void fft(ComplexNumber[] data) {
         validateInput(data, "FFT");
         if (!PowerOf2Utils.isPowerOf2(data.length)) {
+            int nextPowerOf2 = PowerOf2Utils.nextPowerOf2(data.length);
             throw new IllegalArgumentException("FFT input length must be a power of 2, got: " + data.length + 
-                ". For arbitrary sizes, use OptimizedFFT.fftOptimized with double arrays.");
+                ". Consider padding your data to length " + nextPowerOf2 + " with zeros.");
         }
         fftRadix2(data, false);
     }
@@ -79,17 +92,18 @@ public final class SignalProcessor {
     /**
      * Performs inverse FFT on complex data.
      * 
-     * <p>Note: This method currently requires power-of-2 sizes for compatibility
-     * with the ComplexNumber array interface. For arbitrary sizes, use
-     * {@link OptimizedFFT#fftOptimized} with double arrays.</p>
+     * <p>Note: This method requires power-of-2 input sizes. If your data length
+     * is not a power of 2, pad it with zeros to the next power of 2.</p>
      * 
      * @param data complex input/output array
+     * @throws IllegalArgumentException if data length is not a power of 2
      */
     public static void ifft(ComplexNumber[] data) {
         validateInput(data, "IFFT");
         if (!PowerOf2Utils.isPowerOf2(data.length)) {
+            int nextPowerOf2 = PowerOf2Utils.nextPowerOf2(data.length);
             throw new IllegalArgumentException("IFFT input length must be a power of 2, got: " + data.length + 
-                ". For arbitrary sizes, use OptimizedFFT.fftOptimized with double arrays.");
+                ". Consider padding your data to length " + nextPowerOf2 + " with zeros.");
         }
         fftRadix2(data, true);
         // Normalize
@@ -287,6 +301,36 @@ public final class SignalProcessor {
                 data[j] = temp;
             }
         }
+    }
+    
+    /**
+     * Pads a complex array with zeros to the next power of 2 length.
+     * 
+     * <p>This is useful for preparing data for FFT operations which require
+     * power-of-2 input sizes.</p>
+     * 
+     * @param data the complex array to pad
+     * @return a new array padded with zeros to the next power of 2 length,
+     *         or the original array if it's already a power of 2
+     */
+    public static ComplexNumber[] padToPowerOf2(ComplexNumber[] data) {
+        if (data == null) {
+            throw new IllegalArgumentException("Input data cannot be null");
+        }
+        
+        if (PowerOf2Utils.isPowerOf2(data.length)) {
+            return data; // Already a power of 2
+        }
+        
+        int nextPowerOf2 = PowerOf2Utils.nextPowerOf2(data.length);
+        ComplexNumber[] padded = Arrays.copyOf(data, nextPowerOf2);
+        
+        // Fill the rest with zeros (copyOf already does this for objects)
+        for (int i = data.length; i < nextPowerOf2; i++) {
+            padded[i] = ComplexNumber.ZERO;
+        }
+        
+        return padded;
     }
     
     // Private constructor to prevent instantiation

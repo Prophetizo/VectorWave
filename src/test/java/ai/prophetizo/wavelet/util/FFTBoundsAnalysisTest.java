@@ -24,7 +24,6 @@ class FFTBoundsAnalysisTest {
         int[] testSizes = {2, 4, 8, 16, 32, 64, 128};
         
         for (int n : testSizes) {
-            System.out.println("Testing size n = " + n);
             double[] real = new double[n];
             
             // Fill with test data
@@ -35,10 +34,14 @@ class FFTBoundsAnalysisTest {
             // This should not throw any bounds exceptions
             assertDoesNotThrow(() -> {
                 ComplexNumber[] result = OptimizedFFT.fftRealOptimized(real);
-                assertEquals(n, result.length);
+                assertEquals(n, result.length, 
+                    "Result length should match input length for size " + n);
                 
-                // Verify the actual implementation handles bounds correctly
-                // No additional assertions needed - the test passes if no exception is thrown
+                // Verify the result is valid (non-null elements)
+                for (int i = 0; i < n; i++) {
+                    assertNotNull(result[i], 
+                        "Result element at index " + i + " should not be null for size " + n);
+                }
             }, "fftRealOptimized failed for size " + n);
         }
     }
@@ -47,18 +50,17 @@ class FFTBoundsAnalysisTest {
     @DisplayName("Analyze theoretical bounds of packed array indexing in fftRealOptimized")
     void analyzePackedArrayIndexing() {
         // This test analyzes the theoretical bounds of the packed array indexing
-        // as implemented in OptimizedFFT.fftRealOptimized lines 528-547
+        // as implemented in OptimizedFFT.fftRealOptimized
         
         int[] testSizes = {4, 8, 16, 32};
         
         for (int n : testSizes) {
-            System.out.println("\nAnalyzing packed array bounds for n=" + n);
             int halfN = n / 2;
             int packedArrayLength = 2 * halfN; // Complex array has 2 * halfN doubles
             
-            System.out.println("  halfN = " + halfN);
-            System.out.println("  packed array length = " + packedArrayLength);
-            System.out.println("  Loop range: k from 1 to " + (halfN - 1) + " (exclusive)");
+            // Verify the relationship between n, halfN, and packed array length
+            assertEquals(n, 2 * halfN, "n should equal 2 * halfN");
+            assertEquals(n, packedArrayLength, "Packed array length should equal n");
             
             // The critical insight: the loop MUST use k < halfN (not k <= halfN)
             // because when k = halfN, we get halfN - k = 0, which would cause
@@ -66,6 +68,7 @@ class FFTBoundsAnalysisTest {
             // mathematically incorrect elements for the FFT symmetry
             
             // Verify array bounds for the actual loop indices
+            int validIndicesCount = 0;
             for (int k = 1; k < halfN; k++) {
                 // These are the actual array accesses from the implementation
                 int idx1 = 2 * k;                    // packed[2 * k]
@@ -75,27 +78,44 @@ class FFTBoundsAnalysisTest {
                 
                 // All indices must be within [0, packedArrayLength)
                 assertTrue(idx1 >= 0 && idx1 < packedArrayLength, 
-                    "packed[2*k] out of bounds: " + idx1);
+                    String.format("For n=%d, k=%d: packed[2*k=%d] out of bounds", n, k, idx1));
                 assertTrue(idx2 >= 0 && idx2 < packedArrayLength, 
-                    "packed[2*(halfN-k)] out of bounds: " + idx2);
+                    String.format("For n=%d, k=%d: packed[2*(halfN-k)=%d] out of bounds", n, k, idx2));
                 assertTrue(idx3 >= 0 && idx3 < packedArrayLength, 
-                    "packed[2*k+1] out of bounds: " + idx3);
+                    String.format("For n=%d, k=%d: packed[2*k+1=%d] out of bounds", n, k, idx3));
                 assertTrue(idx4 >= 0 && idx4 < packedArrayLength, 
-                    "packed[2*(halfN-k)+1] out of bounds: " + idx4);
+                    String.format("For n=%d, k=%d: packed[2*(halfN-k)+1=%d] out of bounds", n, k, idx4));
                 
                 // Verify we never access the same indices (except at center for odd halfN)
                 if (k != halfN - k) {
-                    assertNotEquals(idx1, idx2, "Should not access same real part");
-                    assertNotEquals(idx3, idx4, "Should not access same imaginary part");
+                    assertNotEquals(idx1, idx2, 
+                        String.format("For n=%d, k=%d: Should not access same real part", n, k));
+                    assertNotEquals(idx3, idx4, 
+                        String.format("For n=%d, k=%d: Should not access same imaginary part", n, k));
                 }
+                validIndicesCount++;
             }
+            
+            // Verify the loop iterates the expected number of times
+            assertEquals(halfN - 1, validIndicesCount, 
+                String.format("For n=%d: Loop should iterate %d times", n, halfN - 1));
             
             // Demonstrate why k = halfN would be problematic
             if (halfN > 0) {
                 int problematicK = halfN;
                 int problematicIdx = 2 * (halfN - problematicK); // = 2 * 0 = 0
-                System.out.println("  If k = halfN (" + problematicK + "), then 2*(halfN-k) = " + problematicIdx);
-                System.out.println("  This would incorrectly access packed[0] when we want packed[" + (2 * halfN) + "]");
+                int expectedIdx = 2 * halfN; // What we would want to access
+                
+                // Assert the problematic condition
+                assertEquals(0, problematicIdx, 
+                    String.format("For n=%d: k=halfN would incorrectly compute index 0", n));
+                assertEquals(n, expectedIdx, 
+                    String.format("For n=%d: k=halfN would need to access index %d (out of bounds)", n, expectedIdx));
+                
+                // Verify that using k=halfN would be out of bounds
+                assertTrue(expectedIdx >= packedArrayLength,
+                    String.format("For n=%d: k=halfN would require accessing index %d which is >= array length %d", 
+                        n, expectedIdx, packedArrayLength));
             }
         }
     }
