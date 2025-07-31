@@ -187,11 +187,6 @@ class OptimizedStreamingPerformanceTest {
         double largeTimePerSample = (double) largeBlockTime.get() / (largeBlockSize * 100);
         double smallTimePerSample = (double) smallBlockTime.get() / (smallBlockSize * 100);
         
-        // Document performance in assertion messages instead of console output
-        String performanceMessage = String.format(
-            "Large blocks: %.2f ns/sample, Small blocks: %.2f ns/sample (Vector API: %s)",
-            largeTimePerSample, smallTimePerSample, vectorApiStatus);
-        
         // Verify basic functionality - both block sizes should work
         assertTrue(largeBlockTime.get() > 0, "Large block processing should complete");
         assertTrue(smallBlockTime.get() > 0, "Small block processing should complete");
@@ -202,17 +197,20 @@ class OptimizedStreamingPerformanceTest {
             double speedup = smallTimePerSample / largeTimePerSample;
             // Adjust performance expectation based on observed characteristics
             if (largeTimePerSample > smallTimePerSample * 1.1) {
-                System.out.printf("Warning: Large blocks are slower than expected with Vector API. %s%n", performanceMessage);
+                System.out.printf("Warning: Large blocks are slower than expected with Vector API. " +
+                    "Large blocks: %.2f ns/sample, Small blocks: %.2f ns/sample (Vector API: %s)%n",
+                    largeTimePerSample, smallTimePerSample, vectorApiStatus);
             }
-            // Performance assertion with detailed message
+            // Performance assertion with detailed message - only format on failure
             assertTrue(largeTimePerSample <= smallTimePerSample * 1.5, 
-                String.format("With Vector API, large blocks should not be significantly slower. " +
-                    "Speedup: %.2fx. %s", speedup, performanceMessage));
+                () -> String.format("With Vector API, large blocks should not be significantly slower. " +
+                    "Speedup: %.2fx. Large blocks: %.2f ns/sample, Small blocks: %.2f ns/sample (Vector API: %s)", 
+                    speedup, largeTimePerSample, smallTimePerSample, vectorApiStatus));
         } else {
             // Without Vector API, just verify both completed
-            // Performance characteristics are captured in the assertion message
-            System.out.printf("Info: Vector API not available. %s%n", performanceMessage);
-            assertTrue(true, "Without Vector API: " + performanceMessage);
+            System.out.printf("Info: Vector API not available. " +
+                "Large blocks: %.2f ns/sample, Small blocks: %.2f ns/sample%n",
+                largeTimePerSample, smallTimePerSample);
         }
         
         // Verify correctness - ensure transforms produced valid results

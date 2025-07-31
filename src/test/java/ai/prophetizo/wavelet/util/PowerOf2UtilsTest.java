@@ -147,10 +147,12 @@ class PowerOf2UtilsTest {
     }
     
     @Test
-    @DisplayName("Verify consistency with previous implementations")
-    void testConsistencyWithPreviousImplementations() {
-        // Test that our implementation matches the previous SignalProcessor implementation
+    @DisplayName("Verify nextPowerOf2 using alternative bit manipulation formula")
+    void testNextPowerOf2AlternativeFormula() {
+        // Verify our implementation against an alternative bit manipulation approach
+        // This provides an independent verification of correctness
         for (int n = 1; n <= 1000; n++) {
+            // Alternative formula: shift 1 left by the bit position after the highest bit in (n-1)
             int expected = 1 << (32 - Integer.numberOfLeadingZeros(n - 1));
             int actual = PowerOf2Utils.nextPowerOf2(n);
             assertEquals(expected, actual, "Mismatch for n=" + n);

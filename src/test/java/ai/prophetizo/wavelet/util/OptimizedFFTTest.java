@@ -157,10 +157,6 @@ public class OptimizedFFTTest {
     @Test
     @DisplayName("FFT inverse should recover original signal")
     void testFFTInverse() {
-        // Verify Vector API status through assertion
-        String vectorApiInfo = OptimizedFFT.getVectorApiInfo();
-        assertNotNull(vectorApiInfo, "Vector API info should not be null");
-        
         double[] original = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
         double[] data = new double[16];
         
