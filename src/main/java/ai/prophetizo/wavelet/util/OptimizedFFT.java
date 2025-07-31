@@ -530,12 +530,12 @@ public final class OptimizedFFT {
             0
         );
         
-        // IMPORTANT: Loop bound must be k < halfN (not k <= halfN)
-        // Mathematical reasoning: When k = halfN, the indices k and (halfN - k)
-        // become equal, resulting in packed[2 * k] and packed[2 * (halfN - k)]
-        // referring to the same element. This violates the FFT butterfly operation
-        // requirements, which rely on distinct pairs of elements for correct computation.
         for (int k = 1; k < halfN; k++) {
+            // IMPORTANT: Loop bound must be k < halfN (not k <= halfN)
+            // Mathematical reasoning: When k = halfN, the indices k and (halfN - k)
+            // become equal, resulting in packed[2 * k] and packed[2 * (halfN - k)]
+            // referring to the same element. This violates the FFT butterfly operation
+            // requirements, which rely on distinct pairs of elements for correct computation.
             double wr = Math.cos(Math.PI * k / halfN);
             double wi = -Math.sin(Math.PI * k / halfN);
             
