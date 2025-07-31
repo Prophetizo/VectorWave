@@ -33,11 +33,11 @@ class VectorButterflyTest {
             double[] scalarData = original.clone();
             
             // Force vector path (if available)
-            OptimizedFFT.fftOptimized(vectorData, size, false);
+            // Force vector path (explicitly use vectorized implementation)
+            OptimizedFFT.fftVectorized(vectorData, size, false);
             
-            // Force scalar path - we'll use the same method but with size that ensures fallback
-            // Actually, let's test if both produce the same results
-            OptimizedFFT.fftOptimized(scalarData, size, false);
+            // Force scalar path (explicitly use scalar implementation)
+            OptimizedFFT.fftScalar(scalarData, size, false);
             
             // Results should be identical (or very close due to floating point precision)
             for (int i = 0; i < vectorData.length; i++) {
