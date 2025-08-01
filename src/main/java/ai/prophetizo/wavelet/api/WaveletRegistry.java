@@ -62,9 +62,9 @@ public final class WaveletRegistry {
                         }
                     }
                 } catch (Exception e) {
-                    // Log and continue with other providers
-                    System.err.println("Error loading wavelets from provider " + 
-                                     provider.getClass().getName() + ": " + e.getMessage());
+                    throw new RuntimeException(
+                        "Error loading wavelets from provider " + provider.getClass().getName(), 
+                        e);
                 }
             }
             

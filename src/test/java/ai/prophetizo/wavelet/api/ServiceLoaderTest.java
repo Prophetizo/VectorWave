@@ -13,6 +13,13 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ServiceLoaderTest {
     
+    // Minimum expected wavelets based on current providers:
+    // OrthogonalWaveletProvider: 9 (Haar, DB2, DB4, SYM2-4, COIF1-3)
+    // BiorthogonalWaveletProvider: 1 (BIOR1_3)
+    // ContinuousWaveletProvider: 5 (Morlet, GAUS1-4)
+    // FinancialWaveletProvider: 4 (Paul, DOG, Shannon-Gabor, Classical Shannon)
+    private static final int MINIMUM_EXPECTED_WAVELETS = 19;
+    
     @Test
     void testServiceLoaderDiscovery() {
         ServiceLoader<WaveletProvider> loader = ServiceLoader.load(WaveletProvider.class);
@@ -37,8 +44,10 @@ class ServiceLoaderTest {
         assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.cwt.providers.ContinuousWaveletProvider"));
         assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.cwt.finance.providers.FinancialWaveletProvider"));
         
-        // Verify we have a reasonable number of wavelets
-        assertTrue(totalWavelets >= 15, "Should have at least 15 wavelets total");
+        // Verify we have the expected minimum number of wavelets
+        assertTrue(totalWavelets >= MINIMUM_EXPECTED_WAVELETS, 
+                  String.format("Should have at least %d wavelets total, but found %d", 
+                               MINIMUM_EXPECTED_WAVELETS, totalWavelets));
     }
     
     @Test
