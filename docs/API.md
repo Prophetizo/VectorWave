@@ -169,9 +169,40 @@ TransformConfig config = TransformConfig.builder()
 
 ```java
 // Lookup wavelets
-Wavelet wavelet = WaveletRegistry.get("db4");
-List<String> available = WaveletRegistry.getAvailableWavelets();
-List<OrthogonalWavelet> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+Wavelet wavelet = WaveletRegistry.getWavelet("db4");
+Set<String> available = WaveletRegistry.getAvailableWavelets();
+List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<String> biorthogonal = WaveletRegistry.getBiorthogonalWavelets();
+List<String> continuous = WaveletRegistry.getContinuousWavelets();
+
+// Query by type
+List<String> byType = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
+
+// Check existence
+boolean exists = WaveletRegistry.hasWavelet("morl");
+
+// Manual registration (for custom wavelets)
+WaveletRegistry.registerWavelet(customWavelet);
+
+// Reload providers (useful for plugin scenarios)
+WaveletRegistry.reload();
+```
+
+### WaveletProvider (ServiceLoader SPI)
+
+```java
+// Implement to add custom wavelets
+public class CustomWaveletProvider implements WaveletProvider {
+    @Override
+    public List<Wavelet> getWavelets() {
+        return List.of(
+            new MyCustomWavelet1(),
+            new MyCustomWavelet2()
+        );
+    }
+}
+
+// Register in META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider
 ```
 
 ## Utilities

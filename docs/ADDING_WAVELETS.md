@@ -12,7 +12,17 @@ Wavelet (base interface)
 │   ├── OrthogonalWavelet
 │   └── BiorthogonalWavelet
 └── ContinuousWavelet
+    └── ComplexContinuousWavelet
 ```
+
+## ServiceLoader Architecture
+
+VectorWave uses Java's ServiceLoader mechanism for wavelet discovery, providing several benefits:
+
+- **No Circular Dependencies**: Wavelets are loaded dynamically, avoiding static initialization issues
+- **Plugin Support**: Add wavelets without modifying the core library
+- **Clean Separation**: Each wavelet family can have its own provider
+- **Runtime Flexibility**: Load wavelets conditionally based on configuration
 
 ## Steps to Add a New Wavelet
 
@@ -203,19 +213,80 @@ public final class MexicanHatWavelet implements ContinuousWavelet {
 }
 ```
 
-### 3. Register the Wavelet
+### 3. Register the Wavelet with ServiceLoader
 
-Add your wavelet to the `WaveletRegistry` in the static initializer:
+Starting from version 1.0, VectorWave uses ServiceLoader for automatic wavelet discovery. This eliminates circular dependencies and enables a plugin architecture.
+
+#### Option A: Add to an Existing Provider (Core Library Contributors)
+
+If you're contributing to the core library, add your wavelet to the appropriate existing provider:
 
 ```java
-static {
-    // ... existing wavelets ...
-    
-    // Add your new wavelet
-    register(new Meyer());
-    register(new BiorthogonalSpline22());
-    register(new MexicanHatWavelet(1.0));
+// In OrthogonalWaveletProvider.java
+@Override
+public List<Wavelet> getWavelets() {
+    return List.of(
+        new Haar(),
+        // ... existing wavelets ...
+        new Meyer()  // Add your new wavelet here
+    );
 }
+```
+
+#### Option B: Create a New Provider (Recommended for Plugins)
+
+For third-party wavelets or plugins, create your own provider:
+
+1. **Create a Provider Class**:
+```java
+package com.example.wavelets;
+
+import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.api.WaveletProvider;
+import java.util.List;
+
+public class MyWaveletProvider implements WaveletProvider {
+    
+    @Override
+    public List<Wavelet> getWavelets() {
+        return List.of(
+            new Meyer(),
+            new BiorthogonalSpline22(),
+            new MexicanHatWavelet(1.0)
+        );
+    }
+}
+```
+
+2. **Register with ServiceLoader**:
+Create a file `src/main/resources/META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider`:
+```
+com.example.wavelets.MyWaveletProvider
+```
+
+3. **For Java Modules** (optional):
+Add to your `module-info.java`:
+```java
+module com.example.wavelets {
+    requires ai.prophetizo.vectorwave;
+    
+    provides ai.prophetizo.wavelet.api.WaveletProvider 
+        with com.example.wavelets.MyWaveletProvider;
+}
+```
+
+Your wavelets will be automatically discovered when the JAR is on the classpath!
+
+#### Manual Registration (Runtime)
+
+For dynamic scenarios, you can also register wavelets at runtime:
+
+```java
+// Register a single wavelet
+WaveletRegistry.registerWavelet(new Meyer());
+
+// Reload all providers (useful for plugin systems)
+WaveletRegistry.reload();
 ```
 
 ### 4. Consider Optimization Paths

@@ -116,7 +116,55 @@ TransformResult
 
 ## Extension Points
 
-1. **New Wavelets**: Implement wavelet interface, register in WaveletRegistry
+1. **New Wavelets**: 
+   - Implement appropriate wavelet interface (OrthogonalWavelet, BiorthogonalWavelet, or ContinuousWavelet)
+   - Create a WaveletProvider implementation
+   - Register via ServiceLoader in META-INF/services
 2. **Custom Padding**: Implement PaddingStrategy interface
 3. **Optimization Paths**: Extend VectorOps with platform-specific code
 4. **Threshold Methods**: Add to ThresholdCalculator
+
+## ServiceLoader Architecture
+
+### Wavelet Discovery
+
+VectorWave uses Java's ServiceLoader mechanism for automatic wavelet discovery, eliminating static initialization blocks and circular dependencies.
+
+```
+ai.prophetizo.wavelet.api.providers/
+├── OrthogonalWaveletProvider    - Haar, Daubechies, Symlets, Coiflets
+├── BiorthogonalWaveletProvider  - Biorthogonal spline wavelets
+└── (custom providers)           - Third-party wavelets
+
+ai.prophetizo.wavelet.cwt.providers/
+├── ContinuousWaveletProvider    - Morlet, Gaussian derivatives
+└── (custom providers)           - Third-party CWT wavelets
+
+ai.prophetizo.wavelet.cwt.finance.providers/
+└── FinancialWaveletProvider     - Paul, DOG, Shannon variants
+```
+
+### Benefits
+
+1. **No Circular Dependencies**: Providers are loaded lazily on first access
+2. **Plugin Architecture**: Add wavelets without modifying core library
+3. **Clean Separation**: Each wavelet family has its own provider
+4. **Thread-Safe Loading**: Double-checked locking ensures safe initialization
+
+### Registry Design
+
+```java
+WaveletRegistry (static facade)
+    ↓
+ServiceLoader.load(WaveletProvider.class)
+    ↓
+WaveletProvider implementations
+    ↓
+Individual Wavelet instances
+```
+
+The registry maintains:
+- Thread-safe wavelet lookup by name (case-insensitive)
+- Categorization by wavelet type
+- Manual registration support for runtime additions
+- Reload capability for dynamic scenarios
