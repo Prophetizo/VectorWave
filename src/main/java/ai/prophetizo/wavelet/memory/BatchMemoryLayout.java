@@ -227,10 +227,43 @@ public class BatchMemoryLayout implements AutoCloseable {
     
     @Override
     public void close() {
-        // Return memory to pool
-        if (inputPool != null) inputPool.close();
-        if (approxPool != null) approxPool.close();
-        if (detailPool != null) detailPool.close();
+        // Return memory to pool, ensuring all pools are closed even if exceptions occur
+        Exception firstException = null;
+        
+        try {
+            if (inputPool != null) inputPool.close();
+        } catch (Exception e) {
+            firstException = e;
+        }
+        
+        try {
+            if (approxPool != null) approxPool.close();
+        } catch (Exception e) {
+            if (firstException == null) {
+                firstException = e;
+            } else {
+                firstException.addSuppressed(e);
+            }
+        }
+        
+        try {
+            if (detailPool != null) detailPool.close();
+        } catch (Exception e) {
+            if (firstException == null) {
+                firstException = e;
+            } else {
+                firstException.addSuppressed(e);
+            }
+        }
+        
+        // If any exception occurred, wrap and throw it
+        if (firstException != null) {
+            if (firstException instanceof RuntimeException) {
+                throw (RuntimeException) firstException;
+            } else {
+                throw new RuntimeException("Failed to close memory pools", firstException);
+            }
+        }
     }
     
     /**
