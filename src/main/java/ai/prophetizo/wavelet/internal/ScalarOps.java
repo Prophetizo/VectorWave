@@ -433,11 +433,9 @@ public final class ScalarOps {
             throw new IllegalArgumentException("Detail coefficients array must have length " + 
                 (length / 2) + ", but has length " + detailCoeffs.length);
         }
-        if (lowFilter.length != highFilter.length) {
-            throw new IllegalArgumentException("Low and high filters must have the same length");
-        }
-        
-        int filterLen = lowFilter.length;
+        // Note: For biorthogonal wavelets, low and high filters may have different lengths
+        int lowFilterLen = lowFilter.length;
+        int highFilterLen = highFilter.length;
 
         if (length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(length)) {
             int lengthMask = length - 1;
@@ -447,11 +445,17 @@ public final class ScalarOps {
                 double sumHigh = 0.0;
                 int kStart = 2 * i;
 
-                // Process both filters in same loop for cache reuse
-                for (int j = 0; j < filterLen; j++) {
+                // Process low-pass filter
+                for (int j = 0; j < lowFilterLen; j++) {
                     int localIndex = (kStart + j) & lengthMask;
                     double signalValue = signal[offset + localIndex];
                     sumLow += signalValue * lowFilter[j];
+                }
+
+                // Process high-pass filter
+                for (int j = 0; j < highFilterLen; j++) {
+                    int localIndex = (kStart + j) & lengthMask;
+                    double signalValue = signal[offset + localIndex];
                     sumHigh += signalValue * highFilter[j];
                 }
 

@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.api.WaveletType;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidConfigurationException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
@@ -65,6 +66,12 @@ public class WaveletTransform {
         // Validate supported boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
             throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
+        }
+
+        // Warn about problematic combinations
+        if (wavelet.getType() == WaveletType.BIORTHOGONAL && boundaryMode == BoundaryMode.ZERO_PADDING) {
+            System.err.println("WARNING: Biorthogonal wavelets with ZERO_PADDING boundary mode may produce " +
+                             "high reconstruction errors. Consider using PERIODIC boundary mode instead.");
         }
 
         // Create appropriate operations implementation

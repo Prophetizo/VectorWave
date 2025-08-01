@@ -184,11 +184,8 @@ class ScalarOpsValidationTest {
             ScalarOps.combinedTransformPeriodic(signal, 0, 8, lowFilter, highFilter, approxCoeffs, wrongDetail),
             "Should reject wrong detail array size");
         
-        // Test mismatched filter lengths
-        double[] shortHighFilter = new double[2];
-        assertThrows(IllegalArgumentException.class, () -> 
-            ScalarOps.combinedTransformPeriodic(signal, 0, 8, lowFilter, shortHighFilter, approxCoeffs, detailCoeffs),
-            "Should reject mismatched filter lengths");
+        // Note: Filter length mismatch is now allowed to support biorthogonal wavelets
+        // where low and high filters can have different lengths
     }
     
     @Test

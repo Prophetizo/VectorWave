@@ -13,9 +13,13 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
   - Shannon wavelet: Band-limited analysis
   - DOG wavelets: Gaussian derivatives for smooth features
   - MATLAB-compatible Mexican Hat: Legacy system integration
+- **Foreign Function & Memory API (FFM)**: Zero-copy operations with Java 23's FFM API
+  - SIMD-aligned memory allocation
+  - Reduced GC pressure through off-heap memory
+  - Thread-safe memory pooling
 - **Type-Safe API**: Sealed interfaces with compile-time validation
 - **Zero Dependencies**: Pure Java implementation
-- **Flexible Boundary Handling**: Periodic, Zero, Symmetric, and Reflect padding modes
+- **Flexible Boundary Handling**: Periodic, Zero-padding (Symmetric and Constant modes partially implemented)
 
 ### Performance
 - **SIMD Optimizations**: Platform-specific Vector API support with automatic fallback
@@ -92,6 +96,29 @@ double[] reconstructed = transform.inverse(result);
 transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
 transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
 transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
+```
+
+### FFM-Based Transform (Java 23+)
+```java
+// Using Foreign Function & Memory API for zero-copy operations
+try (FFMMemoryPool pool = new FFMMemoryPool();
+     FFMWaveletTransform ffmTransform = new FFMWaveletTransform(wavelet, pool)) {
+    
+    TransformResult result = ffmTransform.forward(signal);
+    double[] reconstructed = ffmTransform.inverse(result);
+    
+    // Get memory pool statistics
+    var stats = ffmTransform.getPoolStatistics();
+    System.out.println("Pool hit rate: " + stats.hitRate());
+}
+
+// Streaming with FFM
+try (FFMStreamingTransform streaming = new FFMStreamingTransform(wavelet, blockSize)) {
+    streaming.processChunk(data, offset, length);
+    if (streaming.hasCompleteBlock()) {
+        TransformResult result = streaming.getNextResult();
+    }
+}
 ```
 
 ### Denoising
@@ -232,11 +259,18 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Performance Guide](docs/PERFORMANCE.md)
 - [API Reference](docs/API.md)
+- [Foreign Function & Memory API Guide](docs/FFM_API.md)
 - [Adding New Wavelets](docs/ADDING_WAVELETS.md)
 - [Benchmarking Guide](docs/BENCHMARKING.md)
 - [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
 - [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
 - [Wavelet Selection Guide](docs/WAVELET_SELECTION.md)
+
+## Known Issues
+
+- **Biorthogonal Wavelets** (#138): Critical bug causing catastrophic reconstruction errors. Use orthogonal wavelets (Haar, Daubechies, Symlets) instead.
+- **Boundary Modes** (#135-137): SYMMETRIC and CONSTANT modes not fully implemented for FFM upsampling operations.
+- **FFM Requirements**: Requires Java 23+ with `--enable-native-access=ALL-UNNAMED` flag.
 
 ## Requirements
 
