@@ -13,9 +13,9 @@ import java.util.concurrent.TimeUnit;
  * JMH benchmark comparing real FFT optimization vs standard FFT in CWT.
  * 
  * Expected results:
- * - Real FFT should be ~2x faster for FFT computation
+ * - Real FFT provides significant performance improvements for FFT computation
  * - Overall CWT speedup depends on FFT vs convolution ratio
- * - Larger signals show greater benefits
+ * - Larger signals typically show greater benefits
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)

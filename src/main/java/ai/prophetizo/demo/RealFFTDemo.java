@@ -2,7 +2,6 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
-import java.util.Random;
 
 /**
  * Demonstrates the real-to-complex FFT optimization for CWT.
@@ -11,13 +10,10 @@ import java.util.Random;
  * real signals, which is common in financial data analysis.
  * 
  * Note: Performance timings may vary between runs due to JIT compilation,
- * system load, and other factors. The signal generation is deterministic
- * to ensure consistent input data across runs.
+ * system load, and other factors. The signal generation is fully deterministic
+ * to ensure consistent input data and fair performance comparisons.
  */
 public class RealFFTDemo {
-    
-    // Use a fixed seed for reproducible signal generation
-    private static final Random RANDOM = new Random(42);
     
     public static void main(String[] args) {
         System.out.println("=== Real FFT Optimization Demo ===\n");
@@ -29,6 +25,7 @@ public class RealFFTDemo {
         System.out.println("Comparing CWT performance with different FFT algorithms:");
         System.out.println("Signal sizes: " + java.util.Arrays.toString(signalSizes));
         System.out.println("Number of scales: " + scales.length);
+        System.out.println("Note: Performance ratios vary by platform and signal characteristics");
         System.out.println();
         
         // Test with Morlet wavelet (complex)
@@ -56,7 +53,7 @@ public class RealFFTDemo {
     
     private static void comparePerformance(ContinuousWavelet wavelet, int[] signalSizes, double[] scales) {
         System.out.printf("%-12s %-15s %-15s %-15s %-12s%n", 
-            "Signal Size", "Standard FFT", "Real FFT", "AUTO", "Speedup");
+            "Signal Size", "Standard FFT", "Real FFT", "AUTO", "Real/Std");
         System.out.println("-".repeat(75));
         
         for (int size : signalSizes) {
@@ -174,10 +171,17 @@ public class RealFFTDemo {
         double[] signal = new double[size];
         for (int i = 0; i < size; i++) {
             // Multi-component signal similar to financial data
+            // Use deterministic "noise" based on high-frequency oscillations
+            double deterministicNoise = 0.1 * (
+                Math.sin(2 * Math.PI * 97 * i / size) +    // Prime frequency 1
+                0.7 * Math.sin(2 * Math.PI * 131 * i / size) + // Prime frequency 2
+                0.5 * Math.sin(2 * Math.PI * 173 * i / size)   // Prime frequency 3
+            ) / 2.2; // Normalize to ~0.1 amplitude
+            
             signal[i] = Math.sin(2 * Math.PI * 5 * i / size) +     // Trend
                        0.5 * Math.sin(2 * Math.PI * 20 * i / size) + // Cycle
                        0.3 * Math.sin(2 * Math.PI * 50 * i / size) + // High frequency
-                       0.1 * RANDOM.nextGaussian();                 // Gaussian noise (more realistic than uniform)
+                       deterministicNoise;                            // Deterministic noise
         }
         return signal;
     }

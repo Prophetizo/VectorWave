@@ -340,7 +340,7 @@ public class FFTAcceleratedCWT {
      * O(N log N) instead of O(N²) per scale
      * 
      * NEW: Automatically uses real-to-complex FFT optimization
-     * for 2x speedup on real signals (common in financial data)
+     * for improved performance on real signals (common in financial data)
      */
     public double[] computeFFTScale(double[] signal, ContinuousWavelet wavelet, 
                                     double scale, int fftSize) {
@@ -736,8 +736,8 @@ public void processLargeDataset(List<double[]> signals) {
 Where N = signal length, M = number of scales
 
 ### Real FFT Optimization Benefits:
-- **2x speedup** for FFT operations on real signals
-- **50% memory reduction** for FFT workspace
+- **Significant performance improvement** for FFT operations on real signals
+- **Reduced memory usage** for FFT workspace
 - **Automatic detection** - uses real FFT when beneficial
 - **Common case optimization** - financial data is typically real-valued
 

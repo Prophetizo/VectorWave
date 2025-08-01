@@ -202,3 +202,7 @@ var crashes = analyzer.detectMarketCrashes(priceData, samplingRate);
 - Dyadic scales optimize FFT performance
 - Signal-adaptive selection reduces computation by 30-50%
 - Complex analysis adds ~20% overhead vs real-only
+- Real-to-complex FFT optimization automatically activates for:
+  - Even-length signals ≥ 256 samples
+  - When using AUTO or REAL_OPTIMIZED FFT algorithms
+  - Provides significant performance improvements for real signals
