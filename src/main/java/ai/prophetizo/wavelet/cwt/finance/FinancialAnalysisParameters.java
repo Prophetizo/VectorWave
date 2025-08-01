@@ -13,6 +13,7 @@ package ai.prophetizo.wavelet.cwt.finance;
  *     .crashAsymmetryThreshold(15.0)  // More sensitive crash detection
  *     .volatilityLowThreshold(0.3)    // Tighter volatility bands
  *     .regimeTrendThreshold(0.03)     // 3% trend threshold
+ *     .annualRiskFreeRate(0.045)      // 4.5% annual risk-free rate
  *     .build();
  * 
  * FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(params);
@@ -21,6 +22,12 @@ package ai.prophetizo.wavelet.cwt.finance;
  * @since 1.0.0
  */
 public final class FinancialAnalysisParameters {
+    
+    /**
+     * Standard number of trading days per year.
+     * This is the conventional value used in financial markets for annualization.
+     */
+    public static final int TRADING_DAYS_PER_YEAR = 252;
     
     // Crash Detection Parameters
     private final double crashAsymmetryThreshold;
@@ -60,6 +67,7 @@ public final class FinancialAnalysisParameters {
     // Risk Assessment Parameters
     private final double defaultAverageVolatility;
     private final double baseRiskLevel;
+    private final double annualRiskFreeRate;
     
     // Optimization Parameters
     private final OptimizationParameters optimization;
@@ -98,6 +106,7 @@ public final class FinancialAnalysisParameters {
         
         this.defaultAverageVolatility = builder.defaultAverageVolatility;
         this.baseRiskLevel = builder.baseRiskLevel;
+        this.annualRiskFreeRate = builder.annualRiskFreeRate;
         
         this.optimization = builder.optimization.build();
     }
@@ -147,6 +156,7 @@ public final class FinancialAnalysisParameters {
     
     public double getDefaultAverageVolatility() { return defaultAverageVolatility; }
     public double getBaseRiskLevel() { return baseRiskLevel; }
+    public double getAnnualRiskFreeRate() { return annualRiskFreeRate; }
     
     public OptimizationParameters getOptimization() { return optimization; }
     
@@ -185,6 +195,7 @@ public final class FinancialAnalysisParameters {
         
         private double defaultAverageVolatility = 0.02;
         private double baseRiskLevel = 0.5;
+        private double annualRiskFreeRate = 0.03; // Default 3% annual risk-free rate
         
         private OptimizationParameters.Builder optimization = OptimizationParameters.builder();
         
@@ -338,6 +349,14 @@ public final class FinancialAnalysisParameters {
                 throw new IllegalArgumentException("Base risk level must be between 0 and 1");
             }
             this.baseRiskLevel = risk;
+            return this;
+        }
+        
+        public Builder annualRiskFreeRate(double rate) {
+            if (rate < 0) {
+                throw new IllegalArgumentException("Risk-free rate cannot be negative");
+            }
+            this.annualRiskFreeRate = rate;
             return this;
         }
         

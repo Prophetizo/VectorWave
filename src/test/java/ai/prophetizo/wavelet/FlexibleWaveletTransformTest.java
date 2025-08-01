@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
 import org.junit.jupiter.api.Test;
@@ -142,7 +143,7 @@ class FlexibleWaveletTransformTest extends BaseWaveletTest {
     @DisplayName("Financial time series with arbitrary length")
     void testFinancialTimeSeries() {
         // Typical financial time series lengths (not power of 2)
-        int tradingDays = 252; // One year of trading days
+        int tradingDays = FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR; // One year of trading days
         double[] prices = new double[tradingDays];
         
         // Simulate price series with trend and volatility

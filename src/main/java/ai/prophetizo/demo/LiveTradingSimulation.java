@@ -374,7 +374,7 @@ public class LiveTradingSimulation {
         
         // Calculate Sharpe ratio (simplified)
         double avgDailyReturn = finalReturn / 1000 / 100; // Convert to daily
-        double sharpe = avgDailyReturn / 0.02 * Math.sqrt(252); // Annualized
+        double sharpe = avgDailyReturn / 0.02 * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR); // Annualized
         System.out.printf("Sharpe Ratio: %.2f\n", sharpe);
         
         System.out.println("\n" + GREEN + "✓ Simulation complete!" + RESET);
