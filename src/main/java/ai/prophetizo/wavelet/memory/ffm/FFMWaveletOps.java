@@ -20,9 +20,19 @@ import jdk.incubator.vector.VectorSpecies;
  * 
  * <p><strong>Boundary Mode Support:</strong></p>
  * <ul>
- *   <li><strong>Downsampling operations:</strong> All boundary modes supported (PERIODIC, ZERO_PADDING, SYMMETRIC, CONSTANT)</li>
+ *   <li><strong>Downsampling operations:</strong> All boundary modes supported (PERIODIC, ZERO_PADDING, SYMMETRIC, CONSTANT)
+ *       <ul>
+ *         <li>{@link #convolveAndDownsample(double[], double[], int, int, BoundaryMode)}</li>
+ *         <li>{@link #convolveAndDownsampleFFM(MemorySegment, int, MemorySegment, int, MemorySegment, int, BoundaryMode)}</li>
+ *       </ul>
+ *   </li>
  *   <li><strong>Upsampling operations:</strong> Only PERIODIC and ZERO_PADDING modes implemented.
- *       SYMMETRIC and CONSTANT modes will throw {@link UnsupportedOperationException}</li>
+ *       SYMMETRIC and CONSTANT modes will throw {@link UnsupportedOperationException}
+ *       <ul>
+ *         <li>{@link #upsampleAndConvolve(double[], double[], int, int, BoundaryMode)}</li>
+ *         <li>{@link #upsampleAndConvolveFFM(MemorySegment, int, MemorySegment, int, MemorySegment, int, BoundaryMode)}</li>
+ *       </ul>
+ *   </li>
  * </ul>
  * 
  * @since 2.0.0
@@ -176,6 +186,17 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
         }
     }
     
+    /**
+     * Upsamples and convolves the input signal with the given filter.
+     * 
+     * @param input the input signal
+     * @param filter the filter coefficients
+     * @param inputLength the input signal length
+     * @param filterLength the filter length
+     * @param mode the boundary mode (only PERIODIC and ZERO_PADDING supported)
+     * @return the upsampled and convolved result
+     * @throws UnsupportedOperationException if mode is SYMMETRIC or CONSTANT
+     */
     @Override
     public double[] upsampleAndConvolve(double[] input, double[] filter,
                                        int inputLength, int filterLength,
@@ -197,6 +218,15 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
     
     /**
      * Zero-copy upsampling and convolution using memory segments.
+     * 
+     * @param input the input signal segment
+     * @param inputLen the number of elements in the input
+     * @param filter the filter coefficients segment
+     * @param filterLen the number of filter coefficients
+     * @param output the output segment (must be pre-allocated with size 2*inputLen)
+     * @param outputLen the output length (should be 2*inputLen)
+     * @param mode the boundary mode (only PERIODIC and ZERO_PADDING supported)
+     * @throws UnsupportedOperationException if mode is SYMMETRIC or CONSTANT
      */
     public void upsampleAndConvolveFFM(MemorySegment input, int inputLen,
                                       MemorySegment filter, int filterLen,

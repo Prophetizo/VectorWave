@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.config.TransformConfig;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -69,7 +70,10 @@ public class FFMBenchmark {
         pooledTransform = new WaveletTransformPool(wavelet, BoundaryMode.PERIODIC);
         
         ffmPool = new FFMMemoryPool();
-        ffmTransform = new FFMWaveletTransform(wavelet, BoundaryMode.PERIODIC, ffmPool);
+        
+        // Create config for benchmarking - let it auto-detect optimal path
+        TransformConfig config = TransformConfig.defaultConfig();
+        ffmTransform = new FFMWaveletTransform(wavelet, BoundaryMode.PERIODIC, ffmPool, config);
         
         // Pre-warm FFM pool
         ffmPool.prewarm(signalSize / 2, signalSize);
