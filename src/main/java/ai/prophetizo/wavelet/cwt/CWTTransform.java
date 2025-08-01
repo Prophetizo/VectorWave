@@ -431,7 +431,7 @@ public final class CWTTransform {
         
         try {
             if (shouldUseRealFFT(x.length)) {
-                // Use real-optimized FFT for 2x speedup
+                // Use real-optimized FFT for better performance
                 ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
                 
                 // Convert to internal Complex type

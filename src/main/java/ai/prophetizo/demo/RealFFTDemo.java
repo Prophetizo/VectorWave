@@ -7,8 +7,8 @@ import java.util.Random;
 /**
  * Demonstrates the real-to-complex FFT optimization for CWT.
  * 
- * Shows ~2x speedup for FFT operations when processing real signals,
- * which is common in financial data analysis.
+ * Shows significant performance improvements for FFT operations when processing 
+ * real signals, which is common in financial data analysis.
  * 
  * Note: Performance timings may vary between runs due to JIT compilation,
  * system load, and other factors. The signal generation is deterministic
