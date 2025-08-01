@@ -18,6 +18,28 @@ import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
  *   <li>CPU capabilities</li>
  *   <li>Configuration preferences</li>
  * </ul>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation: {@code WaveletOpsFactory.create(config)}</li>
+ *   <li>Factory interface pattern: {@code WaveletOpsFactory.getInstance().create(config)}</li>
+ * </ul>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Static method pattern
+ * WaveletOps ops1 = WaveletOpsFactory.create(TransformConfig.defaultConfig());
+ * 
+ * // Factory interface pattern (for dependency injection)
+ * Factory<WaveletOps, TransformConfig> factory = WaveletOpsFactory.getInstance();
+ * WaveletOps ops2 = factory.create(config);
+ * 
+ * // Force specific implementation
+ * TransformConfig scalarConfig = TransformConfig.builder()
+ *     .forceScalar(true)
+ *     .build();
+ * WaveletOps scalarOps = factory.create(scalarConfig);
+ * }</pre>
  *
  * @since 1.0.0
  */

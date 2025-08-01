@@ -9,6 +9,22 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  * 
  * <p>Provides convenient methods for creating CWT transforms with
  * various configurations optimized for different use cases.</p>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation: {@code CWTFactory.create(wavelet)}</li>
+ *   <li>Factory interface pattern: {@code CWTFactory.getInstance().create(wavelet)}</li>
+ * </ul>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Static method pattern (convenience)
+ * CWTTransform cwt1 = CWTFactory.create(new MorletWavelet());
+ * 
+ * // Factory interface pattern (for dependency injection)
+ * Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+ * CWTTransform cwt2 = factory.create(new MorletWavelet());
+ * }</pre>
  *
  * @since 1.0.0
  */

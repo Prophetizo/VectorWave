@@ -41,6 +41,9 @@ java -cp target/classes ai.prophetizo.wavelet.util.OptimizedFFT
 ### Key Design Patterns
 - **Sealed Interfaces**: Type-safe wavelet hierarchy
 - **Factory Pattern**: Transform and denoiser creation
+  - Common `Factory<T, C>` interface for all factories
+  - Static factory methods for convenience
+  - Instance-based factory pattern via `getInstance()`
 - **Strategy Pattern**: Boundary modes, threshold methods
 - **Builder Pattern**: Configuration objects
 
@@ -93,6 +96,43 @@ GitHub Actions workflow (`ci.yml`):
 - Use JMH for all performance measurements
 - Coverage goal: >80% (excluding demos)
 - Vector API automatically falls back to scalar operations when not available
+
+## Factory Pattern
+
+All major components use a common `Factory<T, C>` interface for consistent creation patterns:
+
+### Available Factories
+- **WaveletTransformFactory**: Creates `WaveletTransform` instances
+  - Direct implementation of `Factory<WaveletTransform, Wavelet>`
+  - Configurable boundary modes
+- **CWTFactory**: Creates `CWTTransform` instances  
+  - Access via `CWTFactory.getInstance()`
+  - Static methods for convenience
+- **StreamingDenoiserFactory**: Creates `StreamingDenoiser` instances
+  - Access via `StreamingDenoiserFactory.getInstance()`
+  - Automatic implementation selection based on overlap
+- **WaveletOpsFactory**: Creates optimized `WaveletOps` implementations
+  - Access via `WaveletOpsFactory.getInstance()`
+  - Platform-adaptive SIMD selection
+
+### Usage Patterns
+```java
+// Direct factory usage
+WaveletTransformFactory factory = new WaveletTransformFactory();
+WaveletTransform transform = factory.create(new Haar());
+
+// Static factory pattern
+CWTTransform cwt = CWTFactory.create(new MorletWavelet());
+
+// Factory interface pattern
+Factory<CWTTransform, ContinuousWavelet> cwtFactory = CWTFactory.getInstance();
+CWTTransform cwt2 = cwtFactory.create(new MorletWavelet());
+
+// Factory registry
+FactoryRegistry registry = FactoryRegistry.getInstance();
+registry.register("myFactory", factory);
+Optional<Factory<?, ?>> retrieved = registry.getFactory("myFactory");
+```
 
 ## Common Tasks
 

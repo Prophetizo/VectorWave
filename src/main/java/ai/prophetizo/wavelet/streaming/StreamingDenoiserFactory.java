@@ -10,6 +10,22 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * supporting both manual and automatic implementation selection based on use case
  * requirements. The factory pattern enables easy switching between implementations
  * without changing client code.</p>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation with automatic implementation selection</li>
+ *   <li>Factory interface pattern via {@code getInstance()} for dependency injection</li>
+ * </ul>
+ * 
+ * <p>Factory interface usage:</p>
+ * <pre>{@code
+ * // Get factory instance that implements Factory interface
+ * Factory<StreamingDenoiserStrategy, StreamingDenoiserConfig> factory = 
+ *     StreamingDenoiserFactory.getInstance();
+ * 
+ * // Create denoiser using factory interface
+ * StreamingDenoiserStrategy denoiser = factory.create(config);
+ * }</pre>
  *
  * <h3>Implementation Selection</h3>
  * <p>The factory supports three selection modes:</p>
