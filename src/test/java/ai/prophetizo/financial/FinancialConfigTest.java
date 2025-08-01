@@ -17,12 +17,6 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
  */
 class FinancialConfigTest {
     
-    @Test
-    @DisplayName("Default constructor should use default risk-free rate")
-    void testDefaultConstructor() {
-        FinancialConfig config = new FinancialConfig();
-        assertEquals(FinancialConfig.DEFAULT_RISK_FREE_RATE, config.getRiskFreeRate(), 1e-10);
-    }
     
     @Test
     @DisplayName("Constructor with risk-free rate should set value correctly")

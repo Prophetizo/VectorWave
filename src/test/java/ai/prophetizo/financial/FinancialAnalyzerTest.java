@@ -19,7 +19,15 @@ class FinancialAnalyzerTest {
     
     @BeforeEach
     void setUp() {
-        config = FinancialAnalysisConfig.defaultConfig();
+        config = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         analyzer = new FinancialAnalyzer(config);
     }
     
@@ -33,16 +41,6 @@ class FinancialAnalyzerTest {
         assertTrue(exception.getMessage().contains("Configuration cannot be null"));
     }
     
-    @Test
-    @DisplayName("withDefaultConfig should create analyzer with default configuration")
-    void testWithDefaultConfig() {
-        FinancialAnalyzer defaultAnalyzer = FinancialAnalyzer.withDefaultConfig();
-        
-        assertNotNull(defaultAnalyzer);
-        assertEquals(0.7, defaultAnalyzer.getConfig().getCrashAsymmetryThreshold(), 1e-10);
-        assertEquals(0.5, defaultAnalyzer.getConfig().getVolatilityLowThreshold(), 1e-10);
-        assertEquals(0.02, defaultAnalyzer.getConfig().getRegimeTrendThreshold(), 1e-10);
-    }
     
     @Test
     @DisplayName("getConfig should return the configured instance")
@@ -209,6 +207,8 @@ class FinancialAnalyzerTest {
                 .volatilityHighThreshold(0.02)
                 .regimeTrendThreshold(0.001)
                 .anomalyDetectionThreshold(0.5)
+                .windowSize(16)  // Must specify window size
+                .confidenceLevel(0.95)  // Must specify confidence level
                 .build();
         
         FinancialAnalyzer lowThresholdAnalyzer = new FinancialAnalyzer(lowThresholdConfig);

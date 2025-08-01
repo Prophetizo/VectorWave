@@ -18,15 +18,29 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: CRASH_ASYMMETRY_THRESHOLD should be configurable")
     void testCrashAsymmetryThresholdIsConfigurable() {
-        // Verify the default is a realistic value (0.7) for the 0-1 ratio range
-        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
+        // Create a config with explicit values (previously these were defaults)
+        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         assertEquals(0.7, defaultConfig.getCrashAsymmetryThreshold(), 1e-10,
-                "Default crash asymmetry threshold should be a realistic value (0-1 range)");
+                "Crash asymmetry threshold should be set to 0.7");
         
         // Verify we can customize it with a realistic threshold
         // Note: analyzeCrashAsymmetry returns values between 0 and 1 (it's a ratio)
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
                 .crashAsymmetryThreshold(0.5)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
                 .build();
         assertEquals(0.5, customConfig.getCrashAsymmetryThreshold(), 1e-10,
                 "Crash asymmetry threshold should be configurable");
@@ -47,14 +61,28 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: VOLATILITY_LOW_THRESHOLD = 0.5 should be configurable")
     void testVolatilityLowThresholdIsConfigurable() {
-        // Verify the default value is as expected
-        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
+        // Create a config with explicit values
+        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         assertEquals(0.5, defaultConfig.getVolatilityLowThreshold(), 1e-10,
-                "Default volatility low threshold should be 0.5");
+                "Volatility low threshold should be set to 0.5");
         
         // Verify we can customize it
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
                 .volatilityLowThreshold(0.3)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
                 .build();
         assertEquals(0.3, customConfig.getVolatilityLowThreshold(), 1e-10,
                 "Volatility low threshold should be configurable");
@@ -76,14 +104,28 @@ class FinancialAnalysisIntegrationTest {
     @Test
     @DisplayName("Issue #65: REGIME_TREND_THRESHOLD = 0.02 should be configurable")
     void testRegimeTrendThresholdIsConfigurable() {
-        // Verify the default value is as expected
-        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.defaultConfig();
+        // Create a config with explicit values
+        FinancialAnalysisConfig defaultConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         assertEquals(0.02, defaultConfig.getRegimeTrendThreshold(), 1e-10,
-                "Default regime trend threshold should be 0.02");
+                "Regime trend threshold should be set to 0.02");
         
         // Verify we can customize it
         FinancialAnalysisConfig customConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
                 .regimeTrendThreshold(0.01)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
                 .build();
         assertEquals(0.01, customConfig.getRegimeTrendThreshold(), 1e-10,
                 "Regime trend threshold should be configurable");
@@ -136,27 +178,37 @@ class FinancialAnalysisIntegrationTest {
     }
     
     @Test
-    @DisplayName("Issue #65: Backward compatibility should be maintained")
-    void testBackwardCompatibilityMaintained() {
-        // Using default configuration should provide consistent behavior
-        FinancialAnalyzer defaultAnalyzer = FinancialAnalyzer.withDefaultConfig();
+    @DisplayName("Issue #65: Configuration values should be explicit")
+    void testConfigurationValuesAreExplicit() {
+        // Create configuration with standard values (previously defaults)
+        FinancialAnalysisConfig standardConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         
-        // Verify default values are as expected
-        FinancialAnalysisConfig config = defaultAnalyzer.getConfig();
+        FinancialAnalyzer standardAnalyzer = new FinancialAnalyzer(standardConfig);
+        
+        // Verify values are as set
+        FinancialAnalysisConfig config = standardAnalyzer.getConfig();
         assertEquals(0.7, config.getCrashAsymmetryThreshold(), 1e-10, 
-                "CRASH_ASYMMETRY_THRESHOLD default should be 0.7 (realistic range)");
+                "CRASH_ASYMMETRY_THRESHOLD should be 0.7 (realistic range)");
         assertEquals(0.5, config.getVolatilityLowThreshold(), 1e-10, 
-                "VOLATILITY_LOW_THRESHOLD default should be 0.5");
+                "VOLATILITY_LOW_THRESHOLD should be 0.5");
         assertEquals(0.02, config.getRegimeTrendThreshold(), 1e-10, 
-                "REGIME_TREND_THRESHOLD default should be 0.02");
+                "REGIME_TREND_THRESHOLD should be 0.02");
         
-        // Verify analyzer functions work with default configuration
+        // Verify analyzer functions work with standard configuration
         double[] testPrices = createTestData();
         assertDoesNotThrow(() -> {
-            double asymmetry = defaultAnalyzer.analyzeCrashAsymmetry(testPrices);
-            double volatility = defaultAnalyzer.analyzeVolatility(testPrices);
-            double trendChange = defaultAnalyzer.analyzeRegimeTrend(testPrices);
-            boolean hasAnomalies = defaultAnalyzer.detectAnomalies(testPrices);
+            double asymmetry = standardAnalyzer.analyzeCrashAsymmetry(testPrices);
+            double volatility = standardAnalyzer.analyzeVolatility(testPrices);
+            double trendChange = standardAnalyzer.analyzeRegimeTrend(testPrices);
+            boolean hasAnomalies = standardAnalyzer.detectAnomalies(testPrices);
             
             // All results should be finite and valid
             assertTrue(Double.isFinite(asymmetry) && asymmetry >= 0);
@@ -175,16 +227,22 @@ class FinancialAnalysisIntegrationTest {
         FinancialAnalysisConfig hftConfig = FinancialAnalysisConfig.builder()
                 .crashAsymmetryThreshold(0.3)       // More sensitive (lower threshold)
                 .volatilityLowThreshold(0.1)        // Lower volatility range
+                .volatilityHighThreshold(0.8)       // HFT volatility high threshold
                 .regimeTrendThreshold(0.005)        // More sensitive to changes
+                .anomalyDetectionThreshold(2.5)     // HFT anomaly threshold
                 .windowSize(64)                     // Smaller window for faster analysis
+                .confidenceLevel(0.99)              // High confidence for HFT
                 .build();
         
         // Long-term investment analysis configuration
         FinancialAnalysisConfig longTermConfig = FinancialAnalysisConfig.builder()
                 .crashAsymmetryThreshold(0.9)       // Less sensitive to short-term fluctuations
                 .volatilityLowThreshold(1.0)        // Higher volatility range
+                .volatilityHighThreshold(3.0)       // Long-term volatility high threshold
                 .regimeTrendThreshold(0.05)         // Less sensitive to minor changes
+                .anomalyDetectionThreshold(4.0)     // Long-term anomaly threshold
                 .windowSize(512)                    // Larger window for trend analysis
+                .confidenceLevel(0.95)              // Standard confidence
                 .build();
         
         FinancialAnalyzer hftAnalyzer = new FinancialAnalyzer(hftConfig);

@@ -191,9 +191,8 @@ double asymmetry = analyzer.analyzeCrashAsymmetry(prices);
 double volatility = analyzer.analyzeVolatility(prices);
 boolean hasAnomalies = analyzer.detectAnomalies(prices);
 
-// Wavelet-based financial analysis
-FinancialConfig waveletConfig = new FinancialConfig()
-    .withRiskFreeRate(0.045); // 4.5% annual risk-free rate
+// Wavelet-based financial analysis - risk-free rate required
+FinancialConfig waveletConfig = new FinancialConfig(0.045); // 4.5% annual risk-free rate
 
 FinancialWaveletAnalyzer waveletAnalyzer = new FinancialWaveletAnalyzer(waveletConfig);
 double sharpeRatio = waveletAnalyzer.calculateSharpeRatio(returns);

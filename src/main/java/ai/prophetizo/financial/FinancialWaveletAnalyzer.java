@@ -12,6 +12,13 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
  * Provides methods for calculating risk-adjusted returns and other financial metrics
  * using wavelet-based signal processing techniques.
  * 
+ * <p><strong>⚠️ WARNING - Aggressive Denoising:</strong></p>
+ * <p>The wavelet-based Sharpe ratio methods use a simple but aggressive denoising
+ * approach that completely removes all high-frequency components (detail coefficients).
+ * This can remove important market signals along with noise. Consider using
+ * {@link ai.prophetizo.wavelet.denoising.WaveletDenoiser} for more sophisticated
+ * denoising with configurable thresholds.</p>
+ * 
  * <p><strong>Important Requirements:</strong></p>
  * <ul>
  *   <li>All wavelet-based methods require input arrays with power-of-two length 
@@ -39,12 +46,6 @@ public class FinancialWaveletAnalyzer {
     private final FinancialConfig config;
     private final WaveletTransform transform;
     
-    /**
-     * Creates a financial analyzer with default configuration and Haar wavelet.
-     */
-    public FinancialWaveletAnalyzer() {
-        this(new FinancialConfig());
-    }
     
     /**
      * Creates a financial analyzer with specified configuration and default Haar wavelet.
@@ -136,9 +137,22 @@ public class FinancialWaveletAnalyzer {
      * Calculates wavelet-denoised Sharpe ratio by first applying wavelet transform
      * to filter out noise from the returns series.
      * 
+     * <p><strong>WARNING - Aggressive Denoising:</strong> This method uses a simple but
+     * aggressive denoising approach that zeros ALL detail coefficients, keeping only the
+     * approximation (low-frequency) components. While this effectively removes noise, it
+     * may also remove important market signals including volatility spikes, rapid price
+     * movements, and short-term trading patterns.</p>
+     * 
+     * <p><strong>Suitable for:</strong> Long-term investment analysis where smoothing is desired.
+     * <br><strong>Not suitable for:</strong> Risk management (may hide volatility), high-frequency
+     * trading, or any application requiring preservation of short-term market dynamics.</p>
+     * 
      * <p><strong>Power-of-Two Requirement:</strong> The input array must have a length
      * that is a power of two (2, 4, 8, 16, 32, 64, 128, 256, etc.). This is a fundamental
      * requirement of the Fast Wavelet Transform algorithm used internally.</p>
+     * 
+     * <p>For more sophisticated denoising with configurable thresholds, consider using
+     * the {@link ai.prophetizo.wavelet.denoising.WaveletDenoiser} class instead.</p>
      * 
      * @param returns the array of returns (must be power of 2 length for wavelet transform)
      * @return the Sharpe ratio calculated from denoised returns
@@ -150,6 +164,9 @@ public class FinancialWaveletAnalyzer {
     
     /**
      * Calculates wavelet-denoised Sharpe ratio using specified risk-free rate.
+     * 
+     * <p><strong>WARNING:</strong> Uses aggressive denoising that zeros all detail coefficients.
+     * See {@link #calculateWaveletSharpeRatio(double[])} for important limitations and warnings.</p>
      * 
      * @param returns the array of returns (must be power of 2 length for wavelet transform)
      * @param riskFreeRate the risk-free rate to use
@@ -170,10 +187,25 @@ public class FinancialWaveletAnalyzer {
         // Apply wavelet transform for denoising
         TransformResult result = transform.forward(returns);
         
-        // Simple denoising strategy: remove high-frequency noise by zeroing detail coefficients
-        // This preserves the main trend (approximation) while eliminating short-term fluctuations
-        // Note: This is a basic denoising approach. For more sophisticated denoising,
-        // consider using soft/hard thresholding on detail coefficients instead of zeroing them.
+        // WARNING: Aggressive denoising approach - zeros ALL detail coefficients
+        // This removes all high-frequency components, which may include:
+        //   - Market microstructure noise (good to remove)
+        //   - Short-term volatility patterns (possibly important)
+        //   - Rapid market movements and jumps (definitely important)
+        //   - Intraday trading signals (critical for HFT)
+        //
+        // TRADE-OFFS:
+        // - Pro: Produces very smooth, stable Sharpe ratios
+        // - Pro: Eliminates measurement noise and microstructure effects
+        // - Con: May remove legitimate market signals and volatility
+        // - Con: Can underestimate true risk by smoothing out volatility spikes
+        // - Con: Inappropriate for high-frequency or short-term trading strategies
+        //
+        // RECOMMENDATIONS:
+        // - For long-term investment analysis: May be appropriate
+        // - For risk management: Use with caution - may hide important risks
+        // - For trading signals: Not recommended - consider soft thresholding instead
+        // - Alternative: Use WaveletDenoiser class with configurable thresholds
         double[] approxCoeffs = result.approximationCoeffs();
         double[] detailCoeffs = result.detailCoeffs();
         

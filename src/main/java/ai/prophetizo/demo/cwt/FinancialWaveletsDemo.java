@@ -198,13 +198,13 @@ public class FinancialWaveletsDemo {
         System.out.println("4. Comprehensive Financial Analysis");
         System.out.println("===================================");
         
-        FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+        ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzer analyzer = new ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzer();
         
         // Market crash detection
         System.out.println("Market Crash Detection:");
         double crashThreshold = 15.0; // Threshold for crash detection
         
-        FinancialWaveletAnalyzer.CrashDetectionResult crashResult = 
+        ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzer.CrashDetectionResult crashResult = 
             analyzer.detectMarketCrashes(prices, crashThreshold);
         
         System.out.printf("Crash detection threshold: %.1f%n", crashThreshold);

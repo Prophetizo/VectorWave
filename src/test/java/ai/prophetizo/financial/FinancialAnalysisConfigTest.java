@@ -14,23 +14,88 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Financial Analysis Configuration Tests")
 class FinancialAnalysisConfigTest {
     
-    private FinancialAnalysisConfig defaultConfig;
+    private FinancialAnalysisConfig testConfig;
     
     @BeforeEach
     void setUp() {
-        defaultConfig = FinancialAnalysisConfig.defaultConfig();
+        // Create a test configuration with explicit values
+        testConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
     }
     
     @Test
-    @DisplayName("Default configuration should have expected values")
-    void testDefaultConfiguration() {
-        assertEquals(0.7, defaultConfig.getCrashAsymmetryThreshold(), 1e-10);
-        assertEquals(0.5, defaultConfig.getVolatilityLowThreshold(), 1e-10);
-        assertEquals(0.02, defaultConfig.getRegimeTrendThreshold(), 1e-10);
-        assertEquals(2.0, defaultConfig.getVolatilityHighThreshold(), 1e-10);
-        assertEquals(3.0, defaultConfig.getAnomalyDetectionThreshold(), 1e-10);
-        assertEquals(256, defaultConfig.getWindowSize());
-        assertEquals(0.95, defaultConfig.getConfidenceLevel(), 1e-10);
+    @DisplayName("Configuration should store all values correctly")
+    void testConfiguration() {
+        assertEquals(0.7, testConfig.getCrashAsymmetryThreshold(), 1e-10);
+        assertEquals(0.5, testConfig.getVolatilityLowThreshold(), 1e-10);
+        assertEquals(0.02, testConfig.getRegimeTrendThreshold(), 1e-10);
+        assertEquals(2.0, testConfig.getVolatilityHighThreshold(), 1e-10);
+        assertEquals(3.0, testConfig.getAnomalyDetectionThreshold(), 1e-10);
+        assertEquals(256, testConfig.getWindowSize());
+        assertEquals(0.95, testConfig.getConfidenceLevel(), 1e-10);
+    }
+    
+    @Test
+    @DisplayName("Builder should require all parameters")
+    void testBuilderRequiresAllParameters() {
+        // Test missing crash asymmetry threshold
+        assertThrows(IllegalStateException.class, () -> 
+            FinancialAnalysisConfig.builder()
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build()
+        );
+        
+        // Test missing volatility low threshold
+        assertThrows(IllegalStateException.class, () -> 
+            FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build()
+        );
+        
+        // Test missing window size
+        assertThrows(IllegalStateException.class, () -> 
+            FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .confidenceLevel(0.95)
+                .build()
+        );
+    }
+    
+    @Test
+    @DisplayName("Builder should validate volatility threshold relationship")
+    void testBuilderValidatesVolatilityThresholds() {
+        assertThrows(IllegalArgumentException.class, () -> 
+            FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(2.0)  // Low > High
+                .volatilityHighThreshold(1.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build()
+        );
     }
     
     @Test
@@ -138,7 +203,13 @@ class FinancialAnalysisConfigTest {
     @DisplayName("Builder should accept valid window sizes")
     void testBuilderAcceptsValidWindowSizes(int windowSize) {
         FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
                 .windowSize(windowSize)
+                .confidenceLevel(0.95)
                 .build();
         
         assertEquals(windowSize, config.getWindowSize());
@@ -162,6 +233,12 @@ class FinancialAnalysisConfigTest {
     @DisplayName("Builder should accept valid confidence levels")
     void testBuilderAcceptsValidConfidenceLevels(double confidenceLevel) {
         FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
                 .confidenceLevel(confidenceLevel)
                 .build();
         

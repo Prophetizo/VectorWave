@@ -23,16 +23,11 @@ class FinancialWaveletAnalyzerTest {
     
     @BeforeEach
     void setUp() {
-        analyzer = new FinancialWaveletAnalyzer();
+        // Use 3% risk-free rate for testing
+        FinancialConfig config = new FinancialConfig(0.03);
+        analyzer = new FinancialWaveletAnalyzer(config);
     }
     
-    @Test
-    @DisplayName("Default constructor should use default configuration")
-    void testDefaultConstructor() {
-        FinancialWaveletAnalyzer defaultAnalyzer = new FinancialWaveletAnalyzer();
-        assertEquals(FinancialConfig.DEFAULT_RISK_FREE_RATE, defaultAnalyzer.getConfig().getRiskFreeRate(), TOLERANCE);
-        assertNotNull(defaultAnalyzer.getTransform());
-    }
     
     @Test
     @DisplayName("Constructor with config should set configuration correctly")
@@ -64,7 +59,7 @@ class FinancialWaveletAnalyzerTest {
     @Test
     @DisplayName("Constructor should reject null transform")
     void testConstructorRejectsNullTransform() {
-        FinancialConfig config = new FinancialConfig();
+        FinancialConfig config = new FinancialConfig(0.04); // 4% risk-free rate
         assertThrows(IllegalArgumentException.class, () -> new FinancialWaveletAnalyzer(config, null));
     }
     

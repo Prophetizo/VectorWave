@@ -7,23 +7,28 @@ package ai.prophetizo.financial;
  * financial analysis operations including crash detection, volatility analysis,
  * and regime change detection using wavelet transforms.</p>
  * 
- * <p>All parameters have sensible defaults but can be customized for different
- * markets, instruments, or analysis requirements.</p>
+ * <p>All parameters must be explicitly specified as they are highly dependent on
+ * the specific market, instrument, time period, and analysis requirements.</p>
+ * 
+ * <p><strong>Parameter Guidelines:</strong></p>
+ * <ul>
+ *   <li><strong>Crash Asymmetry Threshold:</strong> Typically 0.6-0.8. Higher values indicate 
+ *       more severe asymmetric behavior. Equity markets often use 0.7, while forex might use 0.8.</li>
+ *   <li><strong>Volatility Thresholds:</strong> Market-specific. For equity indices: low ~0.5, 
+ *       high ~2.0. For individual stocks: low ~1.0, high ~3.0. For forex: low ~0.3, high ~1.5.</li>
+ *   <li><strong>Regime Trend Threshold:</strong> Typically 0.01-0.05. Lower for stable markets, 
+ *       higher for volatile ones.</li>
+ *   <li><strong>Anomaly Detection Threshold:</strong> Usually 2-4 standard deviations. 
+ *       3.0 catches ~0.3% outliers, 2.0 catches ~5%.</li>
+ *   <li><strong>Window Size:</strong> Must be power of 2. Common: 64 (quarterly), 128 (semi-annual), 
+ *       256 (annual), 512 (2-year). Depends on data frequency.</li>
+ *   <li><strong>Confidence Level:</strong> Typically 0.95 (95%) or 0.99 (99%). 
+ *       Higher for risk-averse applications.</li>
+ * </ul>
  * 
  * @since 1.0.0
  */
 public final class FinancialAnalysisConfig {
-    
-    // Default threshold values
-    // Crash asymmetry threshold: The analyzeCrashAsymmetry() method returns a ratio
-    // between 0 and 1.
-    private static final double DEFAULT_CRASH_ASYMMETRY_THRESHOLD = 0.7;
-    private static final double DEFAULT_VOLATILITY_LOW_THRESHOLD = 0.5;
-    private static final double DEFAULT_REGIME_TREND_THRESHOLD = 0.02;
-    private static final double DEFAULT_VOLATILITY_HIGH_THRESHOLD = 2.0;
-    private static final double DEFAULT_ANOMALY_DETECTION_THRESHOLD = 3.0;
-    private static final int DEFAULT_WINDOW_SIZE = 256;
-    private static final double DEFAULT_CONFIDENCE_LEVEL = 0.95;
     
     private final double crashAsymmetryThreshold;
     private final double volatilityLowThreshold;
@@ -37,6 +42,36 @@ public final class FinancialAnalysisConfig {
      * Creates a new FinancialAnalysisConfig with custom parameters.
      */
     private FinancialAnalysisConfig(Builder builder) {
+        // Validate that all required parameters have been set
+        if (builder.crashAsymmetryThreshold == null) {
+            throw new IllegalStateException("Crash asymmetry threshold must be specified");
+        }
+        if (builder.volatilityLowThreshold == null) {
+            throw new IllegalStateException("Volatility low threshold must be specified");
+        }
+        if (builder.volatilityHighThreshold == null) {
+            throw new IllegalStateException("Volatility high threshold must be specified");
+        }
+        if (builder.regimeTrendThreshold == null) {
+            throw new IllegalStateException("Regime trend threshold must be specified");
+        }
+        if (builder.anomalyDetectionThreshold == null) {
+            throw new IllegalStateException("Anomaly detection threshold must be specified");
+        }
+        if (builder.windowSize == null) {
+            throw new IllegalStateException("Window size must be specified");
+        }
+        if (builder.confidenceLevel == null) {
+            throw new IllegalStateException("Confidence level must be specified");
+        }
+        
+        // Validate relationship between thresholds
+        if (builder.volatilityLowThreshold >= builder.volatilityHighThreshold) {
+            throw new IllegalArgumentException(
+                "Volatility low threshold must be less than high threshold: low=" + 
+                builder.volatilityLowThreshold + ", high=" + builder.volatilityHighThreshold);
+        }
+        
         this.crashAsymmetryThreshold = builder.crashAsymmetryThreshold;
         this.volatilityLowThreshold = builder.volatilityLowThreshold;
         this.volatilityHighThreshold = builder.volatilityHighThreshold;
@@ -44,15 +79,6 @@ public final class FinancialAnalysisConfig {
         this.anomalyDetectionThreshold = builder.anomalyDetectionThreshold;
         this.windowSize = builder.windowSize;
         this.confidenceLevel = builder.confidenceLevel;
-    }
-    
-    /**
-     * Creates a default configuration with standard financial analysis parameters.
-     * 
-     * @return a FinancialAnalysisConfig with default values
-     */
-    public static FinancialAnalysisConfig defaultConfig() {
-        return new Builder().build();
     }
     
     /**
@@ -135,15 +161,16 @@ public final class FinancialAnalysisConfig {
     
     /**
      * Builder class for creating FinancialAnalysisConfig instances.
+     * All parameters are required and must be explicitly set.
      */
     public static final class Builder {
-        private double crashAsymmetryThreshold = DEFAULT_CRASH_ASYMMETRY_THRESHOLD;
-        private double volatilityLowThreshold = DEFAULT_VOLATILITY_LOW_THRESHOLD;
-        private double volatilityHighThreshold = DEFAULT_VOLATILITY_HIGH_THRESHOLD;
-        private double regimeTrendThreshold = DEFAULT_REGIME_TREND_THRESHOLD;
-        private double anomalyDetectionThreshold = DEFAULT_ANOMALY_DETECTION_THRESHOLD;
-        private int windowSize = DEFAULT_WINDOW_SIZE;
-        private double confidenceLevel = DEFAULT_CONFIDENCE_LEVEL;
+        private Double crashAsymmetryThreshold;
+        private Double volatilityLowThreshold;
+        private Double volatilityHighThreshold;
+        private Double regimeTrendThreshold;
+        private Double anomalyDetectionThreshold;
+        private Integer windowSize;
+        private Double confidenceLevel;
         
         /**
          * Sets the crash asymmetry threshold.
@@ -252,8 +279,10 @@ public final class FinancialAnalysisConfig {
         
         /**
          * Builds the FinancialAnalysisConfig with the specified parameters.
+         * All parameters must have been set before calling build().
          * 
          * @return a new FinancialAnalysisConfig instance
+         * @throws IllegalStateException if any required parameter has not been set
          */
         public FinancialAnalysisConfig build() {
             return new FinancialAnalysisConfig(this);

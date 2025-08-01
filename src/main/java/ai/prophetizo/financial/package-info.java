@@ -46,9 +46,8 @@
  * 
  * <h3>Wavelet-Based Sharpe Ratio</h3>
  * <pre>{@code
- * // Configure risk-free rate
- * FinancialConfig config = new FinancialConfig()
- *     .withRiskFreeRate(0.045);  // 4.5% annual
+ * // Configure risk-free rate (required - no default)
+ * FinancialConfig config = new FinancialConfig(0.045);  // 4.5% annual
  *     
  * FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
  * 

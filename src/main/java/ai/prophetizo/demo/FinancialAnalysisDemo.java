@@ -26,13 +26,23 @@ public class FinancialAnalysisDemo {
     }
     
     private static void demonstrateDefaultConfiguration() {
-        System.out.println("1. DEFAULT CONFIGURATION");
-        System.out.println("========================");
+        System.out.println("1. STANDARD CONFIGURATION");
+        System.out.println("==========================");
         
-        FinancialAnalyzer analyzer = FinancialAnalyzer.withDefaultConfig();
-        FinancialAnalysisConfig config = analyzer.getConfig();
+        // Create a standard configuration with typical market analysis values
+        FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
         
-        System.out.println("Default thresholds:");
+        FinancialAnalyzer analyzer = new FinancialAnalyzer(config);
+        
+        System.out.println("Standard market analysis thresholds:");
         System.out.printf("   Crash Asymmetry Threshold:     %.2f%n", config.getCrashAsymmetryThreshold());
         System.out.printf("   Volatility Low Threshold:      %.2f%n", config.getVolatilityLowThreshold());
         System.out.printf("   Volatility High Threshold:     %.2f%n", config.getVolatilityHighThreshold());
@@ -87,7 +97,18 @@ public class FinancialAnalysisDemo {
         System.out.println("3. DIFFERENT MARKET SCENARIOS");
         System.out.println("==============================");
         
-        FinancialAnalyzer analyzer = FinancialAnalyzer.withDefaultConfig();
+        // Create analyzer with standard configuration
+        FinancialAnalysisConfig standardConfig = FinancialAnalysisConfig.builder()
+                .crashAsymmetryThreshold(0.7)
+                .volatilityLowThreshold(0.5)
+                .volatilityHighThreshold(2.0)
+                .regimeTrendThreshold(0.02)
+                .anomalyDetectionThreshold(3.0)
+                .windowSize(256)
+                .confidenceLevel(0.95)
+                .build();
+        
+        FinancialAnalyzer analyzer = new FinancialAnalyzer(standardConfig);
         
         // Market crash scenario
         double[] crashPrices = createMarketCrashData();

@@ -2,23 +2,29 @@ package ai.prophetizo.financial;
 
 /**
  * Configuration class for financial analysis parameters.
+ * 
+ * <p>This class requires users to explicitly specify financial parameters
+ * such as the risk-free rate, ensuring that analysis is performed with
+ * appropriate market-specific values rather than potentially outdated defaults.</p>
+ * 
+ * <p><strong>Risk-Free Rate Guidelines:</strong></p>
+ * <ul>
+ *   <li>US Treasury Bills (3-month) for short-term analysis</li>
+ *   <li>US Treasury Notes (10-year) for long-term analysis</li>
+ *   <li>Central bank rates for the relevant currency</li>
+ *   <li>High-grade corporate bonds for corporate finance</li>
+ * </ul>
+ * 
+ * <p>Example rates across different periods:</p>
+ * <ul>
+ *   <li>2020-2021: Near 0% (pandemic era)</li>
+ *   <li>2023-2024: 4-5% (rate hike cycle)</li>
+ *   <li>Historical average (1962-2023): ~4.4%</li>
+ * </ul>
  */
 public class FinancialConfig {
     
-    /**
-     * Default risk-free rate (annual, as a decimal).
-     * Current US Treasury 10-year rate approximation: 4.5%
-     */
-    public static final double DEFAULT_RISK_FREE_RATE = 0.045;
-    
     private final double riskFreeRate;
-    
-    /**
-     * Creates a financial configuration with default risk-free rate.
-     */
-    public FinancialConfig() {
-        this(DEFAULT_RISK_FREE_RATE);
-    }
     
     /**
      * Creates a financial configuration with specified risk-free rate.

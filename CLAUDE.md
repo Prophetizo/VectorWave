@@ -4,6 +4,22 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Recent Updates (August 2025)
 
+### Removal of Default Values
+- **BREAKING CHANGE**: Removed all default values from financial configurations
+- `FinancialConfig` no longer has a default constructor or default risk-free rate
+- `FinancialAnalysisConfig` no longer has `defaultConfig()` method or any default constants
+- `FinancialAnalyzer.withDefaultConfig()` has been removed
+- `FinancialWaveletAnalyzer` default constructor has been removed
+- All financial parameters must now be explicitly configured based on:
+  - Current market conditions
+  - Geographic region (US, EU, Asia, etc.)
+  - Time period of analysis
+  - Asset class being analyzed
+- Updated all tests and demos to use explicit configurations
+- Updated documentation to explain why defaults were removed
+
+## Recent Updates (August 2025)
+
 ### Code Quality Improvements
 - Extracted duplicate `isPowerOfTwo` validation logic to `ValidationUtils` utility class
 - Fixed inefficient `OptimizedTransformEngine` creation in batch operations (now reused)

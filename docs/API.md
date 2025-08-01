@@ -307,9 +307,8 @@ double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 Configurable financial time series analysis.
 
 ```java
-// Creation
+// Creation - configuration required
 FinancialAnalyzer analyzer = new FinancialAnalyzer(config);
-FinancialAnalyzer analyzer = FinancialAnalyzer.withDefaultConfig();
 
 // Analysis methods
 double analyzeCrashAsymmetry(double[] prices)
@@ -331,18 +330,16 @@ FinancialAnalysisConfig getConfig()
 Builder-pattern configuration for financial analysis.
 
 ```java
+// All parameters are required - no defaults
 FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
-    .crashAsymmetryThreshold(0.7)      // Default: 0.7
-    .volatilityLowThreshold(0.5)       // Default: 0.5
-    .volatilityHighThreshold(2.0)      // Default: 2.0
-    .regimeTrendThreshold(0.02)        // Default: 0.02
-    .anomalyDetectionThreshold(3.0)    // Default: 3.0 std devs
-    .windowSize(256)                   // Must be power of 2
-    .confidenceLevel(0.95)             // 0 < level < 1
+    .crashAsymmetryThreshold(0.7)      // Required, > 0
+    .volatilityLowThreshold(0.5)       // Required, > 0
+    .volatilityHighThreshold(2.0)      // Required, > low threshold
+    .regimeTrendThreshold(0.02)        // Required, > 0
+    .anomalyDetectionThreshold(3.0)    // Required, > 0 (std devs)
+    .windowSize(256)                   // Required, power of 2
+    .confidenceLevel(0.95)             // Required, 0 < level < 1
     .build();
-
-// Default configuration
-FinancialAnalysisConfig.defaultConfig()
 ```
 
 ### FinancialWaveletAnalyzer
@@ -350,8 +347,7 @@ FinancialAnalysisConfig.defaultConfig()
 Wavelet-based financial analysis with risk-free rate configuration.
 
 ```java
-// Creation
-FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+// Creation - FinancialConfig required
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config, transform);
 
@@ -361,9 +357,8 @@ double calculateSharpeRatio(double[] returns, double riskFreeRate)
 double calculateWaveletSharpeRatio(double[] returns)  // Requires power-of-2 length
 double calculateWaveletSharpeRatio(double[] returns, double riskFreeRate)
 
-// Configuration
-FinancialConfig config = new FinancialConfig()
-    .withRiskFreeRate(0.045);  // 4.5% annual
+// Configuration - risk-free rate is required
+FinancialConfig config = new FinancialConfig(0.045);  // 4.5% annual
 ```
 
 ## Streaming API

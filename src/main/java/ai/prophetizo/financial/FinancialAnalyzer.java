@@ -42,14 +42,6 @@ public final class FinancialAnalyzer {
                 .create(Daubechies.DB4);
     }
     
-    /**
-     * Creates a new FinancialAnalyzer with default configuration.
-     * 
-     * @return a new FinancialAnalyzer with default settings
-     */
-    public static FinancialAnalyzer withDefaultConfig() {
-        return new FinancialAnalyzer(FinancialAnalysisConfig.defaultConfig());
-    }
     
     /**
      * Analyzes crash asymmetry in the financial time series.

@@ -28,11 +28,13 @@ public class FinancialDemo {
     }
     
     private static void demonstrateDefaultConfiguration(double[] returns) {
-        System.out.println("1. DEFAULT CONFIGURATION");
-        System.out.println("========================");
+        System.out.println("1. STANDARD CONFIGURATION");
+        System.out.println("==========================");
         
-        FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
-        System.out.println("Using default risk-free rate: " + 
+        // Create configuration with typical risk-free rate (e.g., 3% annual)
+        FinancialConfig config = new FinancialConfig(0.03);
+        FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
+        System.out.println("Using risk-free rate: " + 
                          String.format("%.3f%%", analyzer.getConfig().getRiskFreeRate() * 100));
         
         double sharpeRatio = analyzer.calculateSharpeRatio(returns);
@@ -69,7 +71,9 @@ public class FinancialDemo {
         System.out.println("Original Returns: " + Arrays.toString(returns));
         System.out.println("Noisy Returns:    " + Arrays.toString(noisyReturns));
         
-        FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+        // Create analyzer with a typical risk-free rate
+        FinancialConfig config = new FinancialConfig(0.03); // 3% annual
+        FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
         
         double regularSharpe = analyzer.calculateSharpeRatio(noisyReturns);
         double waveletSharpe = analyzer.calculateWaveletSharpeRatio(noisyReturns);
