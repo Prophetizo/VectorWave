@@ -62,8 +62,21 @@ public interface Factory<T, C> {
     /**
      * Creates a new instance with default configuration.
      *
-     * @return a new instance of type T
-     * @throws UnsupportedOperationException if this factory requires configuration
+     * <p>The definition of "default configuration" is implementation-specific and should be
+     * documented by each factory implementation. Common interpretations include:</p>
+     * <ul>
+     *   <li>Most commonly used settings for general-purpose use</li>
+     *   <li>Performance-optimized settings for the current platform</li>
+     *   <li>Conservative settings that work across all platforms</li>
+     *   <li>Settings that match the library's historical behavior</li>
+     * </ul>
+     *
+     * <p>Implementations should clearly document their default configuration choices
+     * in their class-level documentation.</p>
+     *
+     * @return a new instance of type T with implementation-specific default configuration
+     * @throws UnsupportedOperationException if this factory requires explicit configuration
+     *         and cannot provide meaningful defaults
      */
     T create();
     

@@ -68,10 +68,11 @@ public class WaveletTransform {
             throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
 
-        // Warn about problematic combinations
+        // Check for problematic combinations
         if (wavelet.getType() == WaveletType.BIORTHOGONAL && boundaryMode == BoundaryMode.ZERO_PADDING) {
-            System.err.println("WARNING: Biorthogonal wavelets with ZERO_PADDING boundary mode may produce " +
-                             "high reconstruction errors. Consider using PERIODIC boundary mode instead.");
+            throw new InvalidConfigurationException(
+                "Biorthogonal wavelets with ZERO_PADDING boundary mode may produce high reconstruction errors. " +
+                "Consider using PERIODIC boundary mode instead. (See issue #138)");
         }
 
         // Create appropriate operations implementation

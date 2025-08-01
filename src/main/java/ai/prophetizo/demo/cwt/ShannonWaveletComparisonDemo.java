@@ -194,8 +194,8 @@ public class ShannonWaveletComparisonDemo {
             ClassicalShannonWavelet classical = new ClassicalShannonWavelet();
             ShannonGaborWavelet shanGabor = new ShannonGaborWavelet();
             
-            // Warm up
-            for (int i = 0; i < 10; i++) {
+            // Warm up (1000 iterations for proper JIT optimization)
+            for (int i = 0; i < 1000; i++) {
                 classical.psi(Math.random() * 10);
                 shanGabor.psi(Math.random() * 10);
             }

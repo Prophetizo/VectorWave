@@ -35,6 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * for read-heavy workloads typical in wavelet transform applications.</p>
  */
 public final class WaveletRegistry {
+    
+    /**
+     * Stores warnings from the last provider loading attempt.
+     * Thread-safe list for collecting provider loading issues.
+     */
+    private static final List<String> loadWarnings = Collections.synchronizedList(new ArrayList<>());
 
     private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
     private static final Map<WaveletType, List<String>> WAVELETS_BY_TYPE = new EnumMap<>(WaveletType.class);
@@ -221,11 +227,30 @@ public final class WaveletRegistry {
     }
     
     /**
+     * Gets warnings from the last provider loading attempt.
+     * 
+     * @return unmodifiable list of warning messages from provider loading
+     */
+    public static List<String> getLoadWarnings() {
+        return Collections.unmodifiableList(new ArrayList<>(loadWarnings));
+    }
+    
+    /**
+     * Clears provider loading warnings.
+     */
+    public static void clearLoadWarnings() {
+        loadWarnings.clear();
+    }
+    
+    /**
      * Reloads the registry by re-discovering wavelets via ServiceLoader.
      * This can be useful for dynamic plugin scenarios.
+     * 
+     * <p>Any warnings from provider loading can be retrieved via {@link #getLoadWarnings()}</p>
      */
     public static void reload() {
         synchronized (INIT_LOCK) {
+            loadWarnings.clear(); // Clear previous warnings
             // Create temporary collections for atomic swap
             Map<String, Wavelet> newWavelets = new ConcurrentHashMap<>();
             Map<WaveletType, List<String>> newWaveletsByType = new EnumMap<>(WaveletType.class);
@@ -249,13 +274,15 @@ public final class WaveletRegistry {
                     }
                 } catch (NoClassDefFoundError e) {
                     // During reload, it's possible for a provider to have issues
-                    // Log and skip this provider rather than failing entirely
-                    System.err.println("Warning: Missing dependency for provider " + 
-                                     provider.getClass().getName() + ": " + e.getMessage());
+                    // Collect warning and skip this provider rather than failing entirely
+                    String warning = "Missing dependency for provider " + 
+                                   provider.getClass().getName() + ": " + e.getMessage();
+                    loadWarnings.add(warning);
                 } catch (Exception e) {
-                    // Log and skip problematic providers during reload
-                    System.err.println("Warning: Error loading wavelets from provider " + 
-                                     provider.getClass().getName() + ": " + e.getMessage());
+                    // Collect warning and skip problematic providers during reload
+                    String warning = "Error loading wavelets from provider " + 
+                                   provider.getClass().getName() + ": " + e.getMessage();
+                    loadWarnings.add(warning);
                 }
             }
             

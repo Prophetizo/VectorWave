@@ -6,6 +6,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 import java.util.function.IntFunction;
 
 /**
@@ -128,7 +129,7 @@ public final class CWTMemoryPool {
         
         int size = array.length;
         // Only pool power-of-2 sizes
-        if (!isPowerOfTwo(size)) return;
+        if (!ValidationUtils.isPowerOfTwo(size)) return;
         
         Queue<double[]> pool = arrayPools.get(size);
         if (pool != null && pool.size() < maxPoolSizePerBucket) {
@@ -251,10 +252,6 @@ public final class CWTMemoryPool {
         n |= n >> 8;
         n |= n >> 16;
         return n + 1;
-    }
-    
-    private static boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
     }
     
     /**

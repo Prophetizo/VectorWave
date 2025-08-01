@@ -69,12 +69,19 @@ public final class FactoryRegistry {
             throw new IllegalArgumentException("Factory key cannot be null or empty");
         }
         if (factory == null) {
-            throw new IllegalArgumentException("Factory cannot be null");
+            throw new IllegalArgumentException(
+                String.format("Cannot register null factory for key '%s'", key));
         }
         
         Factory<?, ?> existing = factories.putIfAbsent(key, factory);
         if (existing != null) {
-            throw new IllegalStateException("Factory already registered with key: " + key);
+            throw new IllegalStateException(
+                String.format("Factory already registered with key '%s'. " +
+                    "Existing factory: %s (type: %s), " +
+                    "Attempted to register: %s (type: %s)",
+                    key,
+                    existing.getDescription(), existing.getClass().getName(),
+                    factory.getDescription(), factory.getClass().getName()));
         }
     }
     
@@ -173,24 +180,48 @@ public final class FactoryRegistry {
         
         // Register the default factories if they haven't been registered yet
         if (!registry.isRegistered("waveletOps")) {
-            registry.register("waveletOps", 
-                ai.prophetizo.wavelet.WaveletOpsFactory.getInstance());
+            try {
+                registry.register("waveletOps", 
+                    ai.prophetizo.wavelet.WaveletOpsFactory.getInstance());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                    "Failed to register default WaveletOpsFactory with key 'waveletOps': " + 
+                    e.getMessage(), e);
+            }
         }
         
         if (!registry.isRegistered("waveletTransform")) {
             // WaveletTransformFactory is instance-based, so we create a shared instance
-            registry.register("waveletTransform", 
-                new ai.prophetizo.wavelet.WaveletTransformFactory());
+            try {
+                registry.register("waveletTransform", 
+                    new ai.prophetizo.wavelet.WaveletTransformFactory());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                    "Failed to register default WaveletTransformFactory with key 'waveletTransform': " + 
+                    e.getMessage(), e);
+            }
         }
         
         if (!registry.isRegistered("cwtTransform")) {
-            registry.register("cwtTransform", 
-                ai.prophetizo.wavelet.cwt.CWTFactory.getInstance());
+            try {
+                registry.register("cwtTransform", 
+                    ai.prophetizo.wavelet.cwt.CWTFactory.getInstance());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                    "Failed to register default CWTFactory with key 'cwtTransform': " + 
+                    e.getMessage(), e);
+            }
         }
         
         if (!registry.isRegistered("streamingDenoiser")) {
-            registry.register("streamingDenoiser", 
-                ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory.getInstance());
+            try {
+                registry.register("streamingDenoiser", 
+                    ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory.getInstance());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                    "Failed to register default StreamingDenoiserFactory with key 'streamingDenoiser': " + 
+                    e.getMessage(), e);
+            }
         }
     }
 }

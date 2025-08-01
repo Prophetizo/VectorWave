@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
  * Custom assertions for wavelet transform testing.
@@ -127,7 +128,7 @@ public final class WaveletAssertions {
         assertEquals(expectedLength, signal.length,
             String.format("Signal has incorrect length: expected=%d, actual=%d",
                 expectedLength, signal.length));
-        assertTrue(isPowerOfTwo(expectedLength),
+        assertTrue(ValidationUtils.isPowerOfTwo(expectedLength),
             "Expected length must be a power of 2");
     }
     
@@ -237,14 +238,4 @@ public final class WaveletAssertions {
     }
     
     // === Helper Methods ===
-    
-    /**
-     * Checks if a number is a power of two.
-     * 
-     * @param n the number to check
-     * @return true if n is a power of two
-     */
-    private static boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
-    }
 }

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.ValidationUtils;
 import static java.util.Arrays.fill;
 
 /**
@@ -72,7 +73,7 @@ public final class ScalarOps {
         int filterLen = filter.length;
 
         // Use specialized implementations for small filters and signals
-        if (length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(length)) {
+        if (length <= SMALL_SIGNAL_THRESHOLD && ValidationUtils.isPowerOfTwo(length)) {
             if (filterLen == 2) {
                 convolveAndDownsamplePeriodicHaar(signal, offset, length, filter, output);
                 return;
@@ -173,7 +174,7 @@ public final class ScalarOps {
         int filterLen = filter.length;
 
         // Use optimized version for small power-of-2 signals
-        if (outputLen <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(outputLen)) {
+        if (outputLen <= SMALL_SIGNAL_THRESHOLD && ValidationUtils.isPowerOfTwo(outputLen)) {
             if (filterLen == 2) {
                 upsampleAndConvolvePeriodicHaar(coeffs, filter, output);
                 return;
@@ -235,12 +236,6 @@ public final class ScalarOps {
 
     // ========== Optimized implementations for small signals ==========
 
-    /**
-     * Checks if a number is a power of two.
-     */
-    private static boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
-    }
 
     /**
      * Optimized convolution for power-of-2 signal lengths using bitwise modulo.
@@ -437,7 +432,7 @@ public final class ScalarOps {
         int lowFilterLen = lowFilter.length;
         int highFilterLen = highFilter.length;
 
-        if (length <= SMALL_SIGNAL_THRESHOLD && isPowerOfTwo(length)) {
+        if (length <= SMALL_SIGNAL_THRESHOLD && ValidationUtils.isPowerOfTwo(length)) {
             int lengthMask = length - 1;
 
             for (int i = 0; i < approxCoeffs.length; i++) {

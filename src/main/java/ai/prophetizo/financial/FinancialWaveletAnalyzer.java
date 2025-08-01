@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
  * Financial analysis using wavelet transforms.
@@ -134,7 +135,7 @@ public class FinancialWaveletAnalyzer {
         if (returns.length == 0) {
             throw new IllegalArgumentException("Returns array cannot be empty");
         }
-        if (!isPowerOfTwo(returns.length)) {
+        if (!ValidationUtils.isPowerOfTwo(returns.length)) {
             throw new IllegalArgumentException("Returns array length must be a power of 2 for wavelet transform: " + returns.length);
         }
         
@@ -197,9 +198,5 @@ public class FinancialWaveletAnalyzer {
             sumSquaredDiffs += diff * diff;
         }
         return Math.sqrt(sumSquaredDiffs / (values.length - 1)); // Sample standard deviation
-    }
-    
-    private boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
     }
 }
