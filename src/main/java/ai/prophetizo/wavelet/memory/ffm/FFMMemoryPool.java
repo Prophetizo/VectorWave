@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.Objects;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Memory pool using Foreign Function & Memory API for efficient allocation.
@@ -22,6 +24,7 @@ import java.util.Objects;
  * @since 2.0.0
  */
 public final class FFMMemoryPool implements AutoCloseable {
+    private static final Logger LOGGER = Logger.getLogger(FFMMemoryPool.class.getName());
     
     // Pool configuration
     private static final int MAX_SEGMENTS_PER_SIZE = 16;
@@ -126,8 +129,14 @@ public final class FFMMemoryPool implements AutoCloseable {
      * @param segment the segment to release
      */
     public void release(MemorySegment segment) {
-        if (segment == null || !segment.scope().equals(arena.scope())) {
-            return; // Not from this pool
+        if (segment == null) {
+            return;
+        }
+        
+        if (!segment.scope().equals(arena.scope())) {
+            LOGGER.log(Level.WARNING, "Attempted to release segment from different arena. " +
+                    "This may indicate a programming error where segments are being mixed between pools.");
+            return;
         }
         
         long elementCount = FFMArrayAllocator.elementCount(segment);

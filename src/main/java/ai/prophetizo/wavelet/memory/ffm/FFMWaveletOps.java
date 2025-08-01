@@ -18,6 +18,13 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Direct integration with native libraries</li>
  * </ul>
  * 
+ * <p><strong>Boundary Mode Support:</strong></p>
+ * <ul>
+ *   <li><strong>Downsampling operations:</strong> All boundary modes supported (PERIODIC, ZERO_PADDING, SYMMETRIC, CONSTANT)</li>
+ *   <li><strong>Upsampling operations:</strong> Only PERIODIC and ZERO_PADDING modes implemented.
+ *       SYMMETRIC and CONSTANT modes will throw {@link UnsupportedOperationException}</li>
+ * </ul>
+ * 
  * @since 2.0.0
  */
 public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {

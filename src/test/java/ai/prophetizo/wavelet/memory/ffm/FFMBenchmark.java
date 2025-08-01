@@ -69,7 +69,7 @@ public class FFMBenchmark {
         pooledTransform = new WaveletTransformPool(wavelet, BoundaryMode.PERIODIC);
         
         ffmPool = new FFMMemoryPool();
-        ffmTransform = new FFMWaveletTransform(wavelet, BoundaryMode.PERIODIC, ffmPool, null);
+        ffmTransform = new FFMWaveletTransform(wavelet, BoundaryMode.PERIODIC, ffmPool);
         
         // Pre-warm FFM pool
         ffmPool.prewarm(signalSize / 2, signalSize);

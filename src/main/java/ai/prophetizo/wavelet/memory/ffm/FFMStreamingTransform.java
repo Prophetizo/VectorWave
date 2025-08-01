@@ -117,7 +117,12 @@ public class FFMStreamingTransform implements AutoCloseable {
         long available = bufferCapacity - (writePos - readPosition.get());
         
         if (length > available) {
-            throw new IllegalStateException("Ring buffer overflow");
+            throw new IllegalStateException(String.format(
+                "Ring buffer overflow: requested %d elements but only %d available " +
+                "(capacity=%d, writePos=%d, readPos=%d, used=%d)",
+                length, available, bufferCapacity, writePos, readPosition.get(),
+                writePos - readPosition.get()
+            ));
         }
         
         // Handle wrap-around
