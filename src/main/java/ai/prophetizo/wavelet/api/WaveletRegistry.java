@@ -73,15 +73,10 @@ public final class WaveletRegistry {
                             }
                         }
                     }
-                } catch (NoClassDefFoundError | ClassNotFoundException e) {
+                } catch (NoClassDefFoundError e) {
                     throw new RuntimeException(
                         "Missing dependency for provider " + provider.getClass().getName() + 
                         ". Check that all required classes are on the classpath.", 
-                        e);
-                } catch (InstantiationException | IllegalAccessException e) {
-                    throw new RuntimeException(
-                        "Cannot instantiate wavelets from provider " + provider.getClass().getName() + 
-                        ". Ensure wavelets have accessible constructors.", 
                         e);
                 } catch (NullPointerException e) {
                     throw new RuntimeException(
@@ -90,7 +85,7 @@ public final class WaveletRegistry {
                         e);
                 } catch (Exception e) {
                     throw new RuntimeException(
-                        "Unexpected error loading wavelets from provider " + provider.getClass().getName() + 
+                        "Error loading wavelets from provider " + provider.getClass().getName() + 
                         ": " + e.getClass().getSimpleName() + " - " + e.getMessage(), 
                         e);
                 }
@@ -231,12 +226,46 @@ public final class WaveletRegistry {
      */
     public static void reload() {
         synchronized (INIT_LOCK) {
+            // Create temporary collections for atomic swap
+            Map<String, Wavelet> newWavelets = new ConcurrentHashMap<>();
+            Map<WaveletType, List<String>> newWaveletsByType = new EnumMap<>(WaveletType.class);
+            
+            // Discover wavelets into temporary collections
+            ServiceLoader<WaveletProvider> loader = ServiceLoader.load(WaveletProvider.class);
+            
+            for (WaveletProvider provider : loader) {
+                try {
+                    List<Wavelet> wavelets = provider.getWavelets();
+                    if (wavelets != null) {
+                        for (Wavelet wavelet : wavelets) {
+                            if (wavelet != null) {
+                                // Register in temporary collections
+                                newWavelets.put(wavelet.name().toLowerCase(), wavelet);
+                                WaveletType type = wavelet.getType();
+                                newWaveletsByType.computeIfAbsent(type, k -> new ArrayList<>())
+                                        .add(wavelet.name());
+                            }
+                        }
+                    }
+                } catch (NoClassDefFoundError e) {
+                    // During reload, it's possible for a provider to have issues
+                    // Log and skip this provider rather than failing entirely
+                    System.err.println("Warning: Missing dependency for provider " + 
+                                     provider.getClass().getName() + ": " + e.getMessage());
+                } catch (Exception e) {
+                    // Log and skip problematic providers during reload
+                    System.err.println("Warning: Error loading wavelets from provider " + 
+                                     provider.getClass().getName() + ": " + e.getMessage());
+                }
+            }
+            
+            // Atomic swap - clear and replace
             WAVELETS.clear();
+            WAVELETS.putAll(newWavelets);
             synchronized (WAVELETS_BY_TYPE) {
                 WAVELETS_BY_TYPE.clear();
+                WAVELETS_BY_TYPE.putAll(newWaveletsByType);
             }
-            initialized = false;
-            initialize();
         }
     }
 }
