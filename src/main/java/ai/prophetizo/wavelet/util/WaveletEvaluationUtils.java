@@ -1,6 +1,5 @@
 package ai.prophetizo.wavelet.util;
 
-import ai.prophetizo.wavelet.Complex;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 

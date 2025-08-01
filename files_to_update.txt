@@ -1,0 +1,5 @@
+src/main/java/ai/prophetizo/wavelet/cwt/finance/PaulWavelet.java
+src/main/java/ai/prophetizo/demo/cwt/AdvancedComplexCWTDemo.java
+src/main/java/ai/prophetizo/demo/cwt/ComplexCWTDemo.java
+src/main/java/ai/prophetizo/demo/RealFFTDemo.java
+EOF < /dev/null

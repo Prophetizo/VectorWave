@@ -1,4 +1,4 @@
-package ai.prophetizo.wavelet;
+package ai.prophetizo.wavelet.util;
 
 /**
  * A record representing a complex number with real and imaginary parts.
