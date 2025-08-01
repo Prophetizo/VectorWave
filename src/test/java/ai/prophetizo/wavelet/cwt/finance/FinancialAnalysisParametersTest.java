@@ -33,6 +33,7 @@ class FinancialAnalysisParametersTest {
         // Risk assessment
         assertEquals(0.02, params.getDefaultAverageVolatility());
         assertEquals(0.5, params.getBaseRiskLevel());
+        assertEquals(0.03, params.getAnnualRiskFreeRate());
     }
     
     @Test
@@ -76,6 +77,10 @@ class FinancialAnalysisParametersTest {
         // Invalid risk level
         assertThrows(IllegalArgumentException.class, 
             () -> builder.baseRiskLevel(1.5));
+        
+        // Negative risk-free rate
+        assertThrows(IllegalArgumentException.class,
+            () -> builder.annualRiskFreeRate(-0.01));
     }
     
     @Test
@@ -153,5 +158,36 @@ class FinancialAnalysisParametersTest {
         assertEquals(3, params.getOptimization().getVolatilityDogOrder());
         assertEquals(3, params.getOptimization().getCycleShannonFb());
         assertEquals(4, params.getOptimization().getCycleShannonFc());
+    }
+    
+    @Test
+    @DisplayName("Should support various risk-free rates")
+    void testRiskFreeRateConfigurations() {
+        // Test various risk-free rate scenarios
+        
+        // US Treasury rate scenario
+        FinancialAnalysisParameters usTreasuryParams = FinancialAnalysisParameters.builder()
+            .annualRiskFreeRate(0.045) // 4.5% annual rate
+            .build();
+        assertEquals(0.045, usTreasuryParams.getAnnualRiskFreeRate());
+        
+        // Zero risk-free rate (e.g., during zero interest rate policy)
+        FinancialAnalysisParameters zeroRateParams = FinancialAnalysisParameters.builder()
+            .annualRiskFreeRate(0.0)
+            .build();
+        assertEquals(0.0, zeroRateParams.getAnnualRiskFreeRate());
+        
+        // High interest rate environment
+        FinancialAnalysisParameters highRateParams = FinancialAnalysisParameters.builder()
+            .annualRiskFreeRate(0.08) // 8% annual rate
+            .build();
+        assertEquals(0.08, highRateParams.getAnnualRiskFreeRate());
+        
+        // European negative rate scenario (should validate to allow zero but not negative)
+        assertThrows(IllegalArgumentException.class, () -> 
+            FinancialAnalysisParameters.builder()
+                .annualRiskFreeRate(-0.005) // -0.5% annual rate
+                .build()
+        );
     }
 }

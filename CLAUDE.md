@@ -188,6 +188,7 @@ double[][] instFreq = result.getInstantaneousFrequency();
 FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
     .crashAsymmetryThreshold(15.0)  // More sensitive for volatile markets
     .volatilityThresholds(0.3, 1.2, 2.5)  // Custom volatility bands
+    .annualRiskFreeRate(0.045)  // 4.5% annual risk-free rate for Sharpe ratio
     .build();
 
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(params);

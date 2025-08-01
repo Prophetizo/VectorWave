@@ -141,6 +141,13 @@ PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
 var crashResult = analyzer.detectMarketCrashes(priceData, threshold);
 
+// Configure financial parameters including risk-free rate
+FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
+    .annualRiskFreeRate(0.045)  // 4.5% for Sharpe ratio calculation
+    .volatilityThresholds(0.5, 1.5, 3.0)
+    .build();
+FinancialWaveletAnalyzer customAnalyzer = new FinancialWaveletAnalyzer(params);
+
 // FFT-accelerated CWT for large signals
 CWTConfig config = CWTConfig.builder()
     .enableFFT(true)
