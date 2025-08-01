@@ -80,11 +80,17 @@ public class WaveletTransform {
         this.operations = WaveletOpsFactory.create(config);
         this.useVector = operations.getImplementationType().startsWith("Vector");
         
-        // Create a reusable engine for batch operations
-        // Use single-threaded engine to avoid nested parallelism when called from batch methods
+        // Create a dedicated engine instance specifically for the forwardBatch() method
+        // This engine is configured with single-threaded execution to prevent nested parallelism issues
+        // when forwardBatch() is called from already-parallel contexts (e.g., from user's parallel streams).
+        // 
+        // Important notes:
+        // - This batchEngine is ONLY used by forwardBatch() for its internal SIMD optimizations
+        // - Regular forward() and inverse() operations use the main 'operations' instance
+        // - inverseBatch() currently processes serially and doesn't use this engine
         OptimizedTransformEngine.EngineConfig engineConfig = new OptimizedTransformEngine.EngineConfig()
-            .withParallelism(1)
-            .withMemoryPool(true); // Enable memory pooling for batch operations
+            .withParallelism(1)  // Single-threaded to avoid nested parallelism in batch methods
+            .withMemoryPool(true); // Enable memory pooling for efficiency in batch operations
         this.batchEngine = new OptimizedTransformEngine(engineConfig);
     }
 
@@ -226,7 +232,9 @@ public class WaveletTransform {
             ValidationUtils.validateSignal(signals[i], "signals[" + i + "]");
         }
         
-        // Use the pre-configured engine for batch processing
+        // Use the pre-configured single-threaded engine for batch processing
+        // This avoids nested parallelism issues if forwardBatch is called from a parallel context,
+        // while still benefiting from SIMD vectorization within the batch processing
         return batchEngine.transformBatch(signals, wavelet, boundaryMode);
     }
     
