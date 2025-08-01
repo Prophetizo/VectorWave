@@ -31,7 +31,7 @@ public final class VectorLengthValidator {
         if (vectorLength < MIN_VECTOR_LENGTH || vectorLength > MAX_VECTOR_LENGTH) {
             throw new IllegalStateException(String.format(
                 "%s: Unexpected vector length: %d (expected %d-%d doubles). Platform: %s. " +
-                "Override with -Dvectorwave.max.vector.length=N",
+                "Override with -Dai.prophetizo.wavelet.max.vector.length=N",
                 context, vectorLength, MIN_VECTOR_LENGTH, MAX_VECTOR_LENGTH, 
                 System.getProperty("os.arch")
             ));

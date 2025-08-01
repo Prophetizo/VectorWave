@@ -54,11 +54,29 @@ public class BatchMemoryLayout implements AutoCloseable {
      * @param signalLength Length of each signal
      */
     public BatchMemoryLayout(int batchSize, int signalLength) {
+        this(batchSize, signalLength, false);
+    }
+    
+    /**
+     * Creates a new batch memory layout with optional optimization.
+     * 
+     * @param batchSize Number of signals in the batch
+     * @param signalLength Length of each signal
+     * @param optimize If true, may use a larger internal batch size for better SIMD performance
+     */
+    private BatchMemoryLayout(int batchSize, int signalLength, boolean optimize) {
         this.batchSize = batchSize;
         this.signalLength = signalLength;
         
-        // Pad to vector length for optimal SIMD
-        this.paddedBatchSize = ((batchSize + VECTOR_LENGTH - 1) / VECTOR_LENGTH) * VECTOR_LENGTH;
+        // Calculate padded batch size
+        if (optimize && batchSize < VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER) {
+            // For small batches, pad to at least MIN_BATCH_SIZE_MULTIPLIER x vector length
+            this.paddedBatchSize = VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER;
+        } else {
+            // Standard padding to vector length boundary
+            this.paddedBatchSize = ((batchSize + VECTOR_LENGTH - 1) / VECTOR_LENGTH) * VECTOR_LENGTH;
+        }
+        
         this.paddedSignalLength = signalLength; // Can be padded if needed
         
         // Allocate aligned memory
@@ -310,18 +328,13 @@ public class BatchMemoryLayout implements AutoCloseable {
     
     /**
      * Creates a batch layout optimized for the current platform.
+     * Note: The actual batch size used internally may be larger than requested
+     * for optimal SIMD performance, but the layout will correctly handle the
+     * requested batch size in all operations.
      */
     public static BatchMemoryLayout createOptimized(int batchSize, int signalLength) {
-        // Adjust batch size for optimal SIMD utilization
-        int optimalBatch = batchSize;
-        
-        // For small batches, pad to at least MIN_BATCH_SIZE_MULTIPLIER x vector length
-        // This ensures efficient SIMD utilization and better memory access patterns
-        if (batchSize < VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER) {
-            optimalBatch = VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER;
-        }
-        
-        return new BatchMemoryLayout(optimalBatch, signalLength);
+        // Create a layout that will optimize the batch size internally
+        return new BatchMemoryLayout(batchSize, signalLength, true);
     }
     
     /**
