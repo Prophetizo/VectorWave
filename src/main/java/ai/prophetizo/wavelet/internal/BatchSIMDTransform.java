@@ -247,12 +247,13 @@ public final class BatchSIMDTransform {
         double[] input1 = new double[VECTOR_LENGTH];
         double[] input2 = new double[VECTOR_LENGTH];
         
+        // Pre-create zero vector
+        DoubleVector zero = DoubleVector.zero(SPECIES);
+        
         // Process with perfect alignment - unroll by 2x for better pipeline utilization
         for (int outSample = 0; outSample < halfLength - 1; outSample += 2) {
             // Clear two output samples
             for (int sig = 0; sig < numSignals; sig += VECTOR_LENGTH) {
-                DoubleVector zero = DoubleVector.zero(SPECIES);
-                
                 // Clear for sample 1
                 zero.intoArray(approx1, 0);
                 zero.intoArray(detail1, 0);
