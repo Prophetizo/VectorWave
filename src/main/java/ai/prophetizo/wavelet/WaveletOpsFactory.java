@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.api.AbstractStaticFactory;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.internal.ScalarOps;
@@ -17,6 +18,28 @@ import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
  *   <li>CPU capabilities</li>
  *   <li>Configuration preferences</li>
  * </ul>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation: {@code WaveletOpsFactory.create(config)}</li>
+ *   <li>Factory interface pattern: {@code WaveletOpsFactory.getInstance().create(config)}</li>
+ * </ul>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Static method pattern
+ * WaveletOps ops1 = WaveletOpsFactory.create(TransformConfig.defaultConfig());
+ * 
+ * // Factory interface pattern (for dependency injection)
+ * Factory<WaveletOps, TransformConfig> factory = WaveletOpsFactory.getInstance();
+ * WaveletOps ops2 = factory.create(config);
+ * 
+ * // Force specific implementation
+ * TransformConfig scalarConfig = TransformConfig.builder()
+ *     .forceScalar(true)
+ *     .build();
+ * WaveletOps scalarOps = factory.create(scalarConfig);
+ * }</pre>
  *
  * @since 1.0.0
  */
@@ -101,6 +124,54 @@ public final class WaveletOpsFactory {
             sb.append("  - Vector: Not available (requires --add-modules jdk.incubator.vector)\n");
         }
         return sb.toString();
+    }
+
+    /**
+     * Gets the factory instance that implements the common Factory interface.
+     *
+     * @return the factory instance
+     */
+    public static Instance getInstance() {
+        return Instance.INSTANCE;
+    }
+
+    /**
+     * Factory instance that implements the common Factory interface.
+     * This provides an alternative way to use the factory that follows
+     * the standardized factory pattern.
+     */
+    public static final class Instance extends AbstractStaticFactory<WaveletOps, TransformConfig> {
+        private static final Instance INSTANCE = new Instance();
+
+        private Instance() {
+            // Singleton
+        }
+
+        @Override
+        protected WaveletOps doCreate() {
+            return WaveletOpsFactory.createOptimal();
+        }
+
+        @Override
+        protected WaveletOps doCreate(TransformConfig config) {
+            return WaveletOpsFactory.create(config);
+        }
+
+        @Override
+        protected TransformConfig getDefaultConfiguration() {
+            return TransformConfig.defaultConfig();
+        }
+
+        @Override
+        public boolean isValidConfiguration(TransformConfig config) {
+            // All non-null configs are valid
+            return config != null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Factory for creating optimal wavelet operation implementations";
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.cwt;
 
+import ai.prophetizo.wavelet.api.AbstractStaticFactory;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 
@@ -8,6 +9,22 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  * 
  * <p>Provides convenient methods for creating CWT transforms with
  * various configurations optimized for different use cases.</p>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation: {@code CWTFactory.create(wavelet)}</li>
+ *   <li>Factory interface pattern: {@code CWTFactory.getInstance().create(wavelet)}</li>
+ * </ul>
+ * 
+ * <p>Example usage:</p>
+ * <pre>{@code
+ * // Static method pattern (convenience)
+ * CWTTransform cwt1 = CWTFactory.create(new MorletWavelet());
+ * 
+ * // Factory interface pattern (for dependency injection)
+ * Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+ * CWTTransform cwt2 = factory.create(new MorletWavelet());
+ * }</pre>
  *
  * @since 1.0.0
  */
@@ -93,6 +110,50 @@ public final class CWTFactory {
      */
     public static Builder builder() {
         return new Builder();
+    }
+    
+    /**
+     * Gets the factory instance that implements the common Factory interface.
+     *
+     * @return the factory instance
+     */
+    public static Instance getInstance() {
+        return Instance.INSTANCE;
+    }
+
+    /**
+     * Factory instance that implements the common Factory interface.
+     * This provides an alternative way to use the factory that follows
+     * the standardized factory pattern.
+     */
+    public static final class Instance extends AbstractStaticFactory<CWTTransform, ContinuousWavelet> {
+        private static final Instance INSTANCE = new Instance();
+
+        private Instance() {
+            // Singleton
+        }
+
+        @Override
+        protected CWTTransform doCreate() {
+            // No default wavelet, so throw exception
+            throw new UnsupportedOperationException(
+                "CWTFactory requires a ContinuousWavelet. Use create(wavelet) instead.");
+        }
+
+        @Override
+        protected CWTTransform doCreate(ContinuousWavelet wavelet) {
+            return CWTFactory.create(wavelet);
+        }
+
+        @Override
+        public boolean isValidConfiguration(ContinuousWavelet wavelet) {
+            return wavelet != null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Factory for creating CWT transform instances";
+        }
     }
     
     /**
