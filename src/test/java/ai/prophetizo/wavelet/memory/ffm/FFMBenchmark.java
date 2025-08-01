@@ -60,7 +60,7 @@ public class FFMBenchmark {
         // Setup wavelet
         wavelet = switch (waveletType) {
             case "Haar" -> new Haar();
-            case "Daubechies4" -> new Daubechies(4);
+            case "Daubechies4" -> Daubechies.DB4;
             default -> throw new IllegalArgumentException("Unknown wavelet: " + waveletType);
         };
         

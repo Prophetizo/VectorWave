@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.memory.ffm;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
+import ai.prophetizo.wavelet.api.BoundaryMode;
 
 import java.lang.foreign.*;
 import java.util.Objects;
@@ -213,9 +214,9 @@ public class FFMStreamingTransform implements AutoCloseable {
      */
     private void performTransform(MemorySegment input) {
         operations.convolveAndDownsampleFFM(input, blockSize, lowPassSeg, filterLength,
-                                           approxBuffer, blockSize / 2);
+                                           approxBuffer, blockSize / 2, BoundaryMode.PERIODIC);
         operations.convolveAndDownsampleFFM(input, blockSize, highPassSeg, filterLength,
-                                           detailBuffer, blockSize / 2);
+                                           detailBuffer, blockSize / 2, BoundaryMode.PERIODIC);
     }
     
     /**

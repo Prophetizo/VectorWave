@@ -60,7 +60,8 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             MemorySegment filterSeg = MemorySegment.ofArray(filter);
             MemorySegment outputSeg = MemorySegment.ofArray(output);
             
-            convolveAndDownsampleFFM(signalSeg, signalLength, filterSeg, filterLength, outputSeg, outputLen);
+            convolveAndDownsampleFFM(signalSeg, signalLength, filterSeg, filterLength, 
+                                    outputSeg, outputLen, mode);
         }
         
         return output;
@@ -71,37 +72,43 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
      */
     public void convolveAndDownsampleFFM(MemorySegment signal, int signalLen,
                                         MemorySegment filter, int filterLen,
-                                        MemorySegment output, int outputLen) {
+                                        MemorySegment output, int outputLen,
+                                        BoundaryMode mode) {
         // Use vectorized operations when beneficial
-        if (signalLen >= VECTOR_LENGTH * 4 && FFMArrayAllocator.isAligned(signal)) {
-            convolveAndDownsampleVectorized(signal, signalLen, filter, filterLen, output, outputLen);
+        if (signalLen >= VECTOR_LENGTH * 4 && FFMArrayAllocator.isAligned(signal) && filterLen <= 4) {
+            convolveAndDownsampleVectorized(signal, signalLen, filter, filterLen, 
+                                          output, outputLen, mode);
         } else {
-            convolveAndDownsampleScalar(signal, signalLen, filter, filterLen, output, outputLen);
+            convolveAndDownsampleScalar(signal, signalLen, filter, filterLen, 
+                                      output, outputLen, mode);
         }
     }
     
     private void convolveAndDownsampleVectorized(MemorySegment signal, int signalLen,
                                                  MemorySegment filter, int filterLen,
-                                                 MemorySegment output, int outputLen) {
-        // Process in vectorized chunks
+                                                 MemorySegment output, int outputLen,
+                                                 BoundaryMode mode) {
+        // For vectorization, we process multiple output samples simultaneously
+        // Each lane of the vector computes one output sample
         int i = 0;
         int vectorBound = outputLen - (outputLen % VECTOR_LENGTH);
         
         for (; i < vectorBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
             
+            // For each filter coefficient
             for (int k = 0; k < filterLen; k++) {
                 double filterVal = filter.getAtIndex(DOUBLE_LAYOUT, k);
-                DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filterVal);
                 
-                // Load signal values for this convolution step
+                // Load signal values for each output position in the vector
+                double[] signalVals = new double[VECTOR_LENGTH];
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
                     int idx = 2 * (i + v) + k;
-                    if (idx < signalLen) {
-                        double signalVal = signal.getAtIndex(DOUBLE_LAYOUT, idx);
-                        result = result.add(filterVec.mul(signalVal));
-                    }
+                    signalVals[v] = getSignalValue(signal, idx, signalLen, mode);
                 }
+                
+                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signalVals, 0);
+                result = result.add(signalVec.mul(filterVal));
             }
             
             // Store results
@@ -113,10 +120,8 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             double sum = 0.0;
             for (int k = 0; k < filterLen; k++) {
                 int idx = 2 * i + k;
-                if (idx < signalLen) {
-                    sum += signal.getAtIndex(DOUBLE_LAYOUT, idx) * 
-                           filter.getAtIndex(DOUBLE_LAYOUT, k);
-                }
+                sum += getSignalValue(signal, idx, signalLen, mode) * 
+                       filter.getAtIndex(DOUBLE_LAYOUT, k);
             }
             output.setAtIndex(DOUBLE_LAYOUT, i, sum);
         }
@@ -124,17 +129,43 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
     
     private void convolveAndDownsampleScalar(MemorySegment signal, int signalLen,
                                             MemorySegment filter, int filterLen,
-                                            MemorySegment output, int outputLen) {
+                                            MemorySegment output, int outputLen,
+                                            BoundaryMode mode) {
         for (int i = 0; i < outputLen; i++) {
             double sum = 0.0;
             for (int k = 0; k < filterLen; k++) {
                 int idx = 2 * i + k;
-                if (idx < signalLen) {
-                    sum += signal.getAtIndex(DOUBLE_LAYOUT, idx) * 
-                           filter.getAtIndex(DOUBLE_LAYOUT, k);
-                }
+                sum += getSignalValue(signal, idx, signalLen, mode) * 
+                       filter.getAtIndex(DOUBLE_LAYOUT, k);
             }
             output.setAtIndex(DOUBLE_LAYOUT, i, sum);
+        }
+    }
+    
+    /**
+     * Gets signal value with boundary handling.
+     */
+    private double getSignalValue(MemorySegment signal, int idx, int signalLen, 
+                                 BoundaryMode mode) {
+        switch (mode) {
+            case PERIODIC:
+                // Wrap around using modulo
+                return signal.getAtIndex(DOUBLE_LAYOUT, idx % signalLen);
+            case ZERO_PADDING:
+                // Return 0 for out-of-bounds
+                return (idx >= 0 && idx < signalLen) ? 
+                       signal.getAtIndex(DOUBLE_LAYOUT, idx) : 0.0;
+            case SYMMETRIC:
+                // Mirror at boundaries
+                if (idx < 0) {
+                    idx = -idx;
+                } else if (idx >= signalLen) {
+                    idx = 2 * signalLen - idx - 2;
+                }
+                return (idx >= 0 && idx < signalLen) ?
+                       signal.getAtIndex(DOUBLE_LAYOUT, idx) : 0.0;
+            default:
+                throw new IllegalArgumentException("Unsupported boundary mode: " + mode);
         }
     }
     
@@ -151,7 +182,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             MemorySegment filterSeg = MemorySegment.ofArray(filter);
             MemorySegment outputSeg = MemorySegment.ofArray(output);
             
-            upsampleAndConvolveFFM(inputSeg, inputLength, filterSeg, filterLength, outputSeg, outputLen);
+            upsampleAndConvolveFFM(inputSeg, inputLength, filterSeg, filterLength, outputSeg, outputLen, mode);
         }
         
         return output;
@@ -162,7 +193,8 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
      */
     public void upsampleAndConvolveFFM(MemorySegment input, int inputLen,
                                       MemorySegment filter, int filterLen,
-                                      MemorySegment output, int outputLen) {
+                                      MemorySegment output, int outputLen,
+                                      BoundaryMode mode) {
         // Clear output
         output.fill((byte) 0);
         
@@ -172,10 +204,24 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             
             for (int k = 0; k < filterLen; k++) {
                 int idx = 2 * i + k;
-                if (idx < outputLen) {
+                
+                // Apply boundary mode handling
+                if (mode == BoundaryMode.PERIODIC) {
+                    // Wrap around for periodic mode
+                    idx = idx % outputLen;
                     double filterVal = filter.getAtIndex(DOUBLE_LAYOUT, k);
                     double current = output.getAtIndex(DOUBLE_LAYOUT, idx);
                     output.setAtIndex(DOUBLE_LAYOUT, idx, current + inputVal * filterVal);
+                } else if (mode == BoundaryMode.ZERO_PADDING) {
+                    // Only process if within bounds
+                    if (idx < outputLen) {
+                        double filterVal = filter.getAtIndex(DOUBLE_LAYOUT, k);
+                        double current = output.getAtIndex(DOUBLE_LAYOUT, idx);
+                        output.setAtIndex(DOUBLE_LAYOUT, idx, current + inputVal * filterVal);
+                    }
+                } else {
+                    // Other modes not yet implemented for upsampling
+                    throw new UnsupportedOperationException("Boundary mode " + mode + " not supported for upsampling");
                 }
             }
         }
@@ -184,27 +230,29 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
     public void combinedTransform(double[] signal, double[] lowPass, double[] highPass,
                                  double[] approx, double[] detail) {
         int signalLen = signal.length;
-        int filterLen = lowPass.length;
+        int lowPassLen = lowPass.length;
+        int highPassLen = highPass.length;
         int outputLen = approx.length;
         
         // Acquire temporary aligned memory from pool
         MemorySegment tempSignal = pool.acquire(signalLen);
-        MemorySegment tempLowPass = pool.acquire(filterLen);
-        MemorySegment tempHighPass = pool.acquire(filterLen);
+        MemorySegment tempLowPass = pool.acquire(lowPassLen);
+        MemorySegment tempHighPass = pool.acquire(highPassLen);
         MemorySegment tempApprox = pool.acquire(outputLen);
         MemorySegment tempDetail = pool.acquire(outputLen);
         
         try {
             // Copy input data to aligned segments
             FFMArrayAllocator.copyFromArray(signal, 0, tempSignal, signalLen);
-            FFMArrayAllocator.copyFromArray(lowPass, 0, tempLowPass, filterLen);
-            FFMArrayAllocator.copyFromArray(highPass, 0, tempHighPass, filterLen);
+            FFMArrayAllocator.copyFromArray(lowPass, 0, tempLowPass, lowPassLen);
+            FFMArrayAllocator.copyFromArray(highPass, 0, tempHighPass, highPassLen);
             
             // Perform transforms on aligned memory
-            convolveAndDownsampleFFM(tempSignal, signalLen, tempLowPass, filterLen, 
-                                    tempApprox, outputLen);
-            convolveAndDownsampleFFM(tempSignal, signalLen, tempHighPass, filterLen, 
-                                    tempDetail, outputLen);
+            // Note: combinedTransform uses PERIODIC mode by default
+            convolveAndDownsampleFFM(tempSignal, signalLen, tempLowPass, lowPassLen, 
+                                    tempApprox, outputLen, BoundaryMode.PERIODIC);
+            convolveAndDownsampleFFM(tempSignal, signalLen, tempHighPass, highPassLen, 
+                                    tempDetail, outputLen, BoundaryMode.PERIODIC);
             
             // Copy results back
             FFMArrayAllocator.copyToArray(tempApprox, approx, 0, outputLen);
@@ -253,9 +301,9 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             MemorySegment highPassSeg = MemorySegment.ofArray(highPass);
             
             convolveAndDownsampleFFM(signalSeg, signalLen, lowPassSeg, lowPass.length, 
-                                    approx, coeffLen);
+                                    approx, coeffLen, BoundaryMode.PERIODIC);
             convolveAndDownsampleFFM(signalSeg, signalLen, highPassSeg, highPass.length, 
-                                    detail, coeffLen);
+                                    detail, coeffLen, BoundaryMode.PERIODIC);
             
             // Inverse transform
             MemorySegment lowReconSeg = MemorySegment.ofArray(lowRecon);
@@ -263,9 +311,9 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
             MemorySegment temp = scopedPool.acquire(signalLen);
             
             upsampleAndConvolveFFM(approx, coeffLen, lowReconSeg, lowRecon.length, 
-                                  reconstructed, signalLen);
+                                  reconstructed, signalLen, BoundaryMode.PERIODIC);
             upsampleAndConvolveFFM(detail, coeffLen, highReconSeg, highRecon.length, 
-                                  temp, signalLen);
+                                  temp, signalLen, BoundaryMode.PERIODIC);
             
             // Add contributions
             for (int i = 0; i < signalLen; i++) {

@@ -146,8 +146,9 @@ public class FFMWaveletTransform implements AutoCloseable {
         double[] approxCoeffs = new double[outputLength];
         double[] detailCoeffs = new double[outputLength];
         
-        if (boundaryMode == BoundaryMode.PERIODIC) {
-            // Use combined transform for efficiency
+        if (boundaryMode == BoundaryMode.PERIODIC && 
+            lowPassFilter.length == highPassFilter.length) {
+            // Use combined transform for efficiency when filters have same length
             operations.combinedTransform(signal, lowPassFilter, highPassFilter,
                                        approxCoeffs, detailCoeffs);
         } else {
@@ -212,9 +213,9 @@ public class FFMWaveletTransform implements AutoCloseable {
             MemorySegment filterHighSeg = MemorySegment.ofArray(highPassFilter);
             
             operations.convolveAndDownsampleFFM(signal, length, filterLowSeg, 
-                                              lowPassFilter.length, approxSeg, outputLength);
+                                              lowPassFilter.length, approxSeg, outputLength, boundaryMode);
             operations.convolveAndDownsampleFFM(signal, length, filterHighSeg, 
-                                              highPassFilter.length, detailSeg, outputLength);
+                                              highPassFilter.length, detailSeg, outputLength, boundaryMode);
             
             // Copy to result arrays
             double[] approxCoeffs = new double[outputLength];
