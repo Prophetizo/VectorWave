@@ -243,8 +243,8 @@ public final class FinancialAnalysisConfig {
          * @throws IllegalArgumentException if level is not between 0.0 and 1.0
          */
         public Builder confidenceLevel(double level) {
-            if (level <= 0.0 || level >= 1.0) {
-                throw new IllegalArgumentException("Confidence level must be between 0.0 and 1.0");
+            if (level < 0.0 || level > 1.0) {
+                throw new IllegalArgumentException("Confidence level must be between 0.0 and 1.0 (inclusive)");
             }
             this.confidenceLevel = level;
             return this;
