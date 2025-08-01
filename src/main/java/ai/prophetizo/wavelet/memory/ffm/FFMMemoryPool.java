@@ -134,9 +134,8 @@ public final class FFMMemoryPool implements AutoCloseable {
         }
         
         if (!segment.scope().equals(arena.scope())) {
-            LOGGER.log(Level.WARNING, "Attempted to release segment from different arena. " +
+            throw new IllegalArgumentException("Attempted to release segment from different arena. " +
                     "This may indicate a programming error where segments are being mixed between pools.");
-            return;
         }
         
         long elementCount = FFMArrayAllocator.elementCount(segment);
