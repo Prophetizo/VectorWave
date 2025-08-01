@@ -403,6 +403,24 @@ public final class CWTTransform {
     }
     
     /**
+     * Determines if real-optimized FFT should be used for given signal length.
+     * 
+     * @param signalLength the length of the signal
+     * @return true if real FFT should be used, false otherwise
+     */
+    private boolean shouldUseRealFFT(int signalLength) {
+        FFTAlgorithm algorithm = config.getFFTAlgorithm();
+        // Use real-optimized FFT for real signals when:
+        // 1. Algorithm is REAL_OPTIMIZED or AUTO
+        // 2. Signal length is even (required by fftRealOptimized)
+        // 3. Signal is large enough to benefit (>= 256 samples)
+        return (algorithm == FFTAlgorithm.REAL_OPTIMIZED || 
+                algorithm == FFTAlgorithm.AUTO) &&
+               signalLength % 2 == 0 && 
+               signalLength >= 256;
+    }
+    
+    /**
      * FFT implementation using the optimized FFT based on configuration.
      * Automatically detects real signals and uses real-optimized FFT when beneficial.
      */
@@ -412,18 +430,7 @@ public final class CWTTransform {
         }
         
         try {
-            FFTAlgorithm algorithm = config.getFFTAlgorithm();
-            
-            // Use real-optimized FFT for real signals when:
-            // 1. Algorithm is REAL_OPTIMIZED or AUTO
-            // 2. Signal length is even (required by fftRealOptimized)
-            // 3. Signal is large enough to benefit (>= 256 samples)
-            boolean useRealFFT = (algorithm == FFTAlgorithm.REAL_OPTIMIZED || 
-                                 algorithm == FFTAlgorithm.AUTO) &&
-                                x.length % 2 == 0 && 
-                                x.length >= 256;
-            
-            if (useRealFFT) {
+            if (shouldUseRealFFT(x.length)) {
                 // Use real-optimized FFT for 2x speedup
                 ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
                 
@@ -817,16 +824,7 @@ public final class CWTTransform {
         }
         
         try {
-            FFTAlgorithm algorithm = config.getFFTAlgorithm();
-            
-            // Check if we can use real-optimized FFT
-            // Requirements: even length, large enough signal, and appropriate algorithm
-            boolean canUseRealFFT = (algorithm == FFTAlgorithm.REAL_OPTIMIZED || 
-                                    algorithm == FFTAlgorithm.AUTO) &&
-                                   fftSize % 2 == 0 && 
-                                   fftSize >= 256;
-            
-            if (canUseRealFFT) {
+            if (shouldUseRealFFT(fftSize)) {
                 // Prepare padded real signal
                 double[] paddedSignal = new double[fftSize];
                 System.arraycopy(signal, 0, paddedSignal, 0, Math.min(signal.length, fftSize));

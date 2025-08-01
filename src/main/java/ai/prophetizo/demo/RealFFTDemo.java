@@ -2,14 +2,22 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import java.util.Random;
 
 /**
  * Demonstrates the real-to-complex FFT optimization for CWT.
  * 
  * Shows ~2x speedup for FFT operations when processing real signals,
  * which is common in financial data analysis.
+ * 
+ * Note: Performance timings may vary between runs due to JIT compilation,
+ * system load, and other factors. The signal generation is deterministic
+ * to ensure consistent input data across runs.
  */
 public class RealFFTDemo {
+    
+    // Use a fixed seed for reproducible signal generation
+    private static final Random RANDOM = new Random(42);
     
     public static void main(String[] args) {
         System.out.println("=== Real FFT Optimization Demo ===\n");
@@ -168,8 +176,8 @@ public class RealFFTDemo {
             // Multi-component signal similar to financial data
             signal[i] = Math.sin(2 * Math.PI * 5 * i / size) +     // Trend
                        0.5 * Math.sin(2 * Math.PI * 20 * i / size) + // Cycle
-                       0.3 * Math.sin(2 * Math.PI * 50 * i / size) + // Noise
-                       0.1 * Math.random();                          // Random noise
+                       0.3 * Math.sin(2 * Math.PI * 50 * i / size) + // High frequency
+                       0.1 * RANDOM.nextGaussian();                 // Gaussian noise (more realistic than uniform)
         }
         return signal;
     }

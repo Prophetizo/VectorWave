@@ -124,7 +124,7 @@ public class RealFFTBenchmark {
         return directTransform.analyze(signal, scales);
     }
     
-    // Helper method to generate chirp signal
+    // Helper method to generate chirp signal (deterministic for consistent benchmarks)
     private static double[] generateChirpSignal(int length, double f0, double f1, double amplitude) {
         double[] signal = new double[length];
         for (int i = 0; i < length; i++) {
