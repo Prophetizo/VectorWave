@@ -97,8 +97,8 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
     private final BoundaryMode boundaryMode;
     private final int blockSize;
     private final WaveletTransform transform;
-    private final WaveletTransform simdTransform;
-    private final boolean useSIMD;
+    private final WaveletTransform vectorTransform;
+    private final boolean useVector;
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     
     // Ring buffer for zero-copy operations
@@ -220,18 +220,18 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         // Create transform with the specified wavelet and boundary mode
         this.transform = new WaveletTransform(wavelet, boundaryMode);
         
-        // Check if SIMD is beneficial for this block size
-        // SIMD is beneficial when block size is at least 2x the vector length
-        this.useSIMD = blockSize >= SPECIES.length() * 2;
+        // Check if Vector API is beneficial for this block size
+        // Vector API is beneficial when block size is at least 2x the vector length
+        this.useVector = blockSize >= SPECIES.length() * 2;
         
-        if (useSIMD) {
-            // Create SIMD-optimized transform
-            TransformConfig simdConfig = TransformConfig.builder()
+        if (useVector) {
+            // Create Vector API-optimized transform
+            TransformConfig vectorConfig = TransformConfig.builder()
                 .forceVector(true)
                 .build();
-            this.simdTransform = new WaveletTransform(wavelet, boundaryMode, simdConfig);
+            this.vectorTransform = new WaveletTransform(wavelet, boundaryMode, vectorConfig);
         } else {
-            this.simdTransform = null;
+            this.vectorTransform = null;
         }
     }
 
@@ -343,10 +343,10 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
             // TRUE ZERO-COPY: Use the new forward method that accepts offset/length
             // This eliminates the array copy and achieves the promised performance benefits
             
-            // Use SIMD transform if available and beneficial
+            // Use Vector API transform if available and beneficial
             TransformResult result;
-            if (useSIMD && simdTransform != null) {
-                result = simdTransform.forward(windowData, 0, blockSize);
+            if (useVector && vectorTransform != null) {
+                result = vectorTransform.forward(windowData, 0, blockSize);
             } else {
                 result = transform.forward(windowData, 0, blockSize);
             }

@@ -38,7 +38,7 @@ public class WaveletTransform {
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
     private final WaveletOpsFactory.WaveletOps operations;
-    private final boolean useSIMD;
+    private final boolean useVector;
 
     /**
      * Constructs a transformer with the specified wavelet and boundary mode.
@@ -76,7 +76,7 @@ public class WaveletTransform {
 
         // Create appropriate operations implementation
         this.operations = WaveletOpsFactory.create(config);
-        this.useSIMD = operations.getImplementationType().startsWith("Vector");
+        this.useVector = operations.getImplementationType().startsWith("Vector");
     }
 
     /**
@@ -199,12 +199,12 @@ public class WaveletTransform {
     }
 
     /**
-     * Returns true if this transform is using SIMD operations.
+     * Returns true if this transform is using Vector API operations.
      *
-     * @return true if SIMD is being used, false otherwise
+     * @return true if Vector API is being used, false otherwise
      */
-    public boolean isUsingSIMD() {
-        return useSIMD;
+    public boolean isUsingVector() {
+        return useVector;
     }
 
     /**
