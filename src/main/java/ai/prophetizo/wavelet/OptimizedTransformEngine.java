@@ -83,13 +83,13 @@ public class OptimizedTransformEngine {
             return new TransformResult[0];
         }
 
-        // Use parallel engine for large batches
-        if (parallelEngine != null && signals.length >= 16) {
+        // Use parallel engine for very large batches
+        if (parallelEngine != null && signals.length >= 128) {
             return parallelEngine.transformBatch(signals, wavelet, mode);
         }
 
-        // Use SoA layout for medium batches
-        if (useSoALayout && signals.length >= 4 && signals.length <= 16) {
+        // Use SoA layout with SIMD for most batch sizes
+        if (useSoALayout && signals.length >= 2) {
             return transformBatchSoA(signals, wavelet, mode);
         }
 
@@ -248,35 +248,22 @@ public class OptimizedTransformEngine {
         int signalLength = signals[0].length;
         int halfLength = signalLength / 2;
 
-        // Convert to SoA layout
-        double[] soaInput = SoATransform.convertAoSToSoA(signals);
-        double[] soaApprox = new double[numSignals * halfLength];
-        double[] soaDetail = new double[numSignals * halfLength];
+        // Use new BatchSIMDTransform for true parallel processing
+        double[][] approxResults = new double[numSignals][halfLength];
+        double[][] detailResults = new double[numSignals][halfLength];
+        
+        double[] lowPass = dw.lowPassDecomposition();
+        double[] highPass = dw.highPassDecomposition();
+        
+        // Use adaptive batch transform that selects best algorithm
+        BatchSIMDTransform.adaptiveBatchTransform(
+                signals, approxResults, detailResults, lowPass, highPass
+        );
 
-        // Transform in SoA layout
-        if (wavelet.name().equals("haar")) {
-            SoATransform.haarTransformSoA(
-                    soaInput, soaApprox, soaDetail, numSignals, signalLength
-            );
-        } else {
-            double[] lowPass = dw.lowPassDecomposition();
-            double[] highPass = dw.highPassDecomposition();
-            SoATransform.transformSoA(
-                    soaInput, soaApprox, soaDetail, lowPass, highPass,
-                    numSignals, signalLength, lowPass.length
-            );
-        }
-
-        // Convert back to AoS and create results
+        // Create results
         TransformResult[] results = new TransformResult[numSignals];
-        double[][] approxAoS = new double[numSignals][halfLength];
-        double[][] detailAoS = new double[numSignals][halfLength];
-
-        SoATransform.convertSoAToAoS(soaApprox, approxAoS);
-        SoATransform.convertSoAToAoS(soaDetail, detailAoS);
-
         for (int i = 0; i < numSignals; i++) {
-            results[i] = TransformResult.create(approxAoS[i], detailAoS[i]);
+            results[i] = TransformResult.create(approxResults[i], detailResults[i]);
         }
 
         return results;
