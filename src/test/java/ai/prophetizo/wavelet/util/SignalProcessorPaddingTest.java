@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for SignalProcessor padding functionality.
  */
-public class SignalProcessorPaddingTest {
+class SignalProcessorPaddingTest {
     
     @Test
     @DisplayName("Should pad non-power-of-2 arrays correctly")
