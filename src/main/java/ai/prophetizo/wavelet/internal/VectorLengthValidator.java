@@ -13,7 +13,7 @@ public final class VectorLengthValidator {
     
     // Maximum expected vector length (can be overridden via system property)
     private static final int MAX_VECTOR_LENGTH = Integer.getInteger(
-        "vectorwave.max.vector.length", 16
+        "ai.prophetizo.wavelet.max.vector.length", 16
     );
     
     private VectorLengthValidator() {
