@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.util.NullChecks;
 
@@ -29,7 +30,7 @@ import ai.prophetizo.wavelet.util.NullChecks;
  *     .create(new MorletWavelet());
  * }</pre>
  */
-public class WaveletTransformFactory {
+public class WaveletTransformFactory implements Factory<WaveletTransform, Wavelet> {
 
     // Default boundary mode is periodic (most common for DWT)
     private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
@@ -70,9 +71,42 @@ public class WaveletTransformFactory {
      * @return a configured WaveletTransform instance
      * @throws NullPointerException if wavelet is null
      */
+    @Override
     public WaveletTransform create(Wavelet wavelet) {
         NullChecks.requireNonNull(wavelet, "wavelet");
         return new WaveletTransform(wavelet, boundaryMode);
+    }
+
+    /**
+     * Creates a WaveletTransform with default wavelet (Haar).
+     * This satisfies the Factory interface requirement.
+     *
+     * @return a WaveletTransform with Haar wavelet
+     */
+    @Override
+    public WaveletTransform create() {
+        return create(new ai.prophetizo.wavelet.api.Haar());
+    }
+
+    /**
+     * Validates if the given wavelet is valid for creating transforms.
+     *
+     * @param wavelet the wavelet to validate
+     * @return true if the wavelet is valid
+     */
+    @Override
+    public boolean isValidConfiguration(Wavelet wavelet) {
+        return wavelet != null;
+    }
+
+    /**
+     * Gets a description of this factory.
+     *
+     * @return factory description
+     */
+    @Override
+    public String getDescription() {
+        return "Factory for creating WaveletTransform instances with boundary mode: " + boundaryMode;
     }
 
     /**

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.cwt;
 
+import ai.prophetizo.wavelet.api.AbstractStaticFactory;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 
@@ -93,6 +94,50 @@ public final class CWTFactory {
      */
     public static Builder builder() {
         return new Builder();
+    }
+    
+    /**
+     * Gets the factory instance that implements the common Factory interface.
+     *
+     * @return the factory instance
+     */
+    public static Instance getInstance() {
+        return Instance.INSTANCE;
+    }
+
+    /**
+     * Factory instance that implements the common Factory interface.
+     * This provides an alternative way to use the factory that follows
+     * the standardized factory pattern.
+     */
+    public static final class Instance extends AbstractStaticFactory<CWTTransform, ContinuousWavelet> {
+        private static final Instance INSTANCE = new Instance();
+
+        private Instance() {
+            // Singleton
+        }
+
+        @Override
+        protected CWTTransform doCreate() {
+            // No default wavelet, so throw exception
+            throw new UnsupportedOperationException(
+                "CWTFactory requires a ContinuousWavelet. Use create(wavelet) instead.");
+        }
+
+        @Override
+        protected CWTTransform doCreate(ContinuousWavelet wavelet) {
+            return CWTFactory.create(wavelet);
+        }
+
+        @Override
+        public boolean isValidConfiguration(ContinuousWavelet wavelet) {
+            return wavelet != null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Factory for creating CWT transform instances";
+        }
     }
     
     /**

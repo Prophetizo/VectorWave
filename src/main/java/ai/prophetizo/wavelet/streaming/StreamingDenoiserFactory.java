@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.streaming;
 
+import ai.prophetizo.wavelet.api.AbstractStaticFactory;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 /**
@@ -187,6 +188,49 @@ public final class StreamingDenoiserFactory {
         }
 
         return profile;
+    }
+    
+    /**
+     * Gets the factory instance that implements the common Factory interface.
+     *
+     * @return the factory instance
+     */
+    public static Instance getInstance() {
+        return Instance.INSTANCE;
+    }
+
+    /**
+     * Factory instance that implements the common Factory interface.
+     * This provides an alternative way to use the factory that follows
+     * the standardized factory pattern.
+     */
+    public static final class Instance extends AbstractStaticFactory<StreamingDenoiserStrategy, StreamingDenoiserConfig> {
+        private static final Instance INSTANCE = new Instance();
+
+        private Instance() {
+            // Singleton
+        }
+
+        @Override
+        protected StreamingDenoiserStrategy doCreate() {
+            throw new UnsupportedOperationException(
+                "StreamingDenoiserFactory requires configuration. Use create(config) instead.");
+        }
+
+        @Override
+        protected StreamingDenoiserStrategy doCreate(StreamingDenoiserConfig config) {
+            return StreamingDenoiserFactory.create(config);
+        }
+
+        @Override
+        public boolean isValidConfiguration(StreamingDenoiserConfig config) {
+            return config != null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Factory for creating streaming denoiser implementations";
+        }
     }
 
     /**
