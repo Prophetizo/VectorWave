@@ -80,9 +80,9 @@ List<TransformResult> results = engine.transformBatch(signals);
 ### Force Optimization Path
 
 ```java
-// Force SIMD for testing
+// Force Vector API for testing
 TransformConfig config = TransformConfig.builder()
-    .forceSIMD(true)
+    .forceVector(true)
     .build();
 
 // Force scalar for compatibility

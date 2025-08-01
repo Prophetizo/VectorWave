@@ -227,7 +227,7 @@ public class OptimizedStreamingWaveletTransform extends SubmissionPublisher<Tran
         if (useSIMD) {
             // Create SIMD-optimized transform
             TransformConfig simdConfig = TransformConfig.builder()
-                .forceSIMD(true)
+                .forceVector(true)
                 .build();
             this.simdTransform = new WaveletTransform(wavelet, boundaryMode, simdConfig);
         } else {

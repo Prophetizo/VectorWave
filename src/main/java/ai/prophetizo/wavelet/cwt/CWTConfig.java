@@ -34,6 +34,7 @@ public final class CWTConfig {
     private final boolean useStructuredConcurrency;
     private final boolean useStreamGatherers;
     private final CWTMemoryPool memoryPool;
+    private final FFTAlgorithm fftAlgorithm;
     
     // FFT threshold for automatic decision - lowered to show FFT benefits in demos
     private static final int FFT_THRESHOLD = 64;
@@ -48,6 +49,7 @@ public final class CWTConfig {
         this.useStructuredConcurrency = builder.useStructuredConcurrency;
         this.useStreamGatherers = builder.useStreamGatherers;
         this.memoryPool = builder.memoryPool;
+        this.fftAlgorithm = builder.fftAlgorithm;
     }
     
     /**
@@ -128,7 +130,8 @@ public final class CWTConfig {
             .useScopedValues(useScopedValues)
             .useStructuredConcurrency(useStructuredConcurrency)
             .useStreamGatherers(useStreamGatherers)
-            .memoryPool(memoryPool);
+            .memoryPool(memoryPool)
+            .fftAlgorithm(fftAlgorithm);
     }
     
     /**
@@ -204,6 +207,10 @@ public final class CWTConfig {
         return memoryPool;
     }
     
+    public FFTAlgorithm getFFTAlgorithm() {
+        return fftAlgorithm;
+    }
+    
     /**
      * Builder for CWT configuration.
      */
@@ -217,6 +224,7 @@ public final class CWTConfig {
         private boolean useStructuredConcurrency = true;
         private boolean useStreamGatherers = true;
         private CWTMemoryPool memoryPool = null;
+        private FFTAlgorithm fftAlgorithm = FFTAlgorithm.AUTO;
         
         private Builder() {}
         
@@ -268,6 +276,11 @@ public final class CWTConfig {
         
         public Builder memoryPool(CWTMemoryPool pool) {
             this.memoryPool = pool;
+            return this;
+        }
+        
+        public Builder fftAlgorithm(FFTAlgorithm algorithm) {
+            this.fftAlgorithm = algorithm;
             return this;
         }
         

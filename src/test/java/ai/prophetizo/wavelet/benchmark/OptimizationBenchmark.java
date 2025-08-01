@@ -11,6 +11,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Comprehensive benchmark for all optimization strategies.
  */
@@ -301,7 +302,7 @@ public class OptimizationBenchmark {
     }
     
     private double[] generateSignal(int size) {
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         double[] signal = new double[size];
         
         // Generate a signal with multiple frequency components

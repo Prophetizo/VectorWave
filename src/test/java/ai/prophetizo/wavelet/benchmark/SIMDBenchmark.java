@@ -10,6 +10,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Benchmarks comparing scalar vs SIMD performance for wavelet transforms.
  * 
@@ -67,7 +68,7 @@ public class SIMDBenchmark {
         }
         
         // Create financial-like signal (random walk with trend)
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         financialSignal = new double[signalSize];
         financialSignal[0] = 100.0;
         double trend = 0.0001;
@@ -86,7 +87,7 @@ public class SIMDBenchmark {
             .build();
             
         TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .boundaryMode(mode)
             .build();
         
@@ -128,7 +129,7 @@ public class SIMDBenchmark {
     @Benchmark
     public void db2SIMDForward(Blackhole bh) {
         WaveletTransform transform = new WaveletTransform(db2, BoundaryMode.valueOf(boundaryMode),
-            TransformConfig.builder().forceSIMD(true).build());
+            TransformConfig.builder().forceVector(true).build());
         TransformResult result = transform.forward(signal);
         bh.consume(result);
     }

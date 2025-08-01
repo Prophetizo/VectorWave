@@ -157,7 +157,7 @@ StreamingDenoiser quality = new QualityStreamingDenoiser(
 TransformConfig config = TransformConfig.builder()
     .boundaryMode(BoundaryMode.PERIODIC)
     .forceScalar(false)
-    .forceSIMD(false)
+    .forceVector(false)
     .enablePrefetch(true)
     .cacheOptimized(true)
     .poolSize(16)

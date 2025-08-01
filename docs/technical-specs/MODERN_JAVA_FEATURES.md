@@ -1,6 +1,6 @@
-# Java 23 Features in VectorWave
+# Modern Java Features in VectorWave
 
-This document summarizes the Java 23 features being leveraged in the VectorWave project.
+This document summarizes the modern Java features (Java 14-21+) being leveraged in the VectorWave project.
 
 ## Language Features
 

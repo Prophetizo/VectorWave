@@ -9,6 +9,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for vectorized complex number operations.
  */
@@ -163,7 +164,7 @@ class ComplexVectorOpsTest {
     @DisplayName("Should handle large arrays efficiently")
     void testLargeArrayPerformance() {
         int size = 10000;
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         double[] real1 = new double[size];
         double[] imag1 = new double[size];

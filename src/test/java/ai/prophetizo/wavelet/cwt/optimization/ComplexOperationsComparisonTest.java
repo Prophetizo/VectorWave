@@ -7,6 +7,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Comparison tests showing the performance improvement of vectorized complex operations.
  */
@@ -30,7 +31,7 @@ class ComplexOperationsComparisonTest {
             double[] resultReal = new double[size];
             double[] resultImag = new double[size];
             
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             for (int i = 0; i < size; i++) {
                 real1[i] = random.nextGaussian();
                 imag1[i] = random.nextGaussian();
@@ -96,7 +97,7 @@ class ComplexOperationsComparisonTest {
         double[] realWavelet = new double[waveletLength];
         double[] imagWavelet = new double[waveletLength];
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < signalLength; i++) {
             realSignal[i] = Math.sin(2 * Math.PI * i / 32) + 0.1 * random.nextGaussian();
             imagSignal[i] = Math.cos(2 * Math.PI * i / 32) + 0.1 * random.nextGaussian();
@@ -162,7 +163,7 @@ class ComplexOperationsComparisonTest {
         double[] resultReal = new double[size];
         double[] resultImag = new double[size];
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < size; i++) {
             real1[i] = random.nextGaussian();
             imag1[i] = random.nextGaussian();
@@ -242,7 +243,7 @@ class ComplexOperationsComparisonTest {
         double[][] imagSignals = new double[numSignals][signalLength];
         double[][] magnitudes = new double[numSignals][signalLength];
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int s = 0; s < numSignals; s++) {
             for (int i = 0; i < signalLength; i++) {
                 realSignals[s][i] = random.nextGaussian();

@@ -422,5 +422,52 @@ class CWTTransformTest {
         }
     }
     
+    @Test
+    @DisplayName("Should provide meaningful error messages for FFT failures")
+    void testFFTErrorHandling() {
+        // Test with null signal (this would be caught by input validation first)
+        assertThrows(IllegalArgumentException.class, 
+            () -> transform.analyze(null, new double[]{1.0}));
+        
+        // Test with empty signal
+        assertThrows(IllegalArgumentException.class, 
+            () -> transform.analyze(new double[0], new double[]{1.0}));
+        
+        // Test with invalid scales
+        assertThrows(IllegalArgumentException.class, 
+            () -> transform.analyze(testSignal, new double[]{0.0}));
+        
+        assertThrows(IllegalArgumentException.class, 
+            () -> transform.analyze(testSignal, new double[]{-1.0}));
+    }
+    
+    @Test
+    @DisplayName("Should handle edge cases in FFT computations gracefully")
+    void testFFTEdgeCases() {
+        // Test with very small signal
+        double[] smallSignal = {1.0};
+        double[] scales = {1.0};
+        
+        // This should work without throwing exceptions
+        assertDoesNotThrow(() -> {
+            CWTResult result = transform.analyze(smallSignal, scales);
+            assertNotNull(result);
+            assertEquals(1, result.getCoefficients().length);
+            assertEquals(1, result.getCoefficients()[0].length);
+        });
+        
+        // Test with moderately sized signal to ensure FFT path is exercised
+        double[] moderateSignal = new double[64];
+        for (int i = 0; i < moderateSignal.length; i++) {
+            moderateSignal[i] = Math.sin(2 * Math.PI * i / 16.0);
+        }
+        
+        assertDoesNotThrow(() -> {
+            CWTResult result = transform.analyze(moderateSignal, scales);
+            assertNotNull(result);
+            assertTrue(result.getCoefficients().length > 0);
+        });
+    }
+    
     record ComplexValue(double real, double imag) {}
 }

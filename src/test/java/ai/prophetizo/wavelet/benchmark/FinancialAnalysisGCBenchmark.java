@@ -12,6 +12,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Benchmark to measure GC pressure reduction in FinancialWaveletAnalyzer.
  * 
@@ -36,7 +37,7 @@ public class FinancialAnalysisGCBenchmark {
     @Setup
     public void setup() {
         // Generate realistic price data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         priceData = new double[dataSize];
         volumeData = new double[dataSize];
         

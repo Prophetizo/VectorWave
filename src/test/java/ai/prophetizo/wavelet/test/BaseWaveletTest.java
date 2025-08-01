@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import java.util.logging.Logger;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Base class for wavelet transform tests providing common setup and utilities.
  * 
@@ -198,7 +199,7 @@ public abstract class BaseWaveletTest {
             case QUADRATIC:
                 return generateQuadraticSignal(length);
             case RANDOM:
-                return WaveletTestUtils.generateRandomSignal(length, 42L, -1.0, 1.0);
+                return WaveletTestUtils.generateRandomSignal(length, TestConstants.TEST_SEED, -1.0, 1.0);
             case SINE:
                 return WaveletTestUtils.generateSineWave(length, 0.1, 1.0, 0.0);
             case STEP:

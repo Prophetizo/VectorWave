@@ -4,7 +4,7 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.cwt.optimization.CWTVectorOps;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
+import ai.prophetizo.wavelet.util.OptimizedFFT;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
@@ -29,7 +29,6 @@ public final class CWTTransform {
     private final ContinuousWavelet wavelet;
     private final CWTConfig config;
     private final CWTVectorOps vectorOps;
-    private final FFTAcceleratedCWT fftAccelerator;
     
     // Cache for wavelet support calculations
     private final Map<Double, Integer> waveletSupportCache = new ConcurrentHashMap<>();
@@ -60,7 +59,6 @@ public final class CWTTransform {
         this.wavelet = wavelet;
         this.config = config;
         this.vectorOps = new CWTVectorOps();
-        this.fftAccelerator = new FFTAcceleratedCWT();
     }
     
     /**
@@ -252,43 +250,55 @@ public final class CWTTransform {
      * Uses linear convolution to avoid circular artifacts.
      */
     private double[] computeFFTScale(Complex[] signalFFT, double scale, int fftSize, int signalLength) {
-        double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
-        
-        // Generate scaled wavelet for linear convolution
-        double[] scaledWavelet = generateScaledWaveletLinear(scale, fftSize);
-        
-        // FFT of wavelet
-        Complex[] waveletFFT = fft(scaledWavelet);
-        
-        // Multiply in frequency domain (convolution theorem)
-        Complex[] product = new Complex[fftSize];
-        for (int i = 0; i < fftSize; i++) {
-            // Conjugate of wavelet for correlation
-            product[i] = signalFFT[i].multiply(waveletFFT[i].conjugate());
+        if (signalFFT == null || signalFFT.length == 0) {
+            throw new IllegalStateException("Cannot compute FFT scale with null or empty signal FFT");
+        }
+        if (scale <= 0) {
+            throw new IllegalArgumentException("Scale must be positive, got: " + scale);
         }
         
-        // Inverse FFT
-        double[] convResult = ifft(product);
-        
-        // Extract valid portion with proper offset
-        // The wavelet was placed at the beginning of the array with its center at index halfSupport
-        // In the convolution result:
-        //   - Index halfSupport corresponds to the wavelet centered at signal position 0
-        //   - Index halfSupport + i corresponds to the wavelet centered at signal position i
-        // Therefore, we extract starting from index halfSupport
-        double[] result = new double[signalLength];
-        int halfSupport = getHalfSupport(scale);
-        
-        for (int i = 0; i < signalLength; i++) {
-            int idx = i + halfSupport;
-            if (idx < fftSize) {
-                result[i] = convResult[idx] / sqrtScale;
-            } else {
-                result[i] = 0.0;
+        try {
+            double sqrtScale = config.isNormalizeAcrossScales() ? Math.sqrt(scale) : 1.0;
+            
+            // Generate scaled wavelet for linear convolution
+            double[] scaledWavelet = generateScaledWaveletLinear(scale, fftSize);
+            
+            // FFT of wavelet
+            Complex[] waveletFFT = fft(scaledWavelet);
+            
+            // Multiply in frequency domain (convolution theorem)
+            Complex[] product = new Complex[fftSize];
+            for (int i = 0; i < fftSize; i++) {
+                // Conjugate of wavelet for correlation
+                product[i] = signalFFT[i].multiply(waveletFFT[i].conjugate());
             }
+            
+            // Inverse FFT
+            double[] convResult = ifft(product);
+            
+            // Extract valid portion with proper offset
+            // The wavelet was placed at the beginning of the array with its center at index halfSupport
+            // In the convolution result:
+            //   - Index halfSupport corresponds to the wavelet centered at signal position 0
+            //   - Index halfSupport + i corresponds to the wavelet centered at signal position i
+            // Therefore, we extract starting from index halfSupport
+            double[] result = new double[signalLength];
+            int halfSupport = getHalfSupport(scale);
+            
+            for (int i = 0; i < signalLength; i++) {
+                int idx = i + halfSupport;
+                if (idx < fftSize) {
+                    result[i] = convResult[idx] / sqrtScale;
+                } else {
+                    result[i] = 0.0;
+                }
+            }
+            
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("FFT-based CWT computation failed for scale " + scale + 
+                " (FFT size: " + fftSize + ", signal length: " + signalLength + "): " + e.getMessage(), e);
         }
-        
-        return result;
     }
     
     
@@ -393,33 +403,77 @@ public final class CWTTransform {
     }
     
     /**
-     * FFT implementation using the optimized FFTAcceleratedCWT.
+     * FFT implementation using the optimized FFT based on configuration.
      */
     private Complex[] fft(double[] x) {
-        // Convert to FFTAcceleratedCWT.Complex array
-        FFTAcceleratedCWT.Complex[] result = fftAccelerator.fft(x);
-        
-        // Convert back to internal Complex type
-        Complex[] X = new Complex[result.length];
-        for (int i = 0; i < result.length; i++) {
-            X[i] = new Complex(result[i].real, result[i].imag);
+        if (x == null || x.length == 0) {
+            throw new IllegalStateException("Cannot perform FFT on null or empty signal");
         }
         
-        return X;
+        try {
+            FFTAlgorithm algorithm = config.getFFTAlgorithm();
+            
+            if (algorithm == FFTAlgorithm.REAL_OPTIMIZED) {
+                // Use real-optimized FFT
+                ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
+                
+                // Convert to internal Complex type
+                Complex[] X = new Complex[result.length];
+                for (int i = 0; i < result.length; i++) {
+                    X[i] = new Complex(result[i].real(), result[i].imag());
+                }
+                return X;
+            } else {
+                // Use OptimizedFFT for all other algorithms
+                double[] complexData = new double[2 * x.length];
+                for (int i = 0; i < x.length; i++) {
+                    complexData[2 * i] = x[i];
+                    complexData[2 * i + 1] = 0;
+                }
+                
+                OptimizedFFT.fftOptimized(complexData, x.length, false);
+                
+                // Convert to Complex array
+                Complex[] X = new Complex[x.length];
+                for (int i = 0; i < x.length; i++) {
+                    X[i] = new Complex(complexData[2 * i], complexData[2 * i + 1]);
+                }
+                return X;
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("FFT computation failed for signal of length " + x.length + 
+                " using algorithm " + config.getFFTAlgorithm() + ": " + e.getMessage(), e);
+        }
     }
     
     /**
-     * Inverse FFT implementation using the optimized FFTAcceleratedCWT.
+     * Inverse FFT implementation using the optimized FFT.
      */
     private double[] ifft(Complex[] X) {
-        // Convert to FFTAcceleratedCWT.Complex array
-        FFTAcceleratedCWT.Complex[] fftComplex = new FFTAcceleratedCWT.Complex[X.length];
-        for (int i = 0; i < X.length; i++) {
-            fftComplex[i] = new FFTAcceleratedCWT.Complex(X[i].real, X[i].imag);
+        if (X == null || X.length == 0) {
+            throw new IllegalStateException("Cannot perform IFFT on null or empty spectrum");
         }
         
-        // Use the optimized inverse FFT
-        return fftAccelerator.ifft(fftComplex);
+        try {
+            // Always use OptimizedFFT
+            double[] complexData = new double[2 * X.length];
+            for (int i = 0; i < X.length; i++) {
+                complexData[2 * i] = X[i].real;
+                complexData[2 * i + 1] = X[i].imag;
+            }
+            
+            OptimizedFFT.fftOptimized(complexData, X.length, true);
+            
+            // Extract real part (for inverse of real signal)
+            double[] result = new double[X.length];
+            for (int i = 0; i < X.length; i++) {
+                result[i] = complexData[2 * i];
+            }
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("IFFT computation failed for spectrum of length " + X.length + 
+                ": " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -649,40 +703,49 @@ public final class CWTTransform {
      * Simple Hilbert transform using FFT.
      */
     private double[] computeHilbertTransform(double[] signal) {
-        int n = signal.length;
-        int fftSize = nextPowerOfTwo(n);
-        
-        // Compute FFT
-        Complex[] fft = computeFFT(signal, fftSize);
-        
-        // Apply Hilbert filter in frequency domain
-        // H(f) = -i*sgn(f) = {-i for f>0, 0 for f=0, i for f<0}
-        for (int i = 1; i < fftSize/2; i++) {
-            // Positive frequencies: multiply by -i
-            double temp = fft[i].real;
-            fft[i] = new Complex(fft[i].imag, -temp);
+        if (signal == null || signal.length == 0) {
+            throw new IllegalStateException("Cannot compute Hilbert transform of null or empty signal");
         }
         
-        // Negative frequencies: multiply by i
-        for (int i = fftSize/2 + 1; i < fftSize; i++) {
-            double temp = fft[i].real;
-            fft[i] = new Complex(-fft[i].imag, temp);
+        try {
+            int n = signal.length;
+            int fftSize = nextPowerOfTwo(n);
+            
+            // Compute FFT
+            Complex[] fft = computeFFT(signal, fftSize);
+            
+            // Apply Hilbert filter in frequency domain
+            // H(f) = -i*sgn(f) = {-i for f>0, 0 for f=0, i for f<0}
+            for (int i = 1; i < fftSize/2; i++) {
+                // Positive frequencies: multiply by -i
+                double temp = fft[i].real;
+                fft[i] = new Complex(fft[i].imag, -temp);
+            }
+            
+            // Negative frequencies: multiply by i
+            for (int i = fftSize/2 + 1; i < fftSize; i++) {
+                double temp = fft[i].real;
+                fft[i] = new Complex(-fft[i].imag, temp);
+            }
+            
+            // DC and Nyquist are zero
+            fft[0] = new Complex(0, 0);
+            if (fftSize > 1) {
+                fft[fftSize/2] = new Complex(0, 0);
+            }
+            
+            // Inverse FFT
+            double[] result = ifft(fft);
+            
+            // Extract valid portion
+            double[] hilbert = new double[n];
+            System.arraycopy(result, 0, hilbert, 0, n);
+            
+            return hilbert;
+        } catch (Exception e) {
+            throw new IllegalStateException("Hilbert transform computation failed for signal of length " + 
+                signal.length + ": " + e.getMessage(), e);
         }
-        
-        // DC and Nyquist are zero
-        fft[0] = new Complex(0, 0);
-        if (fftSize > 1) {
-            fft[fftSize/2] = new Complex(0, 0);
-        }
-        
-        // Inverse FFT
-        double[] result = ifft(fft);
-        
-        // Extract valid portion
-        double[] hilbert = new double[n];
-        System.arraycopy(result, 0, hilbert, 0, n);
-        
-        return hilbert;
     }
     
     // Getters
@@ -735,58 +798,63 @@ public final class CWTTransform {
      * Computes FFT of real signal.
      */
     private Complex[] computeFFT(double[] signal, int fftSize) {
-        Complex[] data = new Complex[fftSize];
-        
-        // Initialize with signal data
-        for (int i = 0; i < signal.length && i < fftSize; i++) {
-            data[i] = new Complex(signal[i], 0);
+        if (signal == null || signal.length == 0) {
+            throw new IllegalStateException("Cannot compute FFT of null or empty signal");
+        }
+        if (fftSize <= 0) {
+            throw new IllegalArgumentException("FFT size must be positive, got: " + fftSize);
         }
         
-        // Pad with zeros
-        for (int i = signal.length; i < fftSize; i++) {
-            data[i] = new Complex(0, 0);
+        try {
+            Complex[] data = new Complex[fftSize];
+            
+            // Initialize with signal data
+            for (int i = 0; i < signal.length && i < fftSize; i++) {
+                data[i] = new Complex(signal[i], 0);
+            }
+            
+            // Pad with zeros
+            for (int i = signal.length; i < fftSize; i++) {
+                data[i] = new Complex(0, 0);
+            }
+            
+            return fftComplex(data);
+        } catch (Exception e) {
+            throw new IllegalStateException("FFT computation failed for signal of length " + signal.length + 
+                " with FFT size " + fftSize + ": " + e.getMessage(), e);
         }
-        
-        return fftComplex(data);
     }
     
     /**
-     * Cooley-Tukey FFT implementation for Complex arrays.
+     * FFT implementation for Complex arrays.
      */
     private Complex[] fftComplex(Complex[] x) {
+        if (x == null || x.length == 0) {
+            throw new IllegalStateException("Cannot perform FFT on null or empty complex signal");
+        }
+        
         int n = x.length;
         
-        // Base case
-        if (n <= 1) return x;
-        
-        // Radix-2 Cooley-Tukey FFT
-        if (n % 2 != 0) {
-            throw new IllegalArgumentException("Length must be a power of 2");
+        try {
+            // Always use OptimizedFFT
+            double[] complexData = new double[2 * n];
+            for (int i = 0; i < n; i++) {
+                complexData[2 * i] = x[i].real;
+                complexData[2 * i + 1] = x[i].imag;
+            }
+            
+            OptimizedFFT.fftOptimized(complexData, n, false);
+            
+            // Convert back to Complex array
+            Complex[] result = new Complex[n];
+            for (int i = 0; i < n; i++) {
+                result[i] = new Complex(complexData[2 * i], complexData[2 * i + 1]);
+            }
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("Complex FFT computation failed for signal of length " + n + 
+                ": " + e.getMessage(), e);
         }
-        
-        // Divide
-        Complex[] even = new Complex[n/2];
-        Complex[] odd = new Complex[n/2];
-        for (int k = 0; k < n/2; k++) {
-            even[k] = x[2*k];
-            odd[k] = x[2*k + 1];
-        }
-        
-        // Conquer
-        Complex[] evenFFT = fftComplex(even);
-        Complex[] oddFFT = fftComplex(odd);
-        
-        // Combine
-        Complex[] result = new Complex[n];
-        for (int k = 0; k < n/2; k++) {
-            double theta = -2 * Math.PI * k / n;
-            Complex w = new Complex(Math.cos(theta), Math.sin(theta));
-            Complex t = w.multiply(oddFFT[k]);
-            result[k] = new Complex(evenFFT[k].real + t.real, evenFFT[k].imag + t.imag);
-            result[k + n/2] = new Complex(evenFFT[k].real - t.real, evenFFT[k].imag - t.imag);
-        }
-        
-        return result;
     }
     
     /**

@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark for adaptive buffer resizing performance.
  * 
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G", "--add-modules=jdk.incubator.vector"})
+@Fork(value = 2, jvmArgsAppend = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class AdaptiveBufferBenchmark {
@@ -43,7 +44,7 @@ public class AdaptiveBufferBenchmark {
     
     @Setup(Level.Trial)
     public void setup() {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Generate steady workload data
         steadyData = new double[TOTAL_SAMPLES];
@@ -107,7 +108,7 @@ public class AdaptiveBufferBenchmark {
             blockSize * 2, blockSize * 16
         );
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         int operations = 10000;
         
         for (int i = 0; i < operations; i++) {

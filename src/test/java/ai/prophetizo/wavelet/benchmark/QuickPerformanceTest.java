@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.api.*;
 
 import java.util.Random;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Quick performance test to measure the impact of Phase 4 optimizations.
  * This is not a comprehensive benchmark but gives a quick indication of performance.
@@ -41,7 +42,7 @@ public class QuickPerformanceTest {
     private static void testConfiguration(String waveletType, int signalSize) {
         // Create test signal
         double[] signal = new double[signalSize];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < signalSize; i++) {
             signal[i] = Math.sin(2 * Math.PI * i / 64) + 0.1 * random.nextGaussian();
         }

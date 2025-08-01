@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Statistical tests for wavelet transforms on financial data.
  * Verifies preservation of important statistical properties used in finance.
@@ -72,7 +73,7 @@ class FinancialStatisticsTest {
         
         // Verify reproducibility across test runs by checking a fresh Random
         clearRandomCache();
-        Random testRng = new Random(42L * 1000L + 42L); // Same seed formula as index 42
+        Random testRng = new Random(TestConstants.TEST_SEED * 1000L + TestConstants.TEST_SEED); // Same seed formula as index 42
         double expectedValue = testRng.nextGaussian();
         double actualValue = gaussianRandom(42);
         assertEquals(expectedValue, actualValue, EPSILON, 
@@ -488,7 +489,7 @@ class FinancialStatisticsTest {
     private static double gaussianRandom(int sequenceIndex) {
         // Get or create a Random instance for this sequence index
         Random rng = RANDOM_CACHE.computeIfAbsent(sequenceIndex, 
-            idx -> new Random(idx * 1000L + 42L)); // Deterministic seed based on index
+            idx -> new Random(idx * 1000L + TestConstants.TEST_SEED)); // Deterministic seed based on index
         
         // Using nextGaussian() provides better statistical properties than manual Box-Muller
         return rng.nextGaussian();

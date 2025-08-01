@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Performance tests for complex CWT operations.
  */
@@ -124,7 +125,7 @@ class CWTComplexPerformanceTest {
         // Complex wavelet
         double[] realWavelet = new double[64];
         double[] imagWavelet = new double[64];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < 64; i++) {
             realWavelet[i] = random.nextGaussian();
             imagWavelet[i] = random.nextGaussian();
@@ -198,7 +199,7 @@ class CWTComplexPerformanceTest {
     
     private double[] createTestSignal(int length) {
         double[] signal = new double[length];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Create a signal with multiple frequency components
         for (int i = 0; i < length; i++) {
@@ -212,7 +213,7 @@ class CWTComplexPerformanceTest {
     
     private ComplexMatrix createRandomComplexMatrix(int rows, int cols) {
         ComplexMatrix matrix = new ComplexMatrix(rows, cols);
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {

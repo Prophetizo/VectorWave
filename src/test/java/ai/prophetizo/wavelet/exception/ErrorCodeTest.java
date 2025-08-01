@@ -67,7 +67,7 @@ class ErrorCodeTest {
     @Test
     @DisplayName("InvalidConfigurationException should have correct error codes")
     void testInvalidConfigurationExceptionCodes() {
-        InvalidConfigurationException conflictEx = InvalidConfigurationException.conflictingOptions("forceScalar", "forceSIMD");
+        InvalidConfigurationException conflictEx = InvalidConfigurationException.conflictingOptions("forceScalar", "forceVector");
         assertEquals(ErrorCode.CFG_CONFLICTING_OPTIONS, conflictEx.getErrorCode());
         
         InvalidConfigurationException unsupportedEx = InvalidConfigurationException.unsupportedOperation("ContinuousWavelet", "discrete transform");

@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.benchmark;
 
-import ai.prophetizo.wavelet.util.FFTUtils;
+import ai.prophetizo.wavelet.util.SignalProcessor;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -8,6 +8,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmarks for FFT operations.
  * 
@@ -34,7 +35,7 @@ public class FFTBenchmark {
     
     @Setup
     public void setup() {
-        Random rand = new Random(42);
+        Random rand = new Random(TestConstants.TEST_SEED);
         
         // Initialize complex data
         complexData = new ComplexNumber[fftSize];
@@ -53,29 +54,29 @@ public class FFTBenchmark {
     @Benchmark
     public void benchmarkFFTForward(Blackhole bh) {
         ComplexNumber[] data = complexData.clone();
-        FFTUtils.fft(data);
+        SignalProcessor.fft(data);
         bh.consume(data);
     }
     
     @Benchmark
     public void benchmarkFFTInverse(Blackhole bh) {
         ComplexNumber[] data = complexData.clone();
-        FFTUtils.ifft(data);
+        SignalProcessor.ifft(data);
         bh.consume(data);
     }
     
     @Benchmark
     public void benchmarkFFTRoundTrip(Blackhole bh) {
         ComplexNumber[] data = complexData.clone();
-        FFTUtils.fft(data);
-        FFTUtils.ifft(data);
+        SignalProcessor.fft(data);
+        SignalProcessor.ifft(data);
         bh.consume(data);
     }
     
     @Benchmark
     public void benchmarkRealFFT(Blackhole bh) {
         double[] real = realData.clone();
-        ComplexNumber[] result = FFTUtils.fftReal(real);
+        ComplexNumber[] result = SignalProcessor.fftReal(real);
         bh.consume(result);
     }
     

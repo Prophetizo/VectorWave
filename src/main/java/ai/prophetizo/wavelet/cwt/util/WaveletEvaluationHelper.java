@@ -2,7 +2,6 @@ package ai.prophetizo.wavelet.cwt.util;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
 
 /**
  * Utility class demonstrating the use of the unified wavelet evaluation helper.

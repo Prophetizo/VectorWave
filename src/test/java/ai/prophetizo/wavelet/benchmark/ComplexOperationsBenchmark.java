@@ -7,6 +7,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark for complex number operations.
  * 
@@ -45,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 2, jvmArgs = {"--add-modules=jdk.incubator.vector"})
+@Fork(value = 2)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class ComplexOperationsBenchmark {
@@ -60,7 +61,7 @@ public class ComplexOperationsBenchmark {
     
     @Setup(Level.Trial)
     public void setup() {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Initialize arrays
         real1 = new double[size];

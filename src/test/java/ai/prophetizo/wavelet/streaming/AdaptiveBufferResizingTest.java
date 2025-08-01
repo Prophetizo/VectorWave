@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for the adaptive buffer resizing functionality.
  */
@@ -124,7 +125,7 @@ class AdaptiveBufferResizingTest {
         Thread writer = new Thread(() -> {
             try {
                 startLatch.await();
-                Random random = new Random(42);
+                Random random = new Random(TestConstants.TEST_SEED);
                 for (int i = 0; i < 10000; i++) {
                     if (buffer.write(random.nextDouble())) {
                         writeCount.incrementAndGet();
@@ -216,7 +217,7 @@ class AdaptiveBufferResizingTest {
         int initialMultiplier = transform.getCurrentBufferMultiplier();
         
         // Generate and process data in bursts to trigger adaptation
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // First burst - fill the buffer
         double[] largeBurst = new double[blockSize * 20];

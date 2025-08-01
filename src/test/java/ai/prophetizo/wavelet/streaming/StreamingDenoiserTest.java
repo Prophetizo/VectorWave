@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class StreamingDenoiserTest {
     
     // Adapter class to maintain backward compatibility with existing tests
@@ -306,7 +307,7 @@ class StreamingDenoiserTest {
             
             // Process blocks with controlled noise levels
             // Use actual random noise to ensure MAD estimator works correctly across platforms
-            java.util.Random rng = new java.util.Random(42); // Fixed seed for reproducibility
+            java.util.Random rng = new java.util.Random(TestConstants.TEST_SEED); // Fixed seed for reproducibility
             
             // Low noise blocks first - use more blocks to let estimator stabilize
             for (int block = 0; block < 20; block++) {

@@ -32,7 +32,7 @@ public class SIMDDemo {
             .build();
         
         TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .build();
         
         WaveletTransform scalarTransform = new WaveletTransform(wavelet, mode, scalarConfig);

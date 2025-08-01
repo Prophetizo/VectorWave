@@ -8,6 +8,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for CWT convolution optimization to verify removal of temporary arrays.
  */
@@ -23,7 +24,7 @@ class CWTConvolutionOptimizationTest {
         int waveletSize = 64;
         double scale = 8.0;
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         for (int signalSize : signalSizes) {
             // Create test data
@@ -89,7 +90,7 @@ class CWTConvolutionOptimizationTest {
         double[] realWavelet = new double[waveletSize];
         double[] imagWavelet = new double[waveletSize];
         
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < signalSize; i++) {
             realSignal[i] = random.nextGaussian();
             imagSignal[i] = random.nextGaussian();
@@ -184,7 +185,7 @@ class CWTConvolutionOptimizationTest {
         double[] imagWavelet = new double[waveletSize];
         
         // Initialize test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < signalSize; i++) {
             realSignal[i] = random.nextGaussian();
         }

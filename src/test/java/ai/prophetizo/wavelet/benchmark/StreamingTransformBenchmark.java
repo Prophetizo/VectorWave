@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark comparing the performance of streaming wavelet transform implementations.
  * 
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G", "--add-modules=jdk.incubator.vector"})
+@Fork(value = 2, jvmArgsAppend = {"-Xms2G", "-Xmx2G"})
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 public class StreamingTransformBenchmark {
@@ -50,7 +51,7 @@ public class StreamingTransformBenchmark {
     @Setup(Level.Trial)
     public void setup() {
         // Generate test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         testData = new double[DATA_SIZE];
         for (int i = 0; i < DATA_SIZE; i++) {
             testData[i] = random.nextGaussian();

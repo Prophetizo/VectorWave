@@ -5,6 +5,61 @@ All notable changes to VectorWave will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Vector API graceful fallback mechanism for environments without incubator module support
+- Comprehensive unit tests for Vector API fallback functionality (`VectorApiFallbackTest`)
+- Runtime detection of Vector API availability with automatic scalar fallback
+- Public API methods to check Vector API status (`OptimizedFFT.isVectorApiAvailable()`, `getVectorApiInfo()`)
+- Enhanced benchmark configuration to work with and without Vector API
+
+### Changed
+- Updated JMH benchmarks to use `jvmArgsAppend` instead of `jvmArgs` for flexible configuration
+- Enhanced `jmh-runner.sh` to automatically detect Vector API availability
+- Improved FFT implementation to seamlessly switch between vectorized and scalar implementations
+- Updated documentation to reflect Vector API optional nature
+- Consolidated benchmark documentation in `docs/BENCHMARKING.md`
+
+### Fixed
+- Fixed compilation and runtime errors when Vector API module is not available
+- Fixed benchmark failures on JVMs without incubator module support
+- Fixed inconsistent null checking pattern in SignalProcessor by extracting common validation helper
+- Fixed misleading comments and inconsistent initialization in VectorApiFallbackTest
+- Fixed incorrect method calls in VectorButterflyTest (fftVectorized → fftOptimized)
+- Fixed VectorButterflyTest comparing different FFT algorithms for sizes >= 32
+- Fixed SimpleStreamingAnalyzerTest expecting signals when they're optional based on market conditions
+- Fixed normalization inconsistency between fftOptimized and fftRadix2Scalar for inverse FFT
+
+### Improved
+- Clarified SignalProcessor.fft/ifft documentation to explain power-of-2 limitation
+- Added references to OptimizedFFT for users needing arbitrary size support
+- Enhanced VectorApiFallbackTest edge case tests to be more explicit about n=0 behavior
+- Added runtime assertions in fftRealOptimized to validate boundary conditions
+- Documented intentional use of package-private methods in VectorButterflyTest for white-box testing
+
+### Refactored
+- Consolidated duplicate power-of-2 utility functions into PowerOf2Utils class
+  - Removed duplicate implementations from OptimizedFFT and SignalProcessor
+  - Added comprehensive utility methods: nextPowerOf2, isPowerOf2, log2, previousPowerOf2, moduloPowerOf2
+  - Improved overflow protection and error handling
+- Simplified FFT implementation by removing split-radix algorithm
+  - Unified all power-of-2 FFT operations to use radix-2 algorithm
+  - Reduced from 4 implementations to 2 (radix-2 and Bluestein)
+  - Maintained automatic vectorization for performance
+
+### Documentation
+- Clarified Vector API compilation requirements in OptimizedFFT
+- Added VECTOR_API_COMPILATION.md explaining build requirements
+- Updated README to clearly state JDK compilation requirements
+- Improved FFTBoundsAnalysisTest to better reflect actual implementation
+
+### Documentation
+- Reorganized documentation structure for clarity
+- Moved implementation notes to `docs/implementation-notes/`
+- Updated README.md to reflect current capabilities
+- Enhanced CLAUDE.md with Vector API fallback information
+
 ## [1.1.0] - 2025-01-30
 
 ### Added

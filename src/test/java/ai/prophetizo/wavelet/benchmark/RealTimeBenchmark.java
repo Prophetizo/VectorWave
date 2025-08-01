@@ -13,6 +13,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Benchmarks for real-time application scenarios.
  * 
@@ -64,7 +65,7 @@ public class RealTimeBenchmark {
     
     @Setup(Level.Trial)
     public void setup() {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Initialize audio buffer with synthetic audio signal
         audioBuffer = new double[audioBufferSize];

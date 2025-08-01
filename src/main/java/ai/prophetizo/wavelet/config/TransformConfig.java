@@ -15,7 +15,7 @@ import ai.prophetizo.wavelet.util.NullChecks;
  * <p>Key configuration options:</p>
  * <ul>
  *   <li><b>Boundary Mode</b>: How to handle signal boundaries during convolution</li>
- *   <li><b>Optimization Path</b>: Force scalar or SIMD operations, or auto-detect</li>
+ *   <li><b>Optimization Path</b>: Force scalar or vector operations, or auto-detect</li>
  *   <li><b>Decomposition Levels</b>: Maximum allowed levels for multi-level transforms</li>
  * </ul>
  * 
@@ -30,9 +30,9 @@ import ai.prophetizo.wavelet.util.NullChecks;
  *     .boundaryMode(BoundaryMode.ZERO_PADDING)
  *     .build();
  * 
- * // Force SIMD for maximum performance
- * TransformConfig simdConfig = TransformConfig.builder()
- *     .forceSIMD(true)
+ * // Force Vector API for maximum performance
+ * TransformConfig vectorConfig = TransformConfig.builder()
+ *     .forceVector(true)
  *     .maxDecompositionLevels(5)
  *     .build();
  * 
@@ -40,7 +40,7 @@ import ai.prophetizo.wavelet.util.NullChecks;
  * WaveletTransform transform = new WaveletTransform(
  *     Daubechies.DB4, 
  *     BoundaryMode.PERIODIC, 
- *     simdConfig
+ *     vectorConfig
  * );
  * }</pre>
  * 
@@ -48,7 +48,7 @@ import ai.prophetizo.wavelet.util.NullChecks;
  * <ul>
  *   <li>Auto-detection usually provides optimal performance</li>
  *   <li>Force scalar for consistent behavior across platforms</li>
- *   <li>Force SIMD when you know your data size benefits from vectorization</li>
+ *   <li>Force vector when you know your data size benefits from vectorization</li>
  * </ul>
  * 
  * @since 1.0.0
@@ -59,8 +59,8 @@ public final class TransformConfig {
     private final BoundaryMode boundaryMode;
     // Forces scalar engine if true, otherwise auto-detects.
     private final boolean forceScalar;
-    // Forces use of SIMD operations when available.
-    private final boolean forceSIMD;
+    // Forces use of Vector API operations when available.
+    private final boolean forceVector;
     // Maximum allowed decomposition levels.
     private final int maxDecompositionLevels;
 
@@ -72,12 +72,12 @@ public final class TransformConfig {
     private TransformConfig(Builder builder) {
         this.boundaryMode = builder.boundaryMode;
         this.forceScalar = builder.forceScalar;
-        this.forceSIMD = builder.forceSIMD;
+        this.forceVector = builder.forceVector;
         this.maxDecompositionLevels = builder.maxDecompositionLevels;
 
-        // Validate: can't force both scalar and SIMD
-        if (forceScalar && forceSIMD) {
-            throw InvalidConfigurationException.conflictingOptions("forceScalar", "forceSIMD");
+        // Validate: can't force both scalar and vector
+        if (forceScalar && forceVector) {
+            throw InvalidConfigurationException.conflictingOptions("forceScalar", "forceVector");
         }
     }
 
@@ -121,10 +121,10 @@ public final class TransformConfig {
     }
 
     /**
-     * @return true if SIMD operations are forced when available
+     * @return true if Vector API operations are forced when available
      */
-    public boolean isForceSIMD() {
-        return forceSIMD;
+    public boolean isForceVector() {
+        return forceVector;
     }
 
     /**
@@ -144,7 +144,7 @@ public final class TransformConfig {
         return "TransformConfig{" +
                 "boundaryMode=" + boundaryMode +
                 ", forceScalar=" + forceScalar +
-                ", forceSIMD=" + forceSIMD +
+                ", forceVector=" + forceVector +
                 ", maxDecompositionLevels=" + maxDecompositionLevels +
                 '}';
     }
@@ -158,8 +158,8 @@ public final class TransformConfig {
         private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
         // Default: do not force scalar engine.
         private boolean forceScalar = false;
-        // Default: auto-detect SIMD availability.
-        private boolean forceSIMD = false;
+        // Default: auto-detect Vector API availability.
+        private boolean forceVector = false;
         // Default: allow up to 20 decomposition levels (handles signals up to 2^20 = 1,048,576 samples).
         private int maxDecompositionLevels = 20;
 
@@ -190,14 +190,14 @@ public final class TransformConfig {
         }
 
         /**
-         * Sets whether to force SIMD operations when available.
-         * If SIMD is not available, this setting is ignored.
+         * Sets whether to force Vector API operations when available.
+         * If Vector API is not available, this setting is ignored.
          *
-         * @param forceSIMD true to force SIMD operations
+         * @param forceVector true to force Vector API operations
          * @return this builder
          */
-        public Builder forceSIMD(boolean forceSIMD) {
-            this.forceSIMD = forceSIMD;
+        public Builder forceVector(boolean forceVector) {
+            this.forceVector = forceVector;
             return this;
         }
 

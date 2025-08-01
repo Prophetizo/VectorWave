@@ -76,7 +76,7 @@ public class LatencyBenchmark {
         
         // Setup transforms
         TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+            .forceVector(true)
             .build();
             
         TransformConfig scalarConfig = TransformConfig.builder()
