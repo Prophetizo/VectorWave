@@ -78,8 +78,10 @@ class FFTBoundsAnalysisTest {
             assertEquals(n, packedArrayLength, "Packed array length should equal n");
             
             // The loop must use k < halfN (not k <= halfN) to avoid out-of-bounds access.
-            // When k = halfN, the calculation of indices like 2 * halfN would exceed
-            // the bounds of the packed array, leading to incorrect behavior.
+            // For example, when k = halfN, the calculation of indices like 2 * halfN
+            // would result in an index equal to the packed array length, which is out of bounds.
+            // If halfN = 4, the packed array length is 8, and 2 * halfN = 8, which exceeds
+            // the valid range of [0, 7] for the packed array indices.
             
             // Verify array bounds for the actual loop indices
             int validIndicesCount = 0;
