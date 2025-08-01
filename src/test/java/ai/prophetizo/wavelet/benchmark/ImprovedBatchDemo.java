@@ -134,14 +134,14 @@ public class ImprovedBatchDemo {
             // Warmup
             for (int i = 0; i < 100; i++) {
                 layout.loadSignalsInterleaved(signals, true);
-                layout.haarTransformAligned();
+                layout.haarTransformInterleaved();
             }
             
             // Measure
             long startTime = System.nanoTime();
             for (int i = 0; i < iterations; i++) {
                 layout.loadSignalsInterleaved(signals, true);
-                layout.haarTransformAligned();
+                layout.haarTransformInterleaved();
             }
             long time = System.nanoTime() - startTime;
             

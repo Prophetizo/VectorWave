@@ -138,6 +138,7 @@ public class BatchMemoryLayout implements AutoCloseable {
     
     /**
      * Performs optimized Haar transform on the batch using aligned memory.
+     * This method works with standard (non-interleaved) layout.
      */
     public void haarTransformAligned() {
         final double SQRT2_INV = 1.0 / Math.sqrt(2.0);
@@ -145,7 +146,32 @@ public class BatchMemoryLayout implements AutoCloseable {
         
         int halfLength = signalLength / 2;
         
-        // Process all signals in parallel
+        // Process each signal
+        for (int sig = 0; sig < batchSize; sig++) {
+            int signalOffset = sig * paddedSignalLength;
+            int resultOffset = sig * (paddedSignalLength / 2);
+            
+            // Process samples for this signal
+            for (int sample = 0; sample < halfLength; sample++) {
+                double even = inputData[signalOffset + 2 * sample];
+                double odd = inputData[signalOffset + 2 * sample + 1];
+                
+                approxData[resultOffset + sample] = (even + odd) * SQRT2_INV;
+                detailData[resultOffset + sample] = (even - odd) * SQRT2_INV;
+            }
+        }
+    }
+    
+    /**
+     * Performs optimized Haar transform on interleaved data.
+     */
+    public void haarTransformInterleaved() {
+        final double SQRT2_INV = 1.0 / Math.sqrt(2.0);
+        DoubleVector sqrt2Vec = DoubleVector.broadcast(SPECIES, SQRT2_INV);
+        
+        int halfLength = signalLength / 2;
+        
+        // Process all signals in parallel with interleaved layout
         for (int sample = 0; sample < halfLength; sample++) {
             int evenBase = 2 * sample * paddedBatchSize;
             int oddBase = (2 * sample + 1) * paddedBatchSize;

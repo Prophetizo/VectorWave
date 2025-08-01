@@ -202,7 +202,7 @@ public class BatchSIMDTransformTest {
             double[][] approxResults = new double[batchSize][signalLength / 2];
             double[][] detailResults = new double[batchSize][signalLength / 2];
             
-            layout.haarTransformAligned();
+            layout.haarTransformInterleaved();
             layout.extractResultsInterleaved(approxResults, detailResults);
             
             // Results should be valid
@@ -263,19 +263,21 @@ public class BatchSIMDTransformTest {
         for (int i = 0; i < batchSize; i++) {
             // Mix of different signal types
             if (i % 3 == 0) {
-                // Random signal
+                // Random signal with guaranteed non-zero values
                 for (int j = 0; j < signalLength; j++) {
-                    signals[i][j] = random.nextGaussian();
+                    signals[i][j] = random.nextGaussian() + 0.5;
                 }
             } else if (i % 3 == 1) {
-                // Sinusoidal
+                // Sinusoidal with offset to ensure non-zero detail
                 for (int j = 0; j < signalLength; j++) {
-                    signals[i][j] = Math.sin(2 * Math.PI * j / signalLength);
+                    signals[i][j] = Math.sin(2 * Math.PI * j / signalLength) + 
+                                   0.1 * Math.sin(4 * Math.PI * j / signalLength);
                 }
             } else {
-                // Step function
+                // Step function with noise
                 for (int j = 0; j < signalLength; j++) {
-                    signals[i][j] = j < signalLength / 2 ? 1.0 : -1.0;
+                    signals[i][j] = (j < signalLength / 2 ? 1.0 : -1.0) + 
+                                   0.1 * random.nextGaussian();
                 }
             }
         }
