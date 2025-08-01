@@ -188,6 +188,28 @@ double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 // Works best with dyadic scales for optimal accuracy
 ```
 
+### Wavelet Registry and Discovery
+
+```java
+// Discover available wavelets
+Set<String> available = WaveletRegistry.getAvailableWavelets();
+List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+
+// Look up wavelets by name (case-insensitive)
+Wavelet db4 = WaveletRegistry.getWavelet("db4");
+Wavelet morl = WaveletRegistry.getWavelet("morl");
+
+// Check if a wavelet exists
+if (WaveletRegistry.hasWavelet("meyer")) {
+    Wavelet meyer = WaveletRegistry.getWavelet("meyer");
+}
+
+// Add custom wavelets via ServiceLoader
+// 1. Implement WaveletProvider
+// 2. Register in META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider
+// See docs/WAVELET_PROVIDER_SPI.md for details
+```
+
 ### Wavelet Selection Guide
 
 | Wavelet | Best For | Characteristics |
@@ -261,6 +283,7 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 - [API Reference](docs/API.md)
 - [Foreign Function & Memory API Guide](docs/FFM_API.md)
 - [Adding New Wavelets](docs/ADDING_WAVELETS.md)
+- [WaveletProvider SPI Guide](docs/WAVELET_PROVIDER_SPI.md)
 - [Benchmarking Guide](docs/BENCHMARKING.md)
 - [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
 - [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
