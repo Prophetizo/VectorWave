@@ -24,6 +24,9 @@ public class BatchMemoryLayout implements AutoCloseable {
     private static final int VECTOR_LENGTH = SPECIES.length();
     private static final int ALIGNMENT = 64; // Cache line alignment
     
+    // Minimum batch size multiplier for optimal SIMD utilization
+    private static final int MIN_BATCH_SIZE_MULTIPLIER = 2;
+    
     // Validate vector length is reasonable
     static {
         VectorLengthValidator.validateVectorLength(VECTOR_LENGTH, "BatchMemoryLayout");
@@ -229,39 +232,78 @@ public class BatchMemoryLayout implements AutoCloseable {
     public void close() {
         // Return memory to pool, ensuring all pools are closed even if exceptions occur
         Exception firstException = null;
+        String failedPool = null;
         
+        // Close input pool
         try {
-            if (inputPool != null) inputPool.close();
-        } catch (Exception e) {
+            if (inputPool != null) {
+                inputPool.close();
+            }
+        } catch (IllegalStateException e) {
             firstException = e;
+            failedPool = "input";
+        } catch (Exception e) {
+            firstException = new RuntimeException("Unexpected error closing input pool", e);
+            failedPool = "input";
         }
         
+        // Close approximation pool
         try {
-            if (approxPool != null) approxPool.close();
-        } catch (Exception e) {
+            if (approxPool != null) {
+                approxPool.close();
+            }
+        } catch (IllegalStateException e) {
             if (firstException == null) {
                 firstException = e;
+                failedPool = "approximation";
             } else {
                 firstException.addSuppressed(e);
             }
-        }
-        
-        try {
-            if (detailPool != null) detailPool.close();
         } catch (Exception e) {
+            Exception wrapped = new RuntimeException("Unexpected error closing approximation pool", e);
             if (firstException == null) {
-                firstException = e;
+                firstException = wrapped;
+                failedPool = "approximation";
             } else {
-                firstException.addSuppressed(e);
+                firstException.addSuppressed(wrapped);
             }
         }
         
-        // If any exception occurred, wrap and throw it
+        // Close detail pool
+        try {
+            if (detailPool != null) {
+                detailPool.close();
+            }
+        } catch (IllegalStateException e) {
+            if (firstException == null) {
+                firstException = e;
+                failedPool = "detail";
+            } else {
+                firstException.addSuppressed(e);
+            }
+        } catch (Exception e) {
+            Exception wrapped = new RuntimeException("Unexpected error closing detail pool", e);
+            if (firstException == null) {
+                firstException = wrapped;
+                failedPool = "detail";
+            } else {
+                firstException.addSuppressed(wrapped);
+            }
+        }
+        
+        // If any exception occurred, throw it with detailed information
         if (firstException != null) {
+            String message = String.format(
+                "Failed to close BatchMemoryLayout: %s pool failed first. " +
+                "Batch size: %d, Signal length: %d, Total memory: %.2f MB",
+                failedPool, batchSize, signalLength,
+                (inputData.length + approxData.length + detailData.length) * 8.0 / (1024 * 1024)
+            );
+            
             if (firstException instanceof RuntimeException) {
-                throw (RuntimeException) firstException;
+                throw new RuntimeException(message, firstException);
             } else {
-                throw new RuntimeException("Failed to close memory pools", firstException);
+                throw new RuntimeException(message, firstException);
             }
         }
     }
@@ -273,9 +315,10 @@ public class BatchMemoryLayout implements AutoCloseable {
         // Adjust batch size for optimal SIMD utilization
         int optimalBatch = batchSize;
         
-        // For small batches, pad to at least 2x vector length
-        if (batchSize < VECTOR_LENGTH * 2) {
-            optimalBatch = VECTOR_LENGTH * 2;
+        // For small batches, pad to at least MIN_BATCH_SIZE_MULTIPLIER x vector length
+        // This ensures efficient SIMD utilization and better memory access patterns
+        if (batchSize < VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER) {
+            optimalBatch = VECTOR_LENGTH * MIN_BATCH_SIZE_MULTIPLIER;
         }
         
         return new BatchMemoryLayout(optimalBatch, signalLength);

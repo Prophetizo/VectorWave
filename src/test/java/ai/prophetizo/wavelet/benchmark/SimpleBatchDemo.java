@@ -23,8 +23,10 @@ public class SimpleBatchDemo {
         // Generate test data
         double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
-        // Create transform with no parallel processing to avoid memory issues
+        // Create transforms for testing
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+        
+        // Create optimized engine with benchmark config (no parallel processing for pure SIMD testing)
         OptimizedTransformEngine.EngineConfig config = BenchmarkHelper.createBenchmarkConfig();
         OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
         

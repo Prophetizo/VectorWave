@@ -34,6 +34,63 @@ public final class BatchSIMDTransform {
     private static final int CACHE_LINE_SIZE = 64;
     private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_SIZE / 8;
     
+    // Thread-local cache for temporary arrays to avoid allocation in hot paths
+    private static final ThreadLocal<HaarWorkArrays> HAAR_WORK_ARRAYS = 
+        ThreadLocal.withInitial(() -> new HaarWorkArrays(VECTOR_LENGTH));
+    
+    private static final ThreadLocal<BlockWorkArrays> BLOCK_WORK_ARRAYS =
+        ThreadLocal.withInitial(() -> new BlockWorkArrays(VECTOR_LENGTH));
+    
+    private static final ThreadLocal<AlignedWorkArrays> ALIGNED_WORK_ARRAYS =
+        ThreadLocal.withInitial(() -> new AlignedWorkArrays(VECTOR_LENGTH));
+    
+    // Container for work arrays used in Haar transform
+    private static class HaarWorkArrays {
+        final double[] evenSamples;
+        final double[] oddSamples;
+        final double[] approxTemp;
+        final double[] detailTemp;
+        
+        HaarWorkArrays(int vectorLength) {
+            this.evenSamples = new double[vectorLength];
+            this.oddSamples = new double[vectorLength];
+            this.approxTemp = new double[vectorLength];
+            this.detailTemp = new double[vectorLength];
+        }
+    }
+    
+    // Container for work arrays used in block processing
+    private static class BlockWorkArrays {
+        final double[] inputSamples;
+        final double[] approxSums;
+        final double[] detailSums;
+        
+        BlockWorkArrays(int vectorLength) {
+            this.inputSamples = new double[vectorLength];
+            this.approxSums = new double[vectorLength];
+            this.detailSums = new double[vectorLength];
+        }
+    }
+    
+    // Container for work arrays used in aligned transform
+    private static class AlignedWorkArrays {
+        final double[] approx1;
+        final double[] detail1;
+        final double[] approx2;
+        final double[] detail2;
+        final double[] input1;
+        final double[] input2;
+        
+        AlignedWorkArrays(int vectorLength) {
+            this.approx1 = new double[vectorLength];
+            this.detail1 = new double[vectorLength];
+            this.approx2 = new double[vectorLength];
+            this.detail2 = new double[vectorLength];
+            this.input1 = new double[vectorLength];
+            this.input2 = new double[vectorLength];
+        }
+    }
+    
     private BatchSIMDTransform() {
         // Utility class
     }
@@ -59,11 +116,12 @@ public final class BatchSIMDTransform {
         // Process full vectors first (no branching in hot loop)
         int fullVectorGroups = numSignals / VECTOR_LENGTH;
         
-        // Pre-allocate arrays to avoid GC pressure
-        double[] evenSamples = new double[VECTOR_LENGTH];
-        double[] oddSamples = new double[VECTOR_LENGTH];
-        double[] approxTemp = new double[VECTOR_LENGTH];
-        double[] detailTemp = new double[VECTOR_LENGTH];
+        // Get thread-local work arrays to avoid allocation
+        HaarWorkArrays workArrays = HAAR_WORK_ARRAYS.get();
+        double[] evenSamples = workArrays.evenSamples;
+        double[] oddSamples = workArrays.oddSamples;
+        double[] approxTemp = workArrays.approxTemp;
+        double[] detailTemp = workArrays.detailTemp;
         
         // Process all full vector groups
         for (int sigGroup = 0; sigGroup < fullVectorGroups * VECTOR_LENGTH; sigGroup += VECTOR_LENGTH) {
@@ -161,10 +219,11 @@ public final class BatchSIMDTransform {
             }
         }
         
-        // Pre-allocate arrays to avoid GC pressure
-        double[] inputSamples = new double[VECTOR_LENGTH];
-        double[] approxSums = new double[VECTOR_LENGTH];
-        double[] detailSums = new double[VECTOR_LENGTH];
+        // Get thread-local work arrays to avoid allocation
+        BlockWorkArrays workArrays = BLOCK_WORK_ARRAYS.get();
+        double[] inputSamples = workArrays.inputSamples;
+        double[] approxSums = workArrays.approxSums;
+        double[] detailSums = workArrays.detailSums;
         
         // Convolution for this block
         for (int outSample = sampleStart; outSample < sampleEnd; outSample++) {
@@ -239,13 +298,14 @@ public final class BatchSIMDTransform {
             return;
         }
         
-        // Pre-allocate arrays for unrolled loop to avoid GC pressure
-        double[] approx1 = new double[VECTOR_LENGTH];
-        double[] detail1 = new double[VECTOR_LENGTH];
-        double[] approx2 = new double[VECTOR_LENGTH];
-        double[] detail2 = new double[VECTOR_LENGTH];
-        double[] input1 = new double[VECTOR_LENGTH];
-        double[] input2 = new double[VECTOR_LENGTH];
+        // Get thread-local work arrays to avoid allocation
+        AlignedWorkArrays workArrays = ALIGNED_WORK_ARRAYS.get();
+        double[] approx1 = workArrays.approx1;
+        double[] detail1 = workArrays.detail1;
+        double[] approx2 = workArrays.approx2;
+        double[] detail2 = workArrays.detail2;
+        double[] input1 = workArrays.input1;
+        double[] input2 = workArrays.input2;
         
         // Pre-create zero vector
         DoubleVector zero = DoubleVector.zero(SPECIES);
