@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 @EnabledIfSystemProperty(named = "run.benchmarks", matches = "true")
 @Timeout(value = 120, unit = TimeUnit.SECONDS)  // Allow more time for comprehensive threshold analysis
-public class FFTThresholdBenchmark {
+class FFTThresholdBenchmark {
     
     @Test
     @DisplayName("Determine optimal FFT vector/scalar threshold")
