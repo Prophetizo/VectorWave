@@ -77,19 +77,16 @@ public class RealFFTBenchmark {
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult standardFFT() {
         return standardTransform.analyze(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult realOptimizedFFT() {
         return realOptimizedTransform.analyze(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult autoFFT() {
         return autoTransform.analyze(signal, scales);
     }
@@ -98,13 +95,11 @@ public class RealFFTBenchmark {
      * Benchmark complex analysis which also benefits from real signal FFT.
      */
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public ComplexCWTResult standardComplexAnalysis() {
         return standardTransform.analyzeComplex(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public ComplexCWTResult realOptimizedComplexAnalysis() {
         return realOptimizedTransform.analyzeComplex(signal, scales);
     }
@@ -113,7 +108,6 @@ public class RealFFTBenchmark {
      * Direct convolution baseline (no FFT).
      */
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult directConvolution() {
         MorletWavelet wavelet = new MorletWavelet(6.0, 1.0);
         CWTConfig directConfig = CWTConfig.builder()
