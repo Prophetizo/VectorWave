@@ -83,8 +83,8 @@ class FinancialWaveletProviderTest {
             .orElseThrow();
         
         
-        assertTrue(dog.name().startsWith("dog"));
-        // DOG wavelet includes order in name (e.g., dog2)
+        // DOG wavelet includes order in name (e.g., dog2 for order 2)
+        assertEquals("dog2", dog.name(), "DOG wavelet should have name 'dog2' for order 2");
         assertNotNull(dog.description());
         assertFalse(dog.description().isEmpty());
     }
@@ -100,8 +100,9 @@ class FinancialWaveletProviderTest {
             .orElseThrow();
         
         
-        assertTrue(shannonGabor.name().startsWith("shan-gabor"));
-        // Shannon-Gabor includes parameters in name
+        // Shannon-Gabor includes parameters in name (e.g., shan-gabor0.5-1.5 for fb=0.5, fc=1.5)
+        assertEquals("shan-gabor0.5-1.5", shannonGabor.name(), 
+                    "Shannon-Gabor wavelet should have name 'shan-gabor0.5-1.5' for default parameters");
         
         // Test Classical Shannon
         Wavelet classicalShannon = wavelets.stream()

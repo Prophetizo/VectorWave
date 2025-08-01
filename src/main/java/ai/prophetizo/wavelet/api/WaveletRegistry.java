@@ -21,6 +21,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * <p>The registry uses Java's ServiceLoader mechanism to automatically discover
  * wavelets at runtime, eliminating circular dependencies and supporting extensibility.</p>
+ * 
+ * <p><b>Thread Safety:</b> This registry is designed for thread-safe operation:
+ * <ul>
+ *   <li>ConcurrentHashMap is used for the main wavelet storage to allow concurrent reads
+ *       without locking, which is critical for performance in multi-threaded applications</li>
+ *   <li>EnumMap with synchronized access is used for type-based lookups since writes are
+ *       infrequent (only during initialization)</li>
+ *   <li>Double-checked locking pattern ensures thread-safe lazy initialization</li>
+ *   <li>Volatile boolean prevents visibility issues across threads</li>
+ * </ul>
+ * The choice of ConcurrentHashMap over synchronized collections provides better scalability
+ * for read-heavy workloads typical in wavelet transform applications.</p>
  */
 public final class WaveletRegistry {
 

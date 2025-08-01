@@ -107,6 +107,8 @@ class WaveletRegistryEdgeCaseTest {
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
         AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger invalidArgumentCount = new AtomicInteger(0);
+        AtomicInteger otherExceptionCount = new AtomicInteger(0);
         
         for (int i = 0; i < THREAD_COUNT; i++) {
             final int threadId = i;
@@ -125,9 +127,14 @@ class WaveletRegistryEdgeCaseTest {
                         }
                     }
                     successCount.incrementAndGet();
+                } catch (InvalidArgumentException e) {
+                    // Expected if wavelet is temporarily unavailable during reload
+                    invalidArgumentCount.incrementAndGet();
                 } catch (Exception e) {
-                    // Expected during concurrent reload
-                    e.printStackTrace();
+                    // Unexpected exception - track it
+                    otherExceptionCount.incrementAndGet();
+                    System.err.println("Unexpected exception in thread " + threadId + ": " + 
+                                     e.getClass().getName() + " - " + e.getMessage());
                 } finally {
                     latch.countDown();
                 }
@@ -137,8 +144,17 @@ class WaveletRegistryEdgeCaseTest {
         latch.await();
         executor.shutdown();
         
-        // At least some threads should succeed
-        assertTrue(successCount.get() > 0, "At least some operations should succeed");
+        // Most threads should succeed (the reload thread might fail)
+        assertTrue(successCount.get() >= THREAD_COUNT - 1, 
+                  "At least " + (THREAD_COUNT - 1) + " threads should complete successfully");
+        
+        // No unexpected exceptions should occur
+        assertEquals(0, otherExceptionCount.get(), 
+                    "No unexpected exceptions should occur during concurrent access");
+        
+        // InvalidArgumentException is acceptable during reload
+        System.out.println("Concurrent test results: " + successCount.get() + " successes, " + 
+                          invalidArgumentCount.get() + " temporary wavelet unavailability");
     }
     
     @Test
