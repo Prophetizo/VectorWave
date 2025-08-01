@@ -23,6 +23,15 @@ public class BatchMemoryLayout implements AutoCloseable {
     private static final int VECTOR_LENGTH = SPECIES.length();
     private static final int ALIGNMENT = 64; // Cache line alignment
     
+    // Validate vector length is reasonable
+    static {
+        if (VECTOR_LENGTH < 2 || VECTOR_LENGTH > 8) {
+            throw new IllegalStateException(
+                "Unexpected vector length: " + VECTOR_LENGTH + 
+                ". Expected 2-8 doubles. Platform: " + System.getProperty("os.arch"));
+        }
+    }
+    
     private final int batchSize;
     private final int signalLength;
     private final int paddedBatchSize;

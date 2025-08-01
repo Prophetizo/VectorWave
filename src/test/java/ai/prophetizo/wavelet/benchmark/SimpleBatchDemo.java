@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.benchmark;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
 import java.util.Random;
 

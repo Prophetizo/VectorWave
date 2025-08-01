@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine;
 import ai.prophetizo.wavelet.internal.*;
+import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
 
 import java.util.concurrent.CompletableFuture;

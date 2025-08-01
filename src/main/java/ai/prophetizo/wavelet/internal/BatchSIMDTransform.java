@@ -25,6 +25,15 @@ public final class BatchSIMDTransform {
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final int VECTOR_LENGTH = SPECIES.length();
     
+    // Validate vector length is reasonable
+    static {
+        if (VECTOR_LENGTH < 2 || VECTOR_LENGTH > 8) {
+            throw new IllegalStateException(
+                "Unexpected vector length: " + VECTOR_LENGTH + 
+                ". Expected 2-8 doubles. Platform: " + System.getProperty("os.arch"));
+        }
+    }
+    
     // Cache line size for optimal memory access patterns
     private static final int CACHE_LINE_SIZE = 64;
     private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_SIZE / 8;
@@ -51,51 +60,55 @@ public final class BatchSIMDTransform {
         final double SQRT2_INV = 1.0 / Math.sqrt(2.0);
         DoubleVector sqrt2Vec = DoubleVector.broadcast(SPECIES, SQRT2_INV);
         
-        // Process signals in groups of VECTOR_LENGTH
-        for (int sigGroup = 0; sigGroup < numSignals; sigGroup += VECTOR_LENGTH) {
-            int remaining = Math.min(VECTOR_LENGTH, numSignals - sigGroup);
-            
+        // Process full vectors first (no branching in hot loop)
+        int fullVectorGroups = numSignals / VECTOR_LENGTH;
+        
+        // Process all full vector groups
+        for (int sigGroup = 0; sigGroup < fullVectorGroups * VECTOR_LENGTH; sigGroup += VECTOR_LENGTH) {
             // Process each output sample
             for (int outIdx = 0; outIdx < halfLength; outIdx++) {
                 int evenIdx = 2 * outIdx;
                 int oddIdx = evenIdx + 1;
                 
-                if (remaining == VECTOR_LENGTH) {
-                    // Full vector processing - load samples from multiple signals
-                    double[] evenSamples = new double[VECTOR_LENGTH];
-                    double[] oddSamples = new double[VECTOR_LENGTH];
-                    
-                    // Gather samples from different signals
-                    for (int v = 0; v < VECTOR_LENGTH; v++) {
-                        evenSamples[v] = signals[sigGroup + v][evenIdx];
-                        oddSamples[v] = signals[sigGroup + v][oddIdx];
-                    }
-                    
-                    // SIMD computation
-                    DoubleVector evenVec = DoubleVector.fromArray(SPECIES, evenSamples, 0);
-                    DoubleVector oddVec = DoubleVector.fromArray(SPECIES, oddSamples, 0);
-                    
-                    DoubleVector approxVec = evenVec.add(oddVec).mul(sqrt2Vec);
-                    DoubleVector detailVec = evenVec.sub(oddVec).mul(sqrt2Vec);
-                    
-                    // Scatter results back to different signals
-                    double[] approxTemp = new double[VECTOR_LENGTH];
-                    double[] detailTemp = new double[VECTOR_LENGTH];
-                    approxVec.intoArray(approxTemp, 0);
-                    detailVec.intoArray(detailTemp, 0);
-                    
-                    for (int v = 0; v < VECTOR_LENGTH; v++) {
-                        approxResults[sigGroup + v][outIdx] = approxTemp[v];
-                        detailResults[sigGroup + v][outIdx] = detailTemp[v];
-                    }
-                } else {
-                    // Partial vector or scalar fallback
-                    for (int v = 0; v < remaining; v++) {
-                        double even = signals[sigGroup + v][evenIdx];
-                        double odd = signals[sigGroup + v][oddIdx];
-                        approxResults[sigGroup + v][outIdx] = (even + odd) * SQRT2_INV;
-                        detailResults[sigGroup + v][outIdx] = (even - odd) * SQRT2_INV;
-                    }
+                // Full vector processing - load samples from multiple signals
+                double[] evenSamples = new double[VECTOR_LENGTH];
+                double[] oddSamples = new double[VECTOR_LENGTH];
+                
+                // Gather samples from different signals
+                for (int v = 0; v < VECTOR_LENGTH; v++) {
+                    evenSamples[v] = signals[sigGroup + v][evenIdx];
+                    oddSamples[v] = signals[sigGroup + v][oddIdx];
+                }
+                
+                // SIMD computation
+                DoubleVector evenVec = DoubleVector.fromArray(SPECIES, evenSamples, 0);
+                DoubleVector oddVec = DoubleVector.fromArray(SPECIES, oddSamples, 0);
+                
+                DoubleVector approxVec = evenVec.add(oddVec).mul(sqrt2Vec);
+                DoubleVector detailVec = evenVec.sub(oddVec).mul(sqrt2Vec);
+                
+                // Scatter results back to different signals
+                double[] approxTemp = new double[VECTOR_LENGTH];
+                double[] detailTemp = new double[VECTOR_LENGTH];
+                approxVec.intoArray(approxTemp, 0);
+                detailVec.intoArray(detailTemp, 0);
+                
+                for (int v = 0; v < VECTOR_LENGTH; v++) {
+                    approxResults[sigGroup + v][outIdx] = approxTemp[v];
+                    detailResults[sigGroup + v][outIdx] = detailTemp[v];
+                }
+            }
+        }
+        
+        // Handle remainder signals (if any)
+        int remainderStart = fullVectorGroups * VECTOR_LENGTH;
+        if (remainderStart < numSignals) {
+            for (int sig = remainderStart; sig < numSignals; sig++) {
+                for (int outIdx = 0; outIdx < halfLength; outIdx++) {
+                    double even = signals[sig][2 * outIdx];
+                    double odd = signals[sig][2 * outIdx + 1];
+                    approxResults[sig][outIdx] = (even + odd) * SQRT2_INV;
+                    detailResults[sig][outIdx] = (even - odd) * SQRT2_INV;
                 }
             }
         }
@@ -343,12 +356,17 @@ public final class BatchSIMDTransform {
     public static String getBatchSIMDInfo() {
         return String.format(
             "Batch SIMD Transform Configuration:%n" +
-            "Vector Length: %d doubles%n" +
+            "Platform: %s%n" +
+            "Vector Species: %s%n" +
+            "Vector Length: %d doubles (%d bits)%n" +
             "Optimal batch size: multiples of %d%n" +
             "Cache line size: %d bytes%n" +
             "Recommended signal block: %d samples%n" +
             "Processing mode: True parallel SIMD across signals",
+            System.getProperty("os.arch"),
+            SPECIES.toString(),
             VECTOR_LENGTH,
+            VECTOR_LENGTH * 64,
             VECTOR_LENGTH,
             CACHE_LINE_SIZE,
             DOUBLES_PER_CACHE_LINE * 4
