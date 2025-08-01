@@ -11,15 +11,17 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 - **Financial Wavelets**: Specialized wavelets for market analysis
   - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
   - Shannon wavelet: Band-limited analysis
+  - Shannon-Gabor wavelet: Time-frequency localization with reduced artifacts
   - DOG wavelets: Gaussian derivatives for smooth features
   - MATLAB-compatible Mexican Hat: Legacy system integration
 - **Foreign Function & Memory API (FFM)**: Zero-copy operations with Java 23's FFM API
   - SIMD-aligned memory allocation
   - Reduced GC pressure through off-heap memory
-  - Thread-safe memory pooling
+  - Thread-safe memory pooling with lifecycle management
 - **Type-Safe API**: Sealed interfaces with compile-time validation
 - **Zero Dependencies**: Pure Java implementation
 - **Flexible Boundary Handling**: Periodic, Zero-padding (Symmetric and Constant modes partially implemented)
+- **Plugin Architecture**: ServiceLoader-based wavelet discovery for extensibility
 
 ### Performance
 - **SIMD Optimizations**: Platform-specific Vector API support with automatic fallback
@@ -30,14 +32,16 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
   - Split-radix FFT for optimal performance
   - Bluestein algorithm for arbitrary sizes
   - Pre-computed twiddle factor caching
+  - Real-to-complex FFT optimization (2x speedup for real signals)
 - **Cache-Aware Operations**: Platform-adaptive cache configuration
 - **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
 - **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
 - **Parallel Processing**: Fork-join framework for batch operations
-- **Batch SIMD Processing**: True parallel processing of multiple signals
-  - Processes N signals simultaneously (N = SIMD vector width)
-  - Optimized memory layouts for coalesced vector operations
-  - Adaptive algorithm selection based on batch size
+- **True SIMD Batch Processing**: Process multiple signals simultaneously
+  - Processes N signals in parallel (N = SIMD vector width)
+  - Optimized memory layouts (SoA) for coalesced vector operations
+  - Adaptive algorithm selection based on batch size and wavelet type
+  - Specialized kernels for Haar and small wavelets
   - 2-4x speedup for typical workloads
 
 ### Advanced Features
@@ -45,6 +49,7 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 - **Streaming Support**: Real-time processing with Java Flow API
   - Fast mode: < 1 µs/sample latency
   - Quality mode: Enhanced SNR with overlap
+  - Factory-based automatic mode selection
 - **Multi-level Transforms**: Configurable decomposition levels
 - **Complex Wavelet Analysis**: Full magnitude and phase information
   - Complex coefficient computation
@@ -59,6 +64,15 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
   - 10-300x faster than standard methods
   - O(N log N) complexity
   - Ideal for financial applications and real-time processing
+- **Factory Pattern Architecture**: Modern dependency injection
+  - Common factory interface for all components
+  - Registry-based factory management
+  - Polymorphic usage patterns
+- **Configurable Financial Analysis**: Builder-pattern configuration
+  - Custom risk-free rates for Sharpe ratio calculation
+  - Adjustable crash detection thresholds
+  - Volatility and regime change parameters
+  - Anomaly detection settings
 
 ## Requirements
 
@@ -85,6 +99,9 @@ mvn test
 
 # Run specific benchmark
 ./jmh-runner.sh OptimizedFFTBenchmark
+
+# Run demos
+mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 ```
 
 ## Usage
@@ -126,6 +143,13 @@ OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.Engi
     .withSpecializedKernels(true) // Use optimized kernels
     .withCacheBlocking(true);     // Enable cache-aware blocking
 OptimizedTransformEngine customEngine = new OptimizedTransformEngine(config);
+
+// Thread-local cleanup for batch SIMD operations (important in thread pools)
+try {
+    BatchSIMDTransform.haarBatchTransformSIMD(signals, approx, detail);
+} finally {
+    BatchSIMDTransform.cleanupThreadLocals();
+}
 ```
 
 ### FFM-Based Transform (Java 23+)
@@ -151,6 +175,35 @@ try (FFMStreamingTransform streaming = new FFMStreamingTransform(wavelet, blockS
 }
 ```
 
+### Financial Analysis
+```java
+// Basic financial analysis with configurable parameters
+FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
+    .crashAsymmetryThreshold(0.7)
+    .volatilityLowThreshold(0.5)
+    .volatilityHighThreshold(2.0)
+    .anomalyDetectionThreshold(3.0)
+    .confidenceLevel(0.95)
+    .build();
+
+FinancialAnalyzer analyzer = new FinancialAnalyzer(config);
+double asymmetry = analyzer.analyzeCrashAsymmetry(prices);
+double volatility = analyzer.analyzeVolatility(prices);
+boolean hasAnomalies = analyzer.detectAnomalies(prices);
+
+// Wavelet-based financial analysis
+FinancialConfig waveletConfig = new FinancialConfig()
+    .withRiskFreeRate(0.045); // 4.5% annual risk-free rate
+
+FinancialWaveletAnalyzer waveletAnalyzer = new FinancialWaveletAnalyzer(waveletConfig);
+double sharpeRatio = waveletAnalyzer.calculateSharpeRatio(returns);
+double waveletSharpe = waveletAnalyzer.calculateWaveletSharpeRatio(returns); // Must be power-of-2 length
+
+// Live trading simulation with real-time analysis
+LiveTradingSimulation simulation = new LiveTradingSimulation();
+simulation.run(); // Interactive console-based trading bot
+```
+
 ### Denoising
 ```java
 WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4);
@@ -161,6 +214,14 @@ double[] clean = denoiser.denoise(noisySignal,
     ThresholdMethod.SURE, 
     4, // levels
     ThresholdType.SOFT
+);
+
+// Streaming denoiser with automatic implementation selection
+StreamingDenoiser streamDenoiser = StreamingDenoiserFactory.create(
+    Daubechies.DB4,
+    ThresholdMethod.UNIVERSAL,
+    512, // block size
+    0.5  // overlap ratio - auto-selects fast or quality mode
 );
 ```
 
@@ -195,19 +256,13 @@ double syncIndex = calculatePhaseSynchronization(result1.getPhase(), result2.get
 
 // Financial analysis with specialized wavelets
 PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
-FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
-var crashResult = analyzer.detectMarketCrashes(priceData, threshold);
+CWTTransform financialCWT = new CWTTransform(paulWavelet);
+CWTResult crashAnalysis = financialCWT.analyze(priceReturns, scales);
 
-// Configure financial parameters including risk-free rate
-FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
-    .annualRiskFreeRate(0.045)  // 4.5% for Sharpe ratio calculation
-    .volatilityThresholds(0.5, 1.5, 3.0)
-    .build();
-FinancialWaveletAnalyzer customAnalyzer = new FinancialWaveletAnalyzer(params);
-
-// FFT-accelerated CWT for large signals
+// FFT-accelerated CWT with real-to-complex optimization
 CWTConfig config = CWTConfig.builder()
-    .enableFFT(true)
+    .enableFFT(true)           // Enable FFT acceleration
+    .realOptimized(true)       // 2x speedup for real signals
     .normalizeScales(true)
     .build();
 CWTTransform fftCwt = new CWTTransform(wavelet, config);
@@ -219,9 +274,8 @@ double[] reconstructed = dwtInverse.reconstruct(cwtResult);
 ```
 
 ### Wavelet Registry and Discovery
-
 ```java
-// Discover available wavelets
+// Discover available wavelets using ServiceLoader
 Set<String> available = WaveletRegistry.getAvailableWavelets();
 List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
 
@@ -234,10 +288,35 @@ if (WaveletRegistry.hasWavelet("meyer")) {
     Wavelet meyer = WaveletRegistry.getWavelet("meyer");
 }
 
+// Force reload of wavelet providers
+WaveletRegistry.reload();
+
+// Get any provider loading warnings
+List<String> warnings = WaveletRegistry.getLoadWarnings();
+
 // Add custom wavelets via ServiceLoader
 // 1. Implement WaveletProvider
 // 2. Register in META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider
 // See docs/WAVELET_PROVIDER_SPI.md for details
+```
+
+### Factory Pattern Usage
+```java
+// Access the factory registry
+FactoryRegistry registry = FactoryRegistry.getInstance();
+
+// Register custom factories
+registry.register("myTransform", new MyCustomTransformFactory());
+
+// Retrieve and use factories
+Factory<WaveletOps, TransformConfig> opsFactory = 
+    registry.getFactory("waveletOps", WaveletOps.class, TransformConfig.class)
+        .orElseThrow(() -> new IllegalStateException("Factory not found"));
+
+WaveletOps ops = opsFactory.create();
+
+// Default factories are automatically registered
+FactoryRegistry.registerDefaults();
 ```
 
 ### Wavelet Selection Guide
@@ -249,6 +328,7 @@ if (WaveletRegistry.hasWavelet("meyer")) {
 | **Mexican Hat (DOG2)** | Edge detection, volatility | Second derivative of Gaussian, zero crossings at edges |
 | **DOG(n)** | Smooth feature extraction | Higher derivatives for smoother patterns |
 | **Shannon** | Band-limited signals | Perfect frequency localization, poor time localization |
+| **Shannon-Gabor** | Time-frequency analysis | Reduced artifacts vs classical Shannon |
 | **Daubechies** | Signal compression, denoising | Compact support, orthogonal |
 | **Symlets** | Symmetric signal analysis | Near-symmetric, orthogonal |
 | **Coiflets** | Numerical analysis | Vanishing moments for polynomial signals |
@@ -318,18 +398,66 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 - [Financial Wavelets Guide](docs/FINANCIAL_WAVELETS.md)
 - [Wavelet Normalization](docs/WAVELET_NORMALIZATION.md)
 - [Wavelet Selection Guide](docs/WAVELET_SELECTION.md)
+- [Batch Processing Guide](docs/BATCH_PROCESSING.md)
+- [Factory Pattern Guide](docs/FACTORY_PATTERN.md)
+
+## Available Demos
+
+The project includes comprehensive demos showcasing various features:
+
+### Core Functionality
+- `Main` - Interactive menu system for all demos
+- `WaveletShowcase` - Comprehensive wavelet transform demonstrations
+- `PerformanceDemo` - Performance comparisons and benchmarks
+- `ScalarVsVectorDemo` - SIMD vs scalar implementation comparison
+
+### Financial Analysis
+- `FinancialDemo` - Basic financial time series analysis
+- `FinancialAnalysisDemo` - Advanced configurable analysis
+- `FinancialOptimizationDemo` - Performance-optimized financial processing
+- `LiveTradingSimulation` - Interactive trading bot simulation
+
+### Advanced Features
+- `BatchProcessingDemo` - True SIMD batch processing examples
+- `StreamingDemo` - Real-time streaming transform examples
+- `FFMDemo` - Foreign Function & Memory API demonstrations
+- `MemoryPoolLifecycleDemo` - Memory management patterns
+- `ComplexCWTDemo` - Complex wavelet analysis with phase
+- `AdaptiveScaleDemo` - Automatic scale selection strategies
+
+### CWT Demonstrations
+- `CWTBasicDemo` - Continuous wavelet transform basics
+- `CWTFFTOptimizationDemo` - FFT acceleration examples
+- `DWTBasedReconstructionDemo` - Fast reconstruction methods
+- `ShannonWaveletComparisonDemo` - Shannon vs Shannon-Gabor comparison
+
+### Performance and Optimization
+- `FFTOptimizationDemo` - FFT performance improvements
+- `ConvolutionDemo` - Convolution optimization strategies
+- `CacheOptimizationDemo` - Cache-aware algorithm demonstrations
+
+Run demos with:
+```bash
+# Run all demos through interactive menu
+mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
+
+# Run specific demo
+mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
+```
 
 ## Known Issues
 
-- **Biorthogonal Wavelets** (#138): Critical bug causing catastrophic reconstruction errors. Use orthogonal wavelets (Haar, Daubechies, Symlets) instead.
+- **Biorthogonal Wavelets** (#138): Critical bug causing catastrophic reconstruction errors (RMSE > 1.4). Use orthogonal wavelets (Haar, Daubechies, Symlets) instead.
 - **Boundary Modes** (#135-137): SYMMETRIC and CONSTANT modes not fully implemented for FFM upsampling operations.
 - **FFM Requirements**: Requires Java 23+ with `--enable-native-access=ALL-UNNAMED` flag.
+- **Power-of-Two Requirement**: Wavelet-based methods in FinancialWaveletAnalyzer require input arrays with power-of-two length.
 
 ## Requirements
 
 - Java 21 or higher
 - Maven 3.6+
 - For SIMD: `--add-modules jdk.incubator.vector`
+- For FFM: Java 23+ with `--enable-native-access=ALL-UNNAMED`
 
 ## License
 

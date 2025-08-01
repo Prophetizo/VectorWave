@@ -4,6 +4,46 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Recent Updates (August 2025)
 
+### Code Quality Improvements
+- Extracted duplicate `isPowerOfTwo` validation logic to `ValidationUtils` utility class
+- Fixed inefficient `OptimizedTransformEngine` creation in batch operations (now reused)
+- Replaced all `System.err.println` calls with proper exception handling
+- Improved floating-point comparisons with epsilon tolerance
+- Enhanced error messages for better debugging
+- Added comprehensive class-level documentation for power-of-two requirements
+
+### Factory Pattern Implementation
+- Added standardized `Factory<T,C>` interface in `ai.prophetizo.wavelet.api`
+- Implemented factory pattern for all major components:
+  - `WaveletOpsFactory` with static instance accessor
+  - `WaveletTransformFactory` implementing Factory directly
+  - `CWTFactory` with builder pattern support
+  - `StreamingDenoiserFactory` with automatic implementation selection
+- Centralized factory registry with `FactoryRegistry` singleton
+- Improved error messages with context about what's being registered
+
+### Financial Analysis Module
+- Added `FinancialAnalyzer` with configurable thresholds via `FinancialAnalysisConfig`
+- Added `FinancialWaveletAnalyzer` for wavelet-based financial metrics
+- Implemented Sharpe ratio calculations (standard and wavelet-based)
+- Builder pattern for configuration with validation
+
+### ServiceLoader-based Plugin Architecture
+- Automatic wavelet discovery via `WaveletRegistry`
+- Three built-in providers: Orthogonal, Biorthogonal, Continuous
+- Case-insensitive wavelet lookup
+- Warning collection mechanism instead of stderr output
+- Support for custom wavelet providers via SPI
+
+### Documentation Updates
+- Comprehensive update of README.md with all new features
+- Complete rewrite of API.md with 12 major sections
+- Created comprehensive demo files:
+  - `BatchProcessingDemo` - showcases SIMD batch processing
+  - `PluginArchitectureDemo` - demonstrates ServiceLoader features
+  - `FFMDemo` - comprehensive FFM API demonstration
+- Added detailed batch processing guide
+
 ### Batch SIMD Processing (#124)
 - Added true SIMD batch processing in `ai.prophetizo.wavelet.internal.BatchSIMDTransform`
 - Processes multiple signals in parallel using vector instructions
