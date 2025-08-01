@@ -102,4 +102,17 @@ OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
 - Performance benchmarks in `benchmark` package
 - Validates correctness against sequential implementation
 
+### Thread-Local Memory Management
+The `BatchSIMDTransform` class uses ThreadLocal storage to avoid allocations in hot paths. In thread pool or application server environments, call `BatchSIMDTransform.cleanupThreadLocals()` when done to prevent memory leaks:
+
+```java
+try {
+    // Use batch SIMD transforms
+    BatchSIMDTransform.haarBatchTransformSIMD(signals, approx, detail);
+} finally {
+    // Clean up thread-local resources
+    BatchSIMDTransform.cleanupThreadLocals();
+}
+```
+
 [Rest of the existing file content remains the same...]

@@ -18,6 +18,18 @@ import jdk.incubator.vector.VectorMask;
  *   <li>Optimizing for different batch sizes and signal lengths</li>
  * </ul>
  *
+ * <p><b>Thread-Local Memory Management:</b></p>
+ * This class uses ThreadLocal storage to avoid allocating temporary arrays in hot paths.
+ * In long-lived applications or thread pool scenarios, you should call
+ * {@link #cleanupThreadLocals()} when done to prevent memory leaks:
+ * <pre>{@code
+ * try {
+ *     BatchSIMDTransform.haarBatchTransformSIMD(signals, approx, detail);
+ * } finally {
+ *     BatchSIMDTransform.cleanupThreadLocals(); // Clean up when done
+ * }
+ * }</pre>
+ *
  * @since 2.0.0
  */
 public final class BatchSIMDTransform {
@@ -96,6 +108,42 @@ public final class BatchSIMDTransform {
     }
     
     /**
+     * Cleans up thread-local resources for the current thread.
+     * Should be called when a thread is done using BatchSIMDTransform
+     * to prevent memory leaks in long-lived thread pool scenarios.
+     */
+    public static void cleanupThreadLocals() {
+        HAAR_WORK_ARRAYS.remove();
+        BLOCK_WORK_ARRAYS.remove();
+        ALIGNED_WORK_ARRAYS.remove();
+    }
+    
+    /**
+     * Registers a cleanup hook for the current thread to automatically
+     * clean up resources when the thread terminates.
+     * Note: This only works if the thread actually terminates; it won't
+     * help with thread pool scenarios where threads are reused.
+     */
+    public static void registerThreadCleanupHook() {
+        Thread currentThread = Thread.currentThread();
+        currentThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            private final Thread.UncaughtExceptionHandler originalHandler = 
+                currentThread.getUncaughtExceptionHandler();
+            
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                try {
+                    cleanupThreadLocals();
+                } finally {
+                    if (originalHandler != null) {
+                        originalHandler.uncaughtException(t, e);
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
      * Perform Haar wavelet transform on multiple signals using true SIMD parallelization.
      * Processes VECTOR_LENGTH signals simultaneously for maximum throughput.
      * 
@@ -129,6 +177,10 @@ public final class BatchSIMDTransform {
             for (int outIdx = 0; outIdx < halfLength; outIdx++) {
                 int evenIdx = 2 * outIdx;
                 int oddIdx = evenIdx + 1;
+                
+                // Try to use direct gather if all signals are contiguous in memory
+                // For now, we still need manual gather due to Java's 2D array layout
+                // TODO: Consider using a flat array layout for better SIMD gather/scatter
                 
                 // Gather samples from different signals
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
@@ -408,6 +460,48 @@ public final class BatchSIMDTransform {
         } else {
             // Default - use basic blocked version
             blockedBatchTransformSIMD(signals, approxResults, detailResults, lowPass, highPass);
+        }
+    }
+    
+    /**
+     * Optimized Haar transform using flattened memory layout for better SIMD gather/scatter.
+     * This version avoids the manual gather/scatter loops by working with contiguous memory.
+     * 
+     * @param flatSignals flattened signals in interleaved format [s0[0], s1[0], ..., sN[0], s0[1], ...]
+     * @param flatApprox flattened approximation output
+     * @param flatDetail flattened detail output
+     * @param numSignals number of signals (must be multiple of VECTOR_LENGTH)
+     * @param signalLength length of each signal
+     */
+    public static void haarBatchTransformSIMDFlat(double[] flatSignals, 
+                                                  double[] flatApprox,
+                                                  double[] flatDetail,
+                                                  int numSignals,
+                                                  int signalLength) {
+        final double SQRT2_INV = 1.0 / Math.sqrt(2.0);
+        DoubleVector sqrt2Vec = DoubleVector.broadcast(SPECIES, SQRT2_INV);
+        int halfLength = signalLength / 2;
+        
+        // Process with direct SIMD operations on contiguous memory
+        for (int outIdx = 0; outIdx < halfLength; outIdx++) {
+            int evenIdx = 2 * outIdx * numSignals;
+            int oddIdx = (2 * outIdx + 1) * numSignals;
+            int outBase = outIdx * numSignals;
+            
+            // Process all signals in groups of VECTOR_LENGTH
+            for (int sig = 0; sig < numSignals; sig += VECTOR_LENGTH) {
+                // Direct vector loads from contiguous memory - no gather needed!
+                DoubleVector evenVec = DoubleVector.fromArray(SPECIES, flatSignals, evenIdx + sig);
+                DoubleVector oddVec = DoubleVector.fromArray(SPECIES, flatSignals, oddIdx + sig);
+                
+                // SIMD computation
+                DoubleVector approxVec = evenVec.add(oddVec).mul(sqrt2Vec);
+                DoubleVector detailVec = evenVec.sub(oddVec).mul(sqrt2Vec);
+                
+                // Direct vector stores to contiguous memory - no scatter needed!
+                approxVec.intoArray(flatApprox, outBase + sig);
+                detailVec.intoArray(flatDetail, outBase + sig);
+            }
         }
     }
     

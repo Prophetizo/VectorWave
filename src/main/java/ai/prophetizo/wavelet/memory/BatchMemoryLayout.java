@@ -248,81 +248,75 @@ public class BatchMemoryLayout implements AutoCloseable {
     
     @Override
     public void close() {
-        // Return memory to pool, ensuring all pools are closed even if exceptions occur
-        Exception firstException = null;
-        String failedPool = null;
+        // Track exceptions from closing resources
+        ResourceCloseTracker closeTracker = new ResourceCloseTracker();
         
-        // Close input pool
-        try {
-            if (inputPool != null) {
-                inputPool.close();
-            }
-        } catch (IllegalStateException e) {
-            firstException = e;
-            failedPool = "input";
-        } catch (Exception e) {
-            firstException = new RuntimeException("Unexpected error closing input pool", e);
-            failedPool = "input";
-        }
-        
-        // Close approximation pool
-        try {
-            if (approxPool != null) {
-                approxPool.close();
-            }
-        } catch (IllegalStateException e) {
-            if (firstException == null) {
-                firstException = e;
-                failedPool = "approximation";
-            } else {
-                firstException.addSuppressed(e);
-            }
-        } catch (Exception e) {
-            Exception wrapped = new RuntimeException("Unexpected error closing approximation pool", e);
-            if (firstException == null) {
-                firstException = wrapped;
-                failedPool = "approximation";
-            } else {
-                firstException.addSuppressed(wrapped);
-            }
-        }
-        
-        // Close detail pool
-        try {
-            if (detailPool != null) {
-                detailPool.close();
-            }
-        } catch (IllegalStateException e) {
-            if (firstException == null) {
-                firstException = e;
-                failedPool = "detail";
-            } else {
-                firstException.addSuppressed(e);
-            }
-        } catch (Exception e) {
-            Exception wrapped = new RuntimeException("Unexpected error closing detail pool", e);
-            if (firstException == null) {
-                firstException = wrapped;
-                failedPool = "detail";
-            } else {
-                firstException.addSuppressed(wrapped);
-            }
-        }
+        // Close all pools, tracking any exceptions
+        closeTracker.closeResource(inputPool, "input");
+        closeTracker.closeResource(approxPool, "approximation");
+        closeTracker.closeResource(detailPool, "detail");
         
         // If any exception occurred, throw it with detailed information
-        if (firstException != null) {
+        if (closeTracker.hasException()) {
             String message = String.format(
                 "Failed to close BatchMemoryLayout: %s pool failed first. " +
                 "Batch size: %d, Signal length: %d, Total memory: %.2f MB",
-                failedPool, batchSize, signalLength,
+                closeTracker.getFirstFailedResource(), batchSize, signalLength,
                 (inputData.length + approxData.length + detailData.length) * 8.0 / (1024 * 1024)
             );
             
-            if (firstException instanceof RuntimeException) {
-                throw new RuntimeException(message, firstException);
-            } else {
-                throw new RuntimeException(message, firstException);
+            throw new RuntimeException(message, closeTracker.getFirstException());
+        }
+    }
+    
+    /**
+     * Helper class to track exceptions when closing multiple resources.
+     * Ensures all resources are attempted to be closed even if some fail.
+     */
+    private static class ResourceCloseTracker {
+        private Exception firstException;
+        private String firstFailedResource;
+        
+        /**
+         * Attempts to close a resource and tracks any exceptions.
+         * 
+         * @param resource the AutoCloseable resource to close (may be null)
+         * @param resourceName descriptive name for error messages
+         */
+        void closeResource(AutoCloseable resource, String resourceName) {
+            if (resource == null) {
+                return;
             }
+            
+            try {
+                resource.close();
+            } catch (IllegalStateException e) {
+                trackException(e, resourceName);
+            } catch (Exception e) {
+                trackException(new RuntimeException("Unexpected error closing " + resourceName + " pool", e), 
+                              resourceName);
+            }
+        }
+        
+        private void trackException(Exception e, String resourceName) {
+            if (firstException == null) {
+                firstException = e;
+                firstFailedResource = resourceName;
+            } else {
+                firstException.addSuppressed(e);
+            }
+        }
+        
+        boolean hasException() {
+            return firstException != null;
+        }
+        
+        Exception getFirstException() {
+            return firstException;
+        }
+        
+        String getFirstFailedResource() {
+            return firstFailedResource;
         }
     }
     

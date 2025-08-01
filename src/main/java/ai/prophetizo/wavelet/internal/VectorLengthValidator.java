@@ -12,8 +12,12 @@ public final class VectorLengthValidator {
     private static final int MIN_VECTOR_LENGTH = 1;
     
     // Maximum expected vector length (can be overridden via system property)
+    // Default of 64 doubles accommodates:
+    // - Current platforms: AVX-512 (8 doubles), ARM SVE (up to 32 doubles)
+    // - Future platforms: Potential for wider SIMD units (512-4096 bits)
+    // This is a sanity check to catch configuration errors, not a hard limit
     private static final int MAX_VECTOR_LENGTH = Integer.getInteger(
-        "ai.prophetizo.wavelet.max.vector.length", 16
+        "ai.prophetizo.wavelet.max.vector.length", 64
     );
     
     private VectorLengthValidator() {
