@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 
 import java.util.Arrays;
 
@@ -84,7 +85,7 @@ public class FinancialOptimizationDemo {
                 Arrays.stream(prices).limit(actualBars).min().orElse(0),
                 Arrays.stream(prices).limit(actualBars).max().orElse(0));
         System.out.printf("Volatility estimate: %.4f (%.2f%% annualized)\n",
-                volatilityProxy, volatilityProxy * Math.sqrt(252 * 78) * 100);
+                volatilityProxy, volatilityProxy * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR * 78) * 100);
         System.out.printf("Transform time: %d µs\n\n", transformTime / 1000);
     }
 

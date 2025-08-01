@@ -130,15 +130,15 @@ class FinancialWaveletAnalyzerSharpeRatioTest {
     void testDailyRiskFreeRateConversion() {
         // Test that annual rate is properly converted to daily rate
         double annualRate = 0.0365; // 3.65% annual
-        double expectedDailyRate = annualRate / 252.0; // Trading days convention
+        double expectedDailyRate = annualRate / FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR;
         
         FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
             .annualRiskFreeRate(annualRate)
             .build();
         
-        // The daily rate should be approximately annualRate/252
-        double dailyRate = params.getAnnualRiskFreeRate() / 252.0;
+        // The daily rate should be approximately annualRate/TRADING_DAYS_PER_YEAR
+        double dailyRate = params.getAnnualRiskFreeRate() / FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR;
         assertEquals(expectedDailyRate, dailyRate, TOLERANCE,
-            "Daily rate should be annual rate divided by 252 trading days");
+            "Daily rate should be annual rate divided by standard trading days per year");
     }
 }

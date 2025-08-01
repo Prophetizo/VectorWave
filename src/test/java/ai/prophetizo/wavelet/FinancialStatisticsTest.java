@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -139,7 +140,7 @@ class FinancialStatisticsTest {
         // Generate returns with known Sharpe ratio
         double targetMean = 0.0001; // 1 bp daily return
         double targetVol = 0.01;    // 1% daily vol
-        double targetSharpe = targetMean / targetVol * Math.sqrt(252); // Annualized
+        double targetSharpe = targetMean / targetVol * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR); // Annualized
         
         double[] returns = new double[256]; // Power of 2
         for (int i = 0; i < returns.length; i++) {
@@ -396,7 +397,7 @@ class FinancialStatisticsTest {
     private double calculateSharpeRatio(double[] returns) {
         double mean = calculateMean(returns);
         double std = Math.sqrt(calculateVariance(returns));
-        return mean / std * Math.sqrt(256); // Annualized (assuming 256 trading days)
+        return mean / std * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR); // Annualized
     }
     
     private double calculateVaR(double[] returns, double confidence) {

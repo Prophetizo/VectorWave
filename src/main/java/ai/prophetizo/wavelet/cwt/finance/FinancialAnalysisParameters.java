@@ -23,6 +23,12 @@ package ai.prophetizo.wavelet.cwt.finance;
  */
 public final class FinancialAnalysisParameters {
     
+    /**
+     * Standard number of trading days per year.
+     * This is the conventional value used in financial markets for annualization.
+     */
+    public static final int TRADING_DAYS_PER_YEAR = 252;
+    
     // Crash Detection Parameters
     private final double crashAsymmetryThreshold;
     private final double crashMinScale;

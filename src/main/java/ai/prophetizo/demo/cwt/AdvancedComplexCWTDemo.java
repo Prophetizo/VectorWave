@@ -551,7 +551,7 @@ public class AdvancedComplexCWTDemo {
         prices[0] = initial;
         
         for (int i = 1; i < N; i++) {
-            double dt = 1.0 / 252; // Daily
+            double dt = 1.0 / FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR; // Daily
             double dW = Math.sqrt(dt) * (Math.random() - 0.5) * 2.0;
             prices[i] = prices[i-1] * Math.exp((drift - 0.5 * volatility * volatility) * dt + 
                                                volatility * dW);
@@ -567,7 +567,7 @@ public class AdvancedComplexCWTDemo {
         
         for (int i = 1; i < N; i++) {
             double baseReturn = Math.log(baseStock[i] / baseStock[i-1]);
-            double independentReturn = (Math.random() - 0.5) * 2.0 * additionalVol / Math.sqrt(252);
+            double independentReturn = (Math.random() - 0.5) * 2.0 * additionalVol / Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR);
             
             double correlatedReturn = correlation * baseReturn + 
                                     Math.sqrt(1 - correlation * correlation) * independentReturn;

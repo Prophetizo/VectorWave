@@ -3,6 +3,7 @@ package ai.prophetizo.demo.cwt;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet;
 import ai.prophetizo.wavelet.cwt.finance.ShannonGaborWavelet;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 
 /**
  * Demonstrates the differences between Classical Shannon and Shannon-Gabor wavelets
@@ -37,8 +38,8 @@ public class ShannonWaveletComparisonDemo {
         System.out.println("1. Periodic Trading Pattern Analysis");
         System.out.println("------------------------------------");
         
-        // Generate 252 trading days with weekly (5-day) pattern
-        int days = 252;
+        // Generate one year of trading days with weekly (5-day) pattern
+        int days = FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR;
         double[] prices = new double[days];
         
         // Add base trend and weekly oscillation

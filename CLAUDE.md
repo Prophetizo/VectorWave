@@ -191,6 +191,8 @@ FinancialAnalysisParameters params = FinancialAnalysisParameters.builder()
     .annualRiskFreeRate(0.045)  // 4.5% annual risk-free rate for Sharpe ratio
     .build();
 
+// Note: Use FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR (252) for annualization
+
 FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(params);
 var crashes = analyzer.detectMarketCrashes(priceData, samplingRate);
 ```

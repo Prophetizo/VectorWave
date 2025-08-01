@@ -797,8 +797,8 @@ public class FinancialWaveletAnalyzer {
      * Calculates the Sharpe ratio for the generated trading signals.
      * 
      * <p>The Sharpe ratio is calculated as (mean return - risk-free rate) / standard deviation,
-     * then annualized assuming 252 trading days. The risk-free rate is taken from the
-     * FinancialAnalysisParameters configuration.</p>
+     * then annualized using the standard number of trading days per year. The risk-free rate 
+     * is taken from the FinancialAnalysisParameters configuration.</p>
      * 
      * @param signals list of trading signals
      * @param prices price data
@@ -874,13 +874,13 @@ public class FinancialWaveletAnalyzer {
             double stdDev = Math.sqrt(variance);
             
             // Convert annual risk-free rate to daily rate
-            double dailyRiskFreeRate = parameters.getAnnualRiskFreeRate() / 252.0;
+            double dailyRiskFreeRate = parameters.getAnnualRiskFreeRate() / FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR;
             
             // Sharpe ratio = (mean return - risk-free rate) / standard deviation
-            // Annualize assuming 252 trading days
+            // Annualize assuming standard trading days per year
             double excessReturn = meanReturn - dailyRiskFreeRate;
             double dailySharpe = stdDev > 0 ? excessReturn / stdDev : 0.0;
-            return dailySharpe * Math.sqrt(252);
+            return dailySharpe * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR);
         } finally {
             pool.returnDoubleList(returnsBuilder);
         }
