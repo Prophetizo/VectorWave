@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for OptimizedFFT implementation.
  */
-public class OptimizedFFTTest {
+class OptimizedFFTTest {
     
     private static final double EPSILON = 1e-10;
     
