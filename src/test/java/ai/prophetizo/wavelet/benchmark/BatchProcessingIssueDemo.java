@@ -2,7 +2,6 @@ package ai.prophetizo.wavelet.benchmark;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
-import java.util.Random;
 
 /**
  * Demonstrates the batch processing performance issue where batch SIMD processing
@@ -20,13 +19,7 @@ public class BatchProcessingIssueDemo {
         int iterations = 1000;
         
         // Generate test data
-        double[][] signals = new double[batchSize][signalLength];
-        Random random = new Random(42);
-        for (int i = 0; i < batchSize; i++) {
-            for (int j = 0; j < signalLength; j++) {
-                signals[i][j] = random.nextGaussian();
-            }
-        }
+        double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
         // Create engines
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.memory;
 
+import ai.prophetizo.wavelet.internal.VectorLengthValidator;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.DoubleVector;
 import java.util.Arrays;
@@ -25,11 +26,7 @@ public class BatchMemoryLayout implements AutoCloseable {
     
     // Validate vector length is reasonable
     static {
-        if (VECTOR_LENGTH < 2 || VECTOR_LENGTH > 8) {
-            throw new IllegalStateException(
-                "Unexpected vector length: " + VECTOR_LENGTH + 
-                ". Expected 2-8 doubles. Platform: " + System.getProperty("os.arch"));
-        }
+        VectorLengthValidator.validateVectorLength(VECTOR_LENGTH, "BatchMemoryLayout");
     }
     
     private final int batchSize;

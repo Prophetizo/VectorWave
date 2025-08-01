@@ -27,11 +27,7 @@ public final class BatchSIMDTransform {
     
     // Validate vector length is reasonable
     static {
-        if (VECTOR_LENGTH < 2 || VECTOR_LENGTH > 8) {
-            throw new IllegalStateException(
-                "Unexpected vector length: " + VECTOR_LENGTH + 
-                ". Expected 2-8 doubles. Platform: " + System.getProperty("os.arch"));
-        }
+        VectorLengthValidator.validateVectorLength(VECTOR_LENGTH, "BatchSIMDTransform");
     }
     
     // Cache line size for optimal memory access patterns
@@ -63,16 +59,18 @@ public final class BatchSIMDTransform {
         // Process full vectors first (no branching in hot loop)
         int fullVectorGroups = numSignals / VECTOR_LENGTH;
         
+        // Pre-allocate arrays to avoid GC pressure
+        double[] evenSamples = new double[VECTOR_LENGTH];
+        double[] oddSamples = new double[VECTOR_LENGTH];
+        double[] approxTemp = new double[VECTOR_LENGTH];
+        double[] detailTemp = new double[VECTOR_LENGTH];
+        
         // Process all full vector groups
         for (int sigGroup = 0; sigGroup < fullVectorGroups * VECTOR_LENGTH; sigGroup += VECTOR_LENGTH) {
             // Process each output sample
             for (int outIdx = 0; outIdx < halfLength; outIdx++) {
                 int evenIdx = 2 * outIdx;
                 int oddIdx = evenIdx + 1;
-                
-                // Full vector processing - load samples from multiple signals
-                double[] evenSamples = new double[VECTOR_LENGTH];
-                double[] oddSamples = new double[VECTOR_LENGTH];
                 
                 // Gather samples from different signals
                 for (int v = 0; v < VECTOR_LENGTH; v++) {
@@ -88,8 +86,6 @@ public final class BatchSIMDTransform {
                 DoubleVector detailVec = evenVec.sub(oddVec).mul(sqrt2Vec);
                 
                 // Scatter results back to different signals
-                double[] approxTemp = new double[VECTOR_LENGTH];
-                double[] detailTemp = new double[VECTOR_LENGTH];
                 approxVec.intoArray(approxTemp, 0);
                 detailVec.intoArray(detailTemp, 0);
                 
@@ -165,6 +161,11 @@ public final class BatchSIMDTransform {
             }
         }
         
+        // Pre-allocate arrays to avoid GC pressure
+        double[] inputSamples = new double[VECTOR_LENGTH];
+        double[] approxSums = new double[VECTOR_LENGTH];
+        double[] detailSums = new double[VECTOR_LENGTH];
+        
         // Convolution for this block
         for (int outSample = sampleStart; outSample < sampleEnd; outSample++) {
             for (int k = 0; k < filterLength; k++) {
@@ -176,7 +177,6 @@ public final class BatchSIMDTransform {
                     
                     if (remaining == VECTOR_LENGTH) {
                         // Gather input samples
-                        double[] inputSamples = new double[VECTOR_LENGTH];
                         for (int v = 0; v < VECTOR_LENGTH; v++) {
                             inputSamples[v] = signals[sig + v][inSample];
                         }
@@ -186,8 +186,6 @@ public final class BatchSIMDTransform {
                         DoubleVector highCoeff = DoubleVector.broadcast(SPECIES, highPass[k]);
                         
                         // Gather current sums
-                        double[] approxSums = new double[VECTOR_LENGTH];
-                        double[] detailSums = new double[VECTOR_LENGTH];
                         for (int v = 0; v < VECTOR_LENGTH; v++) {
                             approxSums[v] = approxResults[sig + v][outSample];
                             detailSums[v] = detailResults[sig + v][outSample];
@@ -241,21 +239,25 @@ public final class BatchSIMDTransform {
             return;
         }
         
+        // Pre-allocate arrays for unrolled loop to avoid GC pressure
+        double[] approx1 = new double[VECTOR_LENGTH];
+        double[] detail1 = new double[VECTOR_LENGTH];
+        double[] approx2 = new double[VECTOR_LENGTH];
+        double[] detail2 = new double[VECTOR_LENGTH];
+        double[] input1 = new double[VECTOR_LENGTH];
+        double[] input2 = new double[VECTOR_LENGTH];
+        
         // Process with perfect alignment - unroll by 2x for better pipeline utilization
         for (int outSample = 0; outSample < halfLength - 1; outSample += 2) {
             // Clear two output samples
             for (int sig = 0; sig < numSignals; sig += VECTOR_LENGTH) {
                 DoubleVector zero = DoubleVector.zero(SPECIES);
                 
-                // Gather and clear for sample 1
-                double[] approx1 = new double[VECTOR_LENGTH];
-                double[] detail1 = new double[VECTOR_LENGTH];
+                // Clear for sample 1
                 zero.intoArray(approx1, 0);
                 zero.intoArray(detail1, 0);
                 
-                // Gather and clear for sample 2
-                double[] approx2 = new double[VECTOR_LENGTH];
-                double[] detail2 = new double[VECTOR_LENGTH];
+                // Clear for sample 2
                 zero.intoArray(approx2, 0);
                 zero.intoArray(detail2, 0);
                 
@@ -265,8 +267,6 @@ public final class BatchSIMDTransform {
                     int inSample2 = (2 * (outSample + 1) + k) % signalLength;
                     
                     // Gather input for both samples
-                    double[] input1 = new double[VECTOR_LENGTH];
-                    double[] input2 = new double[VECTOR_LENGTH];
                     for (int v = 0; v < VECTOR_LENGTH; v++) {
                         input1[v] = signals[sig + v][inSample1];
                         input2[v] = signals[sig + v][inSample2];

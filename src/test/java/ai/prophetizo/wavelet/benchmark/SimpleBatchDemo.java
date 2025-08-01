@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
-import java.util.Random;
 
 /**
  * Simple demonstration of improved batch processing performance.
@@ -22,14 +21,11 @@ public class SimpleBatchDemo {
         int iterations = 1000;
         
         // Generate test data
-        double[][] signals = generateBatch(batchSize, signalLength);
+        double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
         // Create transform with no parallel processing to avoid memory issues
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-        OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-            .withParallelism(1)  // Disable parallel processing
-            .withSoALayout(true)
-            .withSpecializedKernels(true);
+        OptimizedTransformEngine.EngineConfig config = BenchmarkHelper.createBenchmarkConfig();
         OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
         
         // Warmup
@@ -111,11 +107,10 @@ public class SimpleBatchDemo {
     }
     
     private static double measureSpeedup(int batchSize, int signalLength, int iterations) {
-        double[][] signals = generateBatch(batchSize, signalLength);
+        double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-        OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-            .withParallelism(1);
+        OptimizedTransformEngine.EngineConfig config = BenchmarkHelper.createBenchmarkConfig();
         OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
         
         // Warmup
@@ -143,18 +138,5 @@ public class SimpleBatchDemo {
         long batchTime = System.nanoTime() - startTime;
         
         return (double) sequentialTime / batchTime;
-    }
-    
-    private static double[][] generateBatch(int batchSize, int signalLength) {
-        double[][] batch = new double[batchSize][signalLength];
-        Random random = new Random(42);
-        
-        for (int i = 0; i < batchSize; i++) {
-            for (int j = 0; j < signalLength; j++) {
-                batch[i][j] = random.nextGaussian();
-            }
-        }
-        
-        return batch;
     }
 }

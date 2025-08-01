@@ -5,7 +5,6 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
-import java.util.Random;
 
 /**
  * Performance test for the new BatchSIMDTransform implementation.
@@ -42,11 +41,12 @@ public class BatchSIMDPerformanceTest {
     
     private static void testBatchPerformance(int batchSize, int signalLength) {
         // Generate test data
-        double[][] signals = generateBatch(batchSize, signalLength);
+        double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
         // Create engines
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-        OptimizedTransformEngine engine = new OptimizedTransformEngine();
+        OptimizedTransformEngine.EngineConfig config = BenchmarkHelper.createBenchmarkConfig();
+        OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
         
         // Warmup
         for (int i = 0; i < 100; i++) {
@@ -103,7 +103,7 @@ public class BatchSIMDPerformanceTest {
         
         int batchSize = 16;
         int signalLength = 1024;
-        double[][] signals = generateBatch(batchSize, signalLength);
+        double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
         
         Wavelet[] wavelets = {new Haar(), Daubechies.DB2, Daubechies.DB4};
         String[] names = {"Haar", "DB2", "DB4"};
@@ -126,18 +126,5 @@ public class BatchSIMDPerformanceTest {
             double ms = time / 1_000_000.0 / 1000;
             System.out.printf("%s: %.3f ms per batch\n", names[i], ms);
         }
-    }
-    
-    private static double[][] generateBatch(int batchSize, int signalLength) {
-        double[][] batch = new double[batchSize][signalLength];
-        Random random = new Random(42);
-        
-        for (int i = 0; i < batchSize; i++) {
-            for (int j = 0; j < signalLength; j++) {
-                batch[i][j] = random.nextGaussian();
-            }
-        }
-        
-        return batch;
     }
 }

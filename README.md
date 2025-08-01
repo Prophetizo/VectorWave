@@ -34,6 +34,11 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 - **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
 - **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
 - **Parallel Processing**: Fork-join framework for batch operations
+- **Batch SIMD Processing**: True parallel processing of multiple signals
+  - Processes N signals simultaneously (N = SIMD vector width)
+  - Optimized memory layouts for coalesced vector operations
+  - Adaptive algorithm selection based on batch size
+  - 2-4x speedup for typical workloads
 
 ### Advanced Features
 - **Denoising**: Universal, SURE, and Minimax threshold methods
@@ -96,6 +101,31 @@ double[] reconstructed = transform.inverse(result);
 transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
 transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
 transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
+```
+
+### Batch Processing
+```java
+// Process multiple signals in parallel using SIMD
+WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = generateSignals(32, 1024); // 32 signals of length 1024
+
+// Batch forward transform - processes multiple signals simultaneously
+TransformResult[] results = transform.forwardBatch(signals);
+
+// Batch inverse transform
+double[][] reconstructed = transform.inverseBatch(results);
+
+// For maximum performance with large batches
+OptimizedTransformEngine engine = new OptimizedTransformEngine();
+TransformResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
+
+// Configure batch processing
+OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+    .withParallelism(8)           // Use 8 threads
+    .withSoALayout(true)          // Enable Structure-of-Arrays optimization
+    .withSpecializedKernels(true) // Use optimized kernels
+    .withCacheBlocking(true);     // Enable cache-aware blocking
+OptimizedTransformEngine customEngine = new OptimizedTransformEngine(config);
 ```
 
 ### FFM-Based Transform (Java 23+)

@@ -37,6 +37,33 @@ OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTran
 - 3-5x speedup for threshold operations
 - Platform-specific optimizations for gather/scatter
 
+### 1.1 Batch SIMD Processing
+
+**True Parallel Signal Processing:**
+- Process N signals simultaneously (N = SIMD vector width)
+- Optimized memory layouts for coalesced vector operations
+- Adaptive algorithm selection based on batch size
+
+**Usage:**
+```java
+// Basic batch processing
+WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = new double[32][1024];
+TransformResult[] results = transform.forwardBatch(signals);
+
+// Advanced configuration
+OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+    .withSoALayout(true)          // Structure-of-Arrays layout
+    .withSpecializedKernels(true) // Use optimized kernels
+    .withCacheBlocking(true);     // Cache-aware blocking
+```
+
+**Performance Characteristics:**
+- 2-4x speedup for aligned batch sizes (multiples of vector width)
+- Best performance with batch sizes 8-64 signals
+- Automatic fallback for non-aligned batches
+- Memory bandwidth limited for very large batches
+
 ### 2. Memory Optimization
 
 **Object Pooling:**

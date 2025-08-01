@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
 import ai.prophetizo.wavelet.memory.BatchMemoryLayout;
-import java.util.Random;
 
 /**
  * Demonstrates the improved batch processing performance with true SIMD parallelization.
@@ -30,7 +29,7 @@ public class ImprovedBatchDemo {
             System.out.println("--------------------");
             
             // Generate test data
-            double[][] signals = generateBatch(batchSize, signalLength);
+            double[][] signals = BenchmarkHelper.generateBatch(batchSize, signalLength);
             
             // Test different approaches
             testSequential(signals, iterations);
@@ -165,18 +164,5 @@ public class ImprovedBatchDemo {
         System.out.println("// Advanced optimization");
         System.out.println("OptimizedTransformEngine engine = new OptimizedTransformEngine();");
         System.out.println("TransformResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);");
-    }
-    
-    private static double[][] generateBatch(int batchSize, int signalLength) {
-        double[][] batch = new double[batchSize][signalLength];
-        Random random = new Random(42);
-        
-        for (int i = 0; i < batchSize; i++) {
-            for (int j = 0; j < signalLength; j++) {
-                batch[i][j] = random.nextGaussian();
-            }
-        }
-        
-        return batch;
     }
 }
