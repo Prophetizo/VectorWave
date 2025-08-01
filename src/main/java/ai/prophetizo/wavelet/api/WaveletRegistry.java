@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.api;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry for all available wavelets in the VectorWave library.
@@ -13,43 +14,62 @@ import java.util.*;
  *   <li>Listing available wavelets by type</li>
  *   <li>Creating wavelets by name</li>
  *   <li>Querying wavelet properties</li>
+ *   <li>Automatic discovery via ServiceLoader</li>
+ *   <li>Plugin architecture for third-party wavelets</li>
  * </ul>
  * </p>
+ * 
+ * <p>The registry uses Java's ServiceLoader mechanism to automatically discover
+ * wavelets at runtime, eliminating circular dependencies and supporting extensibility.</p>
  */
 public final class WaveletRegistry {
 
-    private static final Map<String, Wavelet> WAVELETS = new HashMap<>();
+    private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
     private static final Map<WaveletType, List<String>> WAVELETS_BY_TYPE = new EnumMap<>(WaveletType.class);
+    private static volatile boolean initialized = false;
+    private static final Object INIT_LOCK = new Object();
 
     static {
-        // Register orthogonal wavelets
-        register(new Haar());
-        register(Daubechies.DB2);
-        register(Daubechies.DB4);
-        register(Symlet.SYM2);
-        register(Symlet.SYM3);
-        register(Symlet.SYM4);
-        register(Coiflet.COIF1);
-        register(Coiflet.COIF2);
-        register(Coiflet.COIF3);
+        // Eagerly initialize the registry
+        initialize();
+    }
 
-        // Register biorthogonal wavelets
-        register(BiorthogonalSpline.BIOR1_3);
-
-        // Register continuous wavelets
-        register(new ai.prophetizo.wavelet.cwt.MorletWavelet());
+    /**
+     * Initializes the registry by discovering wavelets via ServiceLoader.
+     * This method is thread-safe and idempotent.
+     */
+    private static void initialize() {
+        if (initialized) {
+            return;
+        }
         
-        // Register financial wavelets
-        register(new ai.prophetizo.wavelet.cwt.finance.PaulWavelet());
-        register(new ai.prophetizo.wavelet.cwt.finance.DOGWavelet());
-        register(new ai.prophetizo.wavelet.cwt.finance.ShannonGaborWavelet());
-        register(new ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet());
-        
-        // Register Gaussian derivative wavelets
-        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(1)); // gaus1
-        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(2)); // gaus2
-        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(3)); // gaus3
-        register(new ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet(4)); // gaus4
+        synchronized (INIT_LOCK) {
+            if (initialized) {
+                return;
+            }
+            
+            // Discover wavelets using ServiceLoader
+            ServiceLoader<WaveletProvider> loader = ServiceLoader.load(WaveletProvider.class);
+            
+            for (WaveletProvider provider : loader) {
+                try {
+                    List<Wavelet> wavelets = provider.getWavelets();
+                    if (wavelets != null) {
+                        for (Wavelet wavelet : wavelets) {
+                            if (wavelet != null) {
+                                register(wavelet);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Log and continue with other providers
+                    System.err.println("Error loading wavelets from provider " + 
+                                     provider.getClass().getName() + ": " + e.getMessage());
+                }
+            }
+            
+            initialized = true;
+        }
     }
 
     private WaveletRegistry() {
@@ -65,8 +85,10 @@ public final class WaveletRegistry {
         WAVELETS.put(wavelet.name().toLowerCase(), wavelet);
 
         WaveletType type = wavelet.getType();
-        WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
-                .add(wavelet.name());
+        synchronized (WAVELETS_BY_TYPE) {
+            WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
+                    .add(wavelet.name());
+        }
     }
 
     /**
@@ -158,6 +180,35 @@ public final class WaveletRegistry {
                     System.out.println("  - " + name + ": " + w.description());
                 }
             }
+        }
+    }
+    
+    /**
+     * Manually registers a wavelet in the registry.
+     * This method allows runtime registration of wavelets not discovered by ServiceLoader.
+     *
+     * @param wavelet the wavelet to register
+     * @throws IllegalArgumentException if wavelet is null
+     */
+    public static void registerWavelet(Wavelet wavelet) {
+        if (wavelet == null) {
+            throw new IllegalArgumentException("Wavelet cannot be null");
+        }
+        register(wavelet);
+    }
+    
+    /**
+     * Reloads the registry by re-discovering wavelets via ServiceLoader.
+     * This can be useful for dynamic plugin scenarios.
+     */
+    public static void reload() {
+        synchronized (INIT_LOCK) {
+            WAVELETS.clear();
+            synchronized (WAVELETS_BY_TYPE) {
+                WAVELETS_BY_TYPE.clear();
+            }
+            initialized = false;
+            initialize();
         }
     }
 }
