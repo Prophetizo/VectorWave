@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Factory;
+import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.util.NullChecks;
 
@@ -85,7 +86,7 @@ public class WaveletTransformFactory implements Factory<WaveletTransform, Wavele
      */
     @Override
     public WaveletTransform create() {
-        return create(new ai.prophetizo.wavelet.api.Haar());
+        return create(new Haar());
     }
 
     /**

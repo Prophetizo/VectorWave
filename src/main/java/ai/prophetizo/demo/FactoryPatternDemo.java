@@ -101,7 +101,7 @@ public class FactoryPatternDemo {
         
         // Static convenience method still works
         WaveletTransform transform4 = WaveletTransformFactory.createDefault(Symlet.SYM4);
-        System.out.println("\nStatic method still works: created with Symlet SYM6");
+        System.out.println("\nStatic method still works: created with Symlet SYM4");
         
         System.out.println();
     }
