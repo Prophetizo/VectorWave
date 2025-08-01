@@ -197,6 +197,51 @@ public class WaveletTransform {
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
     }
+    
+    /**
+     * Performs batch forward transform on multiple signals using SIMD optimization.
+     * This method processes multiple signals in parallel for improved performance.
+     *
+     * @param signals Array of input signals to transform
+     * @return Array of transform results
+     * @throws InvalidSignalException if any signal is invalid
+     * @since 2.0.0
+     */
+    public TransformResult[] forwardBatch(double[][] signals) {
+        if (signals == null || signals.length == 0) {
+            return new TransformResult[0];
+        }
+        
+        // Validate all signals
+        for (int i = 0; i < signals.length; i++) {
+            ValidationUtils.validateSignal(signals[i], "signals[" + i + "]");
+        }
+        
+        // Use OptimizedTransformEngine for batch processing
+        OptimizedTransformEngine engine = new OptimizedTransformEngine();
+        return engine.transformBatch(signals, wavelet, boundaryMode);
+    }
+    
+    /**
+     * Performs batch inverse transform on multiple transform results.
+     *
+     * @param results Array of transform results to inverse
+     * @return Array of reconstructed signals
+     * @throws NullPointerException if results is null
+     * @since 2.0.0
+     */
+    public double[][] inverseBatch(TransformResult[] results) {
+        if (results == null || results.length == 0) {
+            return new double[0][];
+        }
+        
+        double[][] signals = new double[results.length][];
+        for (int i = 0; i < results.length; i++) {
+            signals[i] = inverse(results[i]);
+        }
+        
+        return signals;
+    }
 
     /**
      * Returns true if this transform is using Vector API operations.
