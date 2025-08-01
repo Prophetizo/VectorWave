@@ -184,7 +184,10 @@ public class PoolSizingStrategy {
 
 #### Memory Usage Monitoring
 ```java
+import java.util.logging.Logger;
+
 public class PoolMonitor {
+    private static final Logger LOGGER = Logger.getLogger(PoolMonitor.class.getName());
     private final MemoryPool pool;
     private final long maxMemoryBytes;
     
@@ -233,10 +236,23 @@ public void processBatch(List<Signal> batch) {
 
 #### 3. Pool Metrics for Production
 ```java
-@Scheduled(fixedDelay = 60000)
-public void reportPoolMetrics() {
-    metricsRegistry.gauge("memory.pool.hit.rate", pool::getHitRate);
-    metricsRegistry.gauge("memory.pool.size", pool::getTotalPooledCount);
+import org.springframework.scheduling.annotation.Scheduled;
+import io.micrometer.core.instrument.MeterRegistry;
+
+public class PoolMetricsReporter {
+    private final MeterRegistry metricsRegistry;
+    private final MemoryPool pool;
+    
+    public PoolMetricsReporter(MeterRegistry metricsRegistry, MemoryPool pool) {
+        this.metricsRegistry = metricsRegistry;
+        this.pool = pool;
+    }
+    
+    @Scheduled(fixedDelay = 60000)
+    public void reportPoolMetrics() {
+        metricsRegistry.gauge("memory.pool.hit.rate", pool, MemoryPool::getHitRate);
+        metricsRegistry.gauge("memory.pool.size", pool, MemoryPool::getTotalPooledCount);
+    }
 }
 ```
 

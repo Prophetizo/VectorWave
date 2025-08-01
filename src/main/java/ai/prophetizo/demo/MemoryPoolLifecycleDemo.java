@@ -264,10 +264,8 @@ public class MemoryPoolLifecycleDemo {
             int size = 512 + (i % 8) * 256;
             double[] array = pool.borrowArray(size);
             try {
-                // Simulate work
-                Thread.sleep(0, 1000); // 1 microsecond
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                // Simulate deterministic work
+                processSignal(array);
             } finally {
                 pool.returnArray(array);
             }
