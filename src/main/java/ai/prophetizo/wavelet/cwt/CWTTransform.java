@@ -404,6 +404,7 @@ public final class CWTTransform {
     
     /**
      * FFT implementation using the optimized FFT based on configuration.
+     * Automatically detects real signals and uses real-optimized FFT when beneficial.
      */
     private Complex[] fft(double[] x) {
         if (x == null || x.length == 0) {
@@ -413,8 +414,17 @@ public final class CWTTransform {
         try {
             FFTAlgorithm algorithm = config.getFFTAlgorithm();
             
-            if (algorithm == FFTAlgorithm.REAL_OPTIMIZED) {
-                // Use real-optimized FFT
+            // Use real-optimized FFT for real signals when:
+            // 1. Algorithm is REAL_OPTIMIZED or AUTO
+            // 2. Signal length is even (required by fftRealOptimized)
+            // 3. Signal is large enough to benefit (>= 256 samples)
+            boolean useRealFFT = (algorithm == FFTAlgorithm.REAL_OPTIMIZED || 
+                                 algorithm == FFTAlgorithm.AUTO) &&
+                                x.length % 2 == 0 && 
+                                x.length >= 256;
+            
+            if (useRealFFT) {
+                // Use real-optimized FFT for 2x speedup
                 ComplexNumber[] result = OptimizedFFT.fftRealOptimized(x);
                 
                 // Convert to internal Complex type
@@ -424,7 +434,7 @@ public final class CWTTransform {
                 }
                 return X;
             } else {
-                // Use OptimizedFFT for all other algorithms
+                // Use standard complex FFT
                 double[] complexData = new double[2 * x.length];
                 for (int i = 0; i < x.length; i++) {
                     complexData[2 * i] = x[i];
@@ -796,6 +806,7 @@ public final class CWTTransform {
     
     /**
      * Computes FFT of real signal.
+     * Automatically uses real-optimized FFT when beneficial.
      */
     private Complex[] computeFFT(double[] signal, int fftSize) {
         if (signal == null || signal.length == 0) {
@@ -806,19 +817,45 @@ public final class CWTTransform {
         }
         
         try {
-            Complex[] data = new Complex[fftSize];
+            FFTAlgorithm algorithm = config.getFFTAlgorithm();
             
-            // Initialize with signal data
-            for (int i = 0; i < signal.length && i < fftSize; i++) {
-                data[i] = new Complex(signal[i], 0);
+            // Check if we can use real-optimized FFT
+            // Requirements: even length, large enough signal, and appropriate algorithm
+            boolean canUseRealFFT = (algorithm == FFTAlgorithm.REAL_OPTIMIZED || 
+                                    algorithm == FFTAlgorithm.AUTO) &&
+                                   fftSize % 2 == 0 && 
+                                   fftSize >= 256;
+            
+            if (canUseRealFFT) {
+                // Prepare padded real signal
+                double[] paddedSignal = new double[fftSize];
+                System.arraycopy(signal, 0, paddedSignal, 0, Math.min(signal.length, fftSize));
+                
+                // Use real-optimized FFT
+                ComplexNumber[] result = OptimizedFFT.fftRealOptimized(paddedSignal);
+                
+                // Convert to internal Complex type
+                Complex[] X = new Complex[result.length];
+                for (int i = 0; i < result.length; i++) {
+                    X[i] = new Complex(result[i].real(), result[i].imag());
+                }
+                return X;
+            } else {
+                // Standard complex FFT path
+                Complex[] data = new Complex[fftSize];
+                
+                // Initialize with signal data
+                for (int i = 0; i < signal.length && i < fftSize; i++) {
+                    data[i] = new Complex(signal[i], 0);
+                }
+                
+                // Pad with zeros
+                for (int i = signal.length; i < fftSize; i++) {
+                    data[i] = new Complex(0, 0);
+                }
+                
+                return fftComplex(data);
             }
-            
-            // Pad with zeros
-            for (int i = signal.length; i < fftSize; i++) {
-                data[i] = new Complex(0, 0);
-            }
-            
-            return fftComplex(data);
         } catch (Exception e) {
             throw new IllegalStateException("FFT computation failed for signal of length " + signal.length + 
                 " with FFT size " + fftSize + ": " + e.getMessage(), e);
