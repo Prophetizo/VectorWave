@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests to verify that the FFT implementation correctly uses scalar path
  * for small signals to avoid vectorization overhead.
  */
-public class FFTThresholdTest {
+class FFTThresholdTest {
     
     private static final double TOLERANCE = 1e-10;
     
