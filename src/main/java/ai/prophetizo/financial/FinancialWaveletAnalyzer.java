@@ -11,6 +11,28 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
  * Financial analysis using wavelet transforms.
  * Provides methods for calculating risk-adjusted returns and other financial metrics
  * using wavelet-based signal processing techniques.
+ * 
+ * <p><strong>Important Requirements:</strong></p>
+ * <ul>
+ *   <li>All wavelet-based methods require input arrays with power-of-two length 
+ *       (e.g., 2, 4, 8, 16, 32, 64, 128, 256, etc.)</li>
+ *   <li>If your data doesn't meet this requirement, you'll need to pad it to the 
+ *       next power of two or truncate to the previous power of two</li>
+ *   <li>Standard financial calculations (like basic Sharpe ratio) do not have 
+ *       this restriction</li>
+ * </ul>
+ * 
+ * <p><strong>Usage Example:</strong></p>
+ * <pre>{@code
+ * // For wavelet-based analysis, ensure power-of-two length
+ * double[] returns = calculateReturns(prices);
+ * if (!isPowerOfTwo(returns.length)) {
+ *     returns = padToPowerOfTwo(returns); // You need to implement padding
+ * }
+ * 
+ * FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
+ * double waveletSharpe = analyzer.calculateWaveletSharpeRatio(returns);
+ * }</pre>
  */
 public class FinancialWaveletAnalyzer {
     
@@ -87,7 +109,9 @@ public class FinancialWaveletAnalyzer {
             throw new IllegalArgumentException("Returns array cannot be empty");
         }
         if (returns.length == 1) {
-            throw new IllegalArgumentException("At least 2 returns are required to calculate standard deviation");
+            throw new IllegalArgumentException(
+                "Cannot calculate Sharpe ratio with a single return value. " +
+                "At least 2 returns are required to calculate standard deviation (risk).");
         }
         
         // Calculate mean return
@@ -111,6 +135,10 @@ public class FinancialWaveletAnalyzer {
     /**
      * Calculates wavelet-denoised Sharpe ratio by first applying wavelet transform
      * to filter out noise from the returns series.
+     * 
+     * <p><strong>Power-of-Two Requirement:</strong> The input array must have a length
+     * that is a power of two (2, 4, 8, 16, 32, 64, 128, 256, etc.). This is a fundamental
+     * requirement of the Fast Wavelet Transform algorithm used internally.</p>
      * 
      * @param returns the array of returns (must be power of 2 length for wavelet transform)
      * @return the Sharpe ratio calculated from denoised returns
@@ -192,6 +220,12 @@ public class FinancialWaveletAnalyzer {
     }
     
     private double calculateStandardDeviation(double[] values, double mean) {
+        // Requires at least 2 values for sample standard deviation
+        if (values.length < 2) {
+            throw new IllegalArgumentException(
+                "Standard deviation calculation requires at least 2 values, but got " + values.length);
+        }
+        
         double sumSquaredDiffs = 0.0;
         for (double value : values) {
             double diff = value - mean;

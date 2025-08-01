@@ -238,13 +238,13 @@ public final class FinancialAnalysisConfig {
         /**
          * Sets the confidence level for statistical tests.
          * 
-         * @param level the confidence level (must be between 0.0 and 1.0)
+         * @param level the confidence level (must be between 0.0 and 1.0, exclusive)
          * @return this builder
-         * @throws IllegalArgumentException if level is not between 0.0 and 1.0
+         * @throws IllegalArgumentException if level is not between 0.0 and 1.0 (exclusive)
          */
         public Builder confidenceLevel(double level) {
-            if (level < 0.0 || level > 1.0) {
-                throw new IllegalArgumentException("Confidence level must be between 0.0 and 1.0 (inclusive)");
+            if (level <= 0.0 || level >= 1.0) {
+                throw new IllegalArgumentException("Confidence level must be between 0.0 and 1.0");
             }
             this.confidenceLevel = level;
             return this;

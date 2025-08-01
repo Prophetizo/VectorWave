@@ -39,6 +39,7 @@ public class WaveletTransform {
     private final BoundaryMode boundaryMode;
     private final WaveletOpsFactory.WaveletOps operations;
     private final boolean useVector;
+    private final OptimizedTransformEngine batchEngine;
 
     /**
      * Constructs a transformer with the specified wavelet and boundary mode.
@@ -78,6 +79,13 @@ public class WaveletTransform {
         // Create appropriate operations implementation
         this.operations = WaveletOpsFactory.create(config);
         this.useVector = operations.getImplementationType().startsWith("Vector");
+        
+        // Create a reusable engine for batch operations
+        // Use single-threaded engine to avoid nested parallelism when called from batch methods
+        OptimizedTransformEngine.EngineConfig engineConfig = new OptimizedTransformEngine.EngineConfig()
+            .withParallelism(1)
+            .withMemoryPool(true); // Enable memory pooling for batch operations
+        this.batchEngine = new OptimizedTransformEngine(engineConfig);
     }
 
     /**
@@ -218,9 +226,8 @@ public class WaveletTransform {
             ValidationUtils.validateSignal(signals[i], "signals[" + i + "]");
         }
         
-        // Use OptimizedTransformEngine for batch processing
-        OptimizedTransformEngine engine = new OptimizedTransformEngine();
-        return engine.transformBatch(signals, wavelet, boundaryMode);
+        // Use the pre-configured engine for batch processing
+        return batchEngine.transformBatch(signals, wavelet, boundaryMode);
     }
     
     /**

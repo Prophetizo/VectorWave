@@ -21,6 +21,8 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
  */
 public final class FinancialAnalyzer {
     
+    private static final double EPSILON = 1e-10; // Tolerance for zero comparison
+    
     private final FinancialAnalysisConfig config;
     private final WaveletTransform transform;
     
@@ -95,8 +97,8 @@ public final class FinancialAnalyzer {
         
         // Calculate asymmetry ratio
         double maxAvg = Math.max(positiveAvg, negativeAvg);
-        if (maxAvg == 0.0) {
-            return 0.0; // No asymmetry if both averages are zero
+        if (maxAvg < EPSILON) {
+            return 0.0; // No asymmetry if both averages are effectively zero
         }
         return Math.abs(negativeAvg - positiveAvg) / maxAvg;
     }
@@ -263,9 +265,10 @@ public final class FinancialAnalyzer {
         
         double[] returns = new double[prices.length - 1];
         for (int i = 1; i < prices.length; i++) {
-            if (prices[i-1] != 0) {
+            if (Math.abs(prices[i-1]) > EPSILON) {
                 returns[i-1] = (prices[i] - prices[i-1]) / prices[i-1];
             } else {
+                // Price is effectively zero, cannot calculate percentage return
                 returns[i-1] = 0.0;
             }
         }
