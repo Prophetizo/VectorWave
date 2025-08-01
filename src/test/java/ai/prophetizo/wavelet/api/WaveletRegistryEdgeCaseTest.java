@@ -104,6 +104,9 @@ class WaveletRegistryEdgeCaseTest {
     void testConcurrentAccess() throws InterruptedException {
         final int THREAD_COUNT = 10;
         final int OPERATIONS_PER_THREAD = 100;
+        // Reload every 20 operations to create sufficient contention without overwhelming the test
+        final int RELOAD_FREQUENCY = 20;
+        
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
         AtomicInteger successCount = new AtomicInteger(0);
@@ -122,7 +125,7 @@ class WaveletRegistryEdgeCaseTest {
                         WaveletRegistry.getOrthogonalWavelets();
                         
                         // Only one thread does reloads to avoid conflicts
-                        if (threadId == 0 && j % 20 == 0) {
+                        if (threadId == 0 && j % RELOAD_FREQUENCY == 0) {
                             WaveletRegistry.reload();
                         }
                     }

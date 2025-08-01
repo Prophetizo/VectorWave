@@ -73,9 +73,25 @@ public final class WaveletRegistry {
                             }
                         }
                     }
+                } catch (NoClassDefFoundError | ClassNotFoundException e) {
+                    throw new RuntimeException(
+                        "Missing dependency for provider " + provider.getClass().getName() + 
+                        ". Check that all required classes are on the classpath.", 
+                        e);
+                } catch (InstantiationException | IllegalAccessException e) {
+                    throw new RuntimeException(
+                        "Cannot instantiate wavelets from provider " + provider.getClass().getName() + 
+                        ". Ensure wavelets have accessible constructors.", 
+                        e);
+                } catch (NullPointerException e) {
+                    throw new RuntimeException(
+                        "Provider " + provider.getClass().getName() + 
+                        " returned null or contains null wavelets.", 
+                        e);
                 } catch (Exception e) {
                     throw new RuntimeException(
-                        "Error loading wavelets from provider " + provider.getClass().getName(), 
+                        "Unexpected error loading wavelets from provider " + provider.getClass().getName() + 
+                        ": " + e.getClass().getSimpleName() + " - " + e.getMessage(), 
                         e);
                 }
             }

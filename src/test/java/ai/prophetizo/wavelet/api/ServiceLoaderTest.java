@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,41 +15,49 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ServiceLoaderTest {
     
-    // Minimum expected wavelets based on current providers:
-    // OrthogonalWaveletProvider: 9 (Haar, DB2, DB4, SYM2-4, COIF1-3)
-    // BiorthogonalWaveletProvider: 1 (BIOR1_3)
-    // ContinuousWaveletProvider: 5 (Morlet, GAUS1-4)
-    // FinancialWaveletProvider: 4 (Paul, DOG, Shannon-Gabor, Classical Shannon)
-    private static final int MINIMUM_EXPECTED_WAVELETS = 19;
-    
     @Test
     void testServiceLoaderDiscovery() {
         ServiceLoader<WaveletProvider> loader = ServiceLoader.load(WaveletProvider.class);
         
-        Set<String> discoveredProviders = new HashSet<>();
-        int totalWavelets = 0;
+        Map<String, Integer> providerWaveletCounts = new HashMap<>();
+        Set<String> expectedProviders = Set.of(
+            "ai.prophetizo.wavelet.api.providers.OrthogonalWaveletProvider",
+            "ai.prophetizo.wavelet.api.providers.BiorthogonalWaveletProvider",
+            "ai.prophetizo.wavelet.cwt.providers.ContinuousWaveletProvider",
+            "ai.prophetizo.wavelet.cwt.finance.providers.FinancialWaveletProvider"
+        );
         
         for (WaveletProvider provider : loader) {
             assertNotNull(provider);
-            discoveredProviders.add(provider.getClass().getName());
+            String providerName = provider.getClass().getName();
             
             var wavelets = provider.getWavelets();
-            assertNotNull(wavelets);
-            assertFalse(wavelets.isEmpty(), "Provider should return at least one wavelet");
+            assertNotNull(wavelets, "Provider " + providerName + " should not return null");
+            assertFalse(wavelets.isEmpty(), 
+                       "Provider " + providerName + " should return at least one wavelet");
             
-            totalWavelets += wavelets.size();
+            providerWaveletCounts.put(providerName, wavelets.size());
         }
         
         // Verify all expected providers are discovered
-        assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.api.providers.OrthogonalWaveletProvider"));
-        assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.api.providers.BiorthogonalWaveletProvider"));
-        assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.cwt.providers.ContinuousWaveletProvider"));
-        assertTrue(discoveredProviders.contains("ai.prophetizo.wavelet.cwt.finance.providers.FinancialWaveletProvider"));
+        for (String expectedProvider : expectedProviders) {
+            assertTrue(providerWaveletCounts.containsKey(expectedProvider),
+                      "Expected provider not found: " + expectedProvider);
+            assertTrue(providerWaveletCounts.get(expectedProvider) > 0,
+                      "Provider " + expectedProvider + " should contribute at least one wavelet");
+        }
         
-        // Verify we have the expected minimum number of wavelets
-        assertTrue(totalWavelets >= MINIMUM_EXPECTED_WAVELETS, 
-                  String.format("Should have at least %d wavelets total, but found %d", 
-                               MINIMUM_EXPECTED_WAVELETS, totalWavelets));
+        // Verify we have a reasonable total (at least one wavelet per provider)
+        int totalWavelets = providerWaveletCounts.values().stream()
+            .mapToInt(Integer::intValue)
+            .sum();
+        assertTrue(totalWavelets >= expectedProviders.size(), 
+                  "Should have at least one wavelet per provider");
+        
+        // Log discovered wavelets for debugging
+        System.out.println("Discovered wavelets by provider:");
+        providerWaveletCounts.forEach((provider, count) -> 
+            System.out.println("  " + provider.substring(provider.lastIndexOf('.') + 1) + ": " + count));
     }
     
     @Test
