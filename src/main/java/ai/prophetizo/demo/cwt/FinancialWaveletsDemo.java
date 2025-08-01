@@ -170,10 +170,11 @@ public class FinancialWaveletsDemo {
         System.out.println("3. DOG Wavelet Analysis (Price Movement Edges)");
         System.out.println("==============================================");
         
-        // DOG (Difference of Gaussians) wavelet is excellent for edge detection
-        DOGWavelet dogWavelet = new DOGWavelet(2); // σ = 2 for medium-term edge detection
+        // DOG (Derivative of Gaussian) wavelet is excellent for edge detection
+        // Using order n=2 (Mexican Hat) which is optimal for detecting volatility changes
+        DOGWavelet dogWavelet = new DOGWavelet(2); // Order 2 = Mexican Hat wavelet
         
-        System.out.printf("Using DOG wavelet with σ = %.1f%n", 2.0);
+        System.out.printf("Using DOG wavelet order %d (Mexican Hat)%n", dogWavelet.getDerivativeOrder());
         System.out.printf("Bandwidth: %.3f%n", dogWavelet.bandwidth());
         
         CWTTransform cwt = new CWTTransform(dogWavelet);

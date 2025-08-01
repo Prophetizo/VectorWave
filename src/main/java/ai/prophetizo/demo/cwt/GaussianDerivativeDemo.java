@@ -54,10 +54,10 @@ public class GaussianDerivativeDemo {
         for (int order = 1; order <= 4; order++) {
             GaussianDerivativeWavelet wavelet = new GaussianDerivativeWavelet(order);
             
-            System.out.printf("  Order %d: %s%n", order, wavelet.description());
+            System.out.printf("  Order %d: %s%n", wavelet.getDerivativeOrder(), wavelet.description());
             System.out.printf("    Name: %s%n", wavelet.name());
             System.out.printf("    Bandwidth: %.3f%n", wavelet.bandwidth());
-            System.out.printf("    Order: %d%n", order);
+            System.out.printf("    Order: %d%n", wavelet.getDerivativeOrder());
         }
         
         System.out.println();
