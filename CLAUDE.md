@@ -304,3 +304,54 @@ mvn test -Djava.args="--enable-native-access=ALL-UNNAMED"
 - Must run with `--enable-native-access=ALL-UNNAMED` flag
 - SYMMETRIC and CONSTANT boundary modes not supported for upsampling
 - Biorthogonal wavelets currently broken (see issue #138)
+
+## Memory Pool Lifecycle Management
+
+### Quick Reference
+Memory pools reduce GC pressure but require proper lifecycle management. Key points:
+
+1. **Always use try-finally or try-with-resources**:
+```java
+// Standard pool
+double[] array = pool.borrowArray(size);
+try {
+    processData(array);
+} finally {
+    pool.returnArray(array);
+}
+
+// FFM pool (auto-closeable)
+try (FFMMemoryPool pool = new FFMMemoryPool()) {
+    // Use pool
+} // Automatically closed
+```
+
+2. **Clear pools at appropriate times**:
+- Between processing phases
+- When memory usage is high
+- After processing sensitive data
+- Periodically in long-running services
+
+3. **Thread safety patterns**:
+```java
+// Shared pool (low contention)
+private final MemoryPool sharedPool = new MemoryPool();
+
+// Thread-local pools (high contention)
+private final ThreadLocal<MemoryPool> tlPool = 
+    ThreadLocal.withInitial(MemoryPool::new);
+```
+
+4. **Pool configuration**:
+```java
+MemoryPool pool = new MemoryPool();
+pool.setMaxArraysPerSize(20); // Limit pool size
+```
+
+5. **Common pitfalls to avoid**:
+- Forgetting to return arrays (memory leak)
+- Not clearing sensitive data
+- Unbounded pool growth
+- Mixing FFM pools from different arenas
+
+For detailed lifecycle management guidance, see `docs/MEMORY_POOL_LIFECYCLE.md`.
