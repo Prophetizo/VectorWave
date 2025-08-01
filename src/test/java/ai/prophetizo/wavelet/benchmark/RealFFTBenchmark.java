@@ -13,9 +13,9 @@ import java.util.concurrent.TimeUnit;
  * JMH benchmark comparing real FFT optimization vs standard FFT in CWT.
  * 
  * Expected results:
- * - Real FFT should be ~2x faster for FFT computation
+ * - Real FFT provides significant performance improvements for FFT computation
  * - Overall CWT speedup depends on FFT vs convolution ratio
- * - Larger signals show greater benefits
+ * - Larger signals typically show greater benefits
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -77,19 +77,16 @@ public class RealFFTBenchmark {
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult standardFFT() {
         return standardTransform.analyze(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult realOptimizedFFT() {
         return realOptimizedTransform.analyze(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult autoFFT() {
         return autoTransform.analyze(signal, scales);
     }
@@ -98,13 +95,11 @@ public class RealFFTBenchmark {
      * Benchmark complex analysis which also benefits from real signal FFT.
      */
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public ComplexCWTResult standardComplexAnalysis() {
         return standardTransform.analyzeComplex(signal, scales);
     }
     
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public ComplexCWTResult realOptimizedComplexAnalysis() {
         return realOptimizedTransform.analyzeComplex(signal, scales);
     }
@@ -113,7 +108,6 @@ public class RealFFTBenchmark {
      * Direct convolution baseline (no FFT).
      */
     @Benchmark
-    @BenchmarkMode(Mode.AverageTime)
     public CWTResult directConvolution() {
         MorletWavelet wavelet = new MorletWavelet(6.0, 1.0);
         CWTConfig directConfig = CWTConfig.builder()
@@ -124,7 +118,7 @@ public class RealFFTBenchmark {
         return directTransform.analyze(signal, scales);
     }
     
-    // Helper method to generate chirp signal
+    // Helper method to generate chirp signal (deterministic for consistent benchmarks)
     private static double[] generateChirpSignal(int length, double f0, double f1, double amplitude) {
         double[] signal = new double[length];
         for (int i = 0; i < length; i++) {
