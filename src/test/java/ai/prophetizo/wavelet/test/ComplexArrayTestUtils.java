@@ -135,6 +135,6 @@ public final class ComplexArrayTestUtils {
                 return true; // Return early if a non-zero value is found
             }
         }
-        return false;
+        return false; // Return false if no non-zero value is found
     }
 }

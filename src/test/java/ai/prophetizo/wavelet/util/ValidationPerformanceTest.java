@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Performance benchmark to demonstrate the impact of removing redundant validation checks.
  * 
- * <p>This test is disabled by default to avoid running during regular test execution.
+ * <p>This test is controlled by a system property to avoid running during regular test execution.
  * To run this benchmark manually, you have several options:
  * 
- * <p>Option 1 - Use system property:
+ * <p>Option 1 - Use system property with Maven:
  * <pre>
  * mvn test -Dtest=ValidationPerformanceTest -Drun.benchmarks=true
  * </pre>
