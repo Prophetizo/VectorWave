@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 public class DetailedStreamingBenchmark {
     
     // Adapter class for backward compatibility
@@ -251,7 +252,7 @@ public class DetailedStreamingBenchmark {
     }
     
     private static double[] generateNoisySignal(int length) {
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         double[] signal = new double[length];
         
         for (int i = 0; i < length; i++) {

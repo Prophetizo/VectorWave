@@ -20,6 +20,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Integration tests for wavelet transforms.
  * Tests end-to-end transform/inverse transform cycles,
@@ -51,7 +52,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
             createConstantSignal(64, 1.0),
             createLinearSignal(64),
             createSineSignal(64, 0.1),
-            createRandomSignal(64, 42L)
+            createRandomSignal(64, TestConstants.TEST_SEED)
         };
         
         for (double[] signal : testSignals) {

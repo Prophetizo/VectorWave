@@ -6,6 +6,24 @@ VectorWave achieves high performance through multiple optimization strategies ta
 
 ## Optimization Strategies
 
+### Zero-Copy Streaming
+
+**OptimizedStreamingWaveletTransform:**
+- Eliminates array copying during transform operations
+- 50% reduction in memory bandwidth usage
+- Ring buffer with lock-free operations
+- Configurable overlap support (0-100%)
+- Automatic backpressure handling
+
+```java
+// Zero-copy streaming with overlap
+OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTransform(
+    wavelet, BoundaryMode.PERIODIC, blockSize, 
+    0.5,  // 50% overlap
+    8     // buffer capacity = blockSize * 8
+);
+```
+
 ### 1. SIMD/Vector API
 
 **Platform Thresholds:**
@@ -18,6 +36,33 @@ VectorWave achieves high performance through multiple optimization strategies ta
 - 2-8x speedup for convolution operations
 - 3-5x speedup for threshold operations
 - Platform-specific optimizations for gather/scatter
+
+### 1.1 Batch SIMD Processing
+
+**True Parallel Signal Processing:**
+- Process N signals simultaneously (N = SIMD vector width)
+- Optimized memory layouts for coalesced vector operations
+- Adaptive algorithm selection based on batch size
+
+**Usage:**
+```java
+// Basic batch processing
+WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = new double[32][1024];
+TransformResult[] results = transform.forwardBatch(signals);
+
+// Advanced configuration
+OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+    .withSoALayout(true)          // Structure-of-Arrays layout
+    .withSpecializedKernels(true) // Use optimized kernels
+    .withCacheBlocking(true);     // Cache-aware blocking
+```
+
+**Performance Characteristics:**
+- 2-4x speedup for aligned batch sizes (multiples of vector width)
+- Best performance with batch sizes 8-64 signals
+- Automatic fallback for non-aligned batches
+- Memory bandwidth limited for very large batches
 
 ### 2. Memory Optimization
 
@@ -62,9 +107,9 @@ List<TransformResult> results = engine.transformBatch(signals);
 ### Force Optimization Path
 
 ```java
-// Force SIMD for testing
+// Force Vector API for testing
 TransformConfig config = TransformConfig.builder()
-    .forceSIMD(true)
+    .forceVector(true)
     .build();
 
 // Force scalar for compatibility
@@ -104,6 +149,7 @@ TransformConfig config = TransformConfig.builder()
 2. **ScalarVsVectorBenchmark**: SIMD speedup measurement
 3. **WaveletTypeBenchmark**: Performance across wavelet families
 4. **StreamingBenchmark**: Real-time processing latency
+5. **StreamingTransformBenchmark**: Zero-copy streaming performance
 
 ### Typical Results
 
@@ -130,11 +176,14 @@ TransformConfig config = TransformConfig.builder()
 - Block size: 512-1024 for latency/throughput balance
 - Overlap < 30% for real-time
 - Use factory for automatic selection
+- Zero-copy ring buffer reduces memory bandwidth by 50%
+- Configure buffer capacity multiplier for smooth operation
 
 ### 4. Memory Patterns
 - Process signals in batches
 - Reuse arrays when possible
 - Use streaming for large datasets
+- Zero-copy streaming with OptimizedStreamingWaveletTransform
 
 ## Platform-Specific Notes
 

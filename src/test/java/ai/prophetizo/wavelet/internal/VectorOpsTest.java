@@ -12,10 +12,11 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class VectorOpsTest {
 
     private static final double EPSILON = 1e-10;
-    private static final Random random = new Random(42);
+    private static final Random random = new Random(TestConstants.TEST_SEED);
 
     @Test
     void testIsVectorizedOperationBeneficial() {

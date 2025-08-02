@@ -14,6 +14,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * JMH benchmark specifically measuring Phase 4 optimization impact:
  * - DB2/DB4 specialized implementations
@@ -70,7 +71,7 @@ public class Phase4OptimizationBenchmark {
     public void setup() {
         // Generate test signal
         signal = new double[signalSize];
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < signalSize; i++) {
             signal[i] = Math.sin(2 * Math.PI * i / 64) + 
                        0.5 * Math.cos(4 * Math.PI * i / 64) +

@@ -501,7 +501,7 @@ public class ES_ScalpingSystem {
         
         // Configure for minimum latency
         TransformConfig config = TransformConfig.builder()
-            .forceSIMD(true)  // Force vector operations
+            .forceVector(true)  // Force vector operations
             .build();
     }
     
@@ -598,7 +598,7 @@ public class CryptoMarketMaker {
 ```java
 // Ultra-low latency configuration
 TransformConfig config = TransformConfig.builder()
-    .forceSIMD(true)
+    .forceVector(true)
     .build();
 
 StreamingWaveletTransform transform = StreamingWaveletTransform.create(

@@ -1,6 +1,7 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
 import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
@@ -11,6 +12,8 @@ import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
  * <p>
  * Shows how to select between Fast and Quality implementations based on
  * specific use case requirements.
+ * <p>
+ * <b>Updated:</b> Now also demonstrates the new common Factory interface pattern.
  */
 public class StreamingDenoiserFactoryDemo {
 
@@ -28,6 +31,7 @@ public class StreamingDenoiserFactoryDemo {
         demonstrateFastImplementation(config);
         demonstrateQualityImplementation(config);
         demonstrateAutoSelection(config);
+        demonstrateNewFactoryInterface(config);
     }
 
     private static void demonstrateFastImplementation(StreamingDenoiserConfig config) {
@@ -124,6 +128,45 @@ public class StreamingDenoiserFactoryDemo {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static void demonstrateNewFactoryInterface(StreamingDenoiserConfig config) {
+        System.out.println("4. New Factory Interface Pattern");
+        System.out.println("---------------------------------");
+        System.out.println("Demonstrates the new standardized Factory interface:\n");
+        
+        // Get the factory instance that implements Factory<T, C>
+        Factory<StreamingDenoiserStrategy, StreamingDenoiserConfig> factory = 
+            StreamingDenoiserFactory.getInstance();
+        
+        System.out.println("Factory Information:");
+        System.out.println("  Description: " + factory.getDescription());
+        System.out.println("  Config valid: " + factory.isValidConfiguration(config));
+        System.out.println();
+        
+        // Create denoiser using the common interface
+        try (StreamingDenoiserStrategy denoiser = factory.create(config)) {
+            System.out.println("Created denoiser using Factory interface");
+            
+            // Show that it works the same way
+            StreamingDenoiserStrategy.PerformanceProfile profile = denoiser.getPerformanceProfile();
+            System.out.printf("  Latency: %.2f µs/sample\n", profile.expectedLatencyMicros());
+            System.out.printf("  Real-time capable: %s\n", profile.isRealTimeCapable());
+            
+            // Process test signal
+            double[] signal = generateTestSignal(256);
+            denoiser.process(signal);
+            System.out.println("  Processed test signal successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        System.out.println("\nBenefits of using the Factory interface:");
+        System.out.println("  - Consistent API across all factories");
+        System.out.println("  - Built-in validation support");
+        System.out.println("  - Easy integration with dependency injection");
+        System.out.println("  - Type-safe factory handling");
     }
 
     private static double[] generateTestSignal(int length) {

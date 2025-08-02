@@ -19,13 +19,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Tests for streaming wavelet transform functionality.
  */
 class StreamingWaveletTransformTest {
     
     // Use seeded Random for reproducible test results
-    private static final Random random = new Random(42);
+    private static final Random random = new Random(TestConstants.TEST_SEED);
     
     @Test
     void testBasicStreaming() throws Exception {

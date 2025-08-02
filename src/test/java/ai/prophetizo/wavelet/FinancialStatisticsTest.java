@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,6 +13,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Statistical tests for wavelet transforms on financial data.
  * Verifies preservation of important statistical properties used in finance.
@@ -72,7 +74,7 @@ class FinancialStatisticsTest {
         
         // Verify reproducibility across test runs by checking a fresh Random
         clearRandomCache();
-        Random testRng = new Random(42L * 1000L + 42L); // Same seed formula as index 42
+        Random testRng = new Random(TestConstants.TEST_SEED * 1000L + TestConstants.TEST_SEED); // Same seed formula as index 42
         double expectedValue = testRng.nextGaussian();
         double actualValue = gaussianRandom(42);
         assertEquals(expectedValue, actualValue, EPSILON, 
@@ -138,7 +140,7 @@ class FinancialStatisticsTest {
         // Generate returns with known Sharpe ratio
         double targetMean = 0.0001; // 1 bp daily return
         double targetVol = 0.01;    // 1% daily vol
-        double targetSharpe = targetMean / targetVol * Math.sqrt(252); // Annualized
+        double targetSharpe = targetMean / targetVol * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR); // Annualized
         
         double[] returns = new double[256]; // Power of 2
         for (int i = 0; i < returns.length; i++) {
@@ -395,7 +397,7 @@ class FinancialStatisticsTest {
     private double calculateSharpeRatio(double[] returns) {
         double mean = calculateMean(returns);
         double std = Math.sqrt(calculateVariance(returns));
-        return mean / std * Math.sqrt(256); // Annualized (assuming 256 trading days)
+        return mean / std * Math.sqrt(FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR); // Annualized
     }
     
     private double calculateVaR(double[] returns, double confidence) {
@@ -488,7 +490,7 @@ class FinancialStatisticsTest {
     private static double gaussianRandom(int sequenceIndex) {
         // Get or create a Random instance for this sequence index
         Random rng = RANDOM_CACHE.computeIfAbsent(sequenceIndex, 
-            idx -> new Random(idx * 1000L + 42L)); // Deterministic seed based on index
+            idx -> new Random(idx * 1000L + TestConstants.TEST_SEED)); // Deterministic seed based on index
         
         // Using nextGaussian() provides better statistical properties than manual Box-Muller
         return rng.nextGaussian();

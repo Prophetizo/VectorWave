@@ -10,6 +10,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Benchmarks comparing original VectorOps vs optimized VectorOps implementations.
  * 
@@ -49,7 +50,7 @@ public class VectorOptimizationBenchmark {
     @Setup(Level.Trial)
     public void setup() {
         // Use fixed seed for reproducible benchmarks
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         // Create test signal
         signal = new double[signalSize];

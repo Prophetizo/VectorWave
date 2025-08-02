@@ -4,9 +4,11 @@ import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.WaveletTransformException;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -343,7 +345,7 @@ public class ErrorHandlingDemo {
             }
             
             // Check for power of 2 length
-            if (!isPowerOfTwo(signal.length)) {
+            if (!ValidationUtils.isPowerOfTwo(signal.length)) {
                 int nextPower = nextPowerOfTwo(signal.length);
                 return ValidationResult.invalid(
                     String.format("Signal length (%d) must be a power of 2", signal.length),
@@ -423,7 +425,7 @@ public class ErrorHandlingDemo {
                 ValidationResult validation = validateSignal(signal);
                 if (!validation.isValid()) {
                     // Try to recover by padding
-                    if (signal != null && signal.length > 0 && !isPowerOfTwo(signal.length)) {
+                    if (signal != null && signal.length > 0 && !ValidationUtils.isPowerOfTwo(signal.length)) {
                         signal = padToNextPowerOfTwo(signal);
                         System.out.printf("   Auto-padded %s to length %d%n", signalName, signal.length);
                     } else {
@@ -465,10 +467,6 @@ public class ErrorHandlingDemo {
         double[] truncated = new double[largestPower];
         System.arraycopy(signal, 0, truncated, 0, largestPower);
         return truncated;
-    }
-    
-    private boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
     }
     
     private int nextPowerOfTwo(int n) {

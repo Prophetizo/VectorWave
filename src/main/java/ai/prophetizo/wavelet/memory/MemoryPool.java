@@ -139,6 +139,15 @@ public class MemoryPool {
     }
 
     /**
+     * Gets the hit rate of the pool (ratio of reused arrays to total borrowed).
+     *
+     * @return the hit rate between 0.0 and 1.0
+     */
+    public double getHitRate() {
+        return totalBorrowed > 0 ? (double) (totalBorrowed - totalCreated) / totalBorrowed : 0.0;
+    }
+
+    /**
      * Prints pool statistics for monitoring.
      */
     public void printStatistics() {
@@ -146,8 +155,7 @@ public class MemoryPool {
         System.out.printf("  Total borrowed: %d\n", totalBorrowed);
         System.out.printf("  Total returned: %d\n", totalReturned);
         System.out.printf("  Total created: %d\n", totalCreated);
-        System.out.printf("  Reuse rate: %.1f%%\n",
-                totalBorrowed > 0 ? 100.0 * (totalBorrowed - totalCreated) / totalBorrowed : 0);
+        System.out.printf("  Reuse rate: %.1f%%\n", getHitRate() * 100);
         System.out.printf("  Currently pooled: %d arrays\n", getTotalPooledCount());
 
         if (!pools.isEmpty()) {

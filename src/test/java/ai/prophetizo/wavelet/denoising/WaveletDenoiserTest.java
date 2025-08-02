@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Test suite for WaveletDenoiser.
  */
@@ -345,7 +346,7 @@ class WaveletDenoiserTest {
     
     private double[] generateFinancialReturns(int length) {
         double[] returns = new double[length];
-        Random rng = new Random(42);
+        Random rng = new Random(TestConstants.TEST_SEED);
         
         // Simulate returns with volatility clustering
         double vol = 0.01;

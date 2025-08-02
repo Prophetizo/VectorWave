@@ -32,8 +32,11 @@
  * <h2>Supporting Classes:</h2>
  * <ul>
  *   <li>{@link ai.prophetizo.wavelet.api.WaveletRegistry} - Central registry for wavelet discovery and lookup</li>
+ *   <li>{@link ai.prophetizo.wavelet.api.WaveletProvider} - Service Provider Interface for custom wavelets</li>
  *   <li>{@link ai.prophetizo.wavelet.api.WaveletType} - Enum for wavelet categorization</li>
  *   <li>{@link ai.prophetizo.wavelet.api.BoundaryMode} - Enum for boundary handling modes</li>
+ *   <li>{@link ai.prophetizo.wavelet.api.Factory} - Standard factory interface for component creation</li>
+ *   <li>{@link ai.prophetizo.wavelet.api.FactoryRegistry} - Central registry for factory instances</li>
  * </ul>
  * 
  * <h2>Usage Examples:</h2>
@@ -53,12 +56,25 @@
  * String description = wavelet.description();
  * WaveletType type = wavelet.getType();
  * double[] lowPass = wavelet.lowPassDecomposition();
+ * 
+ * // Use factory pattern
+ * Factory<WaveletTransform, Wavelet> factory = WaveletTransformFactory.getInstance();
+ * WaveletTransform transform = factory.create(new Haar());
+ * 
+ * // Register custom factories
+ * FactoryRegistry registry = FactoryRegistry.getInstance();
+ * registry.register("myFactory", new MyCustomFactory());
  * }</pre>
  * 
  * <h2>Adding New Wavelets:</h2>
- * <p>To add a new wavelet, implement the appropriate interface ({@code OrthogonalWavelet},
- * {@code BiorthogonalWavelet}, or {@code ContinuousWavelet}) and register it in
- * {@link ai.prophetizo.wavelet.api.WaveletRegistry}.</p>
+ * <p>To add custom wavelets:</p>
+ * <ol>
+ *   <li>Implement the appropriate interface ({@code OrthogonalWavelet},
+ *       {@code BiorthogonalWavelet}, or {@code ContinuousWavelet})</li>
+ *   <li>Create a {@link ai.prophetizo.wavelet.api.WaveletProvider} implementation</li>
+ *   <li>Register your provider in {@code META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider}</li>
+ *   <li>Your wavelets will be automatically discovered via ServiceLoader</li>
+ * </ol>
  * 
  * @see ai.prophetizo.wavelet
  * @since 1.0.0

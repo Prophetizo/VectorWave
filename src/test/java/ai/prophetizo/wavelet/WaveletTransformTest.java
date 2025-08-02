@@ -150,7 +150,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     @Test
@@ -211,7 +211,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         WaveletAssertions.assertValidTransformResult(result);
         WaveletAssertions.assertEnergyPreserved(
-            signal, result, WaveletTestUtils.ENERGY_TOLERANCE);
+            signal, result, ToleranceConstants.ENERGY_TOLERANCE);
     }
     
     // === Edge Cases ===
@@ -229,7 +229,7 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
-            signal, reconstructed, WaveletTestUtils.DEFAULT_TOLERANCE);
+            signal, reconstructed, ToleranceConstants.DEFAULT_TOLERANCE);
     }
     
     @Test

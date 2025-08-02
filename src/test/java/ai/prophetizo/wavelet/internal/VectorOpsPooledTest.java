@@ -11,6 +11,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class VectorOpsPooledTest {
     
     private static final double EPSILON = 1e-10;
@@ -46,7 +47,7 @@ class VectorOpsPooledTest {
         double[][] signals = new double[batchSize][signalLength];
         
         // Fill with test data
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         for (int i = 0; i < batchSize; i++) {
             for (int j = 0; j < signalLength; j++) {
                 signals[i][j] = random.nextGaussian();

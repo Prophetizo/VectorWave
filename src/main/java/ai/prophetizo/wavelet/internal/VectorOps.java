@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
@@ -33,10 +34,8 @@ public final class VectorOps {
     // Vector species for different data widths
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     // Platform detection
-    private static final boolean IS_ARM = System.getProperty("os.arch").contains("aarch64") ||
-            System.getProperty("os.arch").contains("arm");
-    private static final boolean IS_APPLE_SILICON = IS_ARM &&
-            System.getProperty("os.name").toLowerCase().contains("mac");
+    private static final boolean IS_ARM = PlatformDetector.isARM();
+    private static final boolean IS_APPLE_SILICON = PlatformDetector.isAppleSilicon();
 
     private static final int VECTOR_LENGTH = SPECIES.length();
     // Minimum signal length to use vectorization - adjusted for platform
@@ -370,9 +369,7 @@ public final class VectorOps {
      * Get information about the Vector API implementation.
      */
     public static String getVectorInfo() {
-        String platform = IS_APPLE_SILICON ? "Apple Silicon" :
-                IS_ARM ? "ARM" :
-                        System.getProperty("os.arch");
+        String platform = PlatformDetector.getPlatform().toString();
         return String.format("Vector API: Species=%s, Length=%d, Platform=%s, Enabled=%b",
                 SPECIES, VECTOR_LENGTH, platform, VECTOR_LENGTH > 1);
     }

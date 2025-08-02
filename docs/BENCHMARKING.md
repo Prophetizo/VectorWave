@@ -18,7 +18,48 @@ Run all benchmarks:
   - x86: CPU with AVX2/AVX512 support
   - ARM: NEON support (standard on modern ARM)
   - Apple Silicon: Automatic optimization for M-series chips
-- Vector API is automatically enabled via Maven configuration
+- Optional: Java Vector API support (Java 16+ as incubator module)
+  - Automatically detected by jmh-runner.sh
+  - Falls back to scalar implementation if not available
+
+## Vector API Configuration
+
+### Automatic Detection
+
+The `jmh-runner.sh` script automatically detects if the Vector API module is available:
+
+```bash
+# Run all benchmarks
+./jmh-runner.sh
+
+# Run specific benchmark
+./jmh-runner.sh OptimizedFFTBenchmark
+```
+
+### Manual Configuration
+
+#### With Vector API (Java 16+ with incubator modules)
+```bash
+JAVA_OPTS="-Xmx2G --add-modules=jdk.incubator.vector" ./jmh-runner.sh
+```
+
+#### Without Vector API (Scalar fallback)
+```bash
+JAVA_OPTS="-Xmx2G" ./jmh-runner.sh
+```
+
+### Checking Vector API Status
+
+To verify if benchmarks are using Vector API:
+
+```bash
+# Check if module is available
+java --list-modules | grep jdk.incubator.vector
+
+# Check runtime status
+mvn compile && java -cp target/classes --add-modules=jdk.incubator.vector \
+  -cp target/classes ai.prophetizo.wavelet.util.OptimizedFFT
+```
 
 ## Available Benchmarks
 

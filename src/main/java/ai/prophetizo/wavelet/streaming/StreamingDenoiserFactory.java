@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.streaming;
 
+import ai.prophetizo.wavelet.api.AbstractStaticFactory;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 /**
@@ -9,6 +10,22 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * supporting both manual and automatic implementation selection based on use case
  * requirements. The factory pattern enables easy switching between implementations
  * without changing client code.</p>
+ * 
+ * <p>This factory supports two usage patterns:</p>
+ * <ul>
+ *   <li>Static methods for direct creation with automatic implementation selection</li>
+ *   <li>Factory interface pattern via {@code getInstance()} for dependency injection</li>
+ * </ul>
+ * 
+ * <p>Factory interface usage:</p>
+ * <pre>{@code
+ * // Get factory instance that implements Factory interface
+ * Factory<StreamingDenoiserStrategy, StreamingDenoiserConfig> factory = 
+ *     StreamingDenoiserFactory.getInstance();
+ * 
+ * // Create denoiser using factory interface
+ * StreamingDenoiserStrategy denoiser = factory.create(config);
+ * }</pre>
  *
  * <h3>Implementation Selection</h3>
  * <p>The factory supports three selection modes:</p>
@@ -187,6 +204,49 @@ public final class StreamingDenoiserFactory {
         }
 
         return profile;
+    }
+    
+    /**
+     * Gets the factory instance that implements the common Factory interface.
+     *
+     * @return the factory instance
+     */
+    public static Instance getInstance() {
+        return Instance.INSTANCE;
+    }
+
+    /**
+     * Factory instance that implements the common Factory interface.
+     * This provides an alternative way to use the factory that follows
+     * the standardized factory pattern.
+     */
+    public static final class Instance extends AbstractStaticFactory<StreamingDenoiserStrategy, StreamingDenoiserConfig> {
+        private static final Instance INSTANCE = new Instance();
+
+        private Instance() {
+            // Singleton
+        }
+
+        @Override
+        protected StreamingDenoiserStrategy doCreate() {
+            throw new UnsupportedOperationException(
+                "StreamingDenoiserFactory requires configuration. Use create(config) instead.");
+        }
+
+        @Override
+        protected StreamingDenoiserStrategy doCreate(StreamingDenoiserConfig config) {
+            return StreamingDenoiserFactory.create(config);
+        }
+
+        @Override
+        public boolean isValidConfiguration(StreamingDenoiserConfig config) {
+            return config != null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Factory for creating streaming denoiser implementations";
+        }
     }
 
     /**

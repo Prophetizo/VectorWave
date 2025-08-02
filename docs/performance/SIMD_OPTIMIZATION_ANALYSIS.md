@@ -296,9 +296,9 @@ public static void blockedConvolution(double[] signal, double[] filter,
 ### Enabling SIMD Optimizations
 
 ```java
-// Force SIMD operations
+// Force Vector API operations
 TransformConfig config = TransformConfig.builder()
-    .forceSIMD(true)
+    .forceVector(true)
     .boundaryMode(BoundaryMode.PERIODIC)
     .build();
 

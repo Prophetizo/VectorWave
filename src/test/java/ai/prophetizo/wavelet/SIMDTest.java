@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for SIMD optimization functionality.
+ * Tests for Vector API optimization functionality.
  */
 class SIMDTest {
 
     @Test
-    void testSIMDAvailability() {
+    void testVectorAvailability() {
         // Test default (auto-detection)
         WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
         System.out.println("Default implementation: " + transform.getImplementationType());
@@ -24,19 +24,19 @@ class SIMDTest {
             .forceScalar(true)
             .build();
         WaveletTransform scalarTransform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, scalarConfig);
-        assertFalse(scalarTransform.isUsingSIMD());
+        assertFalse(scalarTransform.isUsingVector());
         assertEquals("Scalar", scalarTransform.getImplementationType());
         
-        // Test forced SIMD (if available)
-        TransformConfig simdConfig = TransformConfig.builder()
-            .forceSIMD(true)
+        // Test forced Vector API (if available)
+        TransformConfig vectorConfig = TransformConfig.builder()
+            .forceVector(true)
             .build();
-        WaveletTransform simdTransform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, simdConfig);
-        System.out.println("SIMD implementation: " + simdTransform.getImplementationType());
+        WaveletTransform vectorTransform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC, vectorConfig);
+        System.out.println("Vector implementation: " + vectorTransform.getImplementationType());
     }
     
     @Test
-    void testSIMDCorrectness() {
+    void testVectorCorrectness() {
         double[] signal = new double[256];
         for (int i = 0; i < signal.length; i++) {
             signal[i] = Math.sin(2 * Math.PI * i / 32.0);

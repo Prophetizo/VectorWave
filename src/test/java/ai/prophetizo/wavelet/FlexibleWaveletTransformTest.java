@@ -1,8 +1,10 @@
 package ai.prophetizo.wavelet;
 
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParameters;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -100,7 +102,7 @@ class FlexibleWaveletTransformTest extends BaseWaveletTest {
             
             // Padded length should be next power of 2
             int paddedLength = padded.paddedLength();
-            assertTrue(isPowerOfTwo(paddedLength));
+            assertTrue(ValidationUtils.isPowerOfTwo(paddedLength));
             assertTrue(paddedLength >= originalLength);
             assertTrue(paddedLength < 2 * originalLength || originalLength == 1);
         }
@@ -142,7 +144,7 @@ class FlexibleWaveletTransformTest extends BaseWaveletTest {
     @DisplayName("Financial time series with arbitrary length")
     void testFinancialTimeSeries() {
         // Typical financial time series lengths (not power of 2)
-        int tradingDays = 252; // One year of trading days
+        int tradingDays = FinancialAnalysisParameters.TRADING_DAYS_PER_YEAR; // One year of trading days
         double[] prices = new double[tradingDays];
         
         // Simulate price series with trend and volatility
@@ -215,7 +217,7 @@ class FlexibleWaveletTransformTest extends BaseWaveletTest {
         
         // The approximation coefficients can be further decomposed
         double[] approx = level1.approximationCoeffs();
-        if (isPowerOfTwo(approx.length) && approx.length > 4) {
+        if (ValidationUtils.isPowerOfTwo(approx.length) && approx.length > 4) {
             MultiLevelTransformResult multiResult = mwt.decompose(approx, 2);
             assertEquals(2, multiResult.levels());
         }
@@ -250,10 +252,6 @@ class FlexibleWaveletTransformTest extends BaseWaveletTest {
                        0.5 * Math.cos(2 * Math.PI * i / (length / 8.0));
         }
         return signal;
-    }
-    
-    private boolean isPowerOfTwo(int n) {
-        return n > 0 && (n & (n - 1)) == 0;
     }
     
     private boolean arraysEqual(double[] a, double[] b, double tolerance) {

@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Stress tests for wavelet transforms.
  * Tests performance, concurrency, and large-scale operations.
@@ -82,7 +83,7 @@ class StressTest extends BaseWaveletTest {
             double[] reconstructed = transform.inverse(result);
             
             // Spot check some values
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             for (int i = 0; i < 100; i++) {
                 int idx = random.nextInt(signal.length);
                 assertEquals(signal[idx], reconstructed[idx], 1e-10,

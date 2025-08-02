@@ -44,7 +44,7 @@ This document describes the performance optimizations integrated into the canoni
 - **Location**: `VectorOps.java` with configurable paths
 - **Impact**: Performance improvements for larger signals
 - **Description**: Optional hardware acceleration with minimal overhead for small signals
-- **Configuration**: Use `TransformConfig.forceScalar()` or `forceSIMD()` for explicit control
+- **Configuration**: Use `TransformConfig.forceScalar()` or `forceVector()` for explicit control
 
 ## Performance Results
 

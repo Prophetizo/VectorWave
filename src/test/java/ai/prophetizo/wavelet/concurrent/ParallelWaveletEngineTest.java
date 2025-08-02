@@ -23,6 +23,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 class ParallelWaveletEngineTest {
     
     private ParallelWaveletEngine engine;
@@ -315,7 +316,7 @@ class ParallelWaveletEngineTest {
     
     // Helper method to create test signals
     private double[][] createTestSignals(int count, int length) {
-        Random random = new Random(42); // Fixed seed for reproducibility
+        Random random = new Random(TestConstants.TEST_SEED); // Fixed seed for reproducibility
         double[][] signals = new double[count][length];
         
         for (int i = 0; i < count; i++) {

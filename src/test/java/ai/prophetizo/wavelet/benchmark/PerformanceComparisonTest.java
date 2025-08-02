@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 
 import java.util.Random;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Quick performance comparison test to show the impact of our optimizations.
  * 
@@ -239,7 +240,7 @@ public class PerformanceComparisonTest {
     
     private static double[] generateSignal(int size) {
         // Use fixed seed for reproducible benchmarks
-        Random random = new Random(42);
+        Random random = new Random(TestConstants.TEST_SEED);
         
         double[] signal = new double[size];
         for (int i = 0; i < size; i++) {

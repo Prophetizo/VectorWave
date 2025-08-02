@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.config.TransformConfig;
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -22,7 +23,7 @@ public class ARMPerformanceTest {
         String implementations = WaveletOpsFactory.getAvailableImplementations();
         System.out.println("Available implementations:\n" + implementations);
         
-        if (System.getProperty("os.arch").contains("aarch64")) {
+        if (PlatformDetector.isARM()) {
             assertTrue(implementations.contains("ARM Optimized"));
             
             // Verify we're using ARM ops
