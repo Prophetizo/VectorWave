@@ -59,6 +59,7 @@ public final class ArrayPool {
      * Thread-local pool implementation.
      */
     private static class Pool {
+        @SuppressWarnings("unchecked")
         private final ConcurrentLinkedDeque<double[]>[] pools;
 
         @SuppressWarnings("unchecked")

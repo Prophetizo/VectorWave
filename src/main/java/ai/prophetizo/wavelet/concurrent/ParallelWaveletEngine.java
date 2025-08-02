@@ -265,6 +265,8 @@ public class ParallelWaveletEngine implements AutoCloseable {
      * Fork/Join task for wavelet transforms.
      */
     private static class TransformTask extends RecursiveTask<TransformResult[]> {
+        private static final long serialVersionUID = 1L;
+        
         private final double[][] signals;
         private final int start;
         private final int end;
@@ -318,10 +320,12 @@ public class ParallelWaveletEngine implements AutoCloseable {
      * Fork/Join task for generic processing.
      */
     private static class ProcessTask<T> extends RecursiveTask<List<T>> {
+        private static final long serialVersionUID = 1L;
+        
         private final double[][] signals;
         private final int start;
         private final int end;
-        private final SignalProcessor<T> processor;
+        private final transient SignalProcessor<T> processor;
 
         ProcessTask(double[][] signals, int start, int end, SignalProcessor<T> processor) {
             this.signals = signals;

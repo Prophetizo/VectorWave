@@ -86,6 +86,7 @@ import java.util.concurrent.Flow.Publisher;
  * @see QualityStreamingDenoiser
  * @since 1.0.0
  */
+@SuppressWarnings("try")  // close() throws InterruptedException is intended
 public interface StreamingDenoiserStrategy extends Publisher<double[]>, AutoCloseable {
 
     /**
