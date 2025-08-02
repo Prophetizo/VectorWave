@@ -1,5 +1,6 @@
 package ai.prophetizo;
 
+import ai.prophetizo.demo.BasicUsageDemo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import java.io.ByteArrayOutputStream;
@@ -8,13 +9,13 @@ import java.io.PrintStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test for Main class to ensure demo code coverage.
+ * Test for BasicUsageDemo class to ensure demo code coverage.
  */
-@DisplayName("Main Demo")
+@DisplayName("Basic Usage Demo")
 class MainTest {
     
     @Test
-    @DisplayName("Main method runs without errors")
+    @DisplayName("BasicUsageDemo main method runs without errors")
     void testMainMethod() {
         // Capture output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -23,17 +24,14 @@ class MainTest {
         
         try {
             // Run main method
-            Main.main(new String[]{});
+            BasicUsageDemo.main(new String[]{});
             
             // Verify output contains expected content
             String output = outputStream.toString();
-            assertTrue(output.contains("VectorWave - Fast Wavelet Transform Demo"));
-            assertTrue(output.contains("ORTHOGONAL WAVELETS"));
-            assertTrue(output.contains("BIORTHOGONAL WAVELETS")); 
-            assertTrue(output.contains("CONTINUOUS WAVELETS"));
-            assertTrue(output.contains("WAVELET REGISTRY"));
-            assertTrue(output.contains("MULTI-LEVEL DECOMPOSITION"));
-            assertTrue(output.contains("STREAMING DENOISER"));
+            assertTrue(output.contains("VectorWave Basic Usage Demo"));
+            assertTrue(output.contains("Basic Transform"));
+            assertTrue(output.contains("Factory Pattern"));
+            assertTrue(output.contains("Signal Lengths"));
             
             // Verify no exceptions were thrown
             // Note: Main.demonstrateStreamingDenoiser() prints "Error in streaming denoiser demo:" in catch block
@@ -46,7 +44,7 @@ class MainTest {
     }
     
     @Test
-    @DisplayName("Main method with null args")
+    @DisplayName("BasicUsageDemo method with null args")
     void testMainMethodWithNullArgs() {
         // Capture output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -55,7 +53,7 @@ class MainTest {
         
         try {
             // Should handle null args gracefully
-            assertDoesNotThrow(() -> Main.main(null));
+            assertDoesNotThrow(() -> BasicUsageDemo.main(null));
             
         } finally {
             // Restore original output
