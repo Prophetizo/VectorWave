@@ -218,7 +218,12 @@ public class WaveletTransform {
         int n = signal.length;
         double[] shifted = new double[n];
         
-        // Normalize shift to be in range [0, n)
+        // Normalize shift to be in range [0, n) regardless of sign
+        // This handles both positive and negative shifts correctly:
+        // - (shift % n) gives a value in range (-n, n)
+        // - Adding n ensures the value is positive: range (0, 2n)
+        // - Final % n brings it back to range [0, n)
+        // Example: shift=-2, n=8 → (-2%8)=-2 → (-2+8)=6 → 6%8=6 (shift left by 2 = shift right by 6)
         shift = ((shift % n) + n) % n;
         
         for (int i = 0; i < n; i++) {

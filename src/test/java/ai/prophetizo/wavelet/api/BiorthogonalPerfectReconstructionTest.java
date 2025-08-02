@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class BiorthogonalPerfectReconstructionTest {
     
+    // Fixed seed for deterministic test results - ensures consistent behavior across test runs
+    private static final long RANDOM_SEED = 42L;
+    
     @Test
     void testPerfectReconstructionWithPhaseCompensation() {
         System.out.println("=== Testing Perfect Reconstruction with Phase Compensation ===");
@@ -83,8 +86,15 @@ public class BiorthogonalPerfectReconstructionTest {
         }
         
         System.out.println("Peak at index " + peakIndex + " with value " + peakValue);
-        // The peak is 2.25, not 2.0 - this is still valid for perfect reconstruction
-        assertEquals(2.25, Math.abs(peakValue), 1e-10, "Peak value should be 2.25 for BIOR1_3");
+        
+        // For biorthogonal wavelets, the perfect reconstruction condition is:
+        // sum_k h[k]*g[n-k] = c*delta[n-d] where c is a constant
+        // For CDF 1,3 wavelets specifically, this constant c = 2.25
+        // This occurs because the filters are not orthonormal but biorthogonal
+        // The reconstruction scale factor of 0.5 compensates for this during inverse transform
+        final double BIOR1_3_PERFECT_RECONSTRUCTION_CONSTANT = 2.25;
+        assertEquals(BIOR1_3_PERFECT_RECONSTRUCTION_CONSTANT, Math.abs(peakValue), 1e-10, 
+            "Peak value should be " + BIOR1_3_PERFECT_RECONSTRUCTION_CONSTANT + " for BIOR1_3 perfect reconstruction");
         
         // Verify reconstruction scale
         assertEquals(0.5, bior.getReconstructionScale(), 1e-10, "Reconstruction scale should be 0.5");
@@ -128,7 +138,7 @@ public class BiorthogonalPerfectReconstructionTest {
     
     private double[] createRandomSignal(int length) {
         double[] signal = new double[length];
-        java.util.Random random = new java.util.Random(42);
+        java.util.Random random = new java.util.Random(RANDOM_SEED);
         for (int i = 0; i < length; i++) {
             signal[i] = random.nextGaussian();
         }

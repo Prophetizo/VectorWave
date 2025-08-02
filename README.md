@@ -446,7 +446,6 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
 
 ## Known Issues
 
-- **Biorthogonal Wavelets** (#138): Critical bug causing catastrophic reconstruction errors (RMSE > 1.4). Use orthogonal wavelets (Haar, Daubechies, Symlets) instead.
 - **Boundary Modes** (#135-137): SYMMETRIC and CONSTANT modes not fully implemented for FFM upsampling operations.
 - **FFM Requirements**: Requires Java 23+ with `--enable-native-access=ALL-UNNAMED` flag.
 - **Power-of-Two Requirement**: Wavelet-based methods in FinancialWaveletAnalyzer require input arrays with power-of-two length.

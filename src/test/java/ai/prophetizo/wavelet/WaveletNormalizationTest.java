@@ -14,13 +14,16 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive normalization tests for all wavelet implementations.
+ * Normalization tests for orthogonal and continuous wavelet implementations.
  * 
- * <p>Validates that all wavelets satisfy the L2 normalization requirement:
- * sum of squares of filter coefficients equals 1.</p>
+ * <p>Validates that orthogonal and continuous wavelets satisfy the L2 normalization 
+ * requirement: sum of squares of filter coefficients equals 1.</p>
+ * 
+ * <p>Note: Biorthogonal wavelets are excluded from these tests as they must satisfy
+ * biorthogonality conditions instead of L2 normalization for perfect reconstruction.</p>
  * 
  * <p>This ensures consistent energy preservation and cross-wavelet 
- * comparison results across the entire wavelet library.</p>
+ * comparison results for applicable wavelet families.</p>
  */
 @DisplayName("Wavelet Normalization Tests")
 class WaveletNormalizationTest {
@@ -46,7 +49,8 @@ class WaveletNormalizationTest {
     private static final double NORMALIZATION_TOLERANCE = 2e-10;
     
     /**
-     * Provides all available wavelets for parameterized testing.
+     * Provides wavelets that should be L2-normalized for parameterized testing.
+     * Excludes biorthogonal wavelets which have different normalization requirements.
      * 
      * @return stream of arguments containing wavelet instances and names
      */
@@ -58,9 +62,6 @@ class WaveletNormalizationTest {
             Arguments.of(Daubechies.DB4, "Daubechies DB4"),
             Arguments.of(Symlet.SYM2, "Symlet SYM2"),
             Arguments.of(Coiflet.COIF1, "Coiflet COIF1"),
-            
-            // Biorthogonal wavelets
-            Arguments.of(BiorthogonalSpline.BIOR1_3, "BiorthogonalSpline BIOR1_3"),
             
             // Continuous wavelets
             Arguments.of(new MorletWavelet(), "Morlet (default)"),

@@ -5,7 +5,6 @@ import ai.prophetizo.wavelet.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -189,7 +188,6 @@ class FFMWaveletTransformTest {
     }
     
     @Test
-    @Disabled("Disabled due to critical bug in biorthogonal wavelet implementation - see issue #138")
     void testBiorthogonalWavelets() {
         BiorthogonalSpline bior = BiorthogonalSpline.BIOR1_3;
         ffmTransform = new FFMWaveletTransform(bior, BoundaryMode.ZERO_PADDING);
