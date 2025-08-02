@@ -55,6 +55,7 @@ public class StreamingDenoiserDemo {
         demonstrateMultiChannelProcessing();
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled by throws Exception
     private static void demonstrateAudioDenoising() throws Exception {
         System.out.println("1. Real-Time Audio Denoising");
         System.out.println("----------------------------");
@@ -167,6 +168,7 @@ public class StreamingDenoiserDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled by throws Exception
     private static void demonstrateFinancialDataCleaning() throws Exception {
         System.out.println("2. Financial Time Series Denoising");
         System.out.println("----------------------------------");
@@ -269,6 +271,7 @@ public class StreamingDenoiserDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled by throws Exception
     private static void demonstrateAdaptiveDenoising() throws Exception {
         System.out.println("3. Adaptive Threshold Demonstration");
         System.out.println("-----------------------------------");
@@ -326,7 +329,7 @@ public class StreamingDenoiserDemo {
                 }
             }
 
-            denoiser.close();
+            // Let try-with-resources handle the close
             latch.await(1, TimeUnit.SECONDS);
 
             // Analyze adaptation
@@ -345,6 +348,7 @@ public class StreamingDenoiserDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled by throws Exception
     private static void compareConfigurationPerformance() throws Exception {
         System.out.println("4. Configuration Performance Comparison");
         System.out.println("---------------------------------------");
@@ -409,7 +413,7 @@ public class StreamingDenoiserDemo {
                     denoiser.process(Math.random() - 0.5);
                 }
 
-                denoiser.close();
+                // Let try-with-resources handle the close
                 latch.await(1, TimeUnit.SECONDS);
 
                 long endTime = System.nanoTime();
@@ -426,6 +430,7 @@ public class StreamingDenoiserDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled by throws Exception
     private static void demonstrateMultiChannelProcessing() throws Exception {
         System.out.println("5. Multi-Channel Streaming (e.g., Stereo Audio)");
         System.out.println("-----------------------------------------------");
