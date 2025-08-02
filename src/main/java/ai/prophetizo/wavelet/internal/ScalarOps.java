@@ -132,7 +132,7 @@ public final class ScalarOps {
      * This is the core operation of the Maximal Overlap Discrete Wavelet Transform.
      * 
      * <p>The MODWT uses circular convolution with the formula:
-     * output[t] = Σ(l=0 to L-1) signal[(t - l) mod N] * filter[l]</p>
+     * output[t] = Σ(l=0 to L-1) signal[(t + l) mod N] * filter[l]</p>
      * 
      * @param signal The input signal of length N.
      * @param filter The filter coefficients of length L.
@@ -146,8 +146,8 @@ public final class ScalarOps {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                // Circular indexing: (t - l) mod N
-                int signalIndex = (t - l + signalLen) % signalLen;
+                // Try different indexing: (t + l) mod N
+                int signalIndex = (t + l) % signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             

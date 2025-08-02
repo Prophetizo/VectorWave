@@ -83,22 +83,18 @@ public class MODWTTransform {
         // Validate signal values (finite values check)
         ValidationUtils.validateFiniteValues(signal, "signal");
         
-        // Get filter coefficients and scale them for MODWT
+        // Get filter coefficients (try without scaling first)
         double[] lowPassFilter = wavelet.lowPassDecomposition();
         double[] highPassFilter = wavelet.highPassDecomposition();
-        
-        // Scale filters for MODWT (level 1 uses scale factor 1/sqrt(2))
-        double[] scaledLowPass = ScalarOps.scaleFilterForMODWT(lowPassFilter, 1);
-        double[] scaledHighPass = ScalarOps.scaleFilterForMODWT(highPassFilter, 1);
         
         // Prepare output arrays (same length as input)
         int signalLength = signal.length;
         double[] approximationCoeffs = new double[signalLength];
         double[] detailCoeffs = new double[signalLength];
         
-        // Perform circular convolution without downsampling
-        ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-        ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        // Perform circular convolution without downsampling (no scaling)
+        ScalarOps.circularConvolveMODWT(signal, lowPassFilter, approximationCoeffs);
+        ScalarOps.circularConvolveMODWT(signal, highPassFilter, detailCoeffs);
         
         return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
     }
@@ -130,18 +126,21 @@ public class MODWTTransform {
         double[] lowPassRecon = wavelet.lowPassReconstruction();
         double[] highPassRecon = wavelet.highPassReconstruction();
         
-        // Prepare intermediate arrays
-        double[] approxRecon = new double[signalLength];
-        double[] detailRecon = new double[signalLength];
-        
-        // Perform circular convolution for reconstruction (use original filters, not scaled)
-        ScalarOps.circularConvolveMODWT(approxCoeffs, lowPassRecon, approxRecon);
-        ScalarOps.circularConvolveMODWT(detailCoeffs, highPassRecon, detailRecon);
-        
-        // Combine the reconstructed components
+        // Prepare output array
         double[] reconstructed = new double[signalLength];
-        for (int i = 0; i < signalLength; i++) {
-            reconstructed[i] = approxRecon[i] + detailRecon[i];
+        
+        // Direct reconstruction: X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
+        for (int t = 0; t < signalLength; t++) {
+            double sum = 0.0;
+            
+            // Sum over filter coefficients using reverse indexing for reconstruction
+            for (int l = 0; l < lowPassRecon.length; l++) {
+                int coeffIndex = (t - l + signalLength * lowPassRecon.length) % signalLength;
+                sum += lowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                       highPassRecon[l] * detailCoeffs[coeffIndex];
+            }
+            
+            reconstructed[t] = sum / 2.0; // Normalize by factor of 2
         }
         
         return reconstructed;
