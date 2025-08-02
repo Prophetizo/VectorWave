@@ -73,11 +73,13 @@ Wavelet (sealed base interface)
    - Handles convolution, downsampling, upsampling for both boundary modes
 
 ### Important Technical Notes
-- Requires Java 23 or later
+- **Requires Java 23 or later** for full feature support
+- Java 17+ compatible fallback mode available
 - Power-of-2 signal lengths required for transforms
 - Currently implements single-level transforms only
 - No external dependencies (pure Java implementation)
 - Continuous wavelets are discretized for DWT operations
+- **Vector API support** for high-performance SIMD operations
 
 ### Adding New Wavelets
 

@@ -15,6 +15,8 @@
         <jmh.version>1.37</jmh.version>
         <!-- Default argLine for when JaCoCo is not active -->
         <argLine></argLine>
+        <!-- Enable Java 23 preview features for maximum performance -->
+        <maven.compiler.enablePreview>true</maven.compiler.enablePreview>
     </properties>
 
     <dependencies>
@@ -61,8 +63,15 @@
                 <version>3.14.0</version>
                 <configuration>
                     <compilerArgs>
+                        <!-- Enable Vector API for high-performance SIMD operations -->
                         <arg>--add-modules</arg>
                         <arg>jdk.incubator.vector</arg>
+                        <!-- Enable Java 23 preview features -->
+                        <arg>--enable-preview</arg>
+                        <!-- Optimize for performance -->
+                        <arg>-Xlint:performance</arg>
+                        <!-- Enable pattern matching optimizations -->
+                        <arg>-Xlint:preview</arg>
                     </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
@@ -78,7 +87,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <argLine>${argLine} --add-modules jdk.incubator.vector</argLine>
+                    <argLine>${argLine} --add-modules jdk.incubator.vector --enable-preview</argLine>
                 </configuration>
             </plugin>
             
