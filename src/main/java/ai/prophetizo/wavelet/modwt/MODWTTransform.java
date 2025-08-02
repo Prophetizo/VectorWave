@@ -235,7 +235,7 @@ public class MODWTTransform {
         // Efficient validation logic
         if (signal.length == 0) {
             throw new InvalidSignalException("Signal cannot be empty");
-        } else if (signal.length > 0) {
+        } else {
             ValidationUtils.validateFiniteValues(signal, "signal");
         }
     }
