@@ -41,8 +41,6 @@ public final class VectorOps {
     // Minimum signal length to use vectorization - adjusted for platform
     // ARM/Apple Silicon has smaller vectors (128-bit) so lower threshold
     private static final int MIN_VECTOR_LENGTH = IS_ARM ? VECTOR_LENGTH * 2 : VECTOR_LENGTH * 4;
-    // Vectorization threshold for the Vector API
-    private static final int VECTORIZATION_THRESHOLD = MIN_VECTOR_LENGTH;
     // Cache line size for blocking optimizations
     private static final int CACHE_LINE_SIZE = 64;
 
@@ -526,8 +524,9 @@ public final class VectorOps {
             DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
             int vectorLoopBound = SPECIES.loopBound(signalLen);
             
-            // For signals that are multiples of vector length, use direct vectorization
-            if (l + vectorLoopBound <= signalLen) {
+            // Check if we can use direct vectorization without circular indexing
+            // We need to ensure that t + l < signalLen for all t in [0, vectorLoopBound)
+            if (vectorLoopBound + l <= signalLen) {
                 // Simple case: no wrap-around within vector width
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
                     DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t + l);
@@ -585,11 +584,11 @@ public final class VectorOps {
      * @return The recommended processing strategy
      */
     public static ProcessingStrategy selectOptimalStrategy(int signalLength, int filterLength) {
-        if (signalLength < VECTORIZATION_THRESHOLD) {
+        if (signalLength < MIN_VECTOR_LENGTH) {
             return ProcessingStrategy.SCALAR_OPTIMIZED;
-        } else if (signalLength >= VECTORIZATION_THRESHOLD && isPowerOfTwo(signalLength)) {
+        } else if (signalLength >= MIN_VECTOR_LENGTH && isPowerOfTwo(signalLength)) {
             return ProcessingStrategy.VECTORIZED_POWER_OF_TWO;
-        } else if (signalLength >= VECTORIZATION_THRESHOLD) {
+        } else if (signalLength >= MIN_VECTOR_LENGTH) {
             return ProcessingStrategy.VECTORIZED_GENERAL;
         } else {
             return ProcessingStrategy.SCALAR_FALLBACK;
@@ -654,7 +653,7 @@ public final class VectorOps {
             SPECIES.vectorShape().toString(),
             VECTOR_LENGTH,
             SPECIES.elementType().getSimpleName(),
-            VECTORIZATION_THRESHOLD
+            MIN_VECTOR_LENGTH
         );
     }
     
