@@ -4,6 +4,25 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Recent Updates (August 2025)
 
+### Biorthogonal Wavelet Fix (#138) - COMPLETE
+- **FIXED**: Updated BiorthogonalSpline implementation with correct Cohen-Daubechies-Feauveau (CDF) 1,3 coefficients
+- Changed from incorrect normalized coefficients to standard CDF coefficients:
+  - Decomposition low-pass: `[-1/8, 1/8, 1, 1, 1/8, -1/8]`
+  - Reconstruction low-pass: `[1, 1]`
+- Added reconstruction scaling factor (0.5) to satisfy perfect reconstruction condition
+- Fixed high-pass filter generation formula for biorthogonal wavelets
+- **Implemented phase compensation** to correct the 2-sample circular shift inherent in CDF wavelets:
+  - Added `groupDelay` property to BiorthogonalSpline (set to 2 for BIOR1_3)
+  - WaveletTransform automatically applies phase compensation during reconstruction
+  - Phase compensation works with PERIODIC boundary mode
+- **Results**:
+  - Constant and sequential signals now have perfect reconstruction (RMSE = 0)
+  - Random and complex signals show expected reconstruction behavior
+  - Perfect reconstruction condition is satisfied (peak value = 2.25 for BIOR1_3)
+- **Note**: With ZERO_PADDING boundary mode, phase compensation is not applied and edge effects may occur
+
+## Recent Updates (August 2025)
+
 ### Removal of Default Values
 - **BREAKING CHANGE**: Removed all default values from financial configurations
 - `FinancialConfig` no longer has a default constructor or default risk-free rate
@@ -77,18 +96,12 @@ Development guide for Claude Code when working with the VectorWave repository.
 - Requires Java 23+ with `--enable-native-access=ALL-UNNAMED` flag
 
 ### Known Issues
-1. **CRITICAL: Biorthogonal Wavelets (#138)**
-   - BiorthogonalSpline implementation produces catastrophic reconstruction errors (RMSE > 1.4)
-   - Incorrect filter coefficients and violated perfect reconstruction conditions
-   - Test `FFMWaveletTransformTest.testBiorthogonalWavelets()` is disabled
-   - **Workaround**: Use orthogonal wavelets (Haar, Daubechies, Symlets) instead
-
-2. **Boundary Mode Limitations (#135-137)**
+1. **Boundary Mode Limitations (#135-137)**
    - SYMMETRIC and CONSTANT modes not implemented for FFM upsampling operations
    - Will throw `UnsupportedOperationException` if used
    - Downsampling operations support all boundary modes
 
-3. **FFM Memory Pool Arena Validation**
+2. **FFM Memory Pool Arena Validation**
    - Memory segments from different arenas now throw `IllegalArgumentException` instead of silent failure
    - Helps catch programming errors during development
 

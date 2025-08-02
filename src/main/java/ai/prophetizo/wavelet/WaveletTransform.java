@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.api.BiorthogonalSpline;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletType;
@@ -9,6 +10,7 @@ import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.NullChecks;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.util.SignalUtils;
 
 import java.util.Objects;
 
@@ -69,12 +71,8 @@ public class WaveletTransform {
             throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
 
-        // Check for problematic combinations
-        if (wavelet.getType() == WaveletType.BIORTHOGONAL && boundaryMode == BoundaryMode.ZERO_PADDING) {
-            throw new InvalidConfigurationException(
-                "Biorthogonal wavelets with ZERO_PADDING boundary mode may produce high reconstruction errors. " +
-                "Consider using PERIODIC boundary mode instead. (See issue #138)");
-        }
+        // Note: Phase compensation for biorthogonal wavelets only works with PERIODIC mode
+        // With ZERO_PADDING, there may be edge effects
 
         // Create appropriate operations implementation
         this.operations = WaveletOpsFactory.create(config);
@@ -188,13 +186,27 @@ public class WaveletTransform {
         }
 
         // Add the two reconstructed components together to get the final signal
+        // Apply reconstruction scaling for biorthogonal wavelets
+        double scale = 1.0;
+        int phaseShift = 0;
+        if (wavelet instanceof BiorthogonalSpline) {
+            BiorthogonalSpline bior = (BiorthogonalSpline) wavelet;
+            scale = bior.getReconstructionScale();
+            phaseShift = bior.getGroupDelay();
+        }
+        
         for (int i = 0; i < outputLength; i++) {
-            signal[i] = approxRecon[i] + detailRecon[i];
+            signal[i] = scale * (approxRecon[i] + detailRecon[i]);
+        }
+        
+        // Apply phase compensation for biorthogonal wavelets
+        if (phaseShift != 0 && boundaryMode == BoundaryMode.PERIODIC) {
+            signal = SignalUtils.circularShift(signal, phaseShift);
         }
 
         return signal;
     }
-
+    
     /**
      * Gets the wavelet used by this transform.
      *

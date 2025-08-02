@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.util.SignalUtils;
 
 import java.lang.foreign.*;
 import java.util.Objects;
@@ -260,9 +261,23 @@ public class FFMWaveletTransform implements AutoCloseable {
         System.arraycopy(tempRecon1, 0, reconstructed, 0, outputLength);
         System.arraycopy(tempRecon2, 0, temp, 0, outputLength);
         
-        // Add contributions
+        // Apply reconstruction scaling for biorthogonal wavelets
+        double scale = 1.0;
+        int phaseShift = 0;
+        if (wavelet instanceof BiorthogonalSpline) {
+            BiorthogonalSpline bior = (BiorthogonalSpline) wavelet;
+            scale = bior.getReconstructionScale();
+            phaseShift = bior.getGroupDelay();
+        }
+        
+        // Add contributions with scaling
         for (int i = 0; i < outputLength; i++) {
-            reconstructed[i] += temp[i];
+            reconstructed[i] = scale * (reconstructed[i] + temp[i]);
+        }
+        
+        // Apply phase compensation for biorthogonal wavelets
+        if (phaseShift != 0 && boundaryMode == BoundaryMode.PERIODIC) {
+            reconstructed = SignalUtils.circularShift(reconstructed, phaseShift);
         }
         
         return reconstructed;
