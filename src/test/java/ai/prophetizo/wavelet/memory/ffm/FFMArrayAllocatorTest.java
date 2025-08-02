@@ -237,8 +237,10 @@ class FFMArrayAllocatorTest {
                 FFMArrayAllocator.copyToArray(segment, array, 0, -1));
             assertThrows(IndexOutOfBoundsException.class, () ->
                 FFMArrayAllocator.copyToArray(segment, array, 2, 3)); // offset + length > array.length
-            assertThrows(IndexOutOfBoundsException.class, () ->
-                FFMArrayAllocator.copyToArray(segment, array, 0, 6)); // length > array capacity
+            // Test segment capacity check - segment has 5 elements, trying to copy 6
+            double[] largeArray = new double[10];
+            assertThrows(IllegalArgumentException.class, () ->
+                FFMArrayAllocator.copyToArray(segment, largeArray, 0, 6)); // length > segment capacity
         }
     }
 
