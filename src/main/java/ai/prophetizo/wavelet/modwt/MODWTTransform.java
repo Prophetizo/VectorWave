@@ -111,7 +111,8 @@ public class MODWTTransform {
         double[] detailCoeffs = new double[signalLength];
         
         // Perform circular convolution without downsampling
-        // Automatically chooses vectorized or scalar implementation
+        // ScalarOps.circularConvolveMODWT internally delegates to vectorized
+        // implementation when beneficial, falling back to scalar otherwise
         ScalarOps.circularConvolveMODWT(signal, lowPassFilter, approximationCoeffs);
         ScalarOps.circularConvolveMODWT(signal, highPassFilter, detailCoeffs);
         

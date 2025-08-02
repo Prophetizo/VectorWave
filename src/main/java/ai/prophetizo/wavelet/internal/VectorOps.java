@@ -536,16 +536,35 @@ public final class VectorOps {
                 }
             } else {
                 // Complex case: need to handle circular indexing
+                // Most indices won't wrap, so we can optimize by checking boundaries
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                    // Update indices only when needed
-                    for (int i = 0; i < VECTOR_LENGTH; i++) {
-                        indices[i] = (t + i + l) % signalLen;
-                    }
+                    int startIdx = t + l;
+                    int endIdx = startIdx + VECTOR_LENGTH;
                     
-                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                    DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                    DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                    result.intoArray(output, t);
+                    if (endIdx <= signalLen) {
+                        // No wrapping needed for this vector
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, startIdx);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
+                    } else if (startIdx >= signalLen) {
+                        // All indices wrap - can use direct indexing from beginning
+                        int wrappedStart = startIdx - signalLen;
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, wrappedStart);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
+                    } else {
+                        // Mixed case: some indices wrap, some don't - use gather
+                        for (int i = 0; i < VECTOR_LENGTH; i++) {
+                            int idx = startIdx + i;
+                            indices[i] = idx >= signalLen ? idx - signalLen : idx;
+                        }
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
+                    }
                 }
             }
             

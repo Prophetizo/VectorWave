@@ -2,6 +2,8 @@ package ai.prophetizo.wavelet.internal;
 
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import static java.util.Arrays.fill;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Scalar implementation of the core wavelet transform operations.
@@ -34,17 +36,42 @@ public final class ScalarOps {
      */
     private static final boolean VECTORIZATION_ENABLED;
     
+    private static final Logger LOGGER = Logger.getLogger(ScalarOps.class.getName());
+    
     static {
         boolean vectorEnabled = false;
+        String failureReason = null;
+        
         try {
             // Try to access Vector API classes
             Class.forName("jdk.incubator.vector.DoubleVector");
             vectorEnabled = VectorOps.isVectorApiSupported();
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            
+            if (!vectorEnabled) {
+                failureReason = "Vector API is available but not supported on this platform";
+            }
+        } catch (ClassNotFoundException e) {
             // Vector API not available
             vectorEnabled = false;
+            failureReason = "Vector API classes not found (requires Java 17+ with jdk.incubator.vector module)";
+        } catch (NoClassDefFoundError e) {
+            // Vector API runtime issue
+            vectorEnabled = false;
+            failureReason = "Vector API initialization failed: " + e.getMessage();
+        } catch (Exception e) {
+            // Catch any other initialization errors
+            vectorEnabled = false;
+            failureReason = "Unexpected error initializing Vector API: " + e.getClass().getName() + " - " + e.getMessage();
         }
+        
         VECTORIZATION_ENABLED = vectorEnabled;
+        
+        // Log the result of Vector API detection
+        if (VECTORIZATION_ENABLED) {
+            LOGGER.log(Level.FINE, "Vector API enabled for optimized wavelet operations");
+        } else if (failureReason != null) {
+            LOGGER.log(Level.FINE, "Vector API disabled: {0}", failureReason);
+        }
     }
 
 // (Removed the internal comment as it has been moved to the class-level Javadoc)

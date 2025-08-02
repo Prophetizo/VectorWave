@@ -147,6 +147,7 @@ class StreamingDenoiserTest {
             
             List<double[]> results = new ArrayList<>();
             AtomicInteger blockCount = new AtomicInteger();
+            CountDownLatch latch = new CountDownLatch(1); // Expecting at least 1 block
             
             denoiser.subscribe(new Flow.Subscriber<double[]>() {
                 @Override
@@ -157,7 +158,9 @@ class StreamingDenoiserTest {
                 @Override
                 public void onNext(double[] item) {
                     results.add(item.clone());
-                    blockCount.incrementAndGet();
+                    if (blockCount.incrementAndGet() >= 1) {
+                        latch.countDown();
+                    }
                 }
                 
                 @Override
@@ -174,8 +177,8 @@ class StreamingDenoiserTest {
             denoiser.process(noisySignal);
             denoiser.flush();
             
-            // Give a moment for async processing
-            Thread.sleep(100);
+            // Wait for at least one block to be processed
+            assertTrue(latch.await(1, TimeUnit.SECONDS), "Should process at least one block within timeout");
             
             assertTrue(blockCount.get() > 0, "Should have processed at least one block");
             assertFalse(results.isEmpty());
