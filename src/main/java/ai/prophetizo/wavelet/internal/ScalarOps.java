@@ -684,15 +684,18 @@ public final class ScalarOps {
      * @return true if vectorization is beneficial
      */
     private static boolean shouldUseVectorization(int signalLength, int filterLength) {
+        // Too small for vectorization overhead
         if (signalLength < MIN_VECTORIZATION_LENGTH) {
-            return false;  // Too small for vectorization overhead
-        } else if (signalLength >= MIN_VECTORIZATION_LENGTH && signalLength < MEDIUM_ARRAY_THRESHOLD) {
-            return filterLength <= MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS;  // Medium arrays
-        } else if (signalLength >= MEDIUM_ARRAY_THRESHOLD) {
-            return true;  // Large arrays benefit from vectorization
-        } else {
             return false;
         }
+        
+        // Large arrays always benefit from vectorization
+        if (signalLength >= MEDIUM_ARRAY_THRESHOLD) {
+            return true;
+        }
+        
+        // Medium arrays: vectorize only with small filters
+        return filterLength <= MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS;
     }
     
     /**

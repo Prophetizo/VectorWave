@@ -199,6 +199,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
      * @throws UnsupportedOperationException if mode is SYMMETRIC or CONSTANT
      */
     @Override
+    @SuppressWarnings("try")  // Arena is used in body, safe to suppress
     public double[] upsampleAndConvolve(double[] input, double[] filter,
                                        int inputLength, int filterLength,
                                        BoundaryMode mode) {
@@ -206,9 +207,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
         double[] output = new double[outputLen];
         
         // Use FFM for zero-copy processing
-        @SuppressWarnings("resource")  // Arena manages memory segment lifetime
-        Arena arena = Arena.ofConfined();
-        try (arena) {
+        try (Arena arena = Arena.ofConfined()) {
             MemorySegment inputSeg = MemorySegment.ofArray(input);
             MemorySegment filterSeg = MemorySegment.ofArray(filter);
             MemorySegment outputSeg = MemorySegment.ofArray(output);
