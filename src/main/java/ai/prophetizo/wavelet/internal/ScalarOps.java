@@ -23,6 +23,11 @@ public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
     
+    // Vectorization threshold constants
+    private static final int MIN_VECTORIZATION_LENGTH = 32;
+    private static final int MEDIUM_ARRAY_THRESHOLD = 128;
+    private static final int MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS = 8;
+    
     /**
      * Flag indicating whether Vector API is available and enabled.
      * Detected at class loading time for optimal performance.
@@ -652,11 +657,11 @@ public final class ScalarOps {
      * @return true if vectorization is beneficial
      */
     private static boolean shouldUseVectorization(int signalLength, int filterLength) {
-        if (signalLength < 32) {
+        if (signalLength < MIN_VECTORIZATION_LENGTH) {
             return false;  // Too small for vectorization overhead
-        } else if (signalLength >= 32 && signalLength < 128) {
-            return filterLength <= 8;  // Medium arrays
-        } else if (signalLength >= 128) {
+        } else if (signalLength >= MIN_VECTORIZATION_LENGTH && signalLength < MEDIUM_ARRAY_THRESHOLD) {
+            return filterLength <= MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS;  // Medium arrays
+        } else if (signalLength >= MEDIUM_ARRAY_THRESHOLD) {
             return true;  // Large arrays benefit from vectorization
         } else {
             return false;
