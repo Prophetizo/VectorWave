@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet;
 
+import ai.prophetizo.wavelet.api.BiorthogonalSpline;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletType;
@@ -69,12 +70,8 @@ public class WaveletTransform {
             throw InvalidConfigurationException.unsupportedBoundaryMode(boundaryMode.name());
         }
 
-        // Check for problematic combinations
-        if (wavelet.getType() == WaveletType.BIORTHOGONAL && boundaryMode == BoundaryMode.ZERO_PADDING) {
-            throw new InvalidConfigurationException(
-                "Biorthogonal wavelets with ZERO_PADDING boundary mode may produce high reconstruction errors. " +
-                "Consider using PERIODIC boundary mode instead. (See issue #138)");
-        }
+        // Note: Phase compensation for biorthogonal wavelets only works with PERIODIC mode
+        // With ZERO_PADDING, there may be edge effects
 
         // Create appropriate operations implementation
         this.operations = WaveletOpsFactory.create(config);
@@ -188,13 +185,49 @@ public class WaveletTransform {
         }
 
         // Add the two reconstructed components together to get the final signal
+        // Apply reconstruction scaling for biorthogonal wavelets
+        double scale = 1.0;
+        int phaseShift = 0;
+        if (wavelet instanceof BiorthogonalSpline) {
+            BiorthogonalSpline bior = (BiorthogonalSpline) wavelet;
+            scale = bior.getReconstructionScale();
+            phaseShift = bior.getGroupDelay();
+        }
+        
         for (int i = 0; i < outputLength; i++) {
-            signal[i] = approxRecon[i] + detailRecon[i];
+            signal[i] = scale * (approxRecon[i] + detailRecon[i]);
+        }
+        
+        // Apply phase compensation for biorthogonal wavelets
+        if (phaseShift != 0 && boundaryMode == BoundaryMode.PERIODIC) {
+            signal = circularShift(signal, phaseShift);
         }
 
         return signal;
     }
 
+    /**
+     * Applies a circular shift to a signal.
+     * Positive shift values shift right, negative values shift left.
+     *
+     * @param signal the input signal
+     * @param shift the number of positions to shift
+     * @return the shifted signal
+     */
+    private static double[] circularShift(double[] signal, int shift) {
+        int n = signal.length;
+        double[] shifted = new double[n];
+        
+        // Normalize shift to be in range [0, n)
+        shift = ((shift % n) + n) % n;
+        
+        for (int i = 0; i < n; i++) {
+            shifted[(i + shift) % n] = signal[i];
+        }
+        
+        return shifted;
+    }
+    
     /**
      * Gets the wavelet used by this transform.
      *

@@ -31,17 +31,15 @@ class BiorthogonalSplineTest {
     void testBior1_3_FilterValues() {
         BiorthogonalSpline bior = BiorthogonalSpline.BIOR1_3;
         
-        // Test decomposition low-pass filter (normalized to L2 norm = 1)
+        // Test decomposition low-pass filter (CDF 1,3 coefficients)
         double[] expectedLowPassDecomp = {
-            -0.08703882797784893, 0.08703882797784893,
-            0.6963106238227914, 0.6963106238227914,
-            0.08703882797784893, -0.08703882797784893
+            -1.0/8, 1.0/8, 1.0, 1.0, 1.0/8, -1.0/8
         };
         assertArrayEquals(expectedLowPassDecomp, bior.lowPassDecomposition(), 1e-15);
         
-        // Test reconstruction low-pass filter (normalized to L2 norm = 1)
+        // Test reconstruction low-pass filter (CDF 1,3 coefficients)
         double[] expectedLowPassRecon = {
-            0.7071067811865476, 0.7071067811865476
+            1.0, 1.0
         };
         assertArrayEquals(expectedLowPassRecon, bior.lowPassReconstruction(), 1e-15);
     }
@@ -54,19 +52,19 @@ class BiorthogonalSplineTest {
         double[] highPassDecomp = bior.highPassDecomposition();
         assertEquals(2, highPassDecomp.length);
         
-        // Verify alternating sign pattern (using normalized values)
-        assertEquals(0.7071067811865476, highPassDecomp[0], 1e-15);
-        assertEquals(-0.7071067811865476, highPassDecomp[1], 1e-15);
+        // Verify alternating sign pattern (now using the corrected formula)
+        assertEquals(-1.0, highPassDecomp[0], 1e-15);
+        assertEquals(1.0, highPassDecomp[1], 1e-15);
         
         // High-pass reconstruction is generated from low-pass decomposition
         double[] highPassRecon = bior.highPassReconstruction();
         assertEquals(6, highPassRecon.length);
         
-        // Check first and last values to verify the generation logic
-        // highPassRecon[0] = (0 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-0] = 1 * lowPassDecomp[5] = 1 * (-0.08703882797784893) = -0.08703882797784893
-        assertEquals(-0.08703882797784893, highPassRecon[0], 1e-15);
-        // highPassRecon[5] = (5 % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-5] = -1 * lowPassDecomp[0] = -1 * (-0.08703882797784893) = 0.08703882797784893
-        assertEquals(0.08703882797784893, highPassRecon[5], 1e-15);
+        // Check first and last values to verify the generation logic with corrected formula
+        // highPassRecon[0] = ((6-1-0) % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-0] = (5 % 2 == 0 ? 1 : -1) * lowPassDecomp[5] = -1 * (-1/8) = 1/8
+        assertEquals(1.0/8, highPassRecon[0], 1e-15);
+        // highPassRecon[5] = ((6-1-5) % 2 == 0 ? 1 : -1) * lowPassDecomp[6-1-5] = (0 % 2 == 0 ? 1 : -1) * lowPassDecomp[0] = 1 * (-1/8) = -1/8
+        assertEquals(-1.0/8, highPassRecon[5], 1e-15);
     }
 
     @Test
@@ -142,12 +140,12 @@ class BiorthogonalSplineTest {
         assertNotEquals(lowDecomp.length, lowRecon.length);
         assertNotEquals(highDecomp.length, highRecon.length);
         
-        // Check that filters are normalized (sum of squares = 1 for L2 normalized filters)
-        double sumSquaresRecon = 0;
+        // Check that filters sum to 2 (for CDF biorthogonal wavelets)
+        double sumRecon = 0;
         for (double v : lowRecon) {
-            sumSquaresRecon += v * v;
+            sumRecon += v;
         }
-        assertEquals(1.0, sumSquaresRecon, 1e-10); // L2 normalized filter
+        assertEquals(2.0, sumRecon, 1e-10); // Sum should be 2 for CDF BIOR
     }
 
     @Test
@@ -158,9 +156,10 @@ class BiorthogonalSplineTest {
         double[] lowRecon = bior.lowPassReconstruction();
         double[] highDecomp = bior.highPassDecomposition();
         
-        // highDecomp[i] = (i % 2 == 0 ? 1 : -1) * lowRecon[n-1-i]
+        // Verify the corrected alternating sign pattern for biorthogonal wavelets
         for (int i = 0; i < highDecomp.length; i++) {
-            double expected = (i % 2 == 0 ? 1 : -1) * lowRecon[lowRecon.length - 1 - i];
+            int sign = ((lowRecon.length - 1 - i) % 2 == 0) ? 1 : -1;
+            double expected = sign * lowRecon[lowRecon.length - 1 - i];
             assertEquals(expected, highDecomp[i], 1e-15);
         }
         
@@ -169,7 +168,8 @@ class BiorthogonalSplineTest {
         double[] highRecon = bior.highPassReconstruction();
         
         for (int i = 0; i < highRecon.length; i++) {
-            double expected = (i % 2 == 0 ? 1 : -1) * lowDecomp[lowDecomp.length - 1 - i];
+            int sign = ((lowDecomp.length - 1 - i) % 2 == 0) ? 1 : -1;
+            double expected = sign * lowDecomp[lowDecomp.length - 1 - i];
             assertEquals(expected, highRecon[i], 1e-15);
         }
     }
@@ -182,5 +182,13 @@ class BiorthogonalSplineTest {
         
         // Multiple accesses should return the same instance
         assertSame(BiorthogonalSpline.BIOR1_3, BiorthogonalSpline.BIOR1_3);
+    }
+    
+    @Test
+    void testReconstructionScale() {
+        BiorthogonalSpline bior = BiorthogonalSpline.BIOR1_3;
+        
+        // Verify the reconstruction scale is 0.5 for CDF wavelets
+        assertEquals(0.5, bior.getReconstructionScale(), 1e-15);
     }
 }
