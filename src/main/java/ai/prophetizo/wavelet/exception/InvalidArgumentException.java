@@ -17,14 +17,35 @@ public class InvalidArgumentException extends WaveletTransformException {
     }
 
     /**
+     * Constructs a new invalid argument exception with the specified error code and detail message.
+     *
+     * @param errorCode the error code
+     * @param message   the detail message
+     */
+    public InvalidArgumentException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
+    }
+
+    /**
+     * Creates an exception for null arguments.
+     *
+     * @param parameterName the name of the null parameter
+     * @return a new InvalidArgumentException
+     */
+    public static InvalidArgumentException nullArgument(String parameterName) {
+        return new InvalidArgumentException(ErrorCode.VAL_NULL_ARGUMENT,
+                parameterName + " cannot be null");
+    }
+
+    /**
      * Creates an exception for negative or zero input where positive is required.
      *
      * @param value the invalid value
      * @return a new InvalidArgumentException
      */
     public static InvalidArgumentException notPositive(int value) {
-        return new InvalidArgumentException(
-                String.format("Input must be positive, but was: %d.", value));
+        return new InvalidArgumentException(ErrorCode.VAL_NOT_POSITIVE,
+                String.format("Input must be positive, but was: %d", value));
     }
 
     /**
@@ -36,7 +57,7 @@ public class InvalidArgumentException extends WaveletTransformException {
      * @return a new InvalidArgumentException
      */
     public static InvalidArgumentException tooLarge(int value, int maxValue, String context) {
-        return new InvalidArgumentException(
+        return new InvalidArgumentException(ErrorCode.VAL_TOO_LARGE,
                 String.format("Input too large: %d. Maximum supported value is %d (2^30). %s",
                         value, maxValue, context));
     }

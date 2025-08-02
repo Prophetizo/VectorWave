@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Integration tests for wavelet transforms.
  * Tests end-to-end transform/inverse transform cycles,
@@ -29,7 +31,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
     
     private WaveletTransformFactory factory;
     
-    private static final double TOLERANCE = 1e-10;
+    private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
     
     @BeforeEach
     protected void setUp(org.junit.jupiter.api.TestInfo testInfo) {
@@ -50,7 +52,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
             createConstantSignal(64, 1.0),
             createLinearSignal(64),
             createSineSignal(64, 0.1),
-            createRandomSignal(64, 42L)
+            createRandomSignal(64, TestConstants.TEST_SEED)
         };
         
         for (double[] signal : testSignals) {
@@ -133,7 +135,7 @@ class WaveletIntegrationTest extends BaseWaveletTest {
     @DisplayName("Should work correctly with different boundary modes")
     void testBoundaryModeIntegration(BoundaryMode mode) {
         WaveletTransform transform = factory
-            .withBoundaryMode(mode)
+            .boundaryMode(mode)
             .create(new Haar());
         
         // Use a signal that would show boundary effects

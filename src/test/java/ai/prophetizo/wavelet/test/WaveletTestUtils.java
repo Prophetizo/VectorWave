@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.test;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.WaveletTransform;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 
 import java.util.Random;
 
@@ -19,22 +20,6 @@ import java.util.Random;
  */
 public final class WaveletTestUtils {
     
-    /**
-     * Default tolerance for floating-point comparisons.
-     * Based on typical reconstruction error for double precision.
-     */
-    public static final double DEFAULT_TOLERANCE = 1e-10;
-    
-    /**
-     * Tolerance for energy preservation checks.
-     * Slightly more relaxed due to potential rounding in transforms.
-     */
-    public static final double ENERGY_TOLERANCE = 1e-12;
-    
-    /**
-     * Tolerance for orthogonality checks in wavelet filters.
-     */
-    public static final double ORTHOGONALITY_TOLERANCE = 1e-14;
     
     private WaveletTestUtils() {
         // Utility class, prevent instantiation

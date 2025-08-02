@@ -5,6 +5,10 @@ import org.junit.jupiter.api.DisplayName;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Unit tests for TransformResult implementation.
  * 
@@ -25,7 +29,7 @@ class TransformResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Modify original arrays
         approx[0] = 999.0;
@@ -44,7 +48,7 @@ class TransformResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         double[] approx1 = result.approximationCoeffs();
         double[] approx2 = result.approximationCoeffs();
@@ -68,7 +72,7 @@ class TransformResultTest {
         double[] approx = {1.5, 2.5, 3.5};
         double[] detail = {0.1, 0.2, 0.3};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         String str = result.toString();
         
         assertTrue(str.contains("TransformResult"), "Should contain class name");
@@ -86,7 +90,7 @@ class TransformResultTest {
         
         // With assertions enabled, this should throw
         assertThrows(AssertionError.class, () -> {
-            new TransformResultImpl(empty, empty);
+            TransformResult.create(empty, empty);
         }, "Empty arrays should trigger assertion error");
     }
     
@@ -97,7 +101,7 @@ class TransformResultTest {
         double[] detail = {0.1, 0.2, 0.3, 0.4};
         
         assertDoesNotThrow(() -> {
-            TransformResult result = new TransformResultImpl(approx, detail);
+            TransformResult result = TransformResult.create(approx, detail);
             assertEquals(4, result.approximationCoeffs().length);
             assertEquals(4, result.detailCoeffs().length);
         });
@@ -116,7 +120,7 @@ class TransformResultTest {
             detail[i] = i * 0.01;
         }
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Verify defensive copies work for large arrays
         approx[0] = 999.0;
@@ -136,7 +140,7 @@ class TransformResultTest {
         double[] detail = {Double.MIN_VALUE, -Double.MIN_VALUE, 
                           Double.MIN_NORMAL, -Double.MIN_NORMAL};
         
-        TransformResult result = new TransformResultImpl(approx, detail);
+        TransformResult result = TransformResult.create(approx, detail);
         
         // Verify special values are preserved exactly
         assertEquals(0.0, result.approximationCoeffs()[0]);
@@ -151,14 +155,29 @@ class TransformResultTest {
     @Test
     @DisplayName("TransformResult interface should be sealed")
     void testSealedInterface() {
-        // TransformResult should only be implemented by TransformResultImpl
+        // TransformResult should only be implemented by authorized classes
         assertTrue(TransformResult.class.isSealed(),
             "TransformResult should be a sealed interface");
         
         Class<?>[] permitted = TransformResult.class.getPermittedSubclasses();
-        assertEquals(1, permitted.length,
-            "TransformResult should have exactly one permitted implementation");
-        assertEquals("TransformResultImpl", permitted[0].getSimpleName(),
-            "Only TransformResultImpl should implement TransformResult");
+        assertNotNull(permitted, "Should have permitted subclasses");
+        
+        // We expect exactly 2 permitted implementations
+        assertEquals(2, permitted.length,
+            "TransformResult should have exactly 2 permitted implementations");
+        
+        // Check that expected implementations are present
+        Set<String> permittedNames = Arrays.stream(permitted)
+            .map(Class::getSimpleName)
+            .collect(Collectors.toSet());
+        
+        // These implementations must be present
+        assertTrue(permittedNames.contains("TransformResultImpl"),
+            "TransformResultImpl should implement TransformResult");
+        assertTrue(permittedNames.contains("PaddedTransformResult"),
+            "PaddedTransformResult should implement TransformResult");
+        
+        // Note: If we add more implementations in the future, update the expected count
+        // and add corresponding assertions here
     }
 }

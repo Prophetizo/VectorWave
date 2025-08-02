@@ -1,5 +1,7 @@
 package ai.prophetizo.wavelet.util;
 
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 /**
  * Constants used throughout the wavelet transform implementation.
  *
@@ -37,7 +39,7 @@ public final class WaveletConstants {
     public static int calculateNextPowerOfTwo(int n) {
         if (n <= 1) return 1;
         if (n > MAX_SAFE_POWER_OF_TWO) {
-            throw new IllegalArgumentException("Input exceeds maximum safe power of two.");
+            throw new InvalidArgumentException("Input exceeds maximum safe power of two.");
         }
         // Find the next power of two using bit manipulation.
         // The formula works as follows:
