@@ -26,8 +26,16 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
             // Reconstruction low-pass filter (synthesis filter h0)
             new double[]{1.0, 1.0},
             true,
-            0.5,  // Reconstruction scaling factor (1/2 for CDF wavelets)
-            2     // Group delay (phase shift compensation)
+            0.5,  // Reconstruction scaling factor: For CDF 1,3 wavelets, the perfect
+                  // reconstruction condition requires scaling by 1/2. This compensates
+                  // for the energy distribution between the analysis and synthesis filters
+                  // to ensure that ||reconstructed|| = ||original||.
+            2     // Group delay: For CDF 1,3 wavelets, the combined analysis-synthesis
+                  // filter bank introduces a delay of 2 samples. This is calculated as:
+                  // delay = (length(h0_tilde) - 1)/2 + (length(h0) - 1)/2 - 1
+                  //       = (6 - 1)/2 + (2 - 1)/2 - 1 = 2.5 + 0.5 - 1 = 2
+                  // This delay must be compensated during reconstruction to achieve
+                  // perfect alignment with the original signal.
     );
     private final String name;
     private final int reconstructionOrder;
