@@ -73,7 +73,7 @@ Wavelet (sealed base interface)
    - Handles convolution, downsampling, upsampling for both boundary modes
 
 ### Important Technical Notes
-- Requires Java 21 or later
+- Requires Java 23 or later
 - Power-of-2 signal lengths required for transforms
 - Currently implements single-level transforms only
 - No external dependencies (pure Java implementation)
