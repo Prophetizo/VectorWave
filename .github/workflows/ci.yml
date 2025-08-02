@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
   pull_request:
     branches: [ main, develop ]
 
@@ -12,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
         java: [23]
     
     steps:

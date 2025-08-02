@@ -35,7 +35,7 @@ class MODWTTransformTest {
             () -> new MODWTTransform(new Haar(), null));
         
         // Test unsupported boundary mode
-        assertThrows(UnsupportedOperationException.class, 
+        assertThrows(IllegalArgumentException.class, 
             () -> new MODWTTransform(new Haar(), BoundaryMode.ZERO_PADDING));
     }
 

@@ -48,17 +48,16 @@ public class MODWTTransform {
      * 
      * @param wavelet      The wavelet to use for the transformations
      * @param boundaryMode The boundary handling mode (currently only PERIODIC is supported)
-     * @throws NullPointerException     if any parameter is null
-     * @throws UnsupportedOperationException if boundary mode is not supported
+     * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if boundary mode is not supported
      */
     public MODWTTransform(Wavelet wavelet, BoundaryMode boundaryMode) {
         this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null");
         this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null");
         
-        // MODWT typically uses periodic boundary conditions
+        // MODWT currently only supports periodic boundary mode
         if (boundaryMode != BoundaryMode.PERIODIC) {
-            throw new UnsupportedOperationException(
-                "MODWT currently only supports PERIODIC boundary mode. Got: " + boundaryMode);
+            throw new IllegalArgumentException("MODWT only supports PERIODIC boundary mode, got: " + boundaryMode);
         }
     }
     

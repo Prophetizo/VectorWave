@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.modwt;
 
 /**
- * Interface representing the result of a MODWT (Maximal Overlap Discrete Wavelet Transform).
+ * Represents the result of a MODWT (Maximal Overlap Discrete Wavelet Transform).
  * 
  * <p>Unlike the standard DWT which produces decimated coefficients (half the original length),
  * MODWT produces non-decimated coefficients that maintain the same length as the input signal.
@@ -23,6 +23,19 @@ package ai.prophetizo.wavelet.modwt;
  * @see ai.prophetizo.wavelet.TransformResult
  */
 public interface MODWTResult {
+    
+    /**
+     * Creates a new MODWTResult with the given coefficients.
+     * This is a convenience factory method.
+     *
+     * @param approximationCoeffs the approximation coefficients
+     * @param detailCoeffs        the detail coefficients
+     * @return a new MODWTResult
+     * @throws IllegalArgumentException if coefficients are invalid
+     */
+    static MODWTResult create(double[] approximationCoeffs, double[] detailCoeffs) {
+        return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
+    }
     
     /**
      * Returns the approximation (low-pass) coefficients from the MODWT.
@@ -58,6 +71,8 @@ public interface MODWTResult {
      * Validates that this MODWT result has consistent coefficient arrays.
      * Both approximation and detail coefficients should have the same length
      * and match the signal length.
+     * 
+     * <p>This default implementation performs basic validation.</p>
      * 
      * @return true if the result is valid, false otherwise
      */
