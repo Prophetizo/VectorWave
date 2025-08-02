@@ -8,7 +8,7 @@
     <artifactId>vector-wave</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Vector Wave</name>
-    <description>A high-performance Fast Wavelet Transform (FWT) library for Java 23+ featuring a type-safe, extensible architecture.</description>
+    <description>A high-performance Fast Wavelet Transform (FWT) library for Java 23+ featuring a type-safe, extensible architecture, with MODWT (Maximal Overlap DWT) support.</description>
     <packaging>jar</packaging>
     <url>https://github.com/prophetizo/VectorWave</url>
 
