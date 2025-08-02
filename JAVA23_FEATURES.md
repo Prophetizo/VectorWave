@@ -2,6 +2,8 @@
 
 VectorWave leverages cutting-edge Java 23 features to deliver exceptional performance for wavelet transforms. This document outlines the Java 23 optimizations implemented in the library.
 
+**Note**: VectorWave requires Java 23+ for compilation and optimal performance.
+
 ## 🚀 Java 23 Features Implemented
 
 ### 1. Vector API (Incubator) - SIMD Acceleration

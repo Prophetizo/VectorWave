@@ -141,13 +141,15 @@ Coiflet.COIF1, COIF2, COIF3, COIF4, COIF5
 
 ### Biorthogonal Wavelets
 
-⚠️ **Warning**: Critical bug (#138) - use orthogonal wavelets instead.
+Biorthogonal wavelets use different filters for decomposition and reconstruction, offering linear phase response and symmetric filters.
 
 ```java
 BiorthogonalSpline.BIOR1_1, BIOR1_3, BIOR1_5
 BiorthogonalSpline.BIOR2_2, BIOR2_4, BIOR2_6, BIOR2_8
 BiorthogonalSpline.BIOR3_1, BIOR3_3, BIOR3_5, BIOR3_7, BIOR3_9
 ```
+
+**Note**: Biorthogonal wavelets include automatic phase compensation to correct for inherent circular shifts. Perfect reconstruction is achieved for simple signals (constant, sequential) with PERIODIC boundary mode. Complex signals may have small reconstruction errors, which is normal behavior for biorthogonal wavelets.
 
 ### Continuous Wavelets
 

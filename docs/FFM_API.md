@@ -225,7 +225,7 @@ TransformResult result = transform.forwardSegment(nativeData, elementCount);
 1. **Boundary Modes**: SYMMETRIC and CONSTANT modes not implemented for upsampling operations
 2. **Java Version**: Requires Java 23+
 3. **JVM Flags**: Must run with `--enable-native-access=ALL-UNNAMED`
-4. **Biorthogonal Wavelets**: Currently broken due to implementation bug (see issue #138)
+4. **Biorthogonal Wavelets**: Fixed in recent update - now includes automatic phase compensation for proper reconstruction
 
 ## Error Handling
 

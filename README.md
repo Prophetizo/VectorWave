@@ -1,6 +1,6 @@
 # VectorWave
 
-High-performance wavelet transform library for Java 21+ with comprehensive wavelet family support, SIMD optimizations, and both Discrete (DWT) and Continuous (CWT) wavelet transforms.
+High-performance wavelet transform library for Java 23+ with comprehensive wavelet family support, SIMD optimizations, and both Discrete (DWT) and Continuous (CWT) wavelet transforms.
 
 ## Features
 
@@ -77,7 +77,7 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 
 ## Requirements
 
-- Java 21 or later (must include jdk.incubator.vector module for compilation)
+- Java 23 or later (must include jdk.incubator.vector module for compilation)
 - Maven 3.6+
 - Runtime: Vector API is optional (graceful fallback to scalar implementation)
 
@@ -475,14 +475,29 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
 
 ## Requirements
 
-- Java 21 or higher
+- Java 23 or higher
 - Maven 3.6+
 - For SIMD: `--add-modules jdk.incubator.vector`
-- For FFM: Java 23+ with `--enable-native-access=ALL-UNNAMED`
+- For FFM: `--enable-native-access=ALL-UNNAMED`
 
 ## License
 
 GPL-3.0 - See [LICENSE](LICENSE) file for details.
+
+## Documentation
+
+- [API Reference](docs/API.md) - Complete API documentation
+- [Developer Guide](docs/guides/DEVELOPER_GUIDE.md) - Development guidelines and best practices
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design and architecture
+- [Performance Guide](docs/performance/PERFORMANCE_SUMMARY.md) - Performance characteristics and benchmarks
+- [FFM API Guide](docs/FFM_API.md) - Foreign Function & Memory API usage
+- [Wavelet Selection Guide](docs/WAVELET_SELECTION.md) - Choosing the right wavelet
+
+### Guides
+- [Batch Processing](docs/guides/BATCH_PROCESSING.md) - SIMD batch processing guide
+- [Denoising](docs/guides/DENOISING.md) - Signal denoising techniques
+- [Financial Analysis](docs/guides/FINANCIAL_ANALYSIS.md) - Financial market analysis
+- [Streaming](docs/guides/STREAMING.md) - Real-time streaming transforms
 
 ## Contributing
 
