@@ -33,6 +33,12 @@ import java.util.concurrent.TimeUnit;
 })
 public class Java23PerformanceBenchmark {
     
+    // Signal generation constants
+    private static final double LOW_FREQUENCY = 5.0;
+    private static final double HIGH_FREQUENCY = 20.0;
+    private static final double HIGH_FREQUENCY_AMPLITUDE = 0.5;
+    private static final double NOISE_AMPLITUDE = 0.1;
+    
     @Param({"256", "1024", "4096", "16384"})
     private int signalSize;
     
@@ -48,9 +54,9 @@ public class Java23PerformanceBenchmark {
         signal = new double[signalSize];
         for (int i = 0; i < signalSize; i++) {
             double t = (double) i / signalSize;
-            signal[i] = Math.sin(2 * Math.PI * 5 * t) + 
-                       0.5 * Math.sin(2 * Math.PI * 20 * t) +
-                       0.1 * (Math.random() - 0.5);
+            signal[i] = Math.sin(2 * Math.PI * LOW_FREQUENCY * t) + 
+                       HIGH_FREQUENCY_AMPLITUDE * Math.sin(2 * Math.PI * HIGH_FREQUENCY * t) +
+                       NOISE_AMPLITUDE * (Math.random() - 0.5);
         }
         
         // Create wavelet based on type
