@@ -65,6 +65,7 @@ class StreamingDenoiserPerformanceTest {
     
     @Test
     // @Disabled("Performance test - run manually")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void benchmarkCurrentImplementation() throws Exception {
         System.out.println("=== Current StreamingDenoiser Performance Benchmark ===");
         
@@ -74,6 +75,7 @@ class StreamingDenoiserPerformanceTest {
         benchmarkConfiguration("75% overlap", 0.75);
     }
     
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     private void benchmarkConfiguration(String description, double overlapFactor) throws Exception {
         System.out.println("\n--- " + description + " ---");
         
@@ -109,7 +111,7 @@ class StreamingDenoiserPerformanceTest {
             }
             
             long benchmarkEnd = System.nanoTime();
-            denoiser.close();
+            // Denoiser will be closed by try-with-resources
             
             // Wait for all blocks to be processed
             subscriber.latch.await(5, TimeUnit.SECONDS);
@@ -233,6 +235,7 @@ class StreamingDenoiserPerformanceTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void quickPerformanceCheck() throws Exception {
         // Quick test to verify performance tracking works
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -249,7 +252,7 @@ class StreamingDenoiserPerformanceTest {
                 denoiser.process(Math.sin(2 * Math.PI * i / 64));
             }
             
-            denoiser.close();
+            // Denoiser will be closed by try-with-resources
             subscriber.latch.await(1, TimeUnit.SECONDS);
             
             System.out.println("Quick check - blocks processed: " + subscriber.blocksProcessed);

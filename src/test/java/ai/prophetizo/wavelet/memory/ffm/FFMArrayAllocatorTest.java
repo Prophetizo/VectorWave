@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.memory.ffm;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import java.lang.foreign.Arena;
@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for FFMArrayAllocator memory allocation functionality.
  */
-@EnabledOnJre(JRE.JAVA_21) // Enable for Java 21+ where FFM is available
+@EnabledForJreRange(min = JRE.JAVA_21) // FFM API available from Java 21+, project targets Java 23
 class FFMArrayAllocatorTest {
 
     @Test
@@ -237,8 +237,10 @@ class FFMArrayAllocatorTest {
                 FFMArrayAllocator.copyToArray(segment, array, 0, -1));
             assertThrows(IndexOutOfBoundsException.class, () ->
                 FFMArrayAllocator.copyToArray(segment, array, 2, 3)); // offset + length > array.length
+            // Test segment capacity check - segment has 5 elements, trying to copy 6
+            double[] destinationArray = new double[10];
             assertThrows(IllegalArgumentException.class, () ->
-                FFMArrayAllocator.copyToArray(segment, array, 0, 6)); // length > segment capacity
+                FFMArrayAllocator.copyToArray(segment, destinationArray, 0, 6)); // trying to copy more elements than segment contains
         }
     }
 

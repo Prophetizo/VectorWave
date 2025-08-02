@@ -34,6 +34,7 @@ public class StreamingDenoiserFactoryDemo {
         demonstrateNewFactoryInterface(config);
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled in try-catch
     private static void demonstrateFastImplementation(StreamingDenoiserConfig config) {
         System.out.println("1. Fast Implementation (Real-time Processing)");
         System.out.println("---------------------------------------------");
@@ -59,6 +60,7 @@ public class StreamingDenoiserFactoryDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled in try-catch
     private static void demonstrateQualityImplementation(StreamingDenoiserConfig config) {
         System.out.println("2. Quality Implementation (Better Denoising)");
         System.out.println("--------------------------------------------");
@@ -84,6 +86,7 @@ public class StreamingDenoiserFactoryDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled in try-catch
     private static void demonstrateAutoSelection(StreamingDenoiserConfig config) {
         System.out.println("3. Automatic Implementation Selection");
         System.out.println("-------------------------------------");
@@ -130,6 +133,7 @@ public class StreamingDenoiserFactoryDemo {
         }
     }
 
+    @SuppressWarnings("try")  // Demo code - InterruptedException handled in try-catch
     private static void demonstrateNewFactoryInterface(StreamingDenoiserConfig config) {
         System.out.println("4. New Factory Interface Pattern");
         System.out.println("---------------------------------");

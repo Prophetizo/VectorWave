@@ -259,6 +259,7 @@ public class FactoryRegistryDemo {
             this.registry = registry;
         }
         
+        @SuppressWarnings("try")  // Demo code - InterruptedException handled in catch block
         void processSignal(double[] signal) {
             System.out.println("Processing signal using injected factories:");
             

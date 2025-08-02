@@ -25,15 +25,23 @@ public class FFMDemoTest {
     
     @Test
     public void testMainMethod() {
-        // The demo is expected to throw an exception due to memory closing issues
-        assertThrows(IllegalStateException.class, () -> {
-            FFMDemo.main(new String[]{});
-        });
+        // Run the demo - should complete successfully
+        FFMDemo.main(new String[]{});
         
         String output = outContent.toString();
         
-        // Verify FFM demo started
+        // Verify FFM demo output
         assertTrue(output.contains("FFM") || output.contains("Foreign Function") || 
-                   output.contains("Memory") || output.contains("VectorWave"));
+                   output.contains("Memory") || output.contains("VectorWave"),
+                   "Expected FFM-related output");
+        
+        // Verify demo sections were executed
+        assertTrue(output.contains("Basic FFM Usage") || 
+                   output.contains("Memory Pool Management") ||
+                   output.contains("Zero-Copy Processing") ||
+                   output.contains("Streaming with FFM") ||
+                   output.contains("Performance Comparison") ||
+                   output.contains("Advanced Memory Segment Operations"),
+                   "Expected demo section headers");
     }
 }

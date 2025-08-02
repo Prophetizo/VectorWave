@@ -37,6 +37,7 @@ public final class AlignedMemoryPool {
             ThreadLocal.withInitial(AlignedMemoryPool::createThreadLocalPools);
 
     // Global pools for less common sizes
+    @SuppressWarnings("unchecked")
     private static final ConcurrentLinkedQueue<PooledArray>[] GLOBAL_POOLS;
 
     // Statistics
@@ -45,9 +46,11 @@ public final class AlignedMemoryPool {
     private static final AtomicLong poolMisses = new AtomicLong();
 
     static {
-        GLOBAL_POOLS = new ConcurrentLinkedQueue[COMMON_SIZES.length];
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        ConcurrentLinkedQueue<PooledArray>[] pools = new ConcurrentLinkedQueue[COMMON_SIZES.length];
+        GLOBAL_POOLS = pools;
         for (int i = 0; i < COMMON_SIZES.length; i++) {
-            GLOBAL_POOLS[i] = new ConcurrentLinkedQueue<>();
+            GLOBAL_POOLS[i] = new ConcurrentLinkedQueue<PooledArray>();
         }
     }
 

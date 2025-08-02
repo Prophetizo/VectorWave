@@ -5,6 +5,8 @@ import ai.prophetizo.wavelet.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -18,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * @since 2.0.0
  */
+@EnabledForJreRange(min = JRE.JAVA_21) // FFM API available from Java 21+, project targets Java 23
 class FFMWaveletTransformTest {
     
     private static final double TOLERANCE = 1e-10;

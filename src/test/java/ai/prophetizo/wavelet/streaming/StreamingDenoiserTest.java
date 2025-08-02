@@ -137,6 +137,7 @@ class StreamingDenoiserTest {
     
     @Test
     @Timeout(2)
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicDenoising() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -146,18 +147,41 @@ class StreamingDenoiserTest {
                 .build()) {
             
             List<double[]> results = new ArrayList<>();
-            CountDownLatch latch = new CountDownLatch(1);
+            AtomicInteger blockCount = new AtomicInteger();
+            CountDownLatch latch = new CountDownLatch(1); // Expecting at least 1 block
             
-            denoiser.subscribe(new TestSubscriber(results, latch));
+            denoiser.subscribe(new Flow.Subscriber<double[]>() {
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    subscription.request(Long.MAX_VALUE);
+                }
+                
+                @Override
+                public void onNext(double[] item) {
+                    results.add(item.clone());
+                    if (blockCount.incrementAndGet() >= 1) {
+                        latch.countDown();
+                    }
+                }
+                
+                @Override
+                public void onError(Throwable throwable) {}
+                
+                @Override
+                public void onComplete() {}
+            });
             
             // Generate noisy signal
             double[] noisySignal = generateNoisySignal(128, 0.1);
             
             // Process signal
             denoiser.process(noisySignal);
-            denoiser.close();
+            denoiser.flush();
             
-            assertTrue(latch.await(1, TimeUnit.SECONDS));
+            // Wait for at least one block to be processed
+            assertTrue(latch.await(1, TimeUnit.SECONDS), "Should process at least one block within timeout");
+            
+            assertTrue(blockCount.get() > 0, "Should have processed at least one block");
             assertFalse(results.isEmpty());
             
             // Verify denoising occurred
@@ -181,6 +205,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStreamingProcessing() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
@@ -224,6 +249,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMultiLevelDenoising() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
@@ -246,7 +272,7 @@ class StreamingDenoiserTest {
             }
             
             denoiser.process(signal);
-            denoiser.close();
+            denoiser.flush();
             
             assertTrue(latch.await(1, TimeUnit.SECONDS));
             
@@ -263,6 +289,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testAdaptiveThresholding() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -275,7 +302,7 @@ class StreamingDenoiserTest {
             List<Double> allThresholds = new ArrayList<>();
             List<Double> allNoiseLevels = new ArrayList<>();
             AtomicInteger blockCount = new AtomicInteger();
-            CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(40); // Expect 40 blocks
             
             denoiser.subscribe(new Flow.Subscriber<double[]>() {
                 private Flow.Subscription subscription;
@@ -292,6 +319,7 @@ class StreamingDenoiserTest {
                     // Capture all thresholds and noise levels for analysis
                     allThresholds.add(denoiser.getCurrentThreshold());
                     allNoiseLevels.add(denoiser.getCurrentNoiseLevel());
+                    latch.countDown();
                 }
                 
                 @Override
@@ -327,7 +355,9 @@ class StreamingDenoiserTest {
                 denoiser.process(data);
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
+            
             assertTrue(latch.await(1, TimeUnit.SECONDS));
             
             assertTrue(blockCount.get() >= 30, "Should have processed at least 30 blocks");
@@ -358,6 +388,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testOverlapProcessing() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -375,7 +406,8 @@ class StreamingDenoiserTest {
                 denoiser.process(Math.sin(2 * Math.PI * i / 32));
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "Should receive expected blocks");
@@ -405,6 +437,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatistics() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -419,7 +452,8 @@ class StreamingDenoiserTest {
                 denoiser.process(0.1 * Math.random());
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for all blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "All blocks should be processed");
@@ -437,6 +471,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMaxProcessingTimeTracking() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -491,7 +526,8 @@ class StreamingDenoiserTest {
                 }
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for all blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "All blocks should be processed");
@@ -517,6 +553,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for state testing
     void testClosedStateHandling() throws Exception {
         StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
             .wavelet(new Haar())
@@ -530,6 +567,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testDifferentThresholdMethods() throws Exception {
         ThresholdMethod[] methods = {
             ThresholdMethod.UNIVERSAL,
@@ -550,7 +588,7 @@ class StreamingDenoiserTest {
                 
                 double[] noisySignal = generateNoisySignal(64, 0.1);
                 denoiser.process(noisySignal);
-                denoiser.close();
+                denoiser.flush();
                 
                 // Wait for block to be processed
                 assertTrue(latch.await(1, TimeUnit.SECONDS), 
@@ -562,6 +600,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMemoryEfficiency() throws Exception {
         // This test verifies that the streaming denoiser uses bounded memory
         // regardless of how much data is processed (O(1) memory complexity)
@@ -631,6 +670,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for testing cleanup, close() may throw InterruptedException
     void testSharedMemoryPoolUsage() throws Exception {
         SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
         int initialUsers = manager.getActiveUserCount();
@@ -668,6 +708,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testConfigurableNoiseBufferFactor() throws Exception {
         // Test with custom noise buffer factor
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -706,6 +747,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testDedicatedMemoryPoolOption() throws Exception {
         // Create denoiser with dedicated pool
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -731,6 +773,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testConstructorFailureCleanup() throws Exception {
         // Get initial state
         SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();

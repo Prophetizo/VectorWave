@@ -298,9 +298,10 @@ public class FFMDemo {
             System.out.println("  All intermediate memory automatically freed");
             System.out.println("  No manual memory management required");
             
+            // Explicit close for demonstration purposes
+            // In production code, let try-with-resources handle this
             ops.close();
-            ffm.close();
-            pool.close();
+            // pool.close() is handled by try-with-resources
         }
         
         System.out.println("\nFFM API requirements:");

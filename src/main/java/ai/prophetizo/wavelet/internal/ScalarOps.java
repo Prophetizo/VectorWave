@@ -2,6 +2,8 @@ package ai.prophetizo.wavelet.internal;
 
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import static java.util.Arrays.fill;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Scalar implementation of the core wavelet transform operations.
@@ -22,6 +24,55 @@ import static java.util.Arrays.fill;
 public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
+    
+    // Vectorization threshold constants
+    private static final int MIN_VECTORIZATION_LENGTH = 32;
+    private static final int MEDIUM_ARRAY_THRESHOLD = 128;
+    private static final int MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS = 8;
+    
+    /**
+     * Flag indicating whether Vector API is available and enabled.
+     * Detected at class loading time for optimal performance.
+     */
+    private static final boolean VECTORIZATION_ENABLED;
+    
+    private static final Logger LOGGER = Logger.getLogger(ScalarOps.class.getName());
+    
+    static {
+        boolean vectorEnabled = false;
+        String failureReason = null;
+        
+        try {
+            // Try to access Vector API classes
+            Class.forName("jdk.incubator.vector.DoubleVector");
+            vectorEnabled = VectorOps.isVectorApiSupported();
+            
+            if (!vectorEnabled) {
+                failureReason = "Vector API is available but not supported on this platform";
+            }
+        } catch (ClassNotFoundException e) {
+            // Vector API not available
+            vectorEnabled = false;
+            failureReason = "Vector API classes not found (requires Java 17+ with jdk.incubator.vector module)";
+        } catch (NoClassDefFoundError e) {
+            // Vector API runtime issue
+            vectorEnabled = false;
+            failureReason = "Vector API initialization failed: " + e.getMessage();
+        } catch (Exception e) {
+            // Catch any other initialization errors
+            vectorEnabled = false;
+            failureReason = "Unexpected error initializing Vector API: " + e.getClass().getName() + " - " + e.getMessage();
+        }
+        
+        VECTORIZATION_ENABLED = vectorEnabled;
+        
+        // Log the result of Vector API detection
+        if (VECTORIZATION_ENABLED) {
+            LOGGER.log(Level.FINE, "Vector API enabled for optimized wavelet operations");
+        } else if (failureReason != null) {
+            LOGGER.log(Level.FINE, "Vector API disabled: {0}", failureReason);
+        }
+    }
 
 // (Removed the internal comment as it has been moved to the class-level Javadoc)
 
@@ -532,5 +583,187 @@ public final class ScalarOps {
         double[] output = new double[coeffsLength * 2];
         upsampleAndConvolveDirect(coeffs, filter, output);
         return output;
+    }
+    
+    // ==========================================
+    // MODWT-specific Operations
+    // ==========================================
+    
+    /**
+     * Performs circular convolution for MODWT (Maximal Overlap Discrete Wavelet Transform).
+     * This is different from standard DWT convolution as it doesn't downsample.
+     * 
+     * @param signal The input signal of length N.
+     * @param filter The filter coefficients of length L.
+     * @param output The output array of length N (same as input).
+     */
+    public static void circularConvolveMODWT(double[] signal, double[] filter, double[] output) {
+        if (VECTORIZATION_ENABLED && shouldUseVectorization(signal.length, filter.length)) {
+            VectorOps.circularConvolveMODWTVectorized(signal, filter, output);
+        } else {
+            circularConvolveMODWTScalar(signal, filter, output);
+        }
+    }
+    
+    /**
+     * Scalar implementation of circular convolution for MODWT.
+     */
+    private static void circularConvolveMODWTScalar(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+            
+            for (int l = 0; l < filterLen; l++) {
+                // Circular indexing: (t + l) mod N for periodic boundary conditions
+                int signalIndex = (t + l) % signalLen;
+                sum += signal[signalIndex] * filter[l];
+            }
+            
+            output[t] = sum;
+        }
+    }
+
+    /**
+     * Performs circular convolution with level-based shift for multi-level MODWT.
+     * This handles the modulo operation: (t - 2^(j-1) * l) mod N for level j.
+     * 
+     * @param signal    The input signal of length N.
+     * @param filter    The filter coefficients.
+     * @param output    The output array of length N.
+     * @param level     The decomposition level (1-based, where level 1 = j=1).
+     */
+    public static void circularConvolveMODWTLevel(double[] signal, double[] filter, double[] output, int level) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        int shift = 1 << (level - 1); // 2^(j-1) where j = level
+        
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+            
+            for (int l = 0; l < filterLen; l++) {
+                // Level-adjusted circular indexing: (t - 2^(j-1) * l) mod N
+                int signalIndex = (t - shift * l + signalLen * filterLen) % signalLen;
+                sum += signal[signalIndex] * filter[l];
+            }
+            
+            output[t] = sum;
+        }
+    }
+
+    /**
+     * Scales wavelet filter coefficients for MODWT at a specific level.
+     * MODWT uses scaled filters: h_j,l = h_l / 2^(j/2) for level j.
+     * 
+     * @param originalFilter The original filter coefficients.
+     * @param level The decomposition level (1-based).
+     * @return The scaled filter coefficients.
+     */
+    public static double[] scaleFilterForMODWT(double[] originalFilter, int level) {
+        double scaleFactor = 1.0 / Math.sqrt(Math.pow(2.0, level));
+        double[] scaledFilter = new double[originalFilter.length];
+        
+        for (int i = 0; i < originalFilter.length; i++) {
+            scaledFilter[i] = originalFilter[i] * scaleFactor;
+        }
+        
+        return scaledFilter;
+    }
+    
+    // ==========================================
+    // Java 23 Performance Optimizations
+    // ==========================================
+    
+    /**
+     * Determines if vectorization should be used based on array characteristics.
+     * Uses efficient decision making optimized for Java 23.
+     * 
+     * @param signalLength The length of the signal array
+     * @param filterLength The length of the filter array
+     * @return true if vectorization is beneficial
+     */
+    private static boolean shouldUseVectorization(int signalLength, int filterLength) {
+        // Too small for vectorization overhead
+        if (signalLength < MIN_VECTORIZATION_LENGTH) {
+            return false;
+        }
+        
+        // Large arrays always benefit from vectorization
+        if (signalLength >= MEDIUM_ARRAY_THRESHOLD) {
+            return true;
+        }
+        
+        // Medium arrays: vectorize only with small filters
+        return filterLength <= MAX_FILTER_LENGTH_FOR_MEDIUM_ARRAYS;
+    }
+    
+    /**
+     * Efficiently clears an array using the best available method.
+     * Chooses between vectorized and scalar clearing based on array size.
+     * 
+     * @param array The array to clear
+     */
+    private static void clearArray(double[] array) {
+        if (VECTORIZATION_ENABLED && array.length >= 64) {
+            VectorOps.clearArrayVectorized(array);
+        } else {
+            // Traditional array clearing for small arrays
+            for (int i = 0; i < array.length; i++) {
+                array[i] = 0.0;
+            }
+        }
+    }
+    
+    /**
+     * Gets performance characteristics for the current system configuration.
+     * Useful for monitoring and optimization decisions.
+     * 
+     * @return Performance information record
+     */
+    public static PerformanceInfo getPerformanceInfo() {
+        return new PerformanceInfo(
+            VECTORIZATION_ENABLED,
+            VECTORIZATION_ENABLED ? VectorOps.getVectorCapabilities() : null,
+            Runtime.getRuntime().availableProcessors()
+        );
+    }
+    
+    /**
+     * Record containing performance configuration information.
+     * Uses Java 17+ record pattern for clean data representation.
+     */
+    public record PerformanceInfo(
+        boolean vectorizationEnabled,
+        VectorOps.VectorCapabilityInfo vectorCapabilities,
+        int availableProcessors
+    ) {
+        
+        /**
+         * Returns a human-readable description of the performance configuration.
+         */
+        public String description() {
+            if (vectorizationEnabled) {
+                return "High-performance mode: " + vectorCapabilities.description() + 
+                       ", " + availableProcessors + " CPU cores";
+            } else {
+                return "Scalar mode: Vector API not available, " + 
+                       availableProcessors + " CPU cores";
+            }
+        }
+        
+        /**
+         * Estimates performance improvement for a given workload.
+         * 
+         * @param arraySize The size of arrays being processed
+         * @return Estimated speedup factor
+         */
+        public double estimateSpeedup(int arraySize) {
+            if (vectorizationEnabled) {
+                return vectorCapabilities.estimatedSpeedup(arraySize);
+            } else {
+                return 1.0;  // No speedup in scalar mode
+            }
+        }
     }
 }

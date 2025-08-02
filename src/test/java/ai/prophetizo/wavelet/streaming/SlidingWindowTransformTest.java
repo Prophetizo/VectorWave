@@ -70,6 +70,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicSlidingWindow() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) { // 50% overlap
@@ -137,6 +138,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testSingleSampleProcessing() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 32, 0.5)) { // 50% overlap
@@ -163,6 +165,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testFlushBehavior() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) { // 50% overlap
@@ -190,6 +193,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for test validation
     void testClosedTransformBehavior() throws Exception {
         SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5);
@@ -209,6 +213,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testNullAndEmptyDataHandling() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) {
@@ -223,6 +228,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testWindowedTransformResult() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) {
@@ -269,6 +275,7 @@ class SlidingWindowTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatistics() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 0.5)) {
@@ -291,6 +298,7 @@ class SlidingWindowTransformTest {
 
     @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testConcurrentProcessing() throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 Daubechies.DB4, BoundaryMode.ZERO_PADDING, 128, 0.5)) {
@@ -343,6 +351,8 @@ class SlidingWindowTransformTest {
             }
             
             transform.flush();
+            
+            // Close the transform to trigger onComplete
             transform.close();
             
             assertTrue(completeLatch.await(2, TimeUnit.SECONDS));
@@ -352,6 +362,7 @@ class SlidingWindowTransformTest {
 
     @ParameterizedTest
     @ValueSource(ints = {16, 32, 64, 128, 256})
+    @SuppressWarnings("resource")  // Explicit close needed for test validation
     void testDifferentWindowSizes(int windowSize) throws Exception {
         try (SlidingWindowTransform transform = new SlidingWindowTransform(
                 new Haar(), BoundaryMode.PERIODIC, windowSize, 0.5)) { // 50% overlap
@@ -373,8 +384,7 @@ class SlidingWindowTransformTest {
             transform.flush();
             
             // We may or may not have results due to buffering
-            // Close to ensure all data is flushed
-            transform.close();
+            // Transform will be closed by try-with-resources
             
             // Now we should have at least one result
             if (!results.isEmpty()) {

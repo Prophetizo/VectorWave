@@ -65,6 +65,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
     }
     
     @Override
+    @SuppressWarnings("try")  // Arena is used in body, safe to suppress
     public double[] convolveAndDownsample(double[] signal, double[] filter,
                                          int signalLength, int filterLength,
                                          BoundaryMode mode) {
@@ -198,6 +199,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
      * @throws UnsupportedOperationException if mode is SYMMETRIC or CONSTANT
      */
     @Override
+    @SuppressWarnings("try")  // Arena is used in body, safe to suppress
     public double[] upsampleAndConvolve(double[] input, double[] filter,
                                        int inputLength, int filterLength,
                                        BoundaryMode mode) {

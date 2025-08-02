@@ -3,7 +3,7 @@ package ai.prophetizo.wavelet.memory.ffm;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for FFMWaveletTransformFactory.
  */
-@EnabledOnJre(JRE.JAVA_21) // Enable for Java 21+ where FFM is available
+@EnabledForJreRange(min = JRE.JAVA_21) // FFM API available from Java 21+, project targets Java 23
 class FFMWaveletTransformFactoryTest {
 
     @Test

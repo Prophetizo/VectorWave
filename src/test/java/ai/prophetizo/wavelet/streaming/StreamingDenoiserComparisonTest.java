@@ -180,6 +180,7 @@ class StreamingDenoiserComparisonTest {
         }
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private double[] processWithFast(double[] signal, double overlapFactor) throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
                 .wavelet(Daubechies.DB4)
@@ -197,6 +198,9 @@ class StreamingDenoiserComparisonTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(signal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -204,6 +208,7 @@ class StreamingDenoiserComparisonTest {
         }
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private double[] processWithQuality(double[] signal, double overlapFactor) throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
                 .wavelet(Daubechies.DB4)
@@ -221,6 +226,9 @@ class StreamingDenoiserComparisonTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(signal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));

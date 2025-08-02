@@ -5,6 +5,7 @@ package ai.prophetizo.wavelet.exception;
  * This is the custom equivalent of IllegalStateException within the wavelet transform hierarchy.
  */
 public class InvalidStateException extends WaveletTransformException {
+    private static final long serialVersionUID = 202501150005L; // Invalid state exception v1.0
 
     /**
      * Constructs a new invalid state exception with the specified detail message.

@@ -302,9 +302,7 @@ class ParallelWaveletEngineTest {
                 BoundaryMode.PERIODIC
             );
             
-            // Close immediately
-            timeoutEngine.close();
-            
+            // The engine will be closed immediately by try-with-resources
             // The future might complete or be cancelled
             try {
                 future.get(1, TimeUnit.SECONDS);

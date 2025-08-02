@@ -59,6 +59,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicMultiLevelTransform() throws Exception {
         int blockSize = 64;
         int levels = 2;
@@ -93,6 +94,7 @@ class MultiLevelStreamingTransformTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3, 4})
+    @SuppressWarnings("resource")  // Explicit close needed for test validation
     void testDifferentDecompositionLevels(int levels) throws Exception {
         int blockSize = 128;
         
@@ -116,8 +118,7 @@ class MultiLevelStreamingTransformTest {
             // So we just check that no errors occurred
             // We can't assume immediate results with streaming
             if (results.isEmpty()) {
-                // Force processing by closing
-                transform.close();
+                // Transform might buffer, no results expected immediately
             }
             
             // Verify the transform result if we got any
@@ -131,6 +132,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testSingleSampleProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 32, 2)) {
@@ -145,8 +147,8 @@ class MultiLevelStreamingTransformTest {
             }
             
             // Should eventually produce results
-            // But streaming may buffer, so close to force flush
-            transform.close();
+            // But streaming may buffer, so flush to force processing
+            transform.flush();
             // Verify we got results - with single sample, it may not produce output
             // if the window size is larger than 1
             assertTrue(results.size() >= 0);
@@ -154,6 +156,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testFlushBehavior() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {
@@ -179,6 +182,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for test validation
     void testClosedTransformBehavior() throws Exception {
         MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2);
@@ -198,6 +202,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatistics() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {
@@ -221,6 +226,7 @@ class MultiLevelStreamingTransformTest {
 
     @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testConcurrentProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 Daubechies.DB4, BoundaryMode.ZERO_PADDING, 128, 3)) {
@@ -274,6 +280,10 @@ class MultiLevelStreamingTransformTest {
                 thread.join();
             }
             
+            // Flush to ensure all processing completes
+            transform.flush();
+            
+            // Close the transform to trigger onComplete
             transform.close();
             
             assertTrue(completeLatch.await(2, TimeUnit.SECONDS));
@@ -282,6 +292,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testStreamingChainProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {
@@ -299,8 +310,8 @@ class MultiLevelStreamingTransformTest {
                 transform.process(data);
             }
             
-            // Close to ensure all data is processed
-            transform.close();
+            // Flush to ensure all data is processed
+            transform.flush();
             
             // Wait a bit longer for async processing to complete
             Thread.sleep(500);

@@ -49,6 +49,21 @@ public final class VectorOps {
     }
 
     /**
+     * Checks if Vector API is supported on this platform.
+     * @return true if Vector API is available and functional
+     */
+    public static boolean isVectorApiSupported() {
+        try {
+            // Test basic Vector API functionality
+            var species = DoubleVector.SPECIES_PREFERRED;
+            var vector = DoubleVector.zero(species);
+            return vector != null && species.length() > 1;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /**
      * Checks if Vector API is available and beneficial for the given signal length.
      * Takes into account platform-specific characteristics.
      */
@@ -82,9 +97,9 @@ public final class VectorOps {
 
         // Process main body with vectorization
         int i = 0;
-        int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
+        int vectorLoopBound = outputLength - (outputLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             // Initialize result vector
             DoubleVector result = DoubleVector.zero(SPECIES);
 
@@ -137,9 +152,9 @@ public final class VectorOps {
         }
 
         int i = 0;
-        int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
+        int vectorLoopBound = outputLength - (outputLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             for (int k = 0; k < filterLength; k++) {
@@ -208,9 +223,9 @@ public final class VectorOps {
 
         // Process even indices (direct copy with filtering)
         int i = 0;
-        int vectorBound = signalLength - (signalLength % VECTOR_LENGTH);
+        int vectorLoopBound = signalLength - (signalLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             // Process filter coefficients that align with signal samples
@@ -247,7 +262,7 @@ public final class VectorOps {
 
         // Process odd indices
         i = 0;
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             for (int k = 1; k < filterLength; k += 2) {
@@ -407,9 +422,9 @@ public final class VectorOps {
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
 
             int i = 0;
-            int vectorBound = length - (length % VECTOR_LENGTH);
+            int vectorLoopBound = length - (length % VECTOR_LENGTH);
 
-            for (; i < vectorBound; i += VECTOR_LENGTH) {
+            for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
 
                 // Create masks for different cases
@@ -458,9 +473,9 @@ public final class VectorOps {
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
 
             int i = 0;
-            int vectorBound = length - (length % VECTOR_LENGTH);
+            int vectorLoopBound = length - (length % VECTOR_LENGTH);
 
-            for (; i < vectorBound; i += VECTOR_LENGTH) {
+            for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
 
                 // Create mask for values to keep
@@ -477,6 +492,256 @@ public final class VectorOps {
             }
 
             return result;
+        }
+    }
+    
+    /**
+     * Vectorized circular convolution for MODWT.
+     * 
+     * @param signal The input signal
+     * @param filter The filter coefficients
+     * @param output The output array
+     */
+    public static void circularConvolveMODWTVectorized(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        
+        // For smaller arrays, fall back to scalar implementation
+        if (!isVectorizedOperationBeneficial(signalLen)) {
+            circularConvolveMODWTScalar(signal, filter, output);
+            return;
+        }
+        
+        // Clear output array
+        clearArrayVectorized(output);
+        
+        // Pre-allocate indices array for reuse
+        int[] indices = new int[VECTOR_LENGTH];
+        
+        for (int l = 0; l < filterLen; l++) {
+            if (filter[l] == 0.0) continue; // Skip zero coefficients
+            
+            DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
+            int vectorLoopBound = SPECIES.loopBound(signalLen);
+            
+            // Check if we can use direct vectorization without circular indexing
+            // We need to ensure that t + l < signalLen for all t in [0, vectorLoopBound)
+            if (vectorLoopBound + l <= signalLen) {
+                // Simple case: no wrap-around within vector width
+                for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
+                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t + l);
+                    DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                    DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                    result.intoArray(output, t);
+                }
+            } else {
+                // Complex case: need to handle circular indexing
+                // Most indices won't wrap, so we can optimize by checking boundaries
+                for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
+                    int startIdx = t + l;
+                    int endIdx = startIdx + VECTOR_LENGTH;
+                    
+                    if (endIdx <= signalLen) {
+                        // No wrapping needed for this vector
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, startIdx);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
+                    } else if (startIdx >= signalLen) {
+                        // All indices wrap - can use direct indexing from beginning
+                        int wrappedStart = startIdx - signalLen;
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, wrappedStart);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
+                    } else {
+                        // Mixed case: some indices wrap, some don't
+                        // Hybrid approach: process non-wrapping elements with vector ops,
+                        // handle boundary elements individually
+                        int nonWrapCount = signalLen - startIdx;
+                        
+                        // Load output vector
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        
+                        // Process non-wrapping elements with direct vector access if there are enough
+                        if (nonWrapCount >= SPECIES.length() / 2) {
+                            // Build result vector element by element for mixed case
+                            double[] temp = new double[VECTOR_LENGTH];
+                            
+                            // Non-wrapping part - direct array access
+                            for (int i = 0; i < nonWrapCount; i++) {
+                                temp[i] = signal[startIdx + i] * filter[l + i];
+                            }
+                            
+                            // Wrapping part - also direct array access
+                            for (int i = nonWrapCount; i < VECTOR_LENGTH; i++) {
+                                temp[i] = signal[i - nonWrapCount] * filter[l + i];
+                            }
+                            
+                            // Now use vector operations for the final addition
+                            DoubleVector tempVec = DoubleVector.fromArray(SPECIES, temp, 0);
+                            DoubleVector result = outputVec.add(tempVec);
+                            result.intoArray(output, t);
+                        } else {
+                            // Too few non-wrapping elements, fall back to gather
+                            for (int i = 0; i < VECTOR_LENGTH; i++) {
+                                int idx = startIdx + i;
+                                indices[i] = idx >= signalLen ? idx - signalLen : idx;
+                            }
+                            DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                            DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                            result.intoArray(output, t);
+                        }
+                    }
+                }
+            }
+            
+            // Handle remainder
+            for (int t = vectorLoopBound; t < signalLen; t++) {
+                int signalIndex = (t + l) % signalLen;
+                output[t] += signal[signalIndex] * filter[l];
+            }
+        }
+    }
+    
+    /**
+     * Scalar fallback for circular convolution.
+     */
+    private static void circularConvolveMODWTScalar(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+            
+            for (int l = 0; l < filterLen; l++) {
+                int signalIndex = (t + l) % signalLen;
+                sum += signal[signalIndex] * filter[l];
+            }
+            
+            output[t] = sum;
+        }
+    }
+    
+    /**
+     * Selects the optimal processing strategy based on signal characteristics.
+     * 
+     * @param signalLength The length of the signal to process
+     * @param filterLength The length of the filter
+     * @return The recommended processing strategy
+     */
+    public static ProcessingStrategy selectOptimalStrategy(int signalLength, int filterLength) {
+        if (signalLength < MIN_VECTOR_LENGTH) {
+            return ProcessingStrategy.SCALAR_OPTIMIZED;
+        } else if (signalLength >= MIN_VECTOR_LENGTH && isPowerOfTwo(signalLength)) {
+            return ProcessingStrategy.VECTORIZED_POWER_OF_TWO;
+        } else if (signalLength >= MIN_VECTOR_LENGTH) {
+            return ProcessingStrategy.VECTORIZED_GENERAL;
+        } else {
+            return ProcessingStrategy.SCALAR_FALLBACK;
+        }
+    }
+    
+    /**
+     * Checks if a number is a power of two.
+     */
+    private static boolean isPowerOfTwo(int n) {
+        return n > 0 && (n & (n - 1)) == 0;
+    }
+    
+    /**
+     * Processing strategy enumeration using modern Java patterns.
+     */
+    public enum ProcessingStrategy {
+        SCALAR_OPTIMIZED("Scalar with loop unrolling"),
+        SCALAR_FALLBACK("Basic scalar implementation"),
+        VECTORIZED_POWER_OF_TWO("Vectorized with bit-shift optimization"),
+        VECTORIZED_GENERAL("Vectorized with standard modulo");
+        
+        private final String description;
+        
+        ProcessingStrategy(String description) {
+            this.description = description;
+        }
+        
+        public String getDescription() {
+            return description;
+        }
+    }
+    
+    /**
+     * Efficiently clear an array using vectorized operations.
+     * 
+     * @param array The array to clear
+     */
+    public static void clearArrayVectorized(double[] array) {
+        int vectorLoopBound = SPECIES.loopBound(array.length);
+        var zeroVector = DoubleVector.zero(SPECIES);
+        
+        // Vectorized clearing
+        for (int i = 0; i < vectorLoopBound; i += VECTOR_LENGTH) {
+            zeroVector.intoArray(array, i);
+        }
+        
+        // Clear remainder elements
+        for (int i = vectorLoopBound; i < array.length; i++) {
+            array[i] = 0.0;
+        }
+    }
+    
+    /**
+     * Gets information about the vector capabilities of the current system.
+     * Useful for performance monitoring and optimization decisions.
+     * 
+     * @return Vector capability information
+     */
+    public static VectorCapabilityInfo getVectorCapabilities() {
+        return new VectorCapabilityInfo(
+            SPECIES.vectorShape().toString(),
+            VECTOR_LENGTH,
+            SPECIES.elementType().getSimpleName(),
+            MIN_VECTOR_LENGTH
+        );
+    }
+    
+    /**
+     * Record containing vector capability information.
+     * 
+     * @param shape The vector shape (e.g., "S_128_BIT", "S_256_BIT", "S_512_BIT")
+     * @param length The number of elements per vector
+     * @param elementType The element type (e.g., "Double")
+     * @param threshold The minimum array size for vectorization
+     */
+    public record VectorCapabilityInfo(
+        String shape,
+        int length,
+        String elementType,
+        int threshold
+    ) {
+        
+        /**
+         * Returns a human-readable description of the vector capabilities.
+         */
+        public String description() {
+            return shape + " with " + length + " " + elementType + " elements";
+        }
+        
+        /**
+         * Estimates performance improvement for a given array size.
+         * 
+         * @param arraySize The size of arrays being processed
+         * @return Estimated speedup factor (1.0 = no speedup)
+         */
+        public double estimatedSpeedup(int arraySize) {
+            if (arraySize < threshold) {
+                return 1.0;  // No speedup for small arrays
+            } else if (arraySize < threshold * 4) {
+                return 2.0 + (arraySize - threshold) * 0.001;  // Gradual improvement
+            } else if (arraySize < threshold * 16) {
+                return 4.0 + (arraySize - threshold * 4) * 0.0005;  // Better improvement
+            } else {
+                return Math.min(8.0, 6.0 + (arraySize - threshold * 16) * 0.0001);  // Cap at 8x
+            }
         }
     }
 }

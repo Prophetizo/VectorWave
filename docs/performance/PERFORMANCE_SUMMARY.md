@@ -105,7 +105,7 @@ For a 512-sample signal using DB4:
 ## Benchmark Configuration
 
 All benchmarks run with:
-- Java 21+ with G1GC
+- Java 23+ with G1GC
 - 2GB heap allocation
 - 5 warmup iterations, 10 measurement iterations
 - Intel/Apple Silicon processors
