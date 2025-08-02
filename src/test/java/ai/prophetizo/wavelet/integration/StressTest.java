@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.WaveletTransformFactory;
 import ai.prophetizo.wavelet.TransformResult;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.util.ToleranceConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.prophetizo.wavelet.test.TestConstants;
 /**
  * Stress tests for wavelet transforms.
  * Tests performance, concurrency, and large-scale operations.
@@ -34,7 +36,7 @@ class StressTest extends BaseWaveletTest {
     private static final int LARGE_SIGNAL_SIZE = 1 << 16; // 65536
     private static final int VERY_LARGE_SIGNAL_SIZE = 1 << 20; // 1,048,576
     
-    private static final double TOLERANCE = 1e-10;
+    private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
     
     @BeforeEach
     protected void setUp(org.junit.jupiter.api.TestInfo testInfo) {
@@ -81,7 +83,7 @@ class StressTest extends BaseWaveletTest {
             double[] reconstructed = transform.inverse(result);
             
             // Spot check some values
-            Random random = new Random(42);
+            Random random = new Random(TestConstants.TEST_SEED);
             for (int i = 0; i < 100; i++) {
                 int idx = random.nextInt(signal.length);
                 assertEquals(signal[idx], reconstructed[idx], 1e-10,
