@@ -72,8 +72,8 @@
                         <arg>jdk.incubator.vector</arg>
                         <!-- Enable Java 23 preview features -->
                         <arg>--enable-preview</arg>
-                        <!-- Optimize for performance -->
-                        <arg>-Xlint:performance</arg>
+                        <!-- Enable additional warnings -->
+                        <arg>-Xlint:all</arg>
                         <!-- Enable pattern matching optimizations -->
                         <arg>-Xlint:preview</arg>
                     </compilerArgs>
