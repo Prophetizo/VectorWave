@@ -4,6 +4,32 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Recent Updates (August 2025)
 
+### MODWT Implementation - COMPLETE
+- **Added**: Complete MODWT (Maximal Overlap Discrete Wavelet Transform) implementation
+- Located in `ai.prophetizo.wavelet.modwt` package with three main classes:
+  - `MODWTTransform`: Main transform class with Java 23 optimizations
+  - `MODWTResult`: Interface for transform results
+  - `MODWTResultImpl`: Immutable implementation with defensive copying
+- **Key Features**:
+  - Shift-invariant transform (unlike standard DWT)
+  - Works with arbitrary length signals (not just power-of-2)
+  - Non-decimated output (same length as input)
+  - Perfect reconstruction with machine precision
+  - Automatic SIMD optimization via Vector API
+- **Performance**:
+  - Uses optimized circular convolution in `ScalarOps.circularConvolveMODWT()`
+  - Automatic vectorization for signals > 64 samples
+  - Performance monitoring via `getPerformanceInfo()` and `estimateProcessingTime()`
+- **Use Cases**:
+  - Time series analysis (financial, economic data)
+  - Pattern detection where shift-invariance is critical
+  - Feature extraction with preserved temporal alignment
+  - Signal analysis where arbitrary lengths are needed
+- **Documentation Updated**:
+  - README.md: Added MODWT to features list and usage examples
+  - API.md: Comprehensive MODWT section with best practices
+  - MODWTDemo.java: Enhanced with 7 comprehensive examples including performance analysis
+
 ### Biorthogonal Wavelet Fix (#138) - COMPLETE
 - **FIXED**: Updated BiorthogonalSpline implementation with correct Cohen-Daubechies-Feauveau (CDF) 1,3 coefficients
 - Changed from incorrect normalized coefficients to standard CDF coefficients:

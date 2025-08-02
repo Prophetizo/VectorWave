@@ -3,18 +3,38 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.internal.ScalarOps;
 
 import java.util.Arrays;
 
 /**
- * Demonstration of MODWT (Maximal Overlap Discrete Wavelet Transform) functionality.
+ * Comprehensive demonstration of MODWT (Maximal Overlap Discrete Wavelet Transform) functionality.
  * 
  * <p>This demo shows the key differences between standard DWT and MODWT:</p>
  * <ul>
  *   <li>MODWT can handle arbitrary length signals (not just power-of-2)</li>
  *   <li>MODWT produces same-length output as input (non-decimated)</li>
  *   <li>MODWT is shift-invariant</li>
+ *   <li>MODWT provides better time-frequency localization</li>
  * </ul>
+ * 
+ * <h2>When to Use MODWT vs DWT:</h2>
+ * <ul>
+ *   <li><strong>Use MODWT for:</strong> Time series analysis, pattern detection, 
+ *       feature extraction, when shift-invariance is important</li>
+ *   <li><strong>Use DWT for:</strong> Data compression, denoising, when computational 
+ *       efficiency is critical</li>
+ * </ul>
+ * 
+ * <h2>Performance Characteristics:</h2>
+ * <p>MODWT has O(N*L) complexity where N is signal length and L is filter length,
+ * compared to O(N) for DWT. However, MODWT provides significant advantages for
+ * many signal analysis tasks.</p>
+ * 
+ * @see ai.prophetizo.wavelet.modwt.MODWTTransform
+ * @see ai.prophetizo.wavelet.WaveletTransform
  */
 public class MODWTDemo {
     
@@ -33,6 +53,15 @@ public class MODWTDemo {
         System.out.println();
         
         demonstrateMultipleWavelets();
+        System.out.println();
+        
+        demonstrateDWTvsMODWT();
+        System.out.println();
+        
+        demonstrateTimeSeriesAnalysis();
+        System.out.println();
+        
+        demonstratePerformanceCharacteristics();
     }
     
     private static void demonstrateArbitraryLength() {
@@ -156,5 +185,138 @@ public class MODWTDemo {
             maxError = Math.max(maxError, error);
         }
         return maxError;
+    }
+    
+    private static void demonstrateDWTvsMODWT() {
+        System.out.println("5. DWT vs MODWT Comparison");
+        System.out.println("==========================");
+        
+        // Use a power-of-2 length signal for fair comparison
+        double[] signal = new double[16];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 16) + 0.5 * Math.sin(6 * Math.PI * i / 16);
+        }
+        
+        System.out.println("Original signal length: " + signal.length);
+        System.out.println();
+        
+        // DWT
+        WaveletTransform dwt = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+        TransformResult dwtResult = dwt.forward(signal);
+        
+        // MODWT
+        MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+        MODWTResult modwtResult = modwt.forward(signal);
+        
+        System.out.println("DWT Results:");
+        System.out.println("  Approximation length: " + dwtResult.approximationCoeffs().length);
+        System.out.println("  Detail length: " + dwtResult.detailCoeffs().length);
+        System.out.println("  Total coefficients: " + 
+                         (dwtResult.approximationCoeffs().length + dwtResult.detailCoeffs().length));
+        
+        System.out.println("\nMODWT Results:");
+        System.out.println("  Approximation length: " + modwtResult.approximationCoeffs().length);
+        System.out.println("  Detail length: " + modwtResult.detailCoeffs().length);
+        System.out.println("  Total coefficients: " + 
+                         (modwtResult.approximationCoeffs().length + modwtResult.detailCoeffs().length));
+        
+        System.out.println("\nKey Difference: MODWT has 2x redundancy but preserves temporal information");
+    }
+    
+    private static void demonstrateTimeSeriesAnalysis() {
+        System.out.println("6. Time Series Analysis with MODWT");
+        System.out.println("==================================");
+        
+        // Create a financial-like time series with trend and noise
+        int length = 100;
+        double[] timeSeries = new double[length];
+        for (int i = 0; i < length; i++) {
+            double trend = 100 + i * 0.5;  // Upward trend
+            double seasonal = 10 * Math.sin(2 * Math.PI * i / 20);  // Seasonal component
+            double noise = 2 * (Math.random() - 0.5);  // Random noise
+            timeSeries[i] = trend + seasonal + noise;
+        }
+        
+        MODWTTransform modwt = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTResult result = modwt.forward(timeSeries);
+        
+        // Analyze components
+        double[] approx = result.approximationCoeffs();
+        double[] detail = result.detailCoeffs();
+        
+        // Calculate variance contributions
+        double totalVar = calculateVariance(timeSeries);
+        double approxVar = calculateVariance(approx);
+        double detailVar = calculateVariance(detail);
+        
+        System.out.println("Time series length: " + length);
+        System.out.println("Total variance: " + String.format("%.2f", totalVar));
+        System.out.println("Approximation variance: " + String.format("%.2f", approxVar) + 
+                         " (" + String.format("%.1f%%", 100 * approxVar / totalVar) + ")");
+        System.out.println("Detail variance: " + String.format("%.2f", detailVar) + 
+                         " (" + String.format("%.1f%%", 100 * detailVar / totalVar) + ")");
+        System.out.println("\nInterpretation: Approximation captures trend, detail captures high-frequency changes");
+    }
+    
+    private static void demonstratePerformanceCharacteristics() {
+        System.out.println("7. Performance Characteristics");
+        System.out.println("=============================");
+        
+        // Test different signal sizes
+        int[] sizes = {100, 500, 1000, 5000};
+        Wavelet wavelet = new Haar();
+        
+        System.out.println("Signal Size | MODWT Time | Processing Rate | Vector Speedup");
+        System.out.println("------------|------------|-----------------|---------------");
+        
+        for (int size : sizes) {
+            double[] signal = new double[size];
+            for (int i = 0; i < size; i++) {
+                signal[i] = Math.random();
+            }
+            
+            MODWTTransform modwt = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+            
+            // Warm up
+            for (int i = 0; i < 10; i++) {
+                modwt.forward(signal);
+            }
+            
+            // Measure
+            long startTime = System.nanoTime();
+            int iterations = 100;
+            for (int i = 0; i < iterations; i++) {
+                modwt.forward(signal);
+            }
+            long endTime = System.nanoTime();
+            
+            double avgTimeMs = (endTime - startTime) / (iterations * 1_000_000.0);
+            double samplesPerMs = size / avgTimeMs;
+            
+            // Get performance info
+            var perfInfo = modwt.getPerformanceInfo();
+            double speedup = perfInfo.estimateSpeedup(size);
+            
+            System.out.printf("%11d | %9.3f ms | %13.0f/ms | %13.1fx%n", 
+                            size, avgTimeMs, samplesPerMs, speedup);
+        }
+        
+        System.out.println("\nNote: MODWT is computationally more intensive than DWT but provides");
+        System.out.println("      important advantages for signal analysis applications.");
+    }
+    
+    private static double calculateVariance(double[] data) {
+        double mean = 0.0;
+        for (double value : data) {
+            mean += value;
+        }
+        mean /= data.length;
+        
+        double variance = 0.0;
+        for (double value : data) {
+            double diff = value - mean;
+            variance += diff * diff;
+        }
+        return variance / data.length;
     }
 }

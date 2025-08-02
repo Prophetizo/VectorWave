@@ -40,6 +40,9 @@ public class Java23PerformanceDemo {
         // Compare different wavelets
         compareWaveletPerformance();
         
+        // Demonstrate real-world performance
+        demonstrateRealPerformance();
+        
         System.out.println("\n=== Demo Complete ===");
     }
     

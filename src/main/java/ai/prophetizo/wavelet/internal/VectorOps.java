@@ -99,9 +99,9 @@ public final class VectorOps {
 
         // Process main body with vectorization
         int i = 0;
-        int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
+        int vectorLoopBound = outputLength - (outputLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             // Initialize result vector
             DoubleVector result = DoubleVector.zero(SPECIES);
 
@@ -154,9 +154,9 @@ public final class VectorOps {
         }
 
         int i = 0;
-        int vectorBound = outputLength - (outputLength % VECTOR_LENGTH);
+        int vectorLoopBound = outputLength - (outputLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             for (int k = 0; k < filterLength; k++) {
@@ -225,9 +225,9 @@ public final class VectorOps {
 
         // Process even indices (direct copy with filtering)
         int i = 0;
-        int vectorBound = signalLength - (signalLength % VECTOR_LENGTH);
+        int vectorLoopBound = signalLength - (signalLength % VECTOR_LENGTH);
 
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             // Process filter coefficients that align with signal samples
@@ -264,7 +264,7 @@ public final class VectorOps {
 
         // Process odd indices
         i = 0;
-        for (; i < vectorBound; i += VECTOR_LENGTH) {
+        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
             DoubleVector result = DoubleVector.zero(SPECIES);
 
             for (int k = 1; k < filterLength; k += 2) {
@@ -424,9 +424,9 @@ public final class VectorOps {
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
 
             int i = 0;
-            int vectorBound = length - (length % VECTOR_LENGTH);
+            int vectorLoopBound = length - (length % VECTOR_LENGTH);
 
-            for (; i < vectorBound; i += VECTOR_LENGTH) {
+            for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
 
                 // Create masks for different cases
@@ -475,9 +475,9 @@ public final class VectorOps {
             DoubleVector zeroVec = DoubleVector.zero(SPECIES);
 
             int i = 0;
-            int vectorBound = length - (length % VECTOR_LENGTH);
+            int vectorLoopBound = length - (length % VECTOR_LENGTH);
 
-            for (; i < vectorBound; i += VECTOR_LENGTH) {
+            for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
                 DoubleVector coeff = DoubleVector.fromArray(SPECIES, coefficients, i);
 
                 // Create mask for values to keep
@@ -521,9 +521,9 @@ public final class VectorOps {
             if (filter[l] == 0.0) continue; // Skip zero coefficients
             
             DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
-            int vectorBound = SPECIES.loopBound(signalLen);
+            int vectorLoopBound = SPECIES.loopBound(signalLen);
             
-            for (int t = 0; t < vectorBound; t += VECTOR_LENGTH) {
+            for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
                 // Create indices for circular access
                 int[] indices = new int[VECTOR_LENGTH];
                 for (int i = 0; i < VECTOR_LENGTH; i++) {
@@ -537,7 +537,7 @@ public final class VectorOps {
             }
             
             // Handle remainder
-            for (int t = vectorBound; t < signalLen; t++) {
+            for (int t = vectorLoopBound; t < signalLen; t++) {
                 int signalIndex = (t + l) % signalLen;
                 output[t] += signal[signalIndex] * filter[l];
             }
