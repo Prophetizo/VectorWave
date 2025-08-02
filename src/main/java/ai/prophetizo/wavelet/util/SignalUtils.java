@@ -19,13 +19,17 @@ public final class SignalUtils {
      * 
      * <p><strong>Direction Convention:</strong></p>
      * <ul>
-     *   <li><strong>Positive shift (right):</strong> Elements move to higher indices. 
-     *       The element at index i moves to index (i + shift) % length.
-     *       Elements that would go past the end wrap around to the beginning.</li>
-     *   <li><strong>Negative shift (left):</strong> Elements move to lower indices.
-     *       The element at index i moves to index (i + shift + length) % length.
-     *       Elements that would go before the beginning wrap around to the end.</li>
+     *   <li><strong>Positive shift (right):</strong> Each element moves to a higher index.
+     *       Elements that would go past the end wrap around to the beginning.
+     *       Result: The last 'shift' elements move to the front.</li>
+     *   <li><strong>Negative shift (left):</strong> Each element moves to a lower index.
+     *       Elements that would go before the beginning wrap around to the end.
+     *       Result: The first 'shift' elements move to the back.</li>
      * </ul>
+     * 
+     * <p><strong>Mathematical Definition:</strong><br>
+     * For element at original index i, the new index is: (i + shift) % length<br>
+     * This means: result[new_index] = original[i], where new_index = (i + shift) % length</p>
      * 
      * <p>This operation is commonly used in wavelet transforms to compensate
      * for phase shifts introduced by certain wavelet filters, particularly
@@ -33,21 +37,23 @@ public final class SignalUtils {
      * 
      * <p><strong>Examples:</strong></p>
      * <pre>
-     * Original: [1,2,3,4,5] (indices 0,1,2,3,4)
+     * Original: [1,2,3,4,5]
      * 
      * shift=2 (right):  [4,5,1,2,3]
-     *   - Element 1 at index 0 → index 2
-     *   - Element 2 at index 1 → index 3
-     *   - Element 3 at index 2 → index 4
-     *   - Element 4 at index 3 → index 0 (wrapped)
-     *   - Element 5 at index 4 → index 1 (wrapped)
+     *   - Last 2 elements (4,5) moved to front
+     *   - Element at original index 0 (value 1) → new index 2
+     *   - Element at original index 1 (value 2) → new index 3
+     *   - Element at original index 2 (value 3) → new index 4
+     *   - Element at original index 3 (value 4) → new index 0
+     *   - Element at original index 4 (value 5) → new index 1
      * 
      * shift=-2 (left):  [3,4,5,1,2]
-     *   - Element 1 at index 0 → index 3 (wrapped)
-     *   - Element 2 at index 1 → index 4 (wrapped)
-     *   - Element 3 at index 2 → index 0
-     *   - Element 4 at index 3 → index 1
-     *   - Element 5 at index 4 → index 2
+     *   - First 2 elements (1,2) moved to back
+     *   - Element at original index 0 (value 1) → new index 3
+     *   - Element at original index 1 (value 2) → new index 4
+     *   - Element at original index 2 (value 3) → new index 0
+     *   - Element at original index 3 (value 4) → new index 1
+     *   - Element at original index 4 (value 5) → new index 2
      * 
      * shift=0: [1,2,3,4,5] (no change)
      * shift=5: [1,2,3,4,5] (full rotation, no change)
@@ -74,6 +80,7 @@ public final class SignalUtils {
         shift = normalizeShift(shift, n);
         
         // Perform the circular shift
+        // Each element at index i moves to index (i + shift) % n
         for (int i = 0; i < n; i++) {
             shifted[(i + shift) % n] = signal[i];
         }
