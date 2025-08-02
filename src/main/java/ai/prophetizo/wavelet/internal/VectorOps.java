@@ -517,23 +517,37 @@ public final class VectorOps {
         // Clear output array
         clearArrayVectorized(output);
         
+        // Pre-allocate indices array for reuse
+        int[] indices = new int[VECTOR_LENGTH];
+        
         for (int l = 0; l < filterLen; l++) {
             if (filter[l] == 0.0) continue; // Skip zero coefficients
             
             DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
             int vectorLoopBound = SPECIES.loopBound(signalLen);
             
-            for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                // Create indices for circular access
-                int[] indices = new int[VECTOR_LENGTH];
-                for (int i = 0; i < VECTOR_LENGTH; i++) {
-                    indices[i] = (t + i + l) % signalLen;
+            // For signals that are multiples of vector length, use direct vectorization
+            if (l + vectorLoopBound <= signalLen) {
+                // Simple case: no wrap-around within vector width
+                for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
+                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t + l);
+                    DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                    DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                    result.intoArray(output, t);
                 }
-                
-                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                result.intoArray(output, t);
+            } else {
+                // Complex case: need to handle circular indexing
+                for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
+                    // Update indices only when needed
+                    for (int i = 0; i < VECTOR_LENGTH; i++) {
+                        indices[i] = (t + i + l) % signalLen;
+                    }
+                    
+                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                    DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                    DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                    result.intoArray(output, t);
+                }
             }
             
             // Handle remainder

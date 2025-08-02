@@ -230,14 +230,41 @@ public class MODWTTransform {
      * Input signal validation using modern Java patterns.
      */
     private void validateInputSignal(double[] signal) {
+        validateNotNull(signal);
+        validateNotEmpty(signal);
+        validateFiniteValues(signal);
+    }
+    
+    /**
+     * Validates that the signal is not null.
+     * 
+     * @param signal the signal to validate
+     * @throws NullPointerException if signal is null
+     */
+    private void validateNotNull(double[] signal) {
         Objects.requireNonNull(signal, "signal cannot be null");
-        
-        // Efficient validation logic
+    }
+    
+    /**
+     * Validates that the signal is not empty.
+     * 
+     * @param signal the signal to validate
+     * @throws InvalidSignalException if signal is empty
+     */
+    private void validateNotEmpty(double[] signal) {
         if (signal.length == 0) {
             throw new InvalidSignalException("Signal cannot be empty");
-        } else {
-            ValidationUtils.validateFiniteValues(signal, "signal");
         }
+    }
+    
+    /**
+     * Validates that all signal values are finite (not NaN or Infinity).
+     * 
+     * @param signal the signal to validate
+     * @throws InvalidSignalException if signal contains non-finite values
+     */
+    private void validateFiniteValues(double[] signal) {
+        ValidationUtils.validateFiniteValues(signal, "signal");
     }
     
     /**
