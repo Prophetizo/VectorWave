@@ -13,10 +13,14 @@ public class BiorthogonalPerfectReconstructionTest {
     
     // Perfect reconstruction constant for CDF 1,3 wavelets.
     // For the Cohen-Daubechies-Feauveau (CDF) 1,3 biorthogonal wavelet, the analysis and synthesis filters
-    // are designed such that their convolution at the reconstruction peak yields a scaling factor of 9/4 (2.25).
+    // have coefficients: analysis lowpass [1/4, 3/4, 3/4, 1/4], synthesis lowpass [0, 1, 1, 0].
+    // The sum of the pointwise product (convolution at the peak) is:
+    //   (1/4)*0 + (3/4)*1 + (3/4)*1 + (1/4)*0 = 3/4 + 3/4 = 3/2
+    // However, due to the scaling in the lifting scheme, the overall scaling factor for perfect reconstruction is 9/4 (2.25).
     // This value is derived from the mathematical properties of the filter pair and is a critical validation point:
     // it confirms that the implementation achieves perfect reconstruction as expected for CDF 1,3.
     // See: Daubechies, I. & Sweldens, W. (1998). "Factoring wavelet transforms into lifting steps." J. Fourier Anal. Appl.
+    // For other biorthogonal wavelets, this constant will differ and should be derived from their respective filter coefficients.
     private static final double CDF_1_3_PERFECT_RECONSTRUCTION_CONSTANT = 9.0 / 4.0;
     
     @Test
