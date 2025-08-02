@@ -180,6 +180,7 @@ class StreamingDenoiserComparisonTest {
         }
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private double[] processWithFast(double[] signal, double overlapFactor) throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
                 .wavelet(Daubechies.DB4)
@@ -207,6 +208,7 @@ class StreamingDenoiserComparisonTest {
         }
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private double[] processWithQuality(double[] signal, double overlapFactor) throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
                 .wavelet(Daubechies.DB4)

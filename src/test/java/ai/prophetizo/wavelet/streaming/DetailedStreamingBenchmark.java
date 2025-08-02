@@ -151,6 +151,7 @@ public class DetailedStreamingBenchmark {
         System.out.println();
     }
     
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     private static void benchmarkMemoryAllocation(int signalSize, int warmupRuns, int measurementRuns) 
             throws Exception {
         System.out.println("--- Memory Allocation Component ---");
@@ -189,6 +190,7 @@ public class DetailedStreamingBenchmark {
         System.out.println();
     }
     
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     private static void benchmarkFlowOverhead(int signalSize, int warmupRuns, int measurementRuns) 
             throws Exception {
         System.out.println("--- Flow API Overhead ---");

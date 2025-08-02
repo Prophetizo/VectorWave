@@ -20,6 +20,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with FAST implementation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateFastImplementation() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(new Haar())
@@ -37,6 +38,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with QUALITY implementation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateQualityImplementation() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(Daubechies.DB4)
@@ -54,6 +56,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with AUTO implementation - selects FAST for small blocks")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateAutoImplementationSmallBlock() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(new Haar())
@@ -70,6 +73,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with AUTO implementation - selects FAST for overlap + adaptive")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateAutoImplementationOverlapAdaptive() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(new Haar())
@@ -88,6 +92,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with AUTO implementation - selects QUALITY for large blocks no overlap")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateAutoImplementationLargeBlockNoOverlap() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(new Haar())
@@ -106,6 +111,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Create with default AUTO implementation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testCreateDefaultAuto() throws Exception {
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(new Haar())
@@ -209,6 +215,7 @@ class StreamingDenoiserFactoryTest {
     
     @Test
     @DisplayName("Complex configuration selection")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testComplexConfigurationSelection() throws Exception {
         // Test various complex configurations
         

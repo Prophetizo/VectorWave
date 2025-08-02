@@ -137,6 +137,7 @@ class StreamingDenoiserTest {
     
     @Test
     @Timeout(2)
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicDenoising() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -204,6 +205,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStreamingProcessing() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
@@ -247,6 +249,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMultiLevelDenoising() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
@@ -286,6 +289,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testAdaptiveThresholding() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -384,6 +388,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testOverlapProcessing() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -432,6 +437,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatistics() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -465,6 +471,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMaxProcessingTimeTracking() throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(new Haar())
@@ -560,6 +567,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testDifferentThresholdMethods() throws Exception {
         ThresholdMethod[] methods = {
             ThresholdMethod.UNIVERSAL,
@@ -592,6 +600,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMemoryEfficiency() throws Exception {
         // This test verifies that the streaming denoiser uses bounded memory
         // regardless of how much data is processed (O(1) memory complexity)
@@ -661,7 +670,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
-    @SuppressWarnings("resource")  // Explicit close needed for testing cleanup
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for testing cleanup, close() may throw InterruptedException
     void testSharedMemoryPoolUsage() throws Exception {
         SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
         int initialUsers = manager.getActiveUserCount();
@@ -699,6 +708,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testConfigurableNoiseBufferFactor() throws Exception {
         // Test with custom noise buffer factor
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -737,6 +747,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testDedicatedMemoryPoolOption() throws Exception {
         // Create denoiser with dedicated pool
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -762,6 +773,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testConstructorFailureCleanup() throws Exception {
         // Get initial state
         SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();

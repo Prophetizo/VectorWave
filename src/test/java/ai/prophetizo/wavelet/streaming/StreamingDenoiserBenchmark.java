@@ -159,6 +159,7 @@ public class StreamingDenoiserBenchmark {
         System.out.printf("  Throughput: %.0f samples/sec\n", throughput);
     }
     
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     private static double[] processWithStreamingDenoiser(Wavelet wavelet, double[] signal) 
             throws Exception {
         

@@ -65,6 +65,7 @@ class StreamingDenoiserPerformanceTest {
     
     @Test
     // @Disabled("Performance test - run manually")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void benchmarkCurrentImplementation() throws Exception {
         System.out.println("=== Current StreamingDenoiser Performance Benchmark ===");
         
@@ -74,6 +75,7 @@ class StreamingDenoiserPerformanceTest {
         benchmarkConfiguration("75% overlap", 0.75);
     }
     
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     private void benchmarkConfiguration(String description, double overlapFactor) throws Exception {
         System.out.println("\n--- " + description + " ---");
         
@@ -233,6 +235,7 @@ class StreamingDenoiserPerformanceTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void quickPerformanceCheck() throws Exception {
         // Quick test to verify performance tracking works
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()

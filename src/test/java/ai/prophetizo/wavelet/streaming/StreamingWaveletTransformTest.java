@@ -29,6 +29,7 @@ class StreamingWaveletTransformTest {
     private static final Random random = new Random(TestConstants.TEST_SEED);
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicStreaming() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 128)) {
@@ -65,6 +66,7 @@ class StreamingWaveletTransformTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testSingleSampleProcessing() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 Daubechies.DB2, BoundaryMode.ZERO_PADDING, 64)) {
@@ -92,6 +94,7 @@ class StreamingWaveletTransformTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testFlush() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 128)) {
@@ -126,6 +129,7 @@ class StreamingWaveletTransformTest {
     
     @ParameterizedTest
     @ValueSource(ints = {16, 32, 64, 128, 256, 512, 1024})
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testVariousBlockSizes(int blockSize) throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, blockSize)) {
@@ -184,6 +188,7 @@ class StreamingWaveletTransformTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBackpressure() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 64)) {
@@ -235,6 +240,7 @@ class StreamingWaveletTransformTest {
     
     @Test
     @Timeout(2)
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     void testConcurrentAccess() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 128)) {

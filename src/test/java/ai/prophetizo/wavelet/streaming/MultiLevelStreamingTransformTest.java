@@ -59,6 +59,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testBasicMultiLevelTransform() throws Exception {
         int blockSize = 64;
         int levels = 2;
@@ -131,7 +132,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
-    @SuppressWarnings("resource")  // Explicit close needed for test validation
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testSingleSampleProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 32, 2)) {
@@ -155,6 +156,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testFlushBehavior() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {
@@ -180,6 +182,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for test validation
     void testClosedTransformBehavior() throws Exception {
         MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2);
@@ -199,6 +202,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatistics() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {
@@ -222,7 +226,7 @@ class MultiLevelStreamingTransformTest {
 
     @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
-    @SuppressWarnings("resource")  // Explicit close needed for test validation
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testConcurrentProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 Daubechies.DB4, BoundaryMode.ZERO_PADDING, 128, 3)) {
@@ -288,7 +292,7 @@ class MultiLevelStreamingTransformTest {
     }
 
     @Test
-    @SuppressWarnings("resource")  // Explicit close needed for test validation
+    @SuppressWarnings({"resource", "try"})  // Explicit close needed for test validation, close() may throw InterruptedException
     void testStreamingChainProcessing() throws Exception {
         try (MultiLevelStreamingTransform transform = new MultiLevelStreamingTransform(
                 new Haar(), BoundaryMode.PERIODIC, 64, 2)) {

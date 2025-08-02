@@ -116,11 +116,13 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("SNR improvement validation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testSNRImprovement() throws Exception {
         // Start with just one test case to debug
         validateSNRImprovement(Daubechies.DB4, 0.3);
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private void validateSNRImprovement(Wavelet wavelet, double noiseLevel) throws Exception {
         // Test without overlap first since overlap-add has issues
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -178,6 +180,7 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("Streaming vs Non-streaming equivalence")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStreamingVsBatchEquivalence() throws Exception {
         // Test that streaming produces similar results to batch processing
         Wavelet wavelet = Daubechies.DB4;
@@ -244,6 +247,7 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("Overlap-add reconstruction correctness")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testOverlapAddReconstruction() throws Exception {
         // Test that overlap-add properly reconstructs signals
         double[] testSignal = generateTestSignal(512);
@@ -256,6 +260,7 @@ class StreamingDenoiserMathValidationTest {
         }
     }
     
+    @SuppressWarnings({"try", "resource"})  // close() may throw InterruptedException, explicit close needed
     private void validateOverlapAddReconstruction(double[] inputSignal, double overlapFactor) 
             throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
@@ -297,6 +302,7 @@ class StreamingDenoiserMathValidationTest {
     @ParameterizedTest
     @MethodSource("provideMultiLevelTestCases")
     @DisplayName("Multi-level denoising validation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testMultiLevelDenoisingCorrectness(int levels, double expectedMinSNR) throws Exception {
         try (StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
                 .wavelet(Daubechies.DB4)
@@ -336,6 +342,7 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("Adaptive threshold performance")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testAdaptiveThresholdPerformance() throws Exception {
         // This test verifies that the adaptive threshold mechanism is working
         // by checking that enabling/disabling it produces different results
@@ -478,6 +485,7 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("Noise estimation accuracy")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testNoiseEstimationAccuracy() throws Exception {
         // Test with known noise levels
         double[] actualNoiseLevels = {0.2, 0.5}; // Start with fewer test cases
@@ -546,6 +554,7 @@ class StreamingDenoiserMathValidationTest {
     
     @Test
     @DisplayName("Edge preservation validation")
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testEdgePreservation() throws Exception {
         // Test with signal containing sharp edges
         double[] stepSignal = generateStepSignal(512);

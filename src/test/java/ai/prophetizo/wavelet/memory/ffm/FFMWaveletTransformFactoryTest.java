@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for FFMWaveletTransformFactory.
  */
-@EnabledForJreRange(min = JRE.JAVA_21) // Enable for Java 21+ where FFM is available
+@EnabledForJreRange(min = JRE.JAVA_21) // FFM API available from Java 21+, project targets Java 23
 class FFMWaveletTransformFactoryTest {
 
     @Test
