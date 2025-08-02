@@ -17,14 +17,19 @@ package ai.prophetizo.wavelet.api;
  */
 public final class BiorthogonalSpline implements BiorthogonalWavelet {
 
+    // CDF 1,3 coefficient constants for improved readability
+    private static final double ONE_EIGHTH = 1.0 / 8.0;
+    private static final double MINUS_ONE_EIGHTH = -1.0 / 8.0;
+    private static final double ONE = 1.0;
+
     // Example: bior1.3 - commonly used for edge detection
     // These are the standard Cohen-Daubechies-Feauveau (CDF) 1,3 coefficients
     public static final BiorthogonalSpline BIOR1_3 = new BiorthogonalSpline(
             "bior1.3", 1, 3,
             // Decomposition low-pass filter (analysis filter h0_tilde)
-            new double[]{-1.0/8, 1.0/8, 1.0, 1.0, 1.0/8, -1.0/8},
+            new double[]{MINUS_ONE_EIGHTH, ONE_EIGHTH, ONE, ONE, ONE_EIGHTH, MINUS_ONE_EIGHTH},
             // Reconstruction low-pass filter (synthesis filter h0)
-            new double[]{1.0, 1.0},
+            new double[]{ONE, ONE},
             true,
             0.5,  // Reconstruction scaling factor: For CDF 1,3 wavelets, the perfect
                   // reconstruction condition requires scaling by 1/2. This compensates
