@@ -42,6 +42,7 @@ import java.util.concurrent.Flow;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("try")  // close() throws InterruptedException is intended
 public interface StreamingWaveletTransform extends Flow.Publisher<TransformResult>, AutoCloseable {
 
     /**

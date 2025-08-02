@@ -205,7 +205,9 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
         double[] output = new double[outputLen];
         
         // Use FFM for zero-copy processing
-        try (Arena arena = Arena.ofConfined()) {
+        @SuppressWarnings("resource")  // Arena manages memory segment lifetime
+        Arena arena = Arena.ofConfined();
+        try (arena) {
             MemorySegment inputSeg = MemorySegment.ofArray(input);
             MemorySegment filterSeg = MemorySegment.ofArray(filter);
             MemorySegment outputSeg = MemorySegment.ofArray(output);

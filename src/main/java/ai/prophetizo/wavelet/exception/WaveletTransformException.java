@@ -7,6 +7,7 @@ package ai.prophetizo.wavelet.exception;
  * <p>Supports optional error codes for programmatic error handling.</p>
  */
 public class WaveletTransformException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     private final ErrorCode errorCode;
 

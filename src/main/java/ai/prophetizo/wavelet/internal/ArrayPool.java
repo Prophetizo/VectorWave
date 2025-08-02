@@ -59,13 +59,14 @@ public final class ArrayPool {
      * Thread-local pool implementation.
      */
     private static class Pool {
+        @SuppressWarnings("unchecked")
         private final ConcurrentLinkedDeque<double[]>[] pools;
 
         @SuppressWarnings("unchecked")
         Pool() {
             pools = new ConcurrentLinkedDeque[POOL_SIZES.length];
             for (int i = 0; i < POOL_SIZES.length; i++) {
-                pools[i] = new ConcurrentLinkedDeque<>();
+                pools[i] = new ConcurrentLinkedDeque<double[]>();
             }
         }
 

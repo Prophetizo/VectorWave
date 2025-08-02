@@ -9,11 +9,12 @@
 5. [Continuous Wavelet Transform (CWT)](#continuous-wavelet-transform-cwt)
 6. [Financial Analysis API](#financial-analysis-api)
 7. [Streaming API](#streaming-api)
-8. [Factory Pattern API](#factory-pattern-api)
-9. [Plugin Architecture](#plugin-architecture)
-10. [FFM (Foreign Function & Memory) API](#ffm-api)
-11. [Configuration API](#configuration-api)
-12. [Exception Hierarchy](#exception-hierarchy)
+8. [MODWT (Maximal Overlap DWT) API](#modwt-maximal-overlap-dwt-api)
+9. [Factory Pattern API](#factory-pattern-api)
+10. [Plugin Architecture](#plugin-architecture)
+11. [FFM (Foreign Function & Memory) API](#ffm-api)
+12. [Configuration API](#configuration-api)
+13. [Exception Hierarchy](#exception-hierarchy)
 
 ## Core Transform API
 
@@ -417,6 +418,85 @@ public enum ImplementationMode {
 // Factory methods
 StreamingDenoiser create(Wavelet w, ThresholdMethod m, int blockSize, double overlap)
 StreamingDenoiser create(Wavelet w, ThresholdMethod m, int blockSize, double overlap, ImplementationMode mode)
+```
+
+## MODWT (Maximal Overlap DWT) API
+
+### MODWTTransform
+
+Non-decimated wavelet transform for shift-invariant analysis.
+
+```java
+// Creation
+MODWTTransform modwt = new MODWTTransform(wavelet, boundaryMode);
+
+// Forward transform - works with any signal length
+MODWTResult forward(double[] signal)
+
+// Inverse transform - perfect reconstruction
+double[] inverse(MODWTResult result)
+
+// Performance monitoring
+PerformanceInfo getPerformanceInfo()
+ProcessingEstimate estimateProcessingTime(int signalLength)
+```
+
+### MODWTResult
+
+Result of MODWT with same-length coefficients.
+
+```java
+double[] approximationCoeffs()  // Same length as input
+double[] detailCoeffs()        // Same length as input
+int getSignalLength()          // Original signal length
+boolean isValid()              // Validation check
+
+// Factory method
+static MODWTResult create(double[] approx, double[] detail)
+```
+
+### Key MODWT Features
+
+- **Shift-invariant**: Translation of input results in corresponding translation of coefficients
+- **Arbitrary length**: Works with signals of any length (not just power-of-2)
+- **Non-decimated**: Output coefficients have same length as input
+- **Perfect reconstruction**: Machine-precision reconstruction error
+- **Java 23 optimizations**: Automatic SIMD acceleration for large signals
+
+### MODWT vs DWT Comparison
+
+| Feature | DWT | MODWT |
+|---------|-----|-------|
+| Signal length | Power of 2 required | Any length |
+| Output length | Half of input | Same as input |
+| Shift-invariant | No | Yes |
+| Redundancy | None | 2x redundancy |
+| Use cases | Compression, general analysis | Pattern detection, time series |
+
+### MODWT Best Practices
+
+1. **Signal Analysis**: MODWT is ideal for detecting patterns that may occur at any position
+2. **Time Series**: Better for financial and economic time series analysis
+3. **Feature Extraction**: Preserves temporal alignment for feature-based applications
+4. **Computational Cost**: MODWT is more computationally intensive than DWT
+5. **Memory Usage**: Requires 2x memory due to non-decimated coefficients
+
+```java
+// Example: Shift-invariant pattern detection
+MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+
+// Original signal analysis
+double[] signal = loadSignal();
+MODWTResult result1 = modwt.forward(signal);
+
+// Shifted signal analysis - coefficients will also be shifted
+double[] shiftedSignal = shiftRight(signal, 5);
+MODWTResult result2 = modwt.forward(shiftedSignal);
+
+// Pattern detection works regardless of shift
+double[] pattern1 = extractPattern(result1.detailCoeffs());
+double[] pattern2 = extractPattern(result2.detailCoeffs());
+// pattern1 and pattern2 will be similar, just shifted
 ```
 
 ## Factory Pattern API

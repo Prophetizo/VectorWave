@@ -8,6 +8,7 @@ import static ai.prophetizo.wavelet.util.WaveletConstants.calculateNextPowerOfTw
  * This includes signals with invalid lengths, NaN/Infinity values, or null signals.
  */
 public class InvalidSignalException extends WaveletTransformException {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs a new invalid signal exception with the specified detail message.

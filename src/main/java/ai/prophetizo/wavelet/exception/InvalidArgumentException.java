@@ -6,6 +6,7 @@ package ai.prophetizo.wavelet.exception;
  * while maintaining semantic clarity for argument validation errors.
  */
 public class InvalidArgumentException extends WaveletTransformException {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs a new invalid argument exception with the specified detail message.

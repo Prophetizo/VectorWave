@@ -5,6 +5,7 @@ package ai.prophetizo.wavelet.exception;
  * This includes conflicting settings, unsupported combinations, or invalid parameter values.
  */
 public class InvalidConfigurationException extends WaveletTransformException {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructs a new invalid configuration exception with the specified detail message.

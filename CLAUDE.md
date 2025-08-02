@@ -4,6 +4,32 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Recent Updates (August 2025)
 
+### MODWT Implementation - COMPLETE
+- **Added**: Complete MODWT (Maximal Overlap Discrete Wavelet Transform) implementation
+- Located in `ai.prophetizo.wavelet.modwt` package with three main classes:
+  - `MODWTTransform`: Main transform class with Java 23 optimizations
+  - `MODWTResult`: Interface for transform results
+  - `MODWTResultImpl`: Immutable implementation with defensive copying
+- **Key Features**:
+  - Shift-invariant transform (unlike standard DWT)
+  - Works with arbitrary length signals (not just power-of-2)
+  - Non-decimated output (same length as input)
+  - Perfect reconstruction with machine precision
+  - Automatic SIMD optimization via Vector API
+- **Performance**:
+  - Uses optimized circular convolution in `ScalarOps.circularConvolveMODWT()`
+  - Automatic vectorization for signals > 64 samples
+  - Performance monitoring via `getPerformanceInfo()` and `estimateProcessingTime()`
+- **Use Cases**:
+  - Time series analysis (financial, economic data)
+  - Pattern detection where shift-invariance is critical
+  - Feature extraction with preserved temporal alignment
+  - Signal analysis where arbitrary lengths are needed
+- **Documentation Updated**:
+  - README.md: Added MODWT to features list and usage examples
+  - API.md: Comprehensive MODWT section with best practices
+  - MODWTDemo.java: Enhanced with 7 comprehensive examples including performance analysis
+
 ### Biorthogonal Wavelet Fix (#138) - COMPLETE
 - **FIXED**: Updated BiorthogonalSpline implementation with correct Cohen-Daubechies-Feauveau (CDF) 1,3 coefficients
 - Changed from incorrect normalized coefficients to standard CDF coefficients:
@@ -174,6 +200,48 @@ OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
 ### Thread-Local Memory Management
 The `BatchSIMDTransform` class uses ThreadLocal storage to avoid allocations in hot paths. In thread pool or application server environments, call `BatchSIMDTransform.cleanupThreadLocals()` when done to prevent memory leaks:
 
+1. **WaveletTransform** (`wavelet/WaveletTransform.java`): Main transform engine
+   - Handles forward and inverse transforms
+   - Supports periodic and zero-padding boundary modes
+   - Works with any wavelet type
+
+2. **Wavelet Interfaces** (`wavelet/api/`):
+   - `Wavelet`: Base sealed interface with core methods
+   - `DiscreteWavelet`: Base for discrete wavelets with vanishing moments
+   - `OrthogonalWavelet`: Wavelets where reconstruction = decomposition filters
+   - `BiorthogonalWavelet`: Wavelets with dual filter pairs
+   - `ContinuousWavelet`: Wavelets defined by mathematical functions
+
+3. **WaveletRegistry** (`wavelet/api/WaveletRegistry.java`):
+   - Central registry for all available wavelets
+   - Lookup by name or type
+   - Wavelet discovery functionality
+
+4. **Transform Operations**:
+   - `ScalarOps`: Core mathematical operations for wavelet transforms
+   - Handles convolution, downsampling, upsampling for both boundary modes
+
+### Important Technical Notes
+- **Requires Java 23 or later** for full feature support
+- Java 17+ compatible fallback mode available
+- Power-of-2 signal lengths required for transforms
+- Currently implements single-level transforms only
+- No external dependencies (pure Java implementation)
+- Continuous wavelets are discretized for DWT operations
+- **Vector API support** for high-performance SIMD operations
+
+### Adding New Wavelets
+
+To add a new wavelet type:
+
+1. **For Orthogonal wavelets**: Implement `OrthogonalWavelet` interface
+2. **For Biorthogonal wavelets**: Implement `BiorthogonalWavelet` interface  
+3. **For Continuous wavelets**: Implement `ContinuousWavelet` interface
+4. Register in `WaveletRegistry` static initializer
+5. Add comprehensive tests
+
+Example:
+=======
 ```java
 try {
     // Use batch SIMD transforms

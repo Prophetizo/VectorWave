@@ -17,6 +17,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.1</junit.version>
         <jmh.version>1.37</jmh.version>
+        <!-- Default argLine for when JaCoCo is not active -->
+        <argLine></argLine>
     </properties>
 
     <dependencies>
@@ -63,8 +65,11 @@
                 <version>3.14.0</version>
                 <configuration>
                     <compilerArgs>
+                        <!-- Enable Vector API for high-performance SIMD operations -->
                         <arg>--add-modules</arg>
                         <arg>jdk.incubator.vector</arg>
+                        <!-- Enable additional warnings -->
+                        <arg>-Xlint:all</arg>
                     </compilerArgs>
                     <annotationProcessorPaths>
                         <path>

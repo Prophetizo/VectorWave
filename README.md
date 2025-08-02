@@ -7,6 +7,7 @@ High-performance wavelet transform library for Java 21+ with comprehensive wavel
 ### Core Capabilities
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
 - **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
+- **Maximal Overlap DWT (MODWT)**: Shift-invariant transform for arbitrary length signals
 - **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
 - **Financial Wavelets**: Specialized wavelets for market analysis
   - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
@@ -118,6 +119,28 @@ double[] reconstructed = transform.inverse(result);
 transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
 transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
 transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
+```
+
+### MODWT (Maximal Overlap DWT)
+```java
+// MODWT for shift-invariant analysis with arbitrary length signals
+MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+
+// Works with any signal length (not just power-of-2)
+double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0}; // length 7
+
+// Forward transform - produces same-length coefficients
+MODWTResult result = modwt.forward(signal);
+double[] approx = result.approximationCoeffs(); // length 7
+double[] detail = result.detailCoeffs();       // length 7
+
+// Perfect reconstruction
+double[] reconstructed = modwt.inverse(result);
+
+// MODWT is shift-invariant - ideal for pattern detection
+double[] shifted = shiftSignal(signal, 2);
+MODWTResult shiftedResult = modwt.forward(shifted);
+// Coefficients are shifted versions of original (not true for DWT)
 ```
 
 ### Batch Processing

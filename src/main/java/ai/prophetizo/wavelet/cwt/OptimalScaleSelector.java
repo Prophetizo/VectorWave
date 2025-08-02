@@ -432,9 +432,7 @@ public class OptimalScaleSelector implements AdaptiveScaleSelector {
         return 700.0 * (Math.exp(mel / MEL_SCALE_FACTOR) - 1);
     }
     
-    /**
-     * Factory methods for common scale selection strategies.
-     */
+    // Factory methods for common scale selection strategies
     
     /**
      * Creates a logarithmic scale selector with specified scales per octave.
