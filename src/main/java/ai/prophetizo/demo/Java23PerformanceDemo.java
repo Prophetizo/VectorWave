@@ -205,7 +205,7 @@ public class Java23PerformanceDemo {
             double t = (double) i / length;
             // Multi-frequency signal with noise
             signal[i] = Math.sin(2 * Math.PI * 5 * t) +     // 5 Hz component
-                       0.5 * Math.sin(2 * Math.PI * 20 * t) + // 20 Hz component  
+                       0.5 * Math.sin(2 * Math.PI * 20 * t) + // 20 Hz component
                        0.1 * Math.random();                    // Noise
         }
         
