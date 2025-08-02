@@ -10,6 +10,7 @@ import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.NullChecks;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.util.SignalUtils;
 
 import java.util.Objects;
 
@@ -200,37 +201,10 @@ public class WaveletTransform {
         
         // Apply phase compensation for biorthogonal wavelets
         if (phaseShift != 0 && boundaryMode == BoundaryMode.PERIODIC) {
-            signal = circularShift(signal, phaseShift);
+            signal = SignalUtils.circularShift(signal, phaseShift);
         }
 
         return signal;
-    }
-
-    /**
-     * Applies a circular shift to a signal.
-     * Positive shift values shift right, negative values shift left.
-     *
-     * @param signal the input signal
-     * @param shift the number of positions to shift
-     * @return the shifted signal
-     */
-    private static double[] circularShift(double[] signal, int shift) {
-        int n = signal.length;
-        double[] shifted = new double[n];
-        
-        // Normalize shift to be in range [0, n) regardless of sign
-        // This handles both positive and negative shifts correctly:
-        // - (shift % n) gives a value in range (-n, n)
-        // - Adding n ensures the value is positive: range (0, 2n)
-        // - Final % n brings it back to range [0, n)
-        // Example: shift=-2, n=8 → (-2%8)=-2 → (-2+8)=6 → 6%8=6 (shift left by 2 = shift right by 6)
-        shift = ((shift % n) + n) % n;
-        
-        for (int i = 0; i < n; i++) {
-            shifted[(i + shift) % n] = signal[i];
-        }
-        
-        return shifted;
     }
     
     /**

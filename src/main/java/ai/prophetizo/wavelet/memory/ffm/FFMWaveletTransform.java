@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.util.SignalUtils;
 
 import java.lang.foreign.*;
 import java.util.Objects;
@@ -276,7 +277,7 @@ public class FFMWaveletTransform implements AutoCloseable {
         
         // Apply phase compensation for biorthogonal wavelets
         if (phaseShift != 0 && boundaryMode == BoundaryMode.PERIODIC) {
-            reconstructed = circularShift(reconstructed, phaseShift);
+            reconstructed = SignalUtils.circularShift(reconstructed, phaseShift);
         }
         
         return reconstructed;
@@ -321,33 +322,6 @@ public class FFMWaveletTransform implements AutoCloseable {
      */
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
-    }
-    
-    /**
-     * Applies a circular shift to a signal.
-     * Positive shift values shift right, negative values shift left.
-     *
-     * @param signal the input signal
-     * @param shift the number of positions to shift
-     * @return the shifted signal
-     */
-    private static double[] circularShift(double[] signal, int shift) {
-        int n = signal.length;
-        double[] shifted = new double[n];
-        
-        // Normalize shift to be in range [0, n) regardless of sign
-        // This handles both positive and negative shifts correctly:
-        // - (shift % n) gives a value in range (-n, n)
-        // - Adding n ensures the value is positive: range (0, 2n)
-        // - Final % n brings it back to range [0, n)
-        // Example: shift=-2, n=8 → (-2%8)=-2 → (-2+8)=6 → 6%8=6 (shift left by 2 = shift right by 6)
-        shift = ((shift % n) + n) % n;
-        
-        for (int i = 0; i < n; i++) {
-            shifted[(i + shift) % n] = signal[i];
-        }
-        
-        return shifted;
     }
     
     @Override
