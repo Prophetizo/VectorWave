@@ -47,7 +47,7 @@ public final class AlignedMemoryPool {
     static {
         GLOBAL_POOLS = new ConcurrentLinkedQueue[COMMON_SIZES.length];
         for (int i = 0; i < COMMON_SIZES.length; i++) {
-            GLOBAL_POOLS[i] = new ConcurrentLinkedQueue<>();
+            GLOBAL_POOLS[i] = new ConcurrentLinkedQueue<PooledArray>();
         }
     }
 
