@@ -90,6 +90,11 @@ public class FFMWaveletTransformFactory implements Factory<FFMWaveletTransform, 
         return new FFMWaveletTransform(wavelet, defaultBoundaryMode, sharedPool, defaultConfig);
     }
     
+    @Override
+    public boolean isValidConfiguration(Wavelet wavelet) {
+        return wavelet != null;
+    }
+    
     /**
      * Creates a transform with specific boundary mode.
      * 
