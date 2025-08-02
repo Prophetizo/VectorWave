@@ -92,6 +92,13 @@ public final class ComplexMorletWavelet implements ComplexContinuousWavelet {
     
     @Override
     public double[] discretize(int numCoeffs) {
+        if (numCoeffs <= 0) {
+            throw new IllegalArgumentException("Number of coefficients must be positive, got: " + numCoeffs);
+        }
+        if (numCoeffs == 1) {
+            throw new IllegalArgumentException("Number of coefficients must be greater than 1 for discretization, got: " + numCoeffs);
+        }
+        
         double[] coeffs = new double[numCoeffs];
         double step = DISCRETIZATION_RANGE / (numCoeffs - 1); // Sample across full range
         
