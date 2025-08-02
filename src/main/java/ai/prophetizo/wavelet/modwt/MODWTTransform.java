@@ -237,8 +237,6 @@ public class MODWTTransform {
             throw new InvalidSignalException("Signal cannot be empty");
         } else if (signal.length > 0) {
             ValidationUtils.validateFiniteValues(signal, "signal");
-        } else {
-            throw new InvalidSignalException("Invalid signal length");
         }
     }
     
