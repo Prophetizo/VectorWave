@@ -191,7 +191,7 @@ class CWTMemoryPoolTest {
                         double[] array = memoryPool.allocateArray(size);
                         
                         // Do some work
-                        array[0] = Thread.currentThread().getId();
+                        array[0] = Thread.currentThread().threadId();
                         array[size - 1] = i;
                         
                         // Release back to pool

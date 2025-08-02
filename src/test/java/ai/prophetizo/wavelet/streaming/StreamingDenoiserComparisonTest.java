@@ -197,6 +197,9 @@ class StreamingDenoiserComparisonTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(signal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -221,6 +224,9 @@ class StreamingDenoiserComparisonTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(signal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));

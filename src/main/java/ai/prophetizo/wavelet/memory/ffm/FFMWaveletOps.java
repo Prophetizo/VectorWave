@@ -65,6 +65,7 @@ public final class FFMWaveletOps implements WaveletOpsFactory.WaveletOps {
     }
     
     @Override
+    @SuppressWarnings("try")  // Arena is used in body, safe to suppress
     public double[] convolveAndDownsample(double[] signal, double[] filter,
                                          int signalLength, int filterLength,
                                          BoundaryMode mode) {

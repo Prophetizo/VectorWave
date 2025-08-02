@@ -145,6 +145,9 @@ class StreamingDenoiserMathValidationTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(noisySignal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS), "Denoising should complete");
@@ -203,6 +206,9 @@ class StreamingDenoiserMathValidationTest {
             
             streamingDenoiser.subscribe(new TestSubscriber(results, latch));
             streamingDenoiser.process(noisySignal);
+            streamingDenoiser.flush();
+            
+            // Close to trigger onComplete
             streamingDenoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -268,6 +274,9 @@ class StreamingDenoiserMathValidationTest {
             
             // Process the input signal
             denoiser.process(inputSignal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -305,6 +314,8 @@ class StreamingDenoiserMathValidationTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(noisySignal);
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -379,6 +390,9 @@ class StreamingDenoiserMathValidationTest {
             });
             
             denoiser.process(noisySignal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -424,6 +438,9 @@ class StreamingDenoiserMathValidationTest {
             });
             
             denoiser.process(noisySignal);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -507,6 +524,9 @@ class StreamingDenoiserMathValidationTest {
                 });
                 
                 denoiser.process(pureNoise);
+                denoiser.flush();
+                
+                // Close to trigger onComplete
                 denoiser.close();
                 
                 assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -543,6 +563,9 @@ class StreamingDenoiserMathValidationTest {
             
             denoiser.subscribe(new TestSubscriber(results, latch));
             denoiser.process(noisyStep);
+            denoiser.flush();
+            
+            // Close to trigger onComplete
             denoiser.close();
             
             assertTrue(latch.await(2, TimeUnit.SECONDS));

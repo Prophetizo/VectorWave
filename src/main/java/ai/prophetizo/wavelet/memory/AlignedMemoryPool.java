@@ -46,7 +46,7 @@ public final class AlignedMemoryPool {
     private static final AtomicLong poolMisses = new AtomicLong();
 
     static {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         ConcurrentLinkedQueue<PooledArray>[] pools = new ConcurrentLinkedQueue[COMMON_SIZES.length];
         GLOBAL_POOLS = pools;
         for (int i = 0; i < COMMON_SIZES.length; i++) {

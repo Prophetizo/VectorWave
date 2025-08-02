@@ -109,7 +109,7 @@ class StreamingDenoiserPerformanceTest {
             }
             
             long benchmarkEnd = System.nanoTime();
-            denoiser.close();
+            // Denoiser will be closed by try-with-resources
             
             // Wait for all blocks to be processed
             subscriber.latch.await(5, TimeUnit.SECONDS);
@@ -249,7 +249,7 @@ class StreamingDenoiserPerformanceTest {
                 denoiser.process(Math.sin(2 * Math.PI * i / 64));
             }
             
-            denoiser.close();
+            // Denoiser will be closed by try-with-resources
             subscriber.latch.await(1, TimeUnit.SECONDS);
             
             System.out.println("Quick check - blocks processed: " + subscriber.blocksProcessed);

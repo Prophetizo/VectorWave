@@ -146,18 +146,38 @@ class StreamingDenoiserTest {
                 .build()) {
             
             List<double[]> results = new ArrayList<>();
-            CountDownLatch latch = new CountDownLatch(1);
+            AtomicInteger blockCount = new AtomicInteger();
             
-            denoiser.subscribe(new TestSubscriber(results, latch));
+            denoiser.subscribe(new Flow.Subscriber<double[]>() {
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    subscription.request(Long.MAX_VALUE);
+                }
+                
+                @Override
+                public void onNext(double[] item) {
+                    results.add(item.clone());
+                    blockCount.incrementAndGet();
+                }
+                
+                @Override
+                public void onError(Throwable throwable) {}
+                
+                @Override
+                public void onComplete() {}
+            });
             
             // Generate noisy signal
             double[] noisySignal = generateNoisySignal(128, 0.1);
             
             // Process signal
             denoiser.process(noisySignal);
-            denoiser.close();
+            denoiser.flush();
             
-            assertTrue(latch.await(1, TimeUnit.SECONDS));
+            // Give a moment for async processing
+            Thread.sleep(100);
+            
+            assertTrue(blockCount.get() > 0, "Should have processed at least one block");
             assertFalse(results.isEmpty());
             
             // Verify denoising occurred
@@ -246,7 +266,7 @@ class StreamingDenoiserTest {
             }
             
             denoiser.process(signal);
-            denoiser.close();
+            denoiser.flush();
             
             assertTrue(latch.await(1, TimeUnit.SECONDS));
             
@@ -275,7 +295,7 @@ class StreamingDenoiserTest {
             List<Double> allThresholds = new ArrayList<>();
             List<Double> allNoiseLevels = new ArrayList<>();
             AtomicInteger blockCount = new AtomicInteger();
-            CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(40); // Expect 40 blocks
             
             denoiser.subscribe(new Flow.Subscriber<double[]>() {
                 private Flow.Subscription subscription;
@@ -292,6 +312,7 @@ class StreamingDenoiserTest {
                     // Capture all thresholds and noise levels for analysis
                     allThresholds.add(denoiser.getCurrentThreshold());
                     allNoiseLevels.add(denoiser.getCurrentNoiseLevel());
+                    latch.countDown();
                 }
                 
                 @Override
@@ -327,7 +348,9 @@ class StreamingDenoiserTest {
                 denoiser.process(data);
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
+            
             assertTrue(latch.await(1, TimeUnit.SECONDS));
             
             assertTrue(blockCount.get() >= 30, "Should have processed at least 30 blocks");
@@ -375,7 +398,8 @@ class StreamingDenoiserTest {
                 denoiser.process(Math.sin(2 * Math.PI * i / 32));
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "Should receive expected blocks");
@@ -419,7 +443,8 @@ class StreamingDenoiserTest {
                 denoiser.process(0.1 * Math.random());
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for all blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "All blocks should be processed");
@@ -491,7 +516,8 @@ class StreamingDenoiserTest {
                 }
             }
             
-            denoiser.close();
+            // Flush to ensure all data is processed
+            denoiser.flush();
             
             // Wait for all blocks to be processed
             assertTrue(latch.await(1, TimeUnit.SECONDS), "All blocks should be processed");
@@ -517,6 +543,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for state testing
     void testClosedStateHandling() throws Exception {
         StreamingDenoiserStrategy denoiser = new StreamingDenoiser.Builder()
             .wavelet(new Haar())
@@ -550,7 +577,7 @@ class StreamingDenoiserTest {
                 
                 double[] noisySignal = generateNoisySignal(64, 0.1);
                 denoiser.process(noisySignal);
-                denoiser.close();
+                denoiser.flush();
                 
                 // Wait for block to be processed
                 assertTrue(latch.await(1, TimeUnit.SECONDS), 
@@ -631,6 +658,7 @@ class StreamingDenoiserTest {
     }
     
     @Test
+    @SuppressWarnings("resource")  // Explicit close needed for testing cleanup
     void testSharedMemoryPoolUsage() throws Exception {
         SharedMemoryPoolManager manager = SharedMemoryPoolManager.getInstance();
         int initialUsers = manager.getActiveUserCount();

@@ -62,7 +62,7 @@ public final class ArrayPool {
         @SuppressWarnings("unchecked")
         private final ConcurrentLinkedDeque<double[]>[] pools;
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         Pool() {
             pools = new ConcurrentLinkedDeque[POOL_SIZES.length];
             for (int i = 0; i < POOL_SIZES.length; i++) {

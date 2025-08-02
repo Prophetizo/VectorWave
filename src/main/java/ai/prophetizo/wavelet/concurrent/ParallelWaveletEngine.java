@@ -270,7 +270,7 @@ public class ParallelWaveletEngine implements AutoCloseable {
         private final double[][] signals;
         private final int start;
         private final int end;
-        private final Wavelet wavelet;
+        private final transient Wavelet wavelet;
         private final BoundaryMode mode;
 
         TransformTask(double[][] signals, int start, int end,

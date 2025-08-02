@@ -298,8 +298,11 @@ public class FFMDemo {
             System.out.println("  All intermediate memory automatically freed");
             System.out.println("  No manual memory management required");
             
+            @SuppressWarnings("resource")  // Explicit close for demonstration
+            FFMWaveletOps ignoredOps = ops;
             ops.close();
-            ffm.close();
+            @SuppressWarnings("resource")  // Explicit close for demonstration
+            FFMMemoryPool ignoredPool = pool;
             pool.close();
         }
         

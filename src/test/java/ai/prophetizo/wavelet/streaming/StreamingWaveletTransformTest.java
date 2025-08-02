@@ -298,7 +298,12 @@ class StreamingWaveletTransformTest {
             // Wait for all blocks to be processed
             assertTrue(blocksLatch.await(1, TimeUnit.SECONDS), "Did not receive all 4 blocks");
             
+            // Flush to ensure all processing completes
+            transform.flush();
+            
+            // Close the transform to trigger onComplete
             transform.close();
+            
             assertTrue(completeLatch.await(1, TimeUnit.SECONDS));
             
             // 4 threads * 4 chunks * 32 samples = 512 samples = 4 blocks of 128
@@ -307,6 +312,7 @@ class StreamingWaveletTransformTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testErrorHandling() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 64)) {
@@ -344,6 +350,7 @@ class StreamingWaveletTransformTest {
     }
     
     @Test
+    @SuppressWarnings("try")  // close() may throw InterruptedException
     void testStatisticsAccuracy() throws Exception {
         try (StreamingWaveletTransform transform = StreamingWaveletTransform.create(
                 new Haar(), BoundaryMode.PERIODIC, 256)) {
