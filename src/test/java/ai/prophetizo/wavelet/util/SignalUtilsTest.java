@@ -128,6 +128,53 @@ class SignalUtilsTest {
         assertEquals(61.0, shifted[63], "Last element should be 61");
     }
     
+    @Test
+    @DisplayName("Should verify direction convention explicitly")
+    void testDirectionConvention() {
+        double[] signal = {10, 20, 30, 40, 50};
+        
+        // Test positive shift (right) - elements move to higher indices
+        double[] rightShift1 = SignalUtils.circularShift(signal, 1);
+        assertEquals(50, rightShift1[0], "Index 0 should have element from index 4");
+        assertEquals(10, rightShift1[1], "Index 1 should have element from index 0");
+        assertEquals(20, rightShift1[2], "Index 2 should have element from index 1");
+        assertEquals(30, rightShift1[3], "Index 3 should have element from index 2");
+        assertEquals(40, rightShift1[4], "Index 4 should have element from index 3");
+        
+        // Test negative shift (left) - elements move to lower indices
+        double[] leftShift1 = SignalUtils.circularShift(signal, -1);
+        assertEquals(20, leftShift1[0], "Index 0 should have element from index 1");
+        assertEquals(30, leftShift1[1], "Index 1 should have element from index 2");
+        assertEquals(40, leftShift1[2], "Index 2 should have element from index 3");
+        assertEquals(50, leftShift1[3], "Index 3 should have element from index 4");
+        assertEquals(10, leftShift1[4], "Index 4 should have element from index 0");
+    }
+    
+    @Test
+    @DisplayName("Should handle various shift normalizations correctly")
+    void testShiftNormalization() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        
+        // Test that equivalent shifts produce the same result
+        double[] shift2 = SignalUtils.circularShift(signal, 2);
+        double[] shift10 = SignalUtils.circularShift(signal, 10);  // 10 % 8 = 2
+        double[] shiftNeg6 = SignalUtils.circularShift(signal, -6); // -6 → 2
+        
+        assertArrayEquals(shift2, shift10, "shift 10 should equal shift 2");
+        assertArrayEquals(shift2, shiftNeg6, "shift -6 should equal shift 2");
+        
+        // Test full rotations
+        double[] shift0 = SignalUtils.circularShift(signal, 0);
+        double[] shift8 = SignalUtils.circularShift(signal, 8);
+        double[] shiftNeg8 = SignalUtils.circularShift(signal, -8);
+        double[] shift16 = SignalUtils.circularShift(signal, 16);
+        
+        assertArrayEquals(signal, shift0, "Zero shift should return identical array");
+        assertArrayEquals(signal, shift8, "Full rotation should return identical array");
+        assertArrayEquals(signal, shiftNeg8, "Negative full rotation should return identical array");
+        assertArrayEquals(signal, shift16, "Double rotation should return identical array");
+    }
+    
     private double[] parseArray(String str) {
         String[] parts = str.split(",");
         double[] result = new double[parts.length];
