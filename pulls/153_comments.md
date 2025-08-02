@@ -1,0 +1,1 @@
+Linking issue #port_existing_dwt_wavelets_to_modwt to this pull request for reference. See issue here: https://github.com/Prophetizo/VectorWave/issues/port_existing_dwt_wavelets_to_modwt
