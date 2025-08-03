@@ -79,17 +79,25 @@ class WaveletTransformTest extends BaseWaveletTest {
     
     @ParameterizedTest
     @ValueSource(ints = {3, 5, 7, 9, 15, 17, 31, 33, 63, 65})
-    @DisplayName("Forward transform should reject non-power-of-2 lengths")
-    void testForwardNonPowerOfTwoLength(int length) {
+    @DisplayName("Forward transform should work with any signal length (MODWT advantage)")
+    void testForwardAnySignalLength(int length) {
         WaveletTransform transform = createTransform(new Haar());
         double[] signal = new double[length];
         
-        InvalidSignalException exception = assertThrows(
-            InvalidSignalException.class,
-            () -> transform.forward(signal));
+        // Fill with test data
+        for (int i = 0; i < length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / length);
+        }
         
-        assertTrue(exception.getMessage().contains("power of two"),
-            "Error message should mention power of two requirement");
+        // Should work without throwing an exception
+        assertDoesNotThrow(() -> {
+            TransformResult result = transform.forward(signal);
+            // MODWT should produce same-length output
+            assertEquals(length, result.approximationCoeffs().length, 
+                        "Approximation coefficients should have same length as input");
+            assertEquals(length, result.detailCoeffs().length,
+                        "Detail coefficients should have same length as input");
+        }, "MODWT should work with any signal length");
     }
     
     @Test
@@ -221,8 +229,9 @@ class WaveletTransformTest extends BaseWaveletTest {
         
         TransformResult result = transform.forward(signal);
         
-        assertEquals(1, result.approximationCoeffs().length);
-        assertEquals(1, result.detailCoeffs().length);
+        // MODWT produces same-length output
+        assertEquals(2, result.approximationCoeffs().length);
+        assertEquals(2, result.detailCoeffs().length);
         
         double[] reconstructed = transform.inverse(result);
         WaveletAssertions.assertPerfectReconstruction(
@@ -238,8 +247,9 @@ class WaveletTransformTest extends BaseWaveletTest {
         WaveletTransform transform = createTransform(Daubechies.DB4);
         TransformResult result = transform.forward(signal);
         
-        assertEquals(2048, result.approximationCoeffs().length);
-        assertEquals(2048, result.detailCoeffs().length);
+        // MODWT produces same-length output
+        assertEquals(4096, result.approximationCoeffs().length);
+        assertEquals(4096, result.detailCoeffs().length);
         
         WaveletAssertions.assertEnergyPreserved(
             signal, result, 2e-5); // Relaxed for large signals with DB4

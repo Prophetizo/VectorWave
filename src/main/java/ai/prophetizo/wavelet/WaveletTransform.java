@@ -9,20 +9,24 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
 import java.util.Objects;
 
 /**
- * Main class for performing the 1D Fast Wavelet Transform (FWT).
+ * Main class for performing the 1D Maximal Overlap Discrete Wavelet Transform (MODWT).
  *
- * <p>This implementation supports multiple wavelet families including
- * orthogonal (Haar, Daubechies, Symlets, Coiflets), biorthogonal, and
- * continuous wavelets. All transforms use a scalar implementation for
- * correctness and maintainability.</p>
+ * <p>MODWT offers several advantages over standard DWT:
+ * <ul>
+ *   <li><strong>No power-of-2 restriction:</strong> Works with signals of any length</li>
+ *   <li><strong>Shift-invariant:</strong> Translation of input results in corresponding translation of coefficients</li>
+ *   <li><strong>Same-length output:</strong> Both approximation and detail coefficients have the same length as input</li>
+ *   <li><strong>Better for real-world applications:</strong> Especially financial time series analysis</li>
+ * </ul>
+ * </p>
  * 
  * <p>Example usage:</p>
  * <pre>{@code
  * // Create transform with Haar wavelet
  * WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
  * 
- * // Perform forward transform
- * double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+ * // Perform forward transform (works with any signal length)
+ * double[] signal = {1, 2, 3, 4, 5, 6, 7};  // Not power-of-2!
  * TransformResult result = transform.forward(signal);
  * 
  * // Perform inverse transform
@@ -35,7 +39,7 @@ public class WaveletTransform {
     private final BoundaryMode boundaryMode;
 
     /**
-     * Constructs a transformer with the specified wavelet and boundary mode.
+     * Constructs a MODWT transformer with the specified wavelet and boundary mode.
      *
      * @param wavelet      The wavelet to use for the transformations
      * @param boundaryMode The boundary handling mode
@@ -53,65 +57,76 @@ public class WaveletTransform {
     }
 
     /**
-     * Performs a single-level forward 1D Fast Wavelet Transform.
+     * Performs a single-level forward MODWT transform.
      *
-     * @param signal The input signal. Must have a power-of-two length.
-     * @return A TransformResult containing the approximation and detail coefficients.
-     * @throws InvalidSignalException if signal is null, empty, not power-of-two length, or contains invalid values
+     * @param signal The input signal. Can be any length (no power-of-2 restriction).
+     * @return A TransformResult containing the approximation and detail coefficients (same length as input).
+     * @throws InvalidSignalException if signal is null, empty, or contains invalid values
      */
     public TransformResult forward(double[] signal) {
-        // Comprehensive validation
-        ValidationUtils.validateSignal(signal, "signal");
+        // Validate signal (without power-of-2 requirement)
+        validateMODWTSignal(signal, "signal");
 
-        double[] lowPassFilter = wavelet.lowPassDecomposition();
-        double[] highPassFilter = wavelet.highPassDecomposition();
+        // Get filters and scale them for MODWT
+        double[] lowPassFilter = ScalarOps.scaleFilterForMODWT(wavelet.lowPassDecomposition(), 1);
+        double[] highPassFilter = ScalarOps.scaleFilterForMODWT(wavelet.highPassDecomposition(), 1);
 
-        // The output coefficients will be half the length of the input signal.
-        int outputLength = signal.length / 2;
+        // For MODWT, output length equals input length
+        int outputLength = signal.length;
         double[] approximationCoeffs = new double[outputLength];
         double[] detailCoeffs = new double[outputLength];
 
-        // Perform convolution and downsampling based on boundary mode
+        // Perform convolution based on boundary mode (no downsampling)
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            ScalarOps.convolveAndDownsamplePeriodic(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsamplePeriodic(signal, highPassFilter, detailCoeffs);
+            ScalarOps.modwtConvolvePeriodic(signal, lowPassFilter, approximationCoeffs);
+            ScalarOps.modwtConvolvePeriodic(signal, highPassFilter, detailCoeffs);
         } else {
-            ScalarOps.convolveAndDownsampleDirect(signal, lowPassFilter, approximationCoeffs);
-            ScalarOps.convolveAndDownsampleDirect(signal, highPassFilter, detailCoeffs);
+            ScalarOps.modwtConvolveZeroPadding(signal, lowPassFilter, approximationCoeffs);
+            ScalarOps.modwtConvolveZeroPadding(signal, highPassFilter, detailCoeffs);
         }
 
-        // Create the result using TransformResultImpl
         return new TransformResultImpl(approximationCoeffs, detailCoeffs);
     }
 
     /**
-     * Performs a single-level inverse 1D Fast Wavelet Transform to reconstruct the signal.
+     * Performs a single-level inverse MODWT transform to reconstruct the signal.
      *
      * @param transformResult The transform result containing approximation and detail coefficients
-     * @return The reconstructed signal
+     * @return The reconstructed signal (same length as input coefficients)
      * @throws NullPointerException   if transformResult is null
      * @throws InvalidSignalException if coefficients are invalid or mismatched
      */
     public double[] inverse(TransformResult transformResult) {
         Objects.requireNonNull(transformResult, "transformResult cannot be null.");
 
-        // TransformResult guarantees valid coefficients and returns defensive copies
         double[] approx = transformResult.approximationCoeffs();
         double[] detail = transformResult.detailCoeffs();
 
-        int outputLength = (approx.length + detail.length);
+        // For MODWT, coefficients should have the same length
+        if (approx.length != detail.length) {
+            throw new InvalidSignalException("MODWT coefficients must have the same length. " +
+                    "Approximation: " + approx.length + ", Detail: " + detail.length);
+        }
+
+        int outputLength = approx.length;
         double[] signal = new double[outputLength];
 
+        // Get reconstruction filters and scale them for MODWT
+        double[] lowPassReconFilter = ScalarOps.scaleFilterForMODWT(wavelet.lowPassReconstruction(), 1);
+        double[] highPassReconFilter = ScalarOps.scaleFilterForMODWT(wavelet.highPassReconstruction(), 1);
+
+        // For MODWT inverse, we need to use a different convolution approach
+        // The reconstruction involves convolution with filters in reverse order
         double[] approxRecon = new double[outputLength];
         double[] detailRecon = new double[outputLength];
 
-        // Perform upsampling and convolution based on boundary mode
+        // Perform MODWT inverse convolution (reverse direction)
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            ScalarOps.upsampleAndConvolvePeriodic(approx, wavelet.lowPassReconstruction(), approxRecon);
-            ScalarOps.upsampleAndConvolvePeriodic(detail, wavelet.highPassReconstruction(), detailRecon);
+            modwtInverseConvolvePeriodic(approx, lowPassReconFilter, approxRecon);
+            modwtInverseConvolvePeriodic(detail, highPassReconFilter, detailRecon);
         } else {
-            ScalarOps.upsampleAndConvolveDirect(approx, wavelet.lowPassReconstruction(), approxRecon);
-            ScalarOps.upsampleAndConvolveDirect(detail, wavelet.highPassReconstruction(), detailRecon);
+            modwtInverseConvolveZeroPadding(approx, lowPassReconFilter, approxRecon);
+            modwtInverseConvolveZeroPadding(detail, highPassReconFilter, detailRecon);
         }
 
         // Add the two reconstructed components together to get the final signal
@@ -120,6 +135,51 @@ public class WaveletTransform {
         }
 
         return signal;
+    }
+
+    /**
+     * MODWT inverse convolution with periodic boundary handling.
+     * This is different from forward convolution - it uses the filter in reverse.
+     */
+    private void modwtInverseConvolvePeriodic(double[] coeffs, double[] filter, double[] output) {
+        int signalLen = coeffs.length;
+        int filterLen = filter.length;
+
+        for (int i = 0; i < signalLen; i++) {
+            double sum = 0.0;
+
+            for (int j = 0; j < filterLen; j++) {
+                // For inverse, we convolve with the filter in reverse direction
+                int coeffIndex = (i - j + signalLen) % signalLen;
+                sum += coeffs[coeffIndex] * filter[j];
+            }
+
+            output[i] = sum;
+        }
+    }
+
+    /**
+     * MODWT inverse convolution with zero padding boundary handling.
+     * This is different from forward convolution - it uses the filter in reverse.
+     */
+    private void modwtInverseConvolveZeroPadding(double[] coeffs, double[] filter, double[] output) {
+        int signalLen = coeffs.length;
+        int filterLen = filter.length;
+
+        for (int i = 0; i < signalLen; i++) {
+            double sum = 0.0;
+
+            for (int j = 0; j < filterLen; j++) {
+                // For inverse, we convolve with the filter in reverse direction
+                int coeffIndex = i - j;
+                if (coeffIndex >= 0) {
+                    sum += coeffs[coeffIndex] * filter[j];
+                }
+                // Values outside range are implicitly zero
+            }
+
+            output[i] = sum;
+        }
     }
 
     /**
@@ -138,5 +198,22 @@ public class WaveletTransform {
      */
     public BoundaryMode getBoundaryMode() {
         return boundaryMode;
+    }
+
+    /**
+     * Validates signal for MODWT (no power-of-2 requirement).
+     * 
+     * @param signal        the signal to validate
+     * @param parameterName the name of the parameter for error messages
+     * @throws InvalidSignalException if the signal is invalid
+     */
+    private static void validateMODWTSignal(double[] signal, String parameterName) {
+        // Check null and empty
+        ValidationUtils.validateNotNullOrEmpty(signal, parameterName);
+        
+        // Check for NaN and infinity
+        ValidationUtils.validateFiniteValues(signal, parameterName);
+        
+        // Note: No power-of-2 requirement for MODWT
     }
 }
