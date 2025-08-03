@@ -89,16 +89,7 @@
                 <configuration>
                     <argLine>@{argLine} --add-modules jdk.incubator.vector</argLine>
                     <excludes>
-                        <exclude>**/demo/**</exclude>
-                        <exclude>**/streaming/**</exclude>
-                        <exclude>**/financial/**/*Test.java</exclude>
                         <exclude>**/benchmark/**</exclude>
-                        <exclude>**/memory/ffm/**</exclude>
-                        <exclude>MainTest.java</exclude>
-                        <exclude>**/SIMDDemo.java</exclude>
-                        <exclude>**/PerformanceGainsSummary.java</exclude>
-                        <exclude>**/BaseWaveletTest.java</exclude>
-                        <exclude>**/internal/*Test.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
