@@ -178,9 +178,10 @@ public class MODWTTransform {
         for (int t = 0; t < signalLength; t++) {
             double sum = 0.0;
             
-            // Sum over filter coefficients using reverse indexing for reconstruction
+            // Sum over filter coefficients
+            // For MODWT reconstruction, we use (t + l) indexing since we used (t - l) in forward
             for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                int coeffIndex = (t - l + signalLength * scaledLowPassRecon.length) % signalLength;
+                int coeffIndex = (t + l) % signalLength;
                 sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
                        scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
             }

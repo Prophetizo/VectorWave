@@ -269,13 +269,24 @@ public class MultiLevelMODWTTransform {
      * Reconstructs single level by combining approximation and details.
      */
     private double[] reconstructSingleLevel(double[] approx, double[] details, int level) {
-        // For MODWT reconstruction, we need upsampled filters but NOT scaled
-        // The scaling was already applied during decomposition
+        // For MODWT reconstruction, we need upsampled filters
         double[] upsampledLowPass = upsampleFilterForLevel(wavelet.lowPassReconstruction(), level);
         double[] upsampledHighPass = upsampleFilterForLevel(wavelet.highPassReconstruction(), level);
         
-        // Apply inverse MODWT with upsampled (but not scaled) filters
-        return applyScaledInverseMODWT(approx, details, upsampledLowPass, upsampledHighPass);
+        // Scale filters by 1/sqrt(2) for MODWT (same as single-level)
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPass = new double[upsampledLowPass.length];
+        double[] scaledHighPass = new double[upsampledHighPass.length];
+        
+        for (int i = 0; i < upsampledLowPass.length; i++) {
+            scaledLowPass[i] = upsampledLowPass[i] * scale;
+        }
+        for (int i = 0; i < upsampledHighPass.length; i++) {
+            scaledHighPass[i] = upsampledHighPass[i] * scale;
+        }
+        
+        // Apply inverse MODWT with scaled filters
+        return applyScaledInverseMODWT(approx, details, scaledLowPass, scaledHighPass);
     }
     
     /**
@@ -328,14 +339,14 @@ public class MultiLevelMODWTTransform {
         for (int t = 0; t < signalLength; t++) {
             double sum = 0.0;
             
-            // Use backward indexing like the single-level MODWT
+            // Use (t + l) indexing to match single-level MODWT reconstruction
             for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                int idx = (t - l + signalLength * scaledLowPassRecon.length) % signalLength;
+                int idx = (t + l) % signalLength;
                 sum += scaledLowPassRecon[l] * approx[idx] + 
                        scaledHighPassRecon[l] * details[idx];
             }
             
-            // No additional normalization needed for multi-level
+            // No additional normalization needed with scaled filters
             reconstructed[t] = sum;
         }
         
@@ -345,11 +356,11 @@ public class MultiLevelMODWTTransform {
     /**
      * Scales filter for MODWT at given level by upsampling with zeros.
      * At level j, insert 2^(j-1) - 1 zeros between coefficients.
-     * MODWT also requires scaling by 2^(-j/2) for the filter values.
+     * MODWT only uses 1/sqrt(2) scaling, regardless of level.
      */
     private double[] scaleFilterForLevel(double[] filter, int level) {
         if (level == 1) {
-            // Even at level 1, MODWT scales by 2^(-1/2)
+            // Level 1: no upsampling, just scale by 1/sqrt(2)
             double[] scaled = filter.clone();
             double scale = 1.0 / Math.sqrt(2.0);
             for (int i = 0; i < scaled.length; i++) {
@@ -362,8 +373,8 @@ public class MultiLevelMODWTTransform {
         int scaledLength = (filter.length - 1) * upFactor + 1;
         double[] scaled = new double[scaledLength];
         
-        // MODWT scaling factor
-        double scale = Math.pow(2, -level / 2.0);
+        // MODWT always uses 1/sqrt(2) scaling, not 2^(-j/2)
+        double scale = 1.0 / Math.sqrt(2.0);
         
         // Insert zeros between filter coefficients and apply scaling
         for (int i = 0; i < filter.length; i++) {

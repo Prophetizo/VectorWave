@@ -245,11 +245,29 @@ public class MODWTOptimizedTransformEngine {
                 double[] approx = approxArray.array();
                 double[] detail = detailArray.array();
                 
-                ScalarOps.circularConvolveMODWT(signal, dw.lowPassDecomposition(), approx);
-                ScalarOps.circularConvolveMODWT(signal, dw.highPassDecomposition(), detail);
+                // Scale filters for MODWT
+                double[] lowPassFilter = dw.lowPassDecomposition();
+                double[] highPassFilter = dw.highPassDecomposition();
+                double scale = 1.0 / Math.sqrt(2.0);
+                double[] scaledLowPass = new double[lowPassFilter.length];
+                double[] scaledHighPass = new double[highPassFilter.length];
+                for (int i = 0; i < lowPassFilter.length; i++) {
+                    scaledLowPass[i] = lowPassFilter[i] * scale;
+                }
+                for (int i = 0; i < highPassFilter.length; i++) {
+                    scaledHighPass[i] = highPassFilter[i] * scale;
+                }
                 
-                // Create result with defensive copies
-                return new MODWTResultImpl(approx.clone(), detail.clone());
+                // Apply MODWT convolution
+                ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approx);
+                ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detail);
+                
+                // Create result with correctly sized arrays (not the padded arrays)
+                double[] resultApprox = new double[length];
+                double[] resultDetail = new double[length];
+                System.arraycopy(approx, 0, resultApprox, 0, length);
+                System.arraycopy(detail, 0, resultDetail, 0, length);
+                return new MODWTResultImpl(resultApprox, resultDetail);
             } finally {
                 AlignedMemoryPool.release(approxArray);
                 AlignedMemoryPool.release(detailArray);
@@ -321,16 +339,15 @@ public class MODWTOptimizedTransformEngine {
     private MODWTResult[] transformBatchParallel(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
         
-        // Convert ParallelWaveletEngine results to MODWT results
-        var dwtResults = parallelEngine.transformBatch(signals, wavelet, mode);
-        MODWTResult[] results = new MODWTResult[dwtResults.length];
-        
-        // Since ParallelWaveletEngine returns DWT results, we need to process differently
-        // For now, use sequential MODWT processing
+        // ParallelWaveletEngine uses DWT which requires power-of-2 signals
+        // For MODWT, we need to process in parallel without using DWT
+        MODWTResult[] results = new MODWTResult[signals.length];
         MODWTTransform transform = new MODWTTransform(wavelet, mode);
-        for (int i = 0; i < signals.length; i++) {
-            results[i] = transform.forward(signals[i]);
-        }
+        
+        // Use parallel streams for processing
+        java.util.stream.IntStream.range(0, signals.length)
+            .parallel()
+            .forEach(i -> results[i] = transform.forward(signals[i]));
         
         return results;
     }
@@ -351,8 +368,10 @@ public class MODWTOptimizedTransformEngine {
      * Checks if a specialized kernel exists for the wavelet.
      */
     private boolean hasSpecializedKernel(Wavelet wavelet) {
-        String name = wavelet.name().toLowerCase();
-        return name.equals("haar") || name.equals("db4");
+        // Disabled for now - specialized kernels need more work
+        return false;
+        // String name = wavelet.name().toLowerCase();
+        // return name.equals("haar") || name.equals("db4");
     }
 
     /**
@@ -361,11 +380,20 @@ public class MODWTOptimizedTransformEngine {
     private void modwtHaarOptimized(double[] signal, double[] approx, double[] detail) {
         int length = signal.length;
         double scale = 1.0 / Math.sqrt(2.0);
+        double h0 = scale;  // Haar low-pass filter coefficient
+        double h1 = scale;  // Haar low-pass filter coefficient
+        double g0 = scale;  // Haar high-pass filter coefficient  
+        double g1 = -scale; // Haar high-pass filter coefficient
         
+        // MODWT uses (t - l) indexing for forward transform
         for (int t = 0; t < length; t++) {
-            int t1 = (t - 1 + length) % length;
-            approx[t] = scale * (signal[t] + signal[t1]);
-            detail[t] = scale * (signal[t] - signal[t1]);
+            // Low-pass (approximation)
+            int idx0 = t;
+            int idx1 = (t - 1 + length) % length;
+            approx[t] = h0 * signal[idx0] + h1 * signal[idx1];
+            
+            // High-pass (detail)
+            detail[t] = g0 * signal[idx0] + g1 * signal[idx1];
         }
     }
 
