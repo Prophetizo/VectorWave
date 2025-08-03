@@ -31,13 +31,13 @@ class WaveletDenoiserTest {
             () -> new WaveletDenoiser(null, BoundaryMode.PERIODIC));
         
         assertThrows(InvalidArgumentException.class,
-            () -> new WaveletDenoiser(new Haar(), null));
+            () -> new WaveletDenoiser(new ai.prophetizo.wavelet.api.Haar(), null));
     }
     
     @Test
     @DisplayName("Basic denoising with universal threshold")
     void testBasicDenoising() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Daubechies.DB4, BoundaryMode.PERIODIC);
         
         // Create a clean signal
         double[] cleanSignal = generateSineWave(256, 10.0);
@@ -65,7 +65,7 @@ class WaveletDenoiserTest {
             return; // Skip FIXED method in this test
         }
         
-        WaveletDenoiser denoiser = new WaveletDenoiser(Symlet.SYM3, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Symlet.SYM3, BoundaryMode.PERIODIC);
         double[] signal = generateNoisySignal(128, 0.3, 123);
         
         double[] denoised = denoiser.denoise(signal, method);
@@ -82,7 +82,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Soft vs Hard thresholding comparison")
     void testSoftVsHardThresholding() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB2, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Daubechies.DB2, BoundaryMode.PERIODIC);
         
         double[] signal = generateNoisySignal(256, 0.4, 456);
         
@@ -107,7 +107,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Multi-level denoising")
     void testMultiLevelDenoising() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Daubechies.DB4, BoundaryMode.PERIODIC);
         
         double[] cleanSignal = generateComplexSignal(512);
         double[] noisySignal = addGaussianNoise(cleanSignal, 0.5, 789);
@@ -132,7 +132,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Fixed threshold denoising")
     void testFixedThresholdDenoising() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(new Haar(), BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(new ai.prophetizo.wavelet.api.Haar(), BoundaryMode.PERIODIC);
         
         double[] signal = generateNoisySignal(128, 0.5, 101);
         
@@ -168,7 +168,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("SURE threshold adaptation")
     void testSUREThresholdAdaptation() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Daubechies.DB4, BoundaryMode.PERIODIC);
         
         // Create signals with different characteristics
         double[] smoothSignal = generateSmoothSignal(256);
@@ -262,7 +262,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Noise level estimation accuracy")
     void testNoiseEstimation() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(ai.prophetizo.wavelet.api.Daubechies.DB4, BoundaryMode.PERIODIC);
         
         // Test with known noise levels
         double[] knownNoiseLevels = {0.1, 0.5, 1.0, 2.0};
@@ -289,7 +289,7 @@ class WaveletDenoiserTest {
     @Test
     @DisplayName("Performance with different signal lengths")
     void testDifferentSignalLengths() {
-        WaveletDenoiser denoiser = new WaveletDenoiser(new Haar(), BoundaryMode.PERIODIC);
+        WaveletDenoiser denoiser = new WaveletDenoiser(new ai.prophetizo.wavelet.api.Haar(), BoundaryMode.PERIODIC);
         
         int[] lengths = {64, 128, 256, 512, 1024};
         

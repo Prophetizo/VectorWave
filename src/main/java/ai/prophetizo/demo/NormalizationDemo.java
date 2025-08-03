@@ -1,16 +1,17 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 
 /**
- * Demo showing consistent wavelet normalization across all types.
+ * Demo showing consistent wavelet normalization across all types using MODWT.
+ * MODWT preserves the normalization properties of wavelets.
  */
 public class NormalizationDemo {
     public static void main(String[] args) {
-        System.out.println("=== Wavelet Normalization Verification ===\n");
+        System.out.println("=== Wavelet Normalization Verification (MODWT) ===\n");
         
         Wavelet[] wavelets = {
             new Haar(),
@@ -48,8 +49,8 @@ public class NormalizationDemo {
         Wavelet[] discreteWavelets = {new Haar(), Daubechies.DB2, Daubechies.DB4};
         
         for (Wavelet wavelet : discreteWavelets) {
-            WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-            TransformResult result = transform.forward(testSignal);
+            MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+            MODWTResult result = transform.forward(testSignal);
             
             double transformEnergy = computeEnergy(result.approximationCoeffs()) + 
                                    computeEnergy(result.detailCoeffs());
@@ -58,7 +59,7 @@ public class NormalizationDemo {
                 wavelet.name(), transformEnergy, Math.abs(originalEnergy - transformEnergy));
         }
         
-        System.out.println("\n✓ All wavelets preserve energy consistently!");
+        System.out.println("\n✓ All wavelets preserve energy consistently with MODWT!");
     }
     
     private static double computeEnergy(double[] signal) {

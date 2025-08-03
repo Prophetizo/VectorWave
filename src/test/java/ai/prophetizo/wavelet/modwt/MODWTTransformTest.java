@@ -34,9 +34,13 @@ class MODWTTransformTest {
         assertThrows(NullPointerException.class, 
             () -> new MODWTTransform(new Haar(), null));
         
-        // Test unsupported boundary mode
+        // Test unsupported boundary mode - SYMMETRIC is not supported
         assertThrows(IllegalArgumentException.class, 
-            () -> new MODWTTransform(new Haar(), BoundaryMode.ZERO_PADDING));
+            () -> new MODWTTransform(new Haar(), BoundaryMode.SYMMETRIC));
+        
+        // Test that supported boundary modes work
+        assertDoesNotThrow(() -> new MODWTTransform(new Haar(), BoundaryMode.PERIODIC));
+        assertDoesNotThrow(() -> new MODWTTransform(new Haar(), BoundaryMode.ZERO_PADDING));
     }
 
     @Test

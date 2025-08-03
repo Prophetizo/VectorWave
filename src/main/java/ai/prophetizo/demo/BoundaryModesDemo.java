@@ -1,7 +1,8 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Haar;
@@ -9,7 +10,7 @@ import ai.prophetizo.wavelet.api.Haar;
 import java.util.Arrays;
 
 /**
- * Demonstrates the effects of different boundary handling modes.
+ * Demonstrates the effects of different boundary handling modes with MODWT.
  *
  * <p>This demo shows how boundary modes affect:
  * <ul>
@@ -17,12 +18,13 @@ import java.util.Arrays;
  *   <li>Reconstruction accuracy</li>
  *   <li>Artifacts and edge effects</li>
  *   <li>Choosing the right mode for your application</li>
+ *   <li>MODWT supports PERIODIC and ZERO_PADDING modes</li>
  * </ul>
  */
 public class BoundaryModesDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Boundary Modes Demo ===\n");
+        System.out.println("=== VectorWave Boundary Modes Demo (MODWT) ===\n");
 
         // Demo 1: Visual comparison of boundary modes
         demonstrateBoundaryEffects();
@@ -58,8 +60,8 @@ public class BoundaryModesDemo {
         for (BoundaryMode mode : modes) {
             System.out.println(mode + " mode:");
 
-            WaveletTransform transform = new WaveletTransform(Daubechies.DB2, mode);
-            TransformResult result = transform.forward(signal);
+            MODWTTransform transform = new MODWTTransform(Daubechies.DB2, mode);
+            MODWTResult result = transform.forward(signal);
 
             // Show first and last few coefficients (where boundary effects appear)
             double[] approx = result.approximationCoeffs();
@@ -92,10 +94,10 @@ public class BoundaryModesDemo {
         BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING};
 
         for (BoundaryMode mode : modes) {
-            WaveletTransform transform = new WaveletTransform(Daubechies.DB4, mode);
+            MODWTTransform transform = new MODWTTransform(Daubechies.DB4, mode);
 
             // Forward and inverse transform
-            TransformResult result = transform.forward(smoothSignal);
+            MODWTResult result = transform.forward(smoothSignal);
             double[] reconstructed = transform.inverse(result);
 
             // Measure edge artifacts
@@ -149,9 +151,9 @@ public class BoundaryModesDemo {
             System.out.printf("%-12s |", signalNames[s]);
 
             for (BoundaryMode mode : new BoundaryMode[]{BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING}) {
-                WaveletTransform transform = new WaveletTransform(new Haar(), mode);
+                MODWTTransform transform = new MODWTTransform(new Haar(), mode);
 
-                TransformResult result = transform.forward(testSignals[s]);
+                MODWTResult result = transform.forward(testSignals[s]);
                 double[] reconstructed = transform.inverse(result);
 
                 double maxError = 0;
@@ -326,8 +328,8 @@ public class BoundaryModesDemo {
 
         System.out.printf("\n%s signal analysis:\n", name);
         for (BoundaryMode mode : modes) {
-            WaveletTransform transform = new WaveletTransform(Daubechies.DB2, mode);
-            TransformResult result = transform.forward(signal);
+            MODWTTransform transform = new MODWTTransform(Daubechies.DB2, mode);
+            MODWTResult result = transform.forward(signal);
             double[] reconstructed = transform.inverse(result);
 
             // Calculate reconstruction metrics

@@ -1,12 +1,13 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.MultiLevelTransformResult;
-import ai.prophetizo.wavelet.MultiLevelWaveletTransform;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Daubechies;
 
 /**
- * Demonstrates multi-level wavelet decomposition for financial time series analysis.
+ * Demonstrates multi-level MODWT decomposition for financial time series analysis.
+ * MODWT provides shift-invariant decomposition and works with arbitrary length signals.
  */
 public class MultiLevelDemo {
 
@@ -15,14 +16,14 @@ public class MultiLevelDemo {
         int length = 512;
         double[] prices = generateFinancialSeries(length);
 
-        // Create multi-level wavelet transform
-        MultiLevelWaveletTransform mwt = new MultiLevelWaveletTransform(
+        // Create multi-level MODWT transform
+        MultiLevelMODWTTransform mwt = new MultiLevelMODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
-        System.out.println("=== Multi-Level Wavelet Decomposition Demo ===\n");
+        System.out.println("=== Multi-Level MODWT Decomposition Demo ===\n");
 
         // 1. Full decomposition
-        MultiLevelTransformResult fullResult = mwt.decompose(prices);
+        MultiLevelMODWTResult fullResult = mwt.decompose(prices);
         System.out.println("Full decomposition levels: " + fullResult.levels());
         System.out.println("Original signal length: " + length);
         System.out.println("Final approximation length: " + fullResult.finalApproximation().length);
@@ -39,7 +40,7 @@ public class MultiLevelDemo {
 
         // 3. Partial decomposition for specific analysis
         System.out.println("\n3-level decomposition for trend analysis:");
-        MultiLevelTransformResult partial = mwt.decompose(prices, 3);
+        MultiLevelMODWTResult partial = mwt.decompose(prices, 3);
 
         // 4. Denoising demonstration
         System.out.println("\nDenoising by removing finest scale details:");
@@ -155,10 +156,10 @@ public class MultiLevelDemo {
         }
         
         // Create transform with DB4 wavelet
-        MultiLevelWaveletTransform mwt = new MultiLevelWaveletTransform(Daubechies.DB4);
+        MultiLevelMODWTTransform mwt = new MultiLevelMODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
         
         // Decompose into exactly 7 levels
-        MultiLevelTransformResult result = mwt.decompose(signal, 7);
+        MultiLevelMODWTResult result = mwt.decompose(signal, 7);
         
         System.out.println("  Signal length: " + signalLength);
         System.out.println("  Decomposition levels: " + result.levels());

@@ -27,7 +27,19 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MemoryPoolLifecycleDemo {
     
-    public static void main(String[] args) throws Exception {
+    /* TODO: This demo needs to be migrated to MODWT.
+     * The demo uses DWT-specific features that need careful adaptation:
+     * - Factory patterns (MODWT uses direct instantiation)
+     * - FFM features (needs MODWT-specific FFM implementation)
+     * - Streaming features (needs MODWT streaming implementation)
+     * Temporarily disabled to allow compilation.
+     */
+    public static void main_disabled(String[] args) {
+        System.out.println("This demo is temporarily disabled during DWT to MODWT migration.");
+        System.out.println("Please check back later or contribute to the migration effort!");
+    }
+    
+    public static void main_original(String[] args) throws Exception {
         System.out.println("=== Memory Pool Lifecycle Demo ===\n");
         
         // 1. Basic pool usage with try-finally

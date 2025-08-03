@@ -1,22 +1,23 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 
 import java.util.Arrays;
 
 /**
- * Demonstrates financial applications of wavelet transforms.
- * Shows how wavelets can be used for financial time series analysis,
- * noise reduction, and trend detection.
+ * Demonstrates financial applications of MODWT transforms.
+ * Shows how MODWT can be used for financial time series analysis,
+ * noise reduction, and trend detection with shift-invariance.
  */
 public class FinancialOptimizationDemo {
     
     public static void main(String[] args) {
-        System.out.println("VectorWave - Financial Optimization Demo");
-        System.out.println("=======================================");
+        System.out.println("VectorWave - Financial Optimization Demo (MODWT)");
+        System.out.println("===============================================");
         
         // Simulate financial time series data
         double[] stockPrices = generateStockPriceData();
@@ -29,7 +30,7 @@ public class FinancialOptimizationDemo {
     }
     
     /**
-     * Demonstrates noise reduction in financial data using wavelets.
+     * Demonstrates noise reduction in financial data using MODWT.
      */
     private static void demonstrateNoiseReduction(double[] noisyPrices) {
         System.out.println("\n1. Noise Reduction in Stock Prices:");
@@ -39,24 +40,20 @@ public class FinancialOptimizationDemo {
             String.format("%.2f", Arrays.stream(noisyPrices).max().orElse(0)) + "]");
         
         try {
-            // Use Daubechies DB4 for better frequency localization
-            WaveletTransform transform = new WaveletTransformFactory()
-                    .boundaryMode(BoundaryMode.PERIODIC)
-                    .create(Daubechies.DB4);
+            // Use WaveletDenoiser which internally uses MODWT
+            WaveletDenoiser denoiser = WaveletDenoiser.forFinancialData();
             
-            TransformResult result = transform.forward(noisyPrices);
+            double[] denoised = denoiser.denoise(noisyPrices, 
+                WaveletDenoiser.ThresholdMethod.SURE);
             
-            // Apply soft thresholding to reduce noise
-            TransformResult denoisedResult = applySoftThresholding(result, 0.1);
-            double[] reconstructed = transform.inverse(denoisedResult);
+            double noiseReduction = calculateNoiseReduction(noisyPrices, denoised);
             
-            double noiseReduction = calculateNoiseReduction(noisyPrices, reconstructed);
-            
-            System.out.println("   ✓ Wavelet: " + Daubechies.DB4.name());
+            System.out.println("   ✓ Using MODWT with DB4 wavelet");
+            System.out.println("   ✓ Shift-invariant denoising preserves timing");
             System.out.println("   ✓ Noise reduction: " + String.format("%.2f%%", noiseReduction * 100));
             System.out.println("   ✓ Denoised price range: [" + 
-                String.format("%.2f", Arrays.stream(reconstructed).min().orElse(0)) + ", " +
-                String.format("%.2f", Arrays.stream(reconstructed).max().orElse(0)) + "]");
+                String.format("%.2f", Arrays.stream(denoised).min().orElse(0)) + ", " +
+                String.format("%.2f", Arrays.stream(denoised).max().orElse(0)) + "]");
             
         } catch (Exception e) {
             System.out.println("   ! Error in noise reduction: " + e.getMessage());
@@ -64,36 +61,31 @@ public class FinancialOptimizationDemo {
     }
     
     /**
-     * Demonstrates trend analysis using wavelet approximation coefficients.
+     * Demonstrates trend analysis using MODWT approximation coefficients.
      */
     private static void demonstrateTrendAnalysis(double[] prices) {
         System.out.println("\n2. Trend Analysis:");
         
         try {
-            // Use Symlet for balanced time-frequency localization
-            WaveletTransform transform = new WaveletTransformFactory()
-                    .boundaryMode(BoundaryMode.PERIODIC)
-                    .create(Symlet.SYM2);
+            // Use MODWT for shift-invariant trend analysis
+            MODWTTransform transform = new MODWTTransform(Symlet.SYM4, BoundaryMode.PERIODIC);
             
-            TransformResult result = transform.forward(prices);
+            MODWTResult result = transform.forward(prices);
             double[] trend = result.approximationCoeffs();
             double[] details = result.detailCoeffs();
             
-            // Analyze trend characteristics
-            double trendSlope = calculateTrendSlope(trend);
-            double trendStrength = calculateTrendStrength(trend, details);
+            // Calculate trend strength
+            double trendEnergy = calculateEnergy(trend);
+            double detailEnergy = calculateEnergy(details);
+            double trendRatio = trendEnergy / (trendEnergy + detailEnergy);
             
-            System.out.println("   ✓ Wavelet: " + Symlet.SYM2.name());
-            System.out.println("   ✓ Trend slope: " + String.format("%.4f", trendSlope));
-            System.out.println("   ✓ Trend strength: " + String.format("%.2f%%", trendStrength * 100));
+            System.out.println("   ✓ MODWT preserves signal length: " + trend.length);
+            System.out.println("   ✓ Trend strength: " + String.format("%.2f%%", trendRatio * 100));
+            System.out.println("   ✓ Detail volatility: " + String.format("%.4f", Math.sqrt(detailEnergy / details.length)));
             
-            if (trendSlope > 0.01) {
-                System.out.println("   → Market shows BULLISH trend");
-            } else if (trendSlope < -0.01) {
-                System.out.println("   → Market shows BEARISH trend");
-            } else {
-                System.out.println("   → Market shows SIDEWAYS movement");
-            }
+            // Identify trend direction
+            double trendDirection = trend[trend.length - 1] - trend[0];
+            System.out.println("   ✓ Overall trend: " + (trendDirection > 0 ? "Upward" : "Downward"));
             
         } catch (Exception e) {
             System.out.println("   ! Error in trend analysis: " + e.getMessage());
@@ -101,35 +93,37 @@ public class FinancialOptimizationDemo {
     }
     
     /**
-     * Demonstrates volatility analysis using detail coefficients.
+     * Demonstrates volatility analysis using MODWT detail coefficients.
      */
-    private static void demonstrateVolatilityAnalysis(double[] returns) {
+    private static void demonstrateVolatilityAnalysis(double[] volatilityData) {
         System.out.println("\n3. Volatility Analysis:");
         
         try {
-            // Use Coiflet for volatility analysis
-            WaveletTransform transform = new WaveletTransformFactory()
-                    .boundaryMode(BoundaryMode.ZERO_PADDING)
-                    .create(Coiflet.COIF1);
+            MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+            MODWTResult result = transform.forward(volatilityData);
             
-            TransformResult result = transform.forward(returns);
+            // Analyze high-frequency components for volatility clustering
             double[] details = result.detailCoeffs();
             
-            // Calculate volatility metrics
-            double volatility = calculateVolatility(details);
-            double[] volatilityClusters = detectVolatilityClusters(details);
+            // Calculate rolling volatility from detail coefficients
+            int windowSize = 20;
+            double[] rollingVol = new double[details.length - windowSize + 1];
             
-            System.out.println("   ✓ Wavelet: " + Coiflet.COIF1.name());
-            System.out.println("   ✓ Wavelet-based volatility: " + String.format("%.4f", volatility));
-            System.out.println("   ✓ Volatility clusters detected: " + volatilityClusters.length);
-            
-            if (volatility > 0.02) {
-                System.out.println("   → HIGH volatility period detected");
-            } else if (volatility > 0.01) {
-                System.out.println("   → MODERATE volatility period");
-            } else {
-                System.out.println("   → LOW volatility period");
+            for (int i = 0; i < rollingVol.length; i++) {
+                double sum = 0;
+                for (int j = 0; j < windowSize; j++) {
+                    sum += details[i + j] * details[i + j];
+                }
+                rollingVol[i] = Math.sqrt(sum / windowSize);
             }
+            
+            double avgVol = Arrays.stream(rollingVol).average().orElse(0);
+            double maxVol = Arrays.stream(rollingVol).max().orElse(0);
+            
+            System.out.println("   ✓ Average volatility: " + String.format("%.4f", avgVol));
+            System.out.println("   ✓ Maximum volatility: " + String.format("%.4f", maxVol));
+            System.out.println("   ✓ Volatility ratio (max/avg): " + String.format("%.2f", maxVol / avgVol));
+            System.out.println("   ✓ MODWT preserves temporal alignment for volatility");
             
         } catch (Exception e) {
             System.out.println("   ! Error in volatility analysis: " + e.getMessage());
@@ -142,125 +136,95 @@ public class FinancialOptimizationDemo {
     private static void demonstrateMultiResolutionAnalysis(double[] prices) {
         System.out.println("\n4. Multi-Resolution Analysis:");
         
-        Wavelet[] wavelets = {new Haar(), Daubechies.DB2, Symlet.SYM2};
-        
-        for (Wavelet wavelet : wavelets) {
-            try {
-                WaveletTransform transform = new WaveletTransformFactory()
-                        .boundaryMode(BoundaryMode.PERIODIC)
-                        .create(wavelet);
+        try {
+            MODWTTransform transform = new MODWTTransform(Daubechies.DB6, BoundaryMode.PERIODIC);
+            
+            // Perform multiple levels of decomposition
+            System.out.println("   Analyzing at different time scales:");
+            
+            double[] currentSignal = prices;
+            for (int level = 1; level <= 3; level++) {
+                MODWTResult result = transform.forward(currentSignal);
                 
-                TransformResult result = transform.forward(prices);
-                
-                double approximationEnergy = calculateEnergy(result.approximationCoeffs());
+                double approxEnergy = calculateEnergy(result.approximationCoeffs());
                 double detailEnergy = calculateEnergy(result.detailCoeffs());
-                double totalEnergy = approximationEnergy + detailEnergy;
                 
-                System.out.println("   " + wavelet.name() + ":");
-                System.out.println("     - Low frequency energy: " + 
-                    String.format("%.2f%%", (approximationEnergy / totalEnergy) * 100));
-                System.out.println("     - High frequency energy: " + 
-                    String.format("%.2f%%", (detailEnergy / totalEnergy) * 100));
+                System.out.printf("   Level %d: Approx energy %.2f%%, Detail energy %.2f%%\n",
+                    level,
+                    100 * approxEnergy / (approxEnergy + detailEnergy),
+                    100 * detailEnergy / (approxEnergy + detailEnergy));
                 
-            } catch (Exception e) {
-                System.out.println("   ! Error with " + wavelet.name() + ": " + e.getMessage());
+                // Use approximation for next level
+                currentSignal = result.approximationCoeffs();
             }
+            
+            System.out.println("   ✓ MODWT maintains signal length at all levels");
+            System.out.println("   ✓ Shift-invariant decomposition for accurate timing");
+            
+        } catch (Exception e) {
+            System.out.println("   ! Error in multi-resolution analysis: " + e.getMessage());
         }
     }
     
-    // Helper methods for financial calculations
+    // Helper methods
     
     private static double[] generateStockPriceData() {
-        // Simulate stock price data with trend and noise
-        double[] prices = new double[16];
-        double basePrice = 100.0;
-        double trend = 0.5;
+        int days = 252; // One trading year
+        double[] prices = new double[days];
+        double price = 100.0;
+        double drift = 0.0002; // Small positive drift
+        double volatility = 0.02;
         
-        for (int i = 0; i < prices.length; i++) {
-            double trendComponent = basePrice + (trend * i);
-            double noise = (Math.random() - 0.5) * 5.0; // Random noise
-            prices[i] = trendComponent + noise;
+        for (int i = 0; i < days; i++) {
+            double dailyReturn = drift + volatility * (Math.random() - 0.5) * 2;
+            price *= (1 + dailyReturn);
+            prices[i] = price;
+            
+            // Add microstructure noise
+            prices[i] += 0.01 * (Math.random() - 0.5);
         }
         
         return prices;
     }
     
     private static double[] generateVolatilityData() {
-        // Simulate return data for volatility analysis
-        double[] returns = new double[16];
+        int days = 100;
+        double[] volatility = new double[days];
+        double currentVol = 0.15;
+        double meanReversion = 0.1;
+        double volOfVol = 0.05;
+        double longTermMean = 0.20;
         
-        for (int i = 0; i < returns.length; i++) {
-            // Simulate daily returns with varying volatility
-            double volatility = 0.01 + 0.02 * Math.sin(i * Math.PI / 8);
-            returns[i] = volatility * (Math.random() - 0.5) * 2;
+        for (int i = 0; i < days; i++) {
+            // GARCH-like volatility clustering
+            double innovation = volOfVol * (Math.random() - 0.5) * 2;
+            currentVol += meanReversion * (longTermMean - currentVol) + innovation;
+            currentVol = Math.max(0.05, Math.min(0.50, currentVol)); // Bounds
+            volatility[i] = currentVol;
         }
         
-        return returns;
-    }
-    
-    private static TransformResult applySoftThresholding(TransformResult result, double threshold) {
-        double[] approx = result.approximationCoeffs().clone();
-        double[] details = result.detailCoeffs().clone();
-        
-        // Apply soft thresholding to detail coefficients
-        for (int i = 0; i < details.length; i++) {
-            if (Math.abs(details[i]) < threshold) {
-                details[i] = 0;
-            } else {
-                details[i] = Math.signum(details[i]) * (Math.abs(details[i]) - threshold);
-            }
-        }
-        
-        // Create a new TransformResult with the thresholded coefficients
-        return TransformResult.create(approx, details);
+        return volatility;
     }
     
     private static double calculateNoiseReduction(double[] original, double[] denoised) {
-        double originalVariance = calculateVariance(original);
-        double denoisedVariance = calculateVariance(denoised);
-        return Math.max(0, (originalVariance - denoisedVariance) / originalVariance);
-    }
-    
-    private static double calculateVariance(double[] data) {
-        double mean = Arrays.stream(data).average().orElse(0);
-        return Arrays.stream(data).map(x -> Math.pow(x - mean, 2)).average().orElse(0);
-    }
-    
-    private static double calculateTrendSlope(double[] trend) {
-        if (trend.length < 2) return 0;
+        double sumOriginal = 0;
+        double sumDiff = 0;
         
-        // Simple linear regression slope
-        double n = trend.length;
-        double sumX = n * (n - 1) / 2;
-        double sumY = Arrays.stream(trend).sum();
-        double sumXY = 0;
-        double sumX2 = n * (n - 1) * (2 * n - 1) / 6;
-        
-        for (int i = 0; i < trend.length; i++) {
-            sumXY += i * trend[i];
+        for (int i = 1; i < original.length; i++) {
+            double origDiff = Math.abs(original[i] - original[i-1]);
+            double denoisedDiff = Math.abs(denoised[i] - denoised[i-1]);
+            sumOriginal += origDiff;
+            sumDiff += denoisedDiff;
         }
         
-        return (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        return 1.0 - (sumDiff / sumOriginal);
     }
     
-    private static double calculateTrendStrength(double[] trend, double[] details) {
-        double trendEnergy = calculateEnergy(trend);
-        double detailEnergy = calculateEnergy(details);
-        double totalEnergy = trendEnergy + detailEnergy;
-        
-        return totalEnergy > 0 ? trendEnergy / totalEnergy : 0;
-    }
-    
-    private static double calculateVolatility(double[] details) {
-        return Math.sqrt(Arrays.stream(details).map(x -> x * x).average().orElse(0));
-    }
-    
-    private static double[] detectVolatilityClusters(double[] details) {
-        // Simple volatility clustering detection
-        return Arrays.stream(details).filter(x -> Math.abs(x) > 0.01).toArray();
-    }
-    
-    private static double calculateEnergy(double[] coefficients) {
-        return Arrays.stream(coefficients).map(x -> x * x).sum();
+    private static double calculateEnergy(double[] signal) {
+        double energy = 0;
+        for (double value : signal) {
+            energy += value * value;
+        }
+        return energy;
     }
 }
