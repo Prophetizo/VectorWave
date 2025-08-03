@@ -2,70 +2,131 @@
 
 ## Table of Contents
 
-1. [Core Transform API](#core-transform-api)
-2. [Batch Processing API](#batch-processing-api)
-3. [Wavelet Families](#wavelet-families)
-4. [Denoising API](#denoising-api)
-5. [Continuous Wavelet Transform (CWT)](#continuous-wavelet-transform-cwt)
-6. [Financial Analysis API](#financial-analysis-api)
-7. [Streaming API](#streaming-api)
-8. [MODWT (Maximal Overlap DWT) API](#modwt-maximal-overlap-dwt-api)
-9. [Factory Pattern API](#factory-pattern-api)
-10. [Plugin Architecture](#plugin-architecture)
-11. [FFM (Foreign Function & Memory) API](#ffm-api)
-12. [Configuration API](#configuration-api)
-13. [Exception Hierarchy](#exception-hierarchy)
+1. [MODWT (Maximal Overlap DWT) API](#modwt-maximal-overlap-dwt-api) - **Primary Transform**
+2. [Wavelet Families](#wavelet-families)
+3. [Denoising API](#denoising-api)
+4. [Streaming API](#streaming-api)
+5. [Batch Processing API](#batch-processing-api)
+6. [Continuous Wavelet Transform (CWT)](#continuous-wavelet-transform-cwt)
+7. [Financial Analysis API](#financial-analysis-api)
+8. [Factory Pattern API](#factory-pattern-api)
+9. [Plugin Architecture](#plugin-architecture)
+10. [Memory Management API](#memory-management-api)
+11. [Configuration API](#configuration-api)
+12. [Exception Hierarchy](#exception-hierarchy)
 
-## Core Transform API
+## MODWT (Maximal Overlap DWT) API
 
-### WaveletTransform
+MODWT is the primary transform in VectorWave, offering shift-invariance and support for arbitrary signal lengths.
 
-Main transform class for forward and inverse DWT operations.
+### MODWTTransform
+
+Non-decimated wavelet transform for shift-invariant analysis.
 
 ```java
 // Creation
-WaveletTransform transform = WaveletTransformFactory.createDefault(wavelet);
-WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode);
-WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode, config);
+MODWTTransform modwt = new MODWTTransform(wavelet, boundaryMode);
 
-// Single signal operations
-TransformResult forward(double[] signal)
-double[] inverse(TransformResult result)
+// Forward transform - works with ANY signal length
+MODWTResult forward(double[] signal)
 
-// Batch operations (NEW)
-TransformResult[] forwardBatch(double[][] signals)
-double[][] inverseBatch(TransformResult[] results)
+// Inverse transform - perfect reconstruction
+double[] inverse(MODWTResult result)
+
+// Batch operations for multiple signals
+MODWTResult[] forwardBatch(double[][] signals)
+double[][] inverseBatch(MODWTResult[] results)
+
+// Performance monitoring
+PerformanceInfo getPerformanceInfo()
+long estimateProcessingTime(int signalLength)
 
 // Properties
-boolean isUsingVector()
 Wavelet getWavelet()
 BoundaryMode getBoundaryMode()
 ```
 
-### TransformResult
+### MODWTResult
 
-Immutable result of wavelet transform.
+Result of MODWT with same-length coefficients.
 
 ```java
-double[] approximationCoeffs()    // Low-frequency coefficients
-double[] detailCoeffs()          // High-frequency coefficients  
-int level()                      // Decomposition level
-Wavelet wavelet()                // Wavelet used
-BoundaryMode boundaryMode()      // Boundary handling mode
+double[] approximationCoeffs()  // Same length as input signal
+double[] detailCoeffs()        // Same length as input signal  
+int getSignalLength()          // Original signal length
+boolean isValid()              // Validation check
 
-// Factory methods
-static TransformResult create(double[] approx, double[] detail, Wavelet wavelet, BoundaryMode mode)
+// Factory method
+static MODWTResult create(double[] approx, double[] detail)
 ```
 
-### MultiLevelTransformResult
+### MultiLevelMODWTTransform
 
-Result of multi-level decomposition.
+Multi-level MODWT decomposition.
 
 ```java
-TransformResult[] getLevels()      // All decomposition levels
-TransformResult getLevel(int i)    // Specific level
-double[] getApproximation()        // Final approximation
-int levels()                       // Number of levels
+// Creation
+MultiLevelMODWTTransform mlModwt = new MultiLevelMODWTTransform(wavelet, boundaryMode);
+
+// Multi-level decomposition
+MultiLevelMODWTResult forward(double[] signal, int levels)
+
+// Reconstruction
+double[] inverse(MultiLevelMODWTResult result)
+
+// Maximum decomposition levels for a signal
+int getMaxDecompositionLevel(int signalLength)
+```
+
+### MultiLevelMODWTResult
+
+Result of multi-level MODWT decomposition.
+
+```java
+double[] getApproximationCoeffs()         // Final approximation
+double[] getDetailCoeffsAtLevel(int level) // Details at specific level
+int getLevels()                           // Number of decomposition levels
+MODWTResult getLevelResult(int level)     // Complete result at level
+```
+
+### Key MODWT Features
+
+- **Shift-invariant**: Translation of input results in corresponding translation of coefficients
+- **Arbitrary length**: Works with signals of any length (not just power-of-2)
+- **Non-decimated**: Output coefficients have same length as input
+- **Perfect reconstruction**: Machine-precision reconstruction error
+- **Java 23 optimizations**: Automatic SIMD acceleration for large signals
+
+### MODWT vs DWT Comparison
+
+| Feature | DWT | MODWT |
+|---------|-----|-------|
+| Signal length | Power of 2 required | Any length |
+| Output length | Half of input | Same as input |
+| Shift-invariant | No | Yes |
+| Redundancy | None | 2x redundancy |
+| Use cases | Compression | Pattern detection, time series |
+
+### MODWT Usage Examples
+
+```java
+// Basic usage with arbitrary signal length
+MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[] signal = new double[777]; // Any length!
+MODWTResult result = modwt.forward(signal);
+double[] reconstructed = modwt.inverse(result);
+
+// Multi-level decomposition
+MultiLevelMODWTTransform mlModwt = new MultiLevelMODWTTransform(
+    Daubechies.DB4, BoundaryMode.PERIODIC);
+MultiLevelMODWTResult mlResult = mlModwt.forward(signal, 3);
+
+// Shift-invariant pattern detection
+double[] signal1 = loadSignal();
+double[] signal2 = shiftRight(signal1, 5);
+MODWTResult result1 = modwt.forward(signal1);
+MODWTResult result2 = modwt.forward(signal2);
+// Coefficients in result2 are shifted versions of result1
 ```
 
 ## Batch Processing API
@@ -180,24 +241,41 @@ public enum BoundaryMode {
 
 ## Denoising API
 
-### WaveletDenoiser
+### MODWTStreamingDenoiser
+
+Real-time MODWT-based denoising with shift-invariant processing.
 
 ```java
-WaveletDenoiser denoiser = new WaveletDenoiser(wavelet);
+// Builder pattern for configuration
+MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
+    .wavelet(Daubechies.DB4)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .bufferSize(333)  // Any size - no power-of-2 restriction!
+    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+    .thresholdType(ThresholdType.SOFT)
+    .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
+    .noiseWindowSize(1000)
+    .build();
 
-// Single-level denoising
-double[] denoise(double[] signal, ThresholdMethod method)
+// Process data
+double[] denoised = denoiser.denoise(noisySignal);
 
-// Multi-level denoising
-double[] denoise(double[] signal, ThresholdMethod method, int levels)
-double[] denoise(double[] signal, ThresholdMethod method, int levels, ThresholdType type)
+// Get noise statistics
+double getEstimatedNoiseLevel()
+long getSamplesProcessed()
 
-// With custom threshold
-double[] denoiseWithThreshold(double[] signal, double threshold)
-double[] denoiseWithThreshold(double[] signal, double threshold, ThresholdType type)
+// Flow API subscription
+denoiser.subscribe(Flow.Subscriber<double[]> subscriber)
+```
 
-// Get threshold value
-double computeThreshold(double[] signal, ThresholdMethod method)
+### Noise Estimation Methods
+
+```java
+public enum NoiseEstimation {
+    MAD,        // Median Absolute Deviation (robust)
+    STD,        // Standard Deviation
+    ADAPTIVE    // Adaptive estimation
+}
 ```
 
 ### Threshold Methods
@@ -542,14 +620,13 @@ FactoryRegistry.registerDefaults()  // Registers all built-in factories
 ### Built-in Factories
 
 ```java
+// MODWTTransformFactory - Primary transform factory
+MODWTTransformFactory modwtFactory = new MODWTTransformFactory();
+MODWTTransform modwt = modwtFactory.create(wavelet);
+MODWTTransform modwtWithBoundary = modwtFactory.create(wavelet, BoundaryMode.PERIODIC);
+
 // WaveletOpsFactory
 Factory<WaveletOps, TransformConfig> opsFactory = WaveletOpsFactory.getInstance();
-
-// WaveletTransformFactory  
-WaveletTransformFactory factory = new WaveletTransformFactory();
-factory.boundaryMode(BoundaryMode.PERIODIC);
-factory.config(transformConfig);
-WaveletTransform transform = factory.create(wavelet);
 
 // CWTFactory
 Factory<CWTTransform, CWTConfig> cwtFactory = CWTFactory.getInstance();
@@ -610,70 +687,58 @@ Add to `META-INF/services/ai.prophetizo.wavelet.api.WaveletProvider`:
 com.example.CustomWaveletProvider
 ```
 
-## FFM API
+## Memory Management API
 
-### FFMWaveletTransform
+### MemoryPool
 
-Zero-copy transform using Foreign Function & Memory API (Java 23+).
-
-```java
-// Creation with memory pool
-try (FFMMemoryPool pool = new FFMMemoryPool();
-     FFMWaveletTransform transform = new FFMWaveletTransform(wavelet, pool)) {
-    
-    TransformResult result = transform.forward(signal);
-    double[] reconstructed = transform.inverse(result);
-    
-    // Statistics
-    FFMMemoryPool.Statistics stats = transform.getPoolStatistics();
-    System.out.println("Hit rate: " + stats.hitRate());
-}
-
-// Drop-in replacement
-FFMWaveletTransform ffm = new FFMWaveletTransform(wavelet);
-// Use exactly like WaveletTransform
-```
-
-### FFMMemoryPool
-
-SIMD-aligned memory management.
+Efficient array pooling for wavelet operations.
 
 ```java
-public class FFMMemoryPool implements AutoCloseable {
-    // Creation
-    FFMMemoryPool()
-    FFMMemoryPool(long maxMemoryBytes)
-    
-    // Allocation
-    MemorySegment allocateAligned(long size, int alignment)
-    MemorySegment allocate(long size)
-    
-    // Statistics
-    Statistics getStatistics()
-    
-    public record Statistics(
-        long totalAllocations,
-        long totalDeallocations,
-        long currentlyAllocated,
-        long peakAllocated,
-        double hitRate
-    ) {}
+// Creation
+MemoryPool pool = new MemoryPool();
+pool.setMaxArraysPerSize(10);  // Limit pool size
+
+// Borrow and return arrays
+double[] array = pool.borrowArray(1777); // Any size!
+try {
+    // Use array for MODWT operations
+    MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+    MODWTResult result = transform.forward(array);
+} finally {
+    pool.returnArray(array);  // Always return!
 }
+
+// Management
+pool.clear()              // Clear all pooled arrays
+pool.printStatistics()    // Print usage statistics
+
+// Metrics
+double getHitRate()       // Pool hit rate (0.0 to 1.0)
+int getTotalPooledCount() // Total arrays in pool
+long getBorrowCount()     // Total borrows
+long getReturnCount()     // Total returns
 ```
 
-### FFMStreamingTransform
+### AlignedMemoryPool
 
-Streaming operations with FFM optimization.
+SIMD-aligned memory allocation (internal use).
 
 ```java
-try (FFMStreamingTransform stream = new FFMStreamingTransform(wavelet, blockSize)) {
-    stream.processChunk(data, offset, length);
-    
-    if (stream.hasCompleteBlock()) {
-        TransformResult result = stream.getNextResult();
-    }
-}
+// Note: This class is for internal use only
+// Use MemoryPool for application code
 ```
+
+### Memory Best Practices
+
+1. **Always use try-finally** when borrowing arrays
+2. **Set reasonable pool limits** to prevent unbounded growth
+3. **Clear pools periodically** between processing phases
+4. **Monitor hit rates** to tune pool sizes
+5. **With MODWT**, borrow exact sizes needed (no padding required!)
+
+### FFM Integration (Future)
+
+Full Foreign Function & Memory API integration with MODWT is planned for future releases. Current FFM support includes memory pooling and aligned allocations for internal optimizations.
 
 ## Configuration API
 

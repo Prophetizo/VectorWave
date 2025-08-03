@@ -1,7 +1,6 @@
 # VectorWave Demo Suite
 
-This directory contains comprehensive demonstrations of the VectorWave wavelet transform library's capabilities. Each
-demo is a standalone Java application that showcases specific features and best practices.
+This directory contains comprehensive demonstrations of the VectorWave wavelet transform library's capabilities, featuring MODWT (Maximal Overlap Discrete Wavelet Transform) as the primary transform. Each demo is a standalone Java application that showcases specific features and best practices.
 
 ## Running the Demos
 
@@ -21,16 +20,16 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 ### 1. BasicUsageDemo
 
-**Purpose**: Introduction to fundamental VectorWave operations
+**Purpose**: Introduction to fundamental MODWT operations
 
 **What it covers**:
 
-- Creating wavelet transforms
-- Forward and inverse transforms
+- Creating MODWT transforms
+- Forward and inverse transforms with shift-invariance
 - Using the factory pattern
-- Working with different signal lengths
-- Error handling best practices
-- Coefficient analysis and manipulation
+- Working with ANY signal length (no power-of-2 restriction!)
+- Perfect reconstruction verification
+- Coefficient analysis with same-length outputs
 
 **Run**: `java -cp target/classes ai.prophetizo.demo.BasicUsageDemo`
 
@@ -237,21 +236,21 @@ java -cp target/classes ai.prophetizo.demo.DemoName
 
 ```java
 // Using factory
-WaveletTransform transform = new WaveletTransformFactory()
-                .boundaryMode(BoundaryMode.PERIODIC)
-                .create(Daubechies.DB4);
+MODWTTransform transform = new MODWTTransformFactory()
+                .create(Daubechies.DB4, BoundaryMode.PERIODIC);
 
 // Direct instantiation
-WaveletTransform transform = new WaveletTransform(
+MODWTTransform transform = new MODWTTransform(
         new Haar(), BoundaryMode.ZERO_PADDING);
 ```
 
 ### Basic Transform
 
 ```java
-double[] signal = new double[128]; // Must be power of 2
-TransformResult result = transform.forward(signal);
+double[] signal = new double[777]; // Any length - no power-of-2 restriction!
+MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
+// Coefficients have same length as input signal
 ```
 
 ### Memory-Efficient Processing

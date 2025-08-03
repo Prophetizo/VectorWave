@@ -2,6 +2,23 @@
 
 Development guide for Claude Code when working with the VectorWave repository.
 
+## Latest Updates (August 2025)
+
+### Complete Migration from DWT to MODWT - COMPLETE
+- **REMOVED**: All DWT (Discrete Wavelet Transform) classes and support
+- **PRIMARY TRANSFORM**: MODWT is now the primary and only discrete wavelet transform
+- **Key Changes**:
+  - Removed `WaveletTransform` class (DWT implementation)
+  - Removed `TransformResult` and related DWT classes
+  - Updated all demos to use MODWT exclusively
+  - Updated all documentation to focus on MODWT
+  - Removed all DWT test files
+- **Migration Benefits**:
+  - No more power-of-2 restrictions
+  - Shift-invariant processing throughout
+  - Better suited for real-time applications
+  - Simplified API with consistent behavior
+
 ## Recent Updates (August 2025)
 
 ### MODWT Implementation - COMPLETE
@@ -180,16 +197,16 @@ The batch processing implementation provides true SIMD parallelization across mu
 ### Usage Example
 
 ```java
-// Basic batch processing
-WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-double[][] signals = new double[32][1024];
-TransformResult[] results = transform.forwardBatch(signals);
+// Basic MODWT batch processing
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = new double[32][777]; // Any length!
+MODWTResult[] results = transform.forwardBatch(signals);
 
 // Advanced configuration
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+MODWTOptimizedTransformEngine.EngineConfig config = new MODWTOptimizedTransformEngine.EngineConfig()
     .withParallelism(1)  // Disable threading for pure SIMD
     .withSoALayout(true);
-OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
+MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine(config);
 ```
 
 ### Testing
@@ -200,10 +217,10 @@ OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
 ### Thread-Local Memory Management
 The `BatchSIMDTransform` class uses ThreadLocal storage to avoid allocations in hot paths. In thread pool or application server environments, call `BatchSIMDTransform.cleanupThreadLocals()` when done to prevent memory leaks:
 
-1. **WaveletTransform** (`wavelet/WaveletTransform.java`): Main transform engine
-   - Handles forward and inverse transforms
+1. **MODWTTransform** (`wavelet/modwt/MODWTTransform.java`): Main MODWT transform engine
+   - Handles forward and inverse transforms with shift-invariance
    - Supports periodic and zero-padding boundary modes
-   - Works with any wavelet type
+   - Works with any wavelet type and signal length
 
 2. **Wavelet Interfaces** (`wavelet/api/`):
    - `Wavelet`: Base sealed interface with core methods
@@ -224,10 +241,10 @@ The `BatchSIMDTransform` class uses ThreadLocal storage to avoid allocations in 
 ### Important Technical Notes
 - **Requires Java 23 or later** for full feature support
 - Java 17+ compatible fallback mode available
-- Power-of-2 signal lengths required for transforms
-- Currently implements single-level transforms only
+- MODWT works with ANY signal length (no power-of-2 restriction)
+- Multi-level MODWT transforms fully supported
 - No external dependencies (pure Java implementation)
-- Continuous wavelets are discretized for DWT operations
+- Continuous wavelets available via CWT implementation
 - **Vector API support** for high-performance SIMD operations
 
 ### Adding New Wavelets
