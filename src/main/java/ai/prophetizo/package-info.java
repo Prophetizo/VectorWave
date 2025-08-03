@@ -1,16 +1,17 @@
 /**
- * VectorWave - A comprehensive Fast Wavelet Transform (FWT) library for Java.
+ * VectorWave - A comprehensive MODWT (Maximal Overlap Discrete Wavelet Transform) library for Java.
  * 
  * <p>This package contains the main demonstration application for the VectorWave library,
- * showcasing the capabilities of various wavelet types and transform operations.</p>
+ * showcasing the capabilities of various wavelet types and transform operations using MODWT.</p>
  * 
  * <p>VectorWave is a pure Java implementation providing:</p>
  * <ul>
+ *   <li>MODWT - shift-invariant wavelet transform for any signal length</li>
  *   <li>Multiple wavelet families (orthogonal, biorthogonal, continuous)</li>
  *   <li>Type-safe API with sealed interface hierarchy</li>
  *   <li>Support for different boundary modes</li>
  *   <li>Zero external dependencies</li>
- *   <li>Comprehensive performance benchmarking</li>
+ *   <li>Java 23 optimizations with Vector API</li>
  * </ul>
  * 
  * <p>The main entry point is {@link ai.prophetizo.Main}, which demonstrates
@@ -23,15 +24,15 @@
  * java -cp target/classes ai.prophetizo.Main
  * 
  * // Or use the library programmatically
- * WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
- * double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
- * TransformResult result = transform.forward(signal);
+ * MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+ * double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};  // Any length!
+ * MODWTResult result = transform.forward(signal);
  * double[] reconstructed = transform.inverse(result);
  * }</pre>
  * 
- * <p>For detailed API usage, see {@link ai.prophetizo.wavelet} and its sub-packages.</p>
+ * <p>For detailed API usage, see {@link ai.prophetizo.wavelet.modwt} and related packages.</p>
  * 
- * @see ai.prophetizo.wavelet
+ * @see ai.prophetizo.wavelet.modwt
  * @see ai.prophetizo.wavelet.api
  * @since 1.0.0
  * @version 1.0-SNAPSHOT

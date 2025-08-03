@@ -69,19 +69,19 @@
  * 
  * try (PooledBuffer buffer = pool.acquireBuffer(signalLength)) {
  *     // Use buffer for wavelet operations
- *     WaveletTransform transform = new WaveletTransform(wavelet, boundary);
- *     TransformResult result = transform.forward(signal, buffer);
+ *     MODWTTransform transform = new MODWTTransform(wavelet, boundary);
+ *     MODWTResult result = transform.forward(signal, buffer);
  * } // Buffer automatically returned to pool
  * 
  * // Streaming large signal processing
- * StreamingWaveletProcessor processor = StreamingWaveletProcessor.builder()
+ * StreamingMODWTProcessor processor = StreamingMODWTProcessor.builder()
  *     .wavelet(Daubechies.DB4)
  *     .chunkSize(65536)
  *     .overlapRatio(0.1)
  *     .memoryLimit(512_000_000) // 512MB limit
  *     .build();
  * 
- * try (Stream<TransformResult> results = processor.process(largeSignalFile)) {
+ * try (Stream<MODWTResult> results = processor.process(largeSignalFile)) {
  *     results.forEach(this::processChunk);
  * }
  * 
@@ -124,7 +124,7 @@
  * <h2>Integration with VectorWave</h2>
  * <p>This package provides memory optimization for all VectorWave components:</p>
  * <ul>
- *   <li>Memory-efficient implementations of {@link ai.prophetizo.wavelet.WaveletTransform}</li>
+ *   <li>Memory-efficient implementations of {@link ai.prophetizo.wavelet.modwt.MODWTTransform}</li>
  *   <li>Optimized memory usage for {@link ai.prophetizo.wavelet.concurrent} operations</li>
  *   <li>Efficient memory management for {@link ai.prophetizo.wavelet.denoising} algorithms</li>
  *   <li>Cache-optimized storage for {@link ai.prophetizo.wavelet.cwt} operations</li>
@@ -148,7 +148,7 @@
  * </ul>
  * 
  * @since 1.0.0
- * @see ai.prophetizo.wavelet.WaveletTransform
+ * @see ai.prophetizo.wavelet.modwt.MODWTTransform
  * @see ai.prophetizo.wavelet.concurrent
  * @see ai.prophetizo.wavelet.internal.ScalarOps
  * @see java.lang.management.MemoryMXBean

@@ -22,7 +22,7 @@
  * 
  * <h2>Common Error Scenarios:</h2>
  * <ul>
- *   <li><strong>Signal Length Issues</strong> - Signals must have power-of-2 length</li>
+ *   <li><strong>Signal Length Issues</strong> - MODWT accepts any positive signal length</li>
  *   <li><strong>Null Parameters</strong> - Methods reject null signals, wavelets, or configurations</li>
  *   <li><strong>Invalid Numeric Values</strong> - Signals containing NaN or Infinity values are rejected</li>
  *   <li><strong>Empty Signals</strong> - Zero-length signals are not supported</li>
@@ -32,10 +32,10 @@
  * <h2>Usage Example:</h2>
  * <pre>{@code
  * try {
- *     WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode);
- *     TransformResult result = transform.forward(signal);
+ *     MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
+ *     MODWTResult result = transform.forward(signal);
  * } catch (InvalidSignalException e) {
- *     // Handle invalid signal (wrong length, NaN values, etc.)
+ *     // Handle invalid signal (empty, NaN values, etc.)
  *     System.err.println("Invalid signal: " + e.getMessage());
  * } catch (InvalidArgumentException e) {
  *     // Handle invalid arguments (null wavelet, invalid config, etc.)

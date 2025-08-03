@@ -3,8 +3,7 @@ package ai.prophetizo.wavelet.modwt;
 /**
  * Represents the result of a MODWT (Maximal Overlap Discrete Wavelet Transform).
  * 
- * <p>Unlike the standard DWT which produces decimated coefficients (half the original length),
- * MODWT produces non-decimated coefficients that maintain the same length as the input signal.
+ * <p>MODWT produces non-decimated coefficients that maintain the same length as the input signal.
  * This results in a shift-invariant transform that can handle arbitrary length signals.</p>
  * 
  * <p>For a signal of length N, both approximation and detail coefficients will have length N,
@@ -20,7 +19,7 @@ package ai.prophetizo.wavelet.modwt;
  * double[] detail = result.detailCoeffs();               // length 8
  * }</pre>
  * 
- * @see ai.prophetizo.wavelet.TransformResult
+ * @see MODWTTransform
  */
 public interface MODWTResult {
     
@@ -42,7 +41,7 @@ public interface MODWTResult {
      * These coefficients represent the smooth, low-frequency components of the signal.
      * 
      * <p>For MODWT, the approximation coefficients have the same length as the 
-     * original input signal, unlike DWT where they are half the length.</p>
+     * original input signal.</p>
      * 
      * @return a defensive copy of the approximation coefficients
      */
@@ -53,7 +52,7 @@ public interface MODWTResult {
      * These coefficients represent the edges, details, and high-frequency components.
      * 
      * <p>For MODWT, the detail coefficients have the same length as the 
-     * original input signal, unlike DWT where they are half the length.</p>
+     * original input signal.</p>
      * 
      * @return a defensive copy of the detail coefficients
      */

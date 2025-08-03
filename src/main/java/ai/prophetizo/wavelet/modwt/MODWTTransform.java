@@ -11,8 +11,8 @@ import java.util.Objects;
 /**
  * Implementation of the MODWT (Maximal Overlap Discrete Wavelet Transform) with Java 23 optimizations.
  * 
- * <p>The MODWT is a non-decimated form of the discrete wavelet transform that offers
- * several advantages over the standard DWT:</p>
+ * <p>The MODWT is a non-decimated wavelet transform that offers
+ * several advantages:</p>
  * <ul>
  *   <li><strong>Shift-invariant:</strong> Translation of input results in corresponding translation of coefficients</li>
  *   <li><strong>Arbitrary length signals:</strong> Can handle signals of any length, not just powers of two</li>
@@ -57,7 +57,7 @@ import java.util.Objects;
  * System.out.println(perfInfo.description());
  * }</pre>
  * 
- * @see ai.prophetizo.wavelet.WaveletTransform
+ * @see MODWTResult
  */
 public class MODWTTransform {
     
