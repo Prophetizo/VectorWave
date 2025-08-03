@@ -48,7 +48,15 @@ import java.util.concurrent.Flow;
  *
  * @since 3.0.0
  */
+@SuppressWarnings("try")
 public interface MODWTStreamingTransform extends Flow.Publisher<MODWTResult>, AutoCloseable {
+    
+    /**
+     * Closes this streaming transform and releases any resources.
+     * This method does not throw InterruptedException.
+     */
+    @Override
+    void close();
 
     /**
      * Create a streaming MODWT transform with default buffer size.
