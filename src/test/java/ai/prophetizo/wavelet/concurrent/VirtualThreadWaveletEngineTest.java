@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.concurrent;
 
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Haar;
@@ -56,7 +56,7 @@ class VirtualThreadWaveletEngineTest {
         BoundaryMode mode = BoundaryMode.PERIODIC;
         
         // When
-        TransformResult[] results = engine.transformBatch(testSignals, wavelet, mode);
+        MODWTResult[] results = engine.transformBatch(testSignals, wavelet, mode);
         
         // Then
         assertNotNull(results);
@@ -76,7 +76,7 @@ class VirtualThreadWaveletEngineTest {
         double[][] emptySignals = new double[0][];
         
         // When
-        TransformResult[] results = engine.transformBatch(
+        MODWTResult[] results = engine.transformBatch(
             emptySignals, new Haar(), BoundaryMode.PERIODIC);
         
         // Then
@@ -98,7 +98,7 @@ class VirtualThreadWaveletEngineTest {
         
         // When
         long startTime = System.nanoTime();
-        TransformResult[] results = engine.transformBatch(
+        MODWTResult[] results = engine.transformBatch(
             largeSignals, Daubechies.DB4, BoundaryMode.PERIODIC);
         long duration = System.nanoTime() - startTime;
         
@@ -108,7 +108,7 @@ class VirtualThreadWaveletEngineTest {
                          numSignals, duration / 1_000_000.0);
         
         // Verify all results are valid
-        for (TransformResult result : results) {
+        for (MODWTResult result : results) {
             assertNotNull(result);
         }
     }
@@ -201,7 +201,7 @@ class VirtualThreadWaveletEngineTest {
         // When - time virtual thread execution
         long startVirtual = System.nanoTime();
         try (var virtualEngine = new VirtualThreadWaveletEngine()) {
-            TransformResult[] virtualResults = virtualEngine.transformBatch(
+            MODWTResult[] virtualResults = virtualEngine.transformBatch(
                 smallSignals, new Haar(), BoundaryMode.PERIODIC);
             assertEquals(numTasks, virtualResults.length);
         }
@@ -210,7 +210,7 @@ class VirtualThreadWaveletEngineTest {
         // Compare with regular parallel engine
         long startRegular = System.nanoTime();
         try (var regularEngine = new ParallelWaveletEngine()) {
-            TransformResult[] regularResults = regularEngine.transformBatch(
+            MODWTResult[] regularResults = regularEngine.transformBatch(
                 smallSignals, new Haar(), BoundaryMode.PERIODIC);
             assertEquals(numTasks, regularResults.length);
         }

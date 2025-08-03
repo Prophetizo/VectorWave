@@ -1,8 +1,7 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.OptimizedTransformEngine;
+import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.api.*;
 
 import java.util.Arrays;
@@ -49,12 +48,10 @@ public class OptimizationDemo {
         
         for (Wavelet wavelet : wavelets) {
             try {
-                WaveletTransform transform = new WaveletTransformFactory()
-                        .boundaryMode(BoundaryMode.PERIODIC)
-                        .create(wavelet);
+                MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
                 
                 long startTime = System.nanoTime();
-                TransformResult result = transform.forward(signal);
+                MODWTResult result = transform.forward(signal);
                 double[] reconstructed = transform.inverse(result);
                 long endTime = System.nanoTime();
                 
@@ -290,7 +287,7 @@ public class OptimizationDemo {
         return Math.sqrt(sumSquaredError / original.length); // RMSE
     }
     
-    private static double calculateCompressionRatio(TransformResult result) {
+    private static double calculateCompressionRatio(MODWTResult result) {
         double[] approx = result.approximationCoeffs();
         double[] detail = result.detailCoeffs();
         

@@ -1,13 +1,13 @@
 # VectorWave
 
-High-performance wavelet transform library for Java 23+ with comprehensive wavelet family support, SIMD optimizations, and both Discrete (DWT) and Continuous (CWT) wavelet transforms.
+High-performance wavelet transform library for Java 23+ with comprehensive wavelet family support, SIMD optimizations, featuring the Maximal Overlap Discrete Wavelet Transform (MODWT) and Continuous Wavelet Transform (CWT).
 
 ## Features
 
 ### Core Capabilities
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
 - **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
-- **Maximal Overlap DWT (MODWT)**: Shift-invariant transform for arbitrary length signals
+- **MODWT (Maximal Overlap Discrete Wavelet Transform)**: Primary transform with shift-invariance and arbitrary length signal support
 - **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
 - **Financial Wavelets**: Specialized wavelets for market analysis
   - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
@@ -60,8 +60,8 @@ High-performance wavelet transform library for Java 23+ with comprehensive wavel
   - Signal-adaptive placement based on energy distribution
   - Multiple spacing strategies (dyadic, logarithmic, mel-scale)
   - Real-time adaptation with sub-millisecond overhead
-- **DWT-Based CWT Reconstruction**: Fast and stable reconstruction method
-  - Leverages orthogonal DWT properties
+- **MODWT-Based CWT Reconstruction**: Fast and stable reconstruction method
+  - Leverages orthogonal wavelet properties
   - 10-300x faster than standard methods
   - O(N log N) complexity
   - Ideal for financial applications and real-time processing
@@ -107,21 +107,23 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 
 ## Usage
 
-### Basic Transform
+### Basic Transform (MODWT)
 ```java
-// Simple transform
-WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
-double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-TransformResult result = transform.forward(signal);
+// Simple transform using MODWT
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0}; // Any length!
+MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
 
 // Using different wavelets
-transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
-transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
-transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
+transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+transform = new MODWTTransform(BiorthogonalSpline.BIOR1_3, BoundaryMode.PERIODIC);
+
+// Factory pattern for convenience
+MODWTTransform transform = MODWTTransformFactory.create(new Haar());
 ```
 
-### MODWT (Maximal Overlap DWT)
+### MODWT Features
 ```java
 // MODWT for shift-invariant analysis with arbitrary length signals
 MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
@@ -146,26 +148,26 @@ MODWTResult shiftedResult = modwt.forward(shifted);
 ### Batch Processing
 ```java
 // Process multiple signals in parallel using SIMD
-WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-double[][] signals = generateSignals(32, 1024); // 32 signals of length 1024
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = generateSignals(32, 250); // 32 signals of any length!
 
 // Batch forward transform - processes multiple signals simultaneously
-TransformResult[] results = transform.forwardBatch(signals);
+MODWTResult[] results = transform.forwardBatch(signals);
 
 // Batch inverse transform
 double[][] reconstructed = transform.inverseBatch(results);
 
 // For maximum performance with large batches
-OptimizedTransformEngine engine = new OptimizedTransformEngine();
-TransformResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
+MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
+MODWTResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
 
 // Configure batch processing
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+MODWTOptimizedTransformEngine.EngineConfig config = new MODWTOptimizedTransformEngine.EngineConfig()
     .withParallelism(8)           // Use 8 threads
     .withSoALayout(true)          // Enable Structure-of-Arrays optimization
     .withSpecializedKernels(true) // Use optimized kernels
     .withCacheBlocking(true);     // Enable cache-aware blocking
-OptimizedTransformEngine customEngine = new OptimizedTransformEngine(config);
+MODWTOptimizedTransformEngine customEngine = new MODWTOptimizedTransformEngine(config);
 
 // Thread-local cleanup for batch SIMD operations (important in thread pools)
 try {
@@ -219,7 +221,7 @@ FinancialConfig waveletConfig = new FinancialConfig(0.045); // 4.5% annual risk-
 
 FinancialWaveletAnalyzer waveletAnalyzer = new FinancialWaveletAnalyzer(waveletConfig);
 double sharpeRatio = waveletAnalyzer.calculateSharpeRatio(returns);
-double waveletSharpe = waveletAnalyzer.calculateWaveletSharpeRatio(returns); // Must be power-of-2 length
+double waveletSharpe = waveletAnalyzer.calculateWaveletSharpeRatio(returns); // Works with any length
 
 // Live trading simulation with real-time analysis
 LiveTradingSimulation simulation = new LiveTradingSimulation();
@@ -289,10 +291,10 @@ CWTConfig config = CWTConfig.builder()
     .build();
 CWTTransform fftCwt = new CWTTransform(wavelet, config);
 
-// Fast DWT-based CWT reconstruction (recommended)
-DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-double[] reconstructed = dwtInverse.reconstruct(cwtResult);
-// Works best with dyadic scales for optimal accuracy
+// Fast MODWT-based CWT reconstruction (recommended)
+MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+double[] reconstructed = modwtInverse.reconstruct(cwtResult);
+// Works with any scales due to MODWT's flexibility
 ```
 
 ### Wavelet Registry and Discovery
@@ -450,7 +452,7 @@ The project includes comprehensive demos showcasing various features:
 ### CWT Demonstrations
 - `CWTBasicDemo` - Continuous wavelet transform basics
 - `CWTFFTOptimizationDemo` - FFT acceleration examples
-- `DWTBasedReconstructionDemo` - Fast reconstruction methods
+- `MODWTBasedReconstructionDemo` - Fast reconstruction methods
 - `ShannonWaveletComparisonDemo` - Shannon vs Shannon-Gabor comparison
 
 ### Performance and Optimization

@@ -5,6 +5,8 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine;
 import ai.prophetizo.wavelet.internal.*;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -37,7 +39,7 @@ public class OptimizationBenchmark {
     private double[] signal;
     private double[][] batchSignals;
     private Wavelet wavelet;
-    private WaveletTransform baselineTransform;
+    private MODWTTransform baselineTransform;
     private OptimizedTransformEngine optimizedEngine;
     private ParallelWaveletEngine parallelEngine;
     
@@ -61,7 +63,7 @@ public class OptimizationBenchmark {
         };
         
         // Initialize transforms
-        baselineTransform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
+        baselineTransform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
         optimizedEngine = new OptimizedTransformEngine();
         parallelEngine = new ParallelWaveletEngine();
         
@@ -84,19 +86,30 @@ public class OptimizationBenchmark {
         double[] lowPass = ((DiscreteWavelet) wavelet).lowPassDecomposition();
         double[] highPass = ((DiscreteWavelet) wavelet).highPassDecomposition();
         
-        double[] approx = ScalarOps.convolveAndDownsamplePeriodic(
-            signal, lowPass, signalSize, lowPass.length);
-        double[] detail = ScalarOps.convolveAndDownsamplePeriodic(
-            signal, highPass, signalSize, highPass.length);
+        // Scale filters for MODWT
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPass = new double[lowPass.length];
+        double[] scaledHighPass = new double[highPass.length];
+        for (int i = 0; i < lowPass.length; i++) {
+            scaledLowPass[i] = lowPass[i] * scale;
+            scaledHighPass[i] = highPass[i] * scale;
+        }
+        
+        // MODWT produces same-length coefficients
+        double[] approx = new double[signalSize];
+        double[] detail = new double[signalSize];
+        
+        ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approx);
+        ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detail);
         
         bh.consume(approx);
         bh.consume(detail);
     }
     
     /**
-     * Basic Vector API implementation.
+     * Basic Vector API implementation - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void vectorBasic(Blackhole bh) {
         double[] lowPass = ((DiscreteWavelet) wavelet).lowPassDecomposition();
         double[] highPass = ((DiscreteWavelet) wavelet).highPassDecomposition();
@@ -111,9 +124,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * ARM-optimized implementation (if available).
+     * ARM-optimized implementation - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void vectorARM(Blackhole bh) {
         if (!VectorOpsARM.isAppleSilicon()) {
             // Fall back to basic vector
@@ -134,9 +147,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * Memory-pooled operations.
+     * Memory-pooled operations - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void memoryPooled(Blackhole bh) {
         double[] lowPass = ((DiscreteWavelet) wavelet).lowPassDecomposition();
         double[] highPass = ((DiscreteWavelet) wavelet).highPassDecomposition();
@@ -151,9 +164,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * Specialized kernel (if available).
+     * Specialized kernel - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void specializedKernel(Blackhole bh) {
         if (!waveletType.equals("db4") && !waveletType.equals("sym4") && !waveletType.equals("haar")) {
             // No specialized kernel, fall back
@@ -181,9 +194,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * Cache-aware implementation for large signals.
+     * Cache-aware implementation - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void cacheAware(Blackhole bh) {
         if (signalSize < 8192) {
             // Too small for cache blocking
@@ -206,9 +219,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * Gather/scatter operations (if available).
+     * Gather/scatter operations - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void gatherScatter(Blackhole bh) {
         if (!GatherScatterOps.isGatherScatterAvailable()) {
             // Fall back
@@ -233,7 +246,7 @@ public class OptimizationBenchmark {
      */
     @Benchmark
     public void fullyOptimized(Blackhole bh) {
-        TransformResult result = optimizedEngine.transform(signal, wavelet, BoundaryMode.PERIODIC);
+        MODWTResult result = optimizedEngine.transform(signal, wavelet, BoundaryMode.PERIODIC);
         bh.consume(result);
     }
     
@@ -242,7 +255,7 @@ public class OptimizationBenchmark {
      */
     @Benchmark
     public void batchBaseline(Blackhole bh) {
-        TransformResult[] results = new TransformResult[16];
+        MODWTResult[] results = new MODWTResult[16];
         for (int i = 0; i < 16; i++) {
             results[i] = baselineTransform.forward(batchSignals[i]);
         }
@@ -250,9 +263,9 @@ public class OptimizationBenchmark {
     }
     
     /**
-     * Batch processing - SoA layout.
+     * Batch processing - SoA layout - DISABLED for MODWT migration.
      */
-    @Benchmark
+    // @Benchmark  // Disabled - no direct MODWT equivalent
     public void batchSoA(Blackhole bh) {
         if (!waveletType.equals("haar")) {
             // Use general SoA transform
@@ -286,7 +299,7 @@ public class OptimizationBenchmark {
      */
     @Benchmark
     public void batchParallel(Blackhole bh) {
-        TransformResult[] results = parallelEngine.transformBatch(
+        MODWTResult[] results = parallelEngine.transformBatch(
             batchSignals, wavelet, BoundaryMode.PERIODIC);
         bh.consume(results);
     }
@@ -296,7 +309,7 @@ public class OptimizationBenchmark {
      */
     @Benchmark
     public void batchOptimized(Blackhole bh) {
-        TransformResult[] results = optimizedEngine.transformBatch(
+        MODWTResult[] results = optimizedEngine.transformBatch(
             batchSignals, wavelet, BoundaryMode.PERIODIC);
         bh.consume(results);
     }

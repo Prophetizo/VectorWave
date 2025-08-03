@@ -1,12 +1,12 @@
 package ai.prophetizo.wavelet.concurrent;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Wavelet;
-import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine.MultiLevelResult;
 import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine.SignalProcessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,14 +73,16 @@ class ParallelWaveletEngineTest {
     @Test
     void testBatchTransform() {
         double[][] signals = createTestSignals(100, 64);
-        TransformResult[] results = engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+        MODWTResult[] results = engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
         
         assertEquals(100, results.length);
-        for (TransformResult result : results) {
+        for (MODWTResult result : results) {
             assertNotNull(result);
             assertNotNull(result.approximationCoeffs());
             assertNotNull(result.detailCoeffs());
-            assertEquals(64, result.approximationCoeffs().length + result.detailCoeffs().length);
+            // MODWT produces same-length coefficients
+            assertEquals(64, result.approximationCoeffs().length);
+            assertEquals(64, result.detailCoeffs().length);
         }
     }
     
@@ -88,10 +90,10 @@ class ParallelWaveletEngineTest {
     void testSmallBatchFallback() {
         // Small batch should use sequential processing
         double[][] signals = createTestSignals(2, 64);
-        TransformResult[] results = engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+        MODWTResult[] results = engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
         
         assertEquals(2, results.length);
-        for (TransformResult result : results) {
+        for (MODWTResult result : results) {
             assertNotNull(result);
         }
     }
@@ -101,16 +103,18 @@ class ParallelWaveletEngineTest {
     void testAsyncTransform() throws Exception {
         double[][] signals = createTestSignals(50, 128);
         
-        CompletableFuture<TransformResult[]> future = 
+        CompletableFuture<MODWTResult[]> future = 
             engine.transformBatchAsync(signals, Daubechies.DB4, BoundaryMode.ZERO_PADDING);
         
         assertNotNull(future);
-        TransformResult[] results = future.get();
+        MODWTResult[] results = future.get();
         
         assertEquals(50, results.length);
-        for (TransformResult result : results) {
+        for (MODWTResult result : results) {
             assertNotNull(result);
-            assertEquals(128, result.approximationCoeffs().length + result.detailCoeffs().length);
+            // MODWT produces same-length coefficients
+            assertEquals(128, result.approximationCoeffs().length);
+            assertEquals(128, result.detailCoeffs().length);
         }
     }
     
@@ -141,24 +145,26 @@ class ParallelWaveletEngineTest {
         double[][] signals = createTestSignals(20, 128);
         int levels = 3;
         
-        MultiLevelResult[] results = engine.multiLevelDecomposeBatch(
+        MultiLevelMODWTResult[] results = engine.multiLevelDecomposeBatch(
             signals, new Haar(), levels, BoundaryMode.PERIODIC);
         
         assertEquals(20, results.length);
         
-        for (MultiLevelResult result : results) {
+        for (MultiLevelMODWTResult result : results) {
             assertNotNull(result);
             assertTrue(result.getLevels() <= levels);
             assertTrue(result.getLevels() > 0);
             
-            // Check each level
-            for (int i = 0; i < result.getLevels(); i++) {
-                TransformResult levelResult = result.getLevel(i);
-                assertNotNull(levelResult);
+            // Check each level's detail coefficients
+            for (int i = 1; i <= result.getLevels(); i++) {
+                double[] detailCoeffs = result.getDetailCoeffsAtLevel(i);
+                assertNotNull(detailCoeffs);
+                assertEquals(128, detailCoeffs.length); // MODWT preserves length
             }
             
             // Check final approximation
-            assertNotNull(result.getFinalApproximation());
+            assertNotNull(result.getApproximationCoeffs());
+            assertEquals(128, result.getApproximationCoeffs().length);
         }
     }
     
@@ -168,12 +174,12 @@ class ParallelWaveletEngineTest {
         double[][] signals = createTestSignals(10, 16); // Can only do 2 levels max
         int requestedLevels = 5;
         
-        MultiLevelResult[] results = engine.multiLevelDecomposeBatch(
+        MultiLevelMODWTResult[] results = engine.multiLevelDecomposeBatch(
             signals, new Haar(), requestedLevels, BoundaryMode.PERIODIC);
         
-        for (MultiLevelResult result : results) {
-            assertTrue(result.getLevels() < requestedLevels);
-            assertTrue(result.getLevels() <= 3); // 16 -> 8 -> 4 -> 2 (but might stop at 4)
+        for (MultiLevelMODWTResult result : results) {
+            // MODWT can handle any signal length, so it should be able to do all requested levels
+            assertEquals(requestedLevels, result.getLevels());
         }
     }
     
@@ -191,7 +197,7 @@ class ParallelWaveletEngineTest {
                 futures.add(executor.submit(() -> {
                     try {
                         double[][] signals = createTestSignals(25, 64);
-                        TransformResult[] results = engine.transformBatch(
+                        MODWTResult[] results = engine.transformBatch(
                             signals, new Haar(), BoundaryMode.PERIODIC);
                         
                         if (results.length == 25) {
@@ -222,9 +228,9 @@ class ParallelWaveletEngineTest {
             engine.transformBatch(null, new Haar(), BoundaryMode.PERIODIC);
         });
         
-        // Test with invalid signal (will fail in WaveletTransform)
+        // MODWT can handle single element arrays, so test with empty array instead
         assertThrows(RuntimeException.class, () -> {
-            double[][] signals = new double[][]{ new double[]{1.0} }; // Too small
+            double[][] signals = new double[][]{ new double[]{} }; // Empty
             engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
         });
     }
@@ -234,7 +240,7 @@ class ParallelWaveletEngineTest {
     void testDifferentParallelismLevels(int parallelism) {
         try (ParallelWaveletEngine customEngine = new ParallelWaveletEngine(parallelism)) {
             double[][] signals = createTestSignals(100, 64);
-            TransformResult[] results = customEngine.transformBatch(
+            MODWTResult[] results = customEngine.transformBatch(
                 signals, new Haar(), BoundaryMode.PERIODIC);
             
             assertEquals(100, results.length);
@@ -249,11 +255,11 @@ class ParallelWaveletEngineTest {
         BoundaryMode mode = BoundaryMode.ZERO_PADDING;
         
         // Parallel results
-        TransformResult[] parallelResults = engine.transformBatch(signals, wavelet, mode);
+        MODWTResult[] parallelResults = engine.transformBatch(signals, wavelet, mode);
         
         // Sequential results
-        TransformResult[] sequentialResults = new TransformResult[signals.length];
-        WaveletTransform transform = new WaveletTransform(wavelet, mode);
+        MODWTResult[] sequentialResults = new MODWTResult[signals.length];
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
         for (int i = 0; i < signals.length; i++) {
             sequentialResults[i] = transform.forward(signals[i]);
         }
@@ -296,7 +302,7 @@ class ParallelWaveletEngineTest {
         // Test shutdown with pending tasks
         try (ParallelWaveletEngine timeoutEngine = new ParallelWaveletEngine(1)) {
             // Submit a long-running task
-            CompletableFuture<TransformResult[]> future = timeoutEngine.transformBatchAsync(
+            CompletableFuture<MODWTResult[]> future = timeoutEngine.transformBatchAsync(
                 createTestSignals(1000, 1024), 
                 Daubechies.DB4, 
                 BoundaryMode.PERIODIC

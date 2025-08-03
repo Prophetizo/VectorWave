@@ -69,7 +69,7 @@ public class MultiLevelMODWTTransform {
      * Constructs a multi-level MODWT transformer.
      * 
      * @param wavelet The wavelet to use for transformations
-     * @param boundaryMode The boundary handling mode (currently only PERIODIC)
+     * @param boundaryMode The boundary handling mode (PERIODIC or ZERO_PADDING)
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if boundary mode is not supported
      */

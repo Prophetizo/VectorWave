@@ -653,6 +653,34 @@ public final class ScalarOps {
     }
 
     /**
+     * Performs zero-padding convolution for MODWT (without downsampling).
+     * This treats values outside the signal boundaries as zeros.
+     * 
+     * @param signal The input signal of length N.
+     * @param filter The filter coefficients of length L.
+     * @param output The output array of length N (same as input).
+     */
+    public static void zeroPaddingConvolveMODWT(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+            
+            for (int l = 0; l < filterLen; l++) {
+                // Zero-padding indexing: if index is outside bounds, treat as zero
+                int signalIndex = t - l;
+                if (signalIndex >= 0 && signalIndex < signalLen) {
+                    sum += signal[signalIndex] * filter[l];
+                }
+                // else: signal value is zero, no contribution to sum
+            }
+            
+            output[t] = sum;
+        }
+    }
+
+    /**
      * Scales wavelet filter coefficients for MODWT at a specific level.
      * MODWT uses scaled filters: h_j,l = h_l / 2^(j/2) for level j.
      * 

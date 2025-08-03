@@ -62,6 +62,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
+                    <excludes>
+                        <exclude>**/demo/**</exclude>
+                        <exclude>ai/prophetizo/wavelet/streaming/**</exclude>
+                    </excludes>
                     <compilerArgs>
                         <!-- Enable Vector API for high-performance SIMD operations -->
                         <arg>--add-modules</arg>

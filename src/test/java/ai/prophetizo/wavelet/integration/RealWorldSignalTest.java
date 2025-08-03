@@ -1,10 +1,10 @@
 package ai.prophetizo.wavelet.integration;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTTransformFactory;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.modwt.test.BaseMODWTTest;
 import ai.prophetizo.wavelet.util.ToleranceConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,9 +23,9 @@ import ai.prophetizo.wavelet.test.TestConstants;
  * Tests wavelet transforms on signals commonly found in applications.
  */
 @DisplayName("Real-World Signal Integration Tests")
-class RealWorldSignalTest extends BaseWaveletTest {
+class RealWorldSignalTest extends BaseMODWTTest {
     
-    private WaveletTransformFactory factory;
+    private MODWTTransformFactory factory;
     
     // Test tolerance constants - now using centralized values
     private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
@@ -47,13 +47,13 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @BeforeEach
     protected void setUp(org.junit.jupiter.api.TestInfo testInfo) {
         super.setUp(testInfo);
-        factory = new WaveletTransformFactory();
+        factory = new MODWTTransformFactory();
     }
     
     @Test
     @DisplayName("Should decompose step function effectively")
     void testStepFunction() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         
         // Create step function with discontinuity at odd index to ensure non-zero detail
         double[] signal = new double[STEP_FUNCTION_LENGTH];
@@ -64,7 +64,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
             signal[i] = -1.0;
         }
         
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         
         // Haar should capture the step efficiently
         // Most energy should be in detail coefficients
@@ -84,12 +84,12 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should handle ECG-like signals")
     void testECGLikeSignal() {
-        WaveletTransform transform = factory.create(Daubechies.DB4);
+        MODWTTransform transform = factory.create(Daubechies.DB4);
         
         // Simulate ECG-like signal with R-peaks
         double[] signal = createECGLikeSignal(ECG_SIGNAL_LENGTH);
         
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
         
         assertArrayEquals(signal, reconstructed, TOLERANCE);
@@ -105,7 +105,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should decompose noisy signal effectively")
     void testNoisySignal() {
-        WaveletTransform transform = factory.create(Daubechies.DB2);
+        MODWTTransform transform = factory.create(Daubechies.DB2);
         
         // Create signal with noise
         double[] cleanSignal = createSineWave(DEFAULT_SIGNAL_LENGTH, SINE_WAVE_FREQUENCY);
@@ -116,7 +116,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
             noisySignal[i] = cleanSignal[i] + noise[i];
         }
         
-        TransformResult result = transform.forward(noisySignal);
+        MODWTResult result = transform.forward(noisySignal);
         
         // Detail coefficients should contain more noise
         double detailVariance = computeVariance(result.detailCoeffs());
@@ -136,9 +136,9 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @MethodSource("providePolynomialSignals")
     @DisplayName("Should handle polynomial signals according to vanishing moments")
     void testPolynomialSignals(String waveletName, Wavelet wavelet, int degree, double[] signal) {
-        WaveletTransform transform = factory.create(wavelet);
+        MODWTTransform transform = factory.create(wavelet);
         
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
         
         assertArrayEquals(signal, reconstructed, TOLERANCE,
@@ -162,7 +162,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should handle piecewise smooth signals")
     void testPiecewiseSmoothSignal() {
-        WaveletTransform transform = factory.create(Daubechies.DB4);
+        MODWTTransform transform = factory.create(Daubechies.DB4);
         
         // Create piecewise smooth signal
         double[] signal = new double[DEFAULT_SIGNAL_LENGTH];
@@ -189,7 +189,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
             signal[i] = PIECEWISE_CONSTANT_VALUE * (DEFAULT_SIGNAL_LENGTH - i) / (double)PIECEWISE_SEGMENT_LENGTH;
         }
         
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
         
         assertArrayEquals(signal, reconstructed, TOLERANCE);
@@ -198,7 +198,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should handle signals with outliers")
     void testSignalWithOutliers() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         
         // Create smooth signal with outliers
         double[] signal = createSineWave(128, 0.1);
@@ -208,7 +208,7 @@ class RealWorldSignalTest extends BaseWaveletTest {
         signal[60] = -8.0;  // Negative outlier
         signal[90] = 15.0;  // Large positive outlier
         
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
         
         assertArrayEquals(signal, reconstructed, TOLERANCE);

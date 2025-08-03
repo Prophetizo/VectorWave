@@ -1,8 +1,7 @@
 package ai.prophetizo.financial;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.util.ValidationUtils;
@@ -19,14 +18,11 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
  * {@link ai.prophetizo.wavelet.denoising.WaveletDenoiser} for more sophisticated
  * denoising with configurable thresholds.</p>
  * 
- * <p><strong>Important Requirements:</strong></p>
+ * <p><strong>Note:</strong></p>
  * <ul>
- *   <li>All wavelet-based methods require input arrays with power-of-two length 
- *       (e.g., 2, 4, 8, 16, 32, 64, 128, 256, etc.)</li>
- *   <li>If your data doesn't meet this requirement, you'll need to pad it to the 
- *       next power of two or truncate to the previous power of two</li>
- *   <li>Standard financial calculations (like basic Sharpe ratio) do not have 
- *       this restriction</li>
+ *   <li>This class now uses MODWT (Maximal Overlap Discrete Wavelet Transform) which works with any signal length</li>
+ *   <li>MODWT is shift-invariant and provides better time-frequency localization for financial analysis</li>
+ *   <li>The transform produces same-length coefficients, preserving temporal alignment</li>
  * </ul>
  * 
  * <p><strong>Usage Example:</strong></p>
@@ -44,7 +40,7 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
 public class FinancialWaveletAnalyzer {
     
     private final FinancialConfig config;
-    private final WaveletTransform transform;
+    private final MODWTTransform transform;
     
     
     /**
@@ -58,9 +54,7 @@ public class FinancialWaveletAnalyzer {
             throw new IllegalArgumentException("Financial configuration cannot be null");
         }
         this.config = config;
-        this.transform = new WaveletTransformFactory()
-                .boundaryMode(BoundaryMode.PERIODIC)
-                .create(new Haar());
+        this.transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
     }
     
     /**
@@ -70,7 +64,7 @@ public class FinancialWaveletAnalyzer {
      * @param transform the wavelet transform to use for signal processing
      * @throws IllegalArgumentException if config or transform is null
      */
-    public FinancialWaveletAnalyzer(FinancialConfig config, WaveletTransform transform) {
+    public FinancialWaveletAnalyzer(FinancialConfig config, MODWTTransform transform) {
         if (config == null) {
             throw new IllegalArgumentException("Financial configuration cannot be null");
         }
@@ -185,7 +179,7 @@ public class FinancialWaveletAnalyzer {
         }
         
         // Apply wavelet transform for denoising
-        TransformResult result = transform.forward(returns);
+        MODWTResult result = transform.forward(returns);
         
         // WARNING: Aggressive denoising approach - zeros ALL detail coefficients
         // This removes all high-frequency components, which may include:
@@ -210,12 +204,12 @@ public class FinancialWaveletAnalyzer {
         double[] detailCoeffs = result.detailCoeffs();
         
         // Create zero-filled detail coefficients array of the same length
-        // The TransformResult.create method requires matching array lengths
+        // The MODWTResultImpl constructor requires matching array lengths
         double[] zeroDetails = new double[detailCoeffs.length];
         
-        // Create a new TransformResult with original approximation and zeroed details
+        // Create a new MODWTResult with original approximation and zeroed details
         // Note: approxCoeffs and detailCoeffs have the same length by design from the forward transform
-        TransformResult denoisedResult = TransformResult.create(approxCoeffs, zeroDetails);
+        MODWTResult denoisedResult = new ai.prophetizo.wavelet.modwt.MODWTResultImpl(approxCoeffs, zeroDetails);
         
         // Perform inverse transform to get denoised signal
         double[] denoisedReturns = transform.inverse(denoisedResult);
@@ -237,7 +231,7 @@ public class FinancialWaveletAnalyzer {
      * 
      * @return the wavelet transform
      */
-    public WaveletTransform getTransform() {
+    public MODWTTransform getTransform() {
         return transform;
     }
     

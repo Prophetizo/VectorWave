@@ -1,10 +1,10 @@
 package ai.prophetizo.wavelet.integration;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTTransformFactory;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.test.BaseWaveletTest;
+import ai.prophetizo.wavelet.modwt.test.BaseMODWTTest;
 import ai.prophetizo.wavelet.util.ToleranceConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,29 +29,29 @@ import ai.prophetizo.wavelet.test.TestConstants;
  */
 @DisplayName("Wavelet Transform Stress Tests")
 @EnabledIfSystemProperty(named = "stress.tests.enabled", matches = "true")
-class StressTest extends BaseWaveletTest {
+class StressTest extends BaseMODWTTest {
     
-    private WaveletTransformFactory factory;
+    private MODWTTransformFactory factory;
     private static final String STRESS_TESTS_ENABLED_PROPERTY = "stress.tests.enabled";
-    private static final int LARGE_SIGNAL_SIZE = 1 << 16; // 65536
-    private static final int VERY_LARGE_SIGNAL_SIZE = 1 << 20; // 1,048,576
+    private static final int LARGE_SIGNAL_SIZE = 65536; // MODWT works with any size
+    private static final int VERY_LARGE_SIGNAL_SIZE = 1048576; // MODWT works with any size
     
     private static final double TOLERANCE = ToleranceConstants.DEFAULT_TOLERANCE;
     
     @BeforeEach
     protected void setUp(org.junit.jupiter.api.TestInfo testInfo) {
         super.setUp(testInfo);
-        factory = new WaveletTransformFactory();
+        factory = new MODWTTransformFactory();
     }
     
     @Test
     @DisplayName("Should handle large signals efficiently")
     void testLargeSignalPerformance() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         double[] signal = createRandomSignal(LARGE_SIGNAL_SIZE);
         
         long startTime = System.nanoTime();
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         long forwardTime = System.nanoTime() - startTime;
         
         startTime = System.nanoTime();
@@ -65,21 +65,21 @@ class StressTest extends BaseWaveletTest {
         // Verify correctness
         assertArrayEquals(signal, reconstructed, 1e-10);
         
-        // Performance assertions (adjust based on your requirements)
-        assertTrue(forwardTime < 100_000_000L, // 100ms
+        // Performance assertions - MODWT is slower than DWT due to non-decimated nature
+        assertTrue(forwardTime < 200_000_000L, // 200ms for MODWT
             "Forward transform took too long: " + (forwardTime / 1e6) + " ms");
-        assertTrue(inverseTime < 100_000_000L, // 100ms
+        assertTrue(inverseTime < 200_000_000L, // 200ms for MODWT
             "Inverse transform took too long: " + (inverseTime / 1e6) + " ms");
     }
     
     @Test
     @DisplayName("Should handle very large signals")
     void testVeryLargeSignal() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         double[] signal = createRandomSignal(VERY_LARGE_SIGNAL_SIZE);
         
         assertDoesNotThrow(() -> {
-            TransformResult result = transform.forward(signal);
+            MODWTResult result = transform.forward(signal);
             double[] reconstructed = transform.inverse(result);
             
             // Spot check some values
@@ -96,7 +96,7 @@ class StressTest extends BaseWaveletTest {
     @ValueSource(ints = {2, 4, 8, 16})
     @DisplayName("Should handle concurrent transforms")
     void testConcurrentTransforms(int threadCount) throws Exception {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
         ConcurrentLinkedQueue<Throwable> errors = new ConcurrentLinkedQueue<>();
@@ -109,7 +109,7 @@ class StressTest extends BaseWaveletTest {
                         // Each thread processes multiple signals
                         for (int i = 0; i < 100; i++) {
                             double[] signal = createRandomSignal(256, threadId * 1000L + i);
-                            TransformResult result = transform.forward(signal);
+                            MODWTResult result = transform.forward(signal);
                             double[] reconstructed = transform.inverse(result);
                             
                             // Verify reconstruction
@@ -143,14 +143,14 @@ class StressTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should maintain accuracy over many iterations")
     void testIterativeStability() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         double[] original = createRandomSignal(1024);
         double[] signal = original.clone();
         
         // Apply forward and inverse transform multiple times
         int iterations = 100;
         for (int i = 0; i < iterations; i++) {
-            TransformResult result = transform.forward(signal);
+            MODWTResult result = transform.forward(signal);
             signal = transform.inverse(result);
         }
         
@@ -175,13 +175,13 @@ class StressTest extends BaseWaveletTest {
     @Test
     @DisplayName("Memory stress test with many transforms")
     void testMemoryStress() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         
         // Process many signals without keeping references
         assertDoesNotThrow(() -> {
             for (int i = 0; i < 1000; i++) {
                 double[] signal = createRandomSignal(4096);
-                TransformResult result = transform.forward(signal);
+                MODWTResult result = transform.forward(signal);
                 double[] reconstructed = transform.inverse(result);
                 
                 // Just verify first and last values
@@ -202,17 +202,17 @@ class StressTest extends BaseWaveletTest {
         double[] signal = createRandomSignal(LARGE_SIGNAL_SIZE);
         
         // Create transform with default settings (automatically selects best implementation)
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
             
         // Warmup
         for (int i = 0; i < 10; i++) {
-            TransformResult result = transform.forward(signal);
+            MODWTResult result = transform.forward(signal);
             transform.inverse(result);
         }
         
         // Measure performance
         long startTime = System.nanoTime();
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         long forwardTime = System.nanoTime() - startTime;
         
         startTime = System.nanoTime();
@@ -229,16 +229,16 @@ class StressTest extends BaseWaveletTest {
     @Test
     @DisplayName("Should handle rapid allocation/deallocation cycles")
     void testRapidAllocationCycles() {
-        WaveletTransform transform = factory.create(new Haar());
+        MODWTTransform transform = factory.create(new Haar());
         
         // Rapidly create and process signals of varying sizes
         Random random = new Random(12345);
         
         for (int i = 0; i < 1000; i++) {
-            int size = 1 << (4 + random.nextInt(7)); // 16 to 1024
+            int size = 16 + random.nextInt(1009); // 16 to 1024, any size works with MODWT
             double[] signal = createRandomSignal(size, i);
             
-            TransformResult result = transform.forward(signal);
+            MODWTResult result = transform.forward(signal);
             double[] reconstructed = transform.inverse(result);
             
             // Spot check

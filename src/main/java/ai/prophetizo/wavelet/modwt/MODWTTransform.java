@@ -69,7 +69,7 @@ public class MODWTTransform {
      * Automatically configures performance optimizations based on system capabilities.
      * 
      * @param wavelet      The wavelet to use for the transformations
-     * @param boundaryMode The boundary handling mode (currently only PERIODIC is supported)
+     * @param boundaryMode The boundary handling mode (PERIODIC or ZERO_PADDING)
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if boundary mode is not supported
      */
@@ -77,9 +77,9 @@ public class MODWTTransform {
         this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null");
         this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null");
         
-        // MODWT currently only supports periodic boundary mode
-        if (boundaryMode != BoundaryMode.PERIODIC) {
-            throw new IllegalArgumentException("MODWT only supports PERIODIC boundary mode, got: " + boundaryMode);
+        // MODWT supports PERIODIC and ZERO_PADDING boundary modes
+        if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
+            throw new IllegalArgumentException("MODWT only supports PERIODIC and ZERO_PADDING boundary modes, got: " + boundaryMode);
         }
     }
     
@@ -123,11 +123,16 @@ public class MODWTTransform {
         double[] approximationCoeffs = new double[signalLength];
         double[] detailCoeffs = new double[signalLength];
         
-        // Perform circular convolution without downsampling
-        // ScalarOps.circularConvolveMODWT internally delegates to vectorized
-        // implementation when beneficial, falling back to scalar otherwise
-        ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-        ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        // Perform convolution without downsampling based on boundary mode
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // ScalarOps.circularConvolveMODWT internally delegates to vectorized
+            // implementation when beneficial, falling back to scalar otherwise
+            ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        } else { // ZERO_PADDING
+            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        }
         
         return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
     }
@@ -174,19 +179,38 @@ public class MODWTTransform {
         // Prepare output array
         double[] reconstructed = new double[signalLength];
         
-        // Direct reconstruction: X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
-        for (int t = 0; t < signalLength; t++) {
-            double sum = 0.0;
-            
-            // Sum over filter coefficients
-            // For MODWT reconstruction, we use (t + l) indexing since we used (t - l) in forward
-            for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                int coeffIndex = (t + l) % signalLength;
-                sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
-                       scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+        // Direct reconstruction based on boundary mode
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                
+                // Sum over filter coefficients
+                // For MODWT reconstruction, we use (t + l) indexing since we used (t - l) in forward
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int coeffIndex = (t + l) % signalLength;
+                    sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                           scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+                }
+                
+                reconstructed[t] = sum; // No additional normalization needed with scaled filters
             }
-            
-            reconstructed[t] = sum; // No additional normalization needed with scaled filters
+        } else { // ZERO_PADDING
+            // X_t = Σ(l=0 to L-1) [h_l * s_(t+l) + g_l * d_(t+l)] with zero padding
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int coeffIndex = t + l;
+                    if (coeffIndex < signalLength) {
+                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                               scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+                    }
+                    // else: treat as zero (no contribution to sum)
+                }
+                
+                reconstructed[t] = sum;
+            }
         }
         
         return reconstructed;

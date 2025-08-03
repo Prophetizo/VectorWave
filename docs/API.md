@@ -357,7 +357,7 @@ FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config, transfo
 // Sharpe ratio calculations
 double calculateSharpeRatio(double[] returns)
 double calculateSharpeRatio(double[] returns, double riskFreeRate)
-double calculateWaveletSharpeRatio(double[] returns)  // Requires power-of-2 length
+double calculateWaveletSharpeRatio(double[] returns)  // Works with any length
 double calculateWaveletSharpeRatio(double[] returns, double riskFreeRate)
 
 // Configuration - risk-free rate is required
@@ -366,17 +366,17 @@ FinancialConfig config = new FinancialConfig(0.045);  // 4.5% annual
 
 ## Streaming API
 
-### StreamingWaveletTransform
+### MODWTStreamingTransform
 
 ```java
 // Creation
-StreamingWaveletTransform stream = StreamingWaveletTransform.create(
-    wavelet, boundaryMode, blockSize
+MODWTStreamingTransform stream = MODWTStreamingTransform.create(
+    wavelet, boundaryMode, bufferSize
 );
 
 // Flow API subscription
-stream.subscribe(new Flow.Subscriber<TransformResult>() {
-    public void onNext(TransformResult result) { /* process */ }
+stream.subscribe(new Flow.Subscriber<MODWTResult>() {
+    public void onNext(MODWTResult result) { /* process */ }
     public void onError(Throwable t) { /* handle error */ }
     public void onComplete() { /* cleanup */ }
 });
@@ -387,12 +387,12 @@ stream.flush();
 stream.close();
 ```
 
-### OptimizedStreamingWaveletTransform
+### MODWTOptimizedStreamingTransform
 
-Zero-copy streaming with configurable overlap.
+Zero-copy streaming MODWT with configurable overlap.
 
 ```java
-OptimizedStreamingWaveletTransform stream = new OptimizedStreamingWaveletTransform(
+MODWTOptimizedStreamingTransform stream = new MODWTOptimizedStreamingTransform(
     wavelet,
     boundaryMode,
     blockSize,
