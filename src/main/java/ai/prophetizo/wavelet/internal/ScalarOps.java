@@ -616,8 +616,8 @@ public final class ScalarOps {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                // Circular indexing: (t + l) mod N for periodic boundary conditions
-                int signalIndex = (t + l) % signalLen;
+                // Circular indexing: (t - l) mod N for proper MODWT with time-reversed filters
+                int signalIndex = (t - l + signalLen) % signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             

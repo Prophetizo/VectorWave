@@ -195,9 +195,6 @@ class MODWTTransformMainTest extends BaseMODWTTest {
             coeffEnergy += approx[i] * approx[i] + detail[i] * detail[i];
         }
         
-        // MODWT has redundancy factor of 2
-        coeffEnergy /= 2.0;
-        
         assertEquals(signalEnergy, coeffEnergy, signalEnergy * 0.01,
             "Energy should be approximately conserved (within 1%)");
     }

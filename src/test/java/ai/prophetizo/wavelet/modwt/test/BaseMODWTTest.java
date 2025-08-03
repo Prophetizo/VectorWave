@@ -177,11 +177,19 @@ public abstract class BaseMODWTTest {
         double maxDiffDetail = 0.0;
         
         for (int i = 0; i < signal.length; i++) {
+            // When signal is shifted right by 'shift', coefficients shift left by 'shift'
+            // due to the (t - l) indexing in the convolution
             int shiftedIdx = (i - shift + signal.length) % signal.length;
             maxDiffApprox = Math.max(maxDiffApprox, 
-                Math.abs(approx1[i] - approx2[shiftedIdx]));
+                Math.abs(approx1[shiftedIdx] - approx2[i]));
             maxDiffDetail = Math.max(maxDiffDetail, 
-                Math.abs(detail1[i] - detail2[shiftedIdx]));
+                Math.abs(detail1[shiftedIdx] - detail2[i]));
+        }
+        
+        // Debug output to understand the issue
+        if (maxDiffApprox >= tolerance || maxDiffDetail >= tolerance) {
+            System.out.printf("Shift-invariance failed for shift=%d: maxDiffApprox=%.6f, maxDiffDetail=%.6f%n", 
+                            shift, maxDiffApprox, maxDiffDetail);
         }
         
         return maxDiffApprox < tolerance && maxDiffDetail < tolerance;

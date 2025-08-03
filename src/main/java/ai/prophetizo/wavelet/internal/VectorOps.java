@@ -525,11 +525,11 @@ public final class VectorOps {
             int vectorLoopBound = SPECIES.loopBound(signalLen);
             
             // Check if we can use direct vectorization without circular indexing
-            // We need to ensure that t + l < signalLen for all t in [0, vectorLoopBound)
-            if (vectorLoopBound + l <= signalLen) {
-                // Simple case: no wrap-around within vector width
+            // For MODWT with time-reversed indexing, we need t - l >= 0 for all t in [l, vectorLoopBound + l)
+            if (l == 0) {
+                // Special case: no shift needed
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t + l);
+                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t);
                     DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                     DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                     result.intoArray(output, t);
@@ -538,67 +538,43 @@ public final class VectorOps {
                 // Complex case: need to handle circular indexing
                 // Most indices won't wrap, so we can optimize by checking boundaries
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                    int startIdx = t + l;
+                    int startIdx = t - l;
                     int endIdx = startIdx + VECTOR_LENGTH;
                     
-                    if (endIdx <= signalLen) {
+                    if (startIdx >= 0 && endIdx <= signalLen) {
                         // No wrapping needed for this vector
                         DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, startIdx);
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
-                    } else if (startIdx >= signalLen) {
-                        // All indices wrap - can use direct indexing from beginning
-                        int wrappedStart = startIdx - signalLen;
-                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, wrappedStart);
+                    } else if (startIdx < 0) {
+                        // Indices wrap at the beginning - need to handle negative wrap
+                        for (int i = 0; i < VECTOR_LENGTH; i++) {
+                            int idx = t + i - l;
+                            indices[i] = idx < 0 ? idx + signalLen : idx;
+                        }
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
                     } else {
                         // Mixed case: some indices wrap, some don't
-                        // Hybrid approach: process non-wrapping elements with vector ops,
-                        // handle boundary elements individually
-                        int nonWrapCount = signalLen - startIdx;
-                        
-                        // Load output vector
-                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                        
-                        // Process non-wrapping elements with direct vector access if there are enough
-                        if (nonWrapCount >= SPECIES.length() / 2) {
-                            // Build result vector element by element for mixed case
-                            double[] temp = new double[VECTOR_LENGTH];
-                            
-                            // Non-wrapping part - direct array access
-                            for (int i = 0; i < nonWrapCount; i++) {
-                                temp[i] = signal[startIdx + i] * filter[l];
-                            }
-                            
-                            // Wrapping part - also direct array access
-                            for (int i = nonWrapCount; i < VECTOR_LENGTH; i++) {
-                                temp[i] = signal[i - nonWrapCount] * filter[l];
-                            }
-                            
-                            // Now use vector operations for the final addition
-                            DoubleVector tempVec = DoubleVector.fromArray(SPECIES, temp, 0);
-                            DoubleVector result = outputVec.add(tempVec);
-                            result.intoArray(output, t);
-                        } else {
-                            // Too few non-wrapping elements, fall back to gather
-                            for (int i = 0; i < VECTOR_LENGTH; i++) {
-                                int idx = startIdx + i;
-                                indices[i] = idx >= signalLen ? idx - signalLen : idx;
-                            }
-                            DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                            DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                            result.intoArray(output, t);
+                        // Use gather for all wrapping cases
+                        for (int i = 0; i < VECTOR_LENGTH; i++) {
+                            int idx = t + i - l;
+                            indices[i] = idx < 0 ? idx + signalLen : (idx >= signalLen ? idx - signalLen : idx);
                         }
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
                     }
                 }
             }
             
             // Handle remainder
             for (int t = vectorLoopBound; t < signalLen; t++) {
-                int signalIndex = (t + l) % signalLen;
+                int signalIndex = (t - l + signalLen) % signalLen;
                 output[t] += signal[signalIndex] * filter[l];
             }
         }

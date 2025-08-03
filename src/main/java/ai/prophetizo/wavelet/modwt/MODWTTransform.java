@@ -105,6 +105,19 @@ public class MODWTTransform {
         double[] lowPassFilter = wavelet.lowPassDecomposition();
         double[] highPassFilter = wavelet.highPassDecomposition();
         
+        // Scale filters by 1/sqrt(2) for MODWT
+        // This is essential for shift-invariance property
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPass = new double[lowPassFilter.length];
+        double[] scaledHighPass = new double[highPassFilter.length];
+        
+        for (int i = 0; i < lowPassFilter.length; i++) {
+            scaledLowPass[i] = lowPassFilter[i] * scale;
+        }
+        for (int i = 0; i < highPassFilter.length; i++) {
+            scaledHighPass[i] = highPassFilter[i] * scale;
+        }
+        
         // Prepare output arrays (same length as input)
         int signalLength = signal.length;
         double[] approximationCoeffs = new double[signalLength];
@@ -113,8 +126,8 @@ public class MODWTTransform {
         // Perform circular convolution without downsampling
         // ScalarOps.circularConvolveMODWT internally delegates to vectorized
         // implementation when beneficial, falling back to scalar otherwise
-        ScalarOps.circularConvolveMODWT(signal, lowPassFilter, approximationCoeffs);
-        ScalarOps.circularConvolveMODWT(signal, highPassFilter, detailCoeffs);
+        ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+        ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
         
         return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
     }
@@ -142,9 +155,21 @@ public class MODWTTransform {
         double[] detailCoeffs = modwtResult.detailCoeffs();
         int signalLength = modwtResult.getSignalLength();
         
-        // Get reconstruction filter coefficients (use original, no scaling for inverse)
+        // Get reconstruction filter coefficients
         double[] lowPassRecon = wavelet.lowPassReconstruction();
         double[] highPassRecon = wavelet.highPassReconstruction();
+        
+        // Scale reconstruction filters by 1/sqrt(2) for MODWT
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPassRecon = new double[lowPassRecon.length];
+        double[] scaledHighPassRecon = new double[highPassRecon.length];
+        
+        for (int i = 0; i < lowPassRecon.length; i++) {
+            scaledLowPassRecon[i] = lowPassRecon[i] * scale;
+        }
+        for (int i = 0; i < highPassRecon.length; i++) {
+            scaledHighPassRecon[i] = highPassRecon[i] * scale;
+        }
         
         // Prepare output array
         double[] reconstructed = new double[signalLength];
@@ -154,13 +179,13 @@ public class MODWTTransform {
             double sum = 0.0;
             
             // Sum over filter coefficients using reverse indexing for reconstruction
-            for (int l = 0; l < lowPassRecon.length; l++) {
-                int coeffIndex = (t - l + signalLength * lowPassRecon.length) % signalLength;
-                sum += lowPassRecon[l] * approxCoeffs[coeffIndex] + 
-                       highPassRecon[l] * detailCoeffs[coeffIndex];
+            for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                int coeffIndex = (t - l + signalLength * scaledLowPassRecon.length) % signalLength;
+                sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                       scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
             }
             
-            reconstructed[t] = sum / 2.0; // Normalize by factor of 2
+            reconstructed[t] = sum; // No additional normalization needed with scaled filters
         }
         
         return reconstructed;
