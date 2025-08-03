@@ -1,12 +1,10 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.api.BoundaryMode;
-import ai.prophetizo.wavelet.api.Daubechies;
-import ai.prophetizo.wavelet.api.Haar;
+import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.modwt.streaming.*;
+import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.memory.MemoryPool;
-import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -16,41 +14,31 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Demonstrates memory-efficient usage patterns for the VectorWave library.
+ * Demonstrates memory-efficient usage patterns for MODWT in the VectorWave library.
  *
  * <p>This demo covers:
  * <ul>
- *   <li>Memory pooling strategies</li>
- *   <li>In-place transformations</li>
+ *   <li>Memory pooling strategies with MODWT</li>
+ *   <li>Efficient coefficient handling</li>
  *   <li>Streaming with minimal footprint</li>
  *   <li>GC-friendly patterns</li>
- *   <li>Large dataset handling</li>
+ *   <li>Large dataset handling with arbitrary lengths</li>
  * </ul>
+ * 
+ * @since 3.0.0
  */
 public class MemoryEfficiencyDemo {
 
     private static final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
 
-    /* TODO: This demo needs to be migrated to MODWT.
-     * The demo uses DWT-specific features that need careful adaptation:
-     * - Factory patterns (MODWT uses direct instantiation)
-     * - FFM features (needs MODWT-specific FFM implementation)
-     * - Streaming features (needs MODWT streaming implementation)
-     * Temporarily disabled to allow compilation.
-     */
-    public static void main_disabled(String[] args) {
-        System.out.println("This demo is temporarily disabled during DWT to MODWT migration.");
-        System.out.println("Please check back later or contribute to the migration effort!");
-    }
-    
-    public static void main_original(String[] args) throws Exception {
-        System.out.println("=== VectorWave Memory Efficiency Demo ===\n");
+    public static void main(String[] args) throws Exception {
+        System.out.println("=== VectorWave MODWT Memory Efficiency Demo ===\n");
 
         // Demo 1: Memory pooling benefits
         demonstrateMemoryPooling();
 
-        // Demo 2: In-place transformations
-        demonstrateInPlaceTransforms();
+        // Demo 2: MODWT memory advantages
+        demonstrateMODWTMemoryAdvantages();
 
         // Demo 3: Streaming with minimal memory
         demonstrateStreamingMemoryUsage();
@@ -63,11 +51,11 @@ public class MemoryEfficiencyDemo {
     }
 
     private static void demonstrateMemoryPooling() {
-        System.out.println("1. Memory Pooling Benefits");
-        System.out.println("--------------------------");
+        System.out.println("1. Memory Pooling Benefits with MODWT");
+        System.out.println("--------------------------------------");
 
         int iterations = 10000;
-        int signalSize = 1024;
+        int signalSize = 1777; // Non-power-of-2 to show MODWT advantage
 
         // Without pooling
         System.gc();
@@ -122,78 +110,91 @@ public class MemoryEfficiencyDemo {
         System.out.println();
     }
 
-    private static void demonstrateInPlaceTransforms() {
-        System.out.println("2. In-Place Transformations");
-        System.out.println("---------------------------");
+    private static void demonstrateMODWTMemoryAdvantages() {
+        System.out.println("2. MODWT Memory Advantages");
+        System.out.println("--------------------------");
 
-        int signalSize = 4096;
-        double[] signal = generateTestSignal(signalSize);
-
-        // Traditional approach - creates new arrays
-        System.gc();
-        sleep(100);
-        long startMem = getUsedHeap();
-
-        WaveletTransform transform = new WaveletTransform(
-                Daubechies.DB4, BoundaryMode.PERIODIC);
-
-        List<TransformResult> results = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            double[] copy = signal.clone(); // Need copy to preserve original
-            results.add(transform.forward(copy));
+        // Show memory savings for non-power-of-2 signals
+        int[] signalSizes = {777, 1234, 3333, 5678, 9999};
+        
+        System.out.println("Memory comparison: MODWT vs DWT padding requirements");
+        System.out.println("Signal Size | DWT Padded | Memory Waste | MODWT Advantage");
+        System.out.println("------------|------------|--------------|----------------");
+        
+        long totalDWTMemory = 0;
+        long totalMODWTMemory = 0;
+        
+        for (int size : signalSizes) {
+            int dwtSize = nextPowerOfTwo(size);
+            int padding = dwtSize - size;
+            double wastePercent = 100.0 * padding / dwtSize;
+            
+            // Memory for coefficients (assuming double precision)
+            long modwtMem = (long)size * 2 * 8; // approx + detail, same length
+            long dwtMem = (long)dwtSize * 2 * 8; // padded size
+            
+            totalMODWTMemory += modwtMem;
+            totalDWTMemory += dwtMem;
+            
+            System.out.printf("%11d | %10d | %11.1f%% | %d bytes saved\n",
+                    size, dwtSize, wastePercent, dwtMem - modwtMem);
         }
+        
+        System.out.printf("\nTotal memory: MODWT=%.2f KB, DWT=%.2f KB (%.1f%% savings)\n\n",
+                totalMODWTMemory / 1024.0, totalDWTMemory / 1024.0,
+                100.0 * (totalDWTMemory - totalMODWTMemory) / totalDWTMemory);
 
-        long traditionalMem = getUsedHeap() - startMem;
-
-        // In-place approach with reused buffers
-        System.gc();
-        sleep(100);
-        startMem = getUsedHeap();
-
-        // Pre-allocate workspace
-        double[] workspace = new double[signalSize];
-        double[] approxBuffer = new double[signalSize / 2];
-        double[] detailBuffer = new double[signalSize / 2];
-
-        for (int i = 0; i < 100; i++) {
-            // Copy to workspace for in-place operation
-            System.arraycopy(signal, 0, workspace, 0, signalSize);
-
-            // Perform transform using pre-allocated buffers
-            performInPlaceTransform(workspace, approxBuffer, detailBuffer, transform);
+        // Demonstrate processing
+        System.out.println("Processing demonstration:");
+        MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        
+        for (int size : new int[]{100, 777, 1234}) {
+            double[] signal = generateTestSignal(size);
+            
+            System.gc();
+            sleep(50);
+            long startMem = getUsedHeap();
+            
+            MODWTResult result = transform.forward(signal);
+            double[] reconstructed = transform.inverse(result);
+            
+            long usedMem = getUsedHeap() - startMem;
+            
+            double error = 0;
+            for (int i = 0; i < size; i++) {
+                error = Math.max(error, Math.abs(signal[i] - reconstructed[i]));
+            }
+            
+            System.out.printf("  Size %4d: Memory=%.1f KB, Error=%.2e\n",
+                    size, usedMem / 1024.0, error);
         }
-
-        long inPlaceMem = getUsedHeap() - startMem;
-
-        System.out.printf("Traditional approach: %.2f MB allocated\n",
-                traditionalMem / 1048576.0);
-        System.out.printf("In-place approach:    %.2f MB allocated\n",
-                inPlaceMem / 1048576.0);
-        System.out.printf("Memory reduction: %.1f%%\n\n",
-                100.0 * (traditionalMem - inPlaceMem) / traditionalMem);
+        System.out.println();
     }
 
     private static void demonstrateStreamingMemoryUsage() throws Exception {
         System.out.println("3. Streaming with Minimal Memory");
         System.out.println("---------------------------------");
 
-        // Simulate large data stream
-        int totalSamples = 1_000_000;
-        int blockSize = 1024;
+        // Use MODWT streaming denoiser for memory-efficient processing
+        int totalSamples = 100_000;
+        int bufferSize = 256; // Can be any size with MODWT!
 
         System.gc();
         sleep(100);
         long startMem = getUsedHeap();
 
-        // Create streaming transform with memory constraints
-        StreamingWaveletTransform streamTransform = StreamingWaveletTransform.create(
-                new Haar(), BoundaryMode.PERIODIC, blockSize);
+        // Create MODWT streaming denoiser
+        MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
+            .wavelet(new Haar())
+            .boundaryMode(BoundaryMode.PERIODIC)
+            .bufferSize(bufferSize)
+            .build();
 
         // Memory-efficient subscriber
-        AtomicLong processedBlocks = new AtomicLong();
+        AtomicLong processedSamples = new AtomicLong();
         AtomicDouble totalEnergy = new AtomicDouble();
 
-        streamTransform.subscribe(new Flow.Subscriber<TransformResult>() {
+        denoiser.subscribe(new Flow.Subscriber<double[]>() {
             private Flow.Subscription subscription;
 
             @Override
@@ -203,14 +204,13 @@ public class MemoryEfficiencyDemo {
             }
 
             @Override
-            public void onNext(TransformResult result) {
+            public void onNext(double[] denoisedBlock) {
                 // Process immediately and discard
                 double energy = 0;
-                for (double c : result.approximationCoeffs()) energy += c * c;
-                for (double c : result.detailCoeffs()) energy += c * c;
+                for (double v : denoisedBlock) energy += v * v;
 
                 totalEnergy.addAndGet(energy);
-                processedBlocks.incrementAndGet();
+                processedSamples.addAndGet(denoisedBlock.length);
 
                 // Request next block
                 subscription.request(1);
@@ -228,29 +228,41 @@ public class MemoryEfficiencyDemo {
 
         // Stream data without keeping it in memory
         Random rng = new Random(42);
-        for (int i = 0; i < totalSamples; i++) {
-            streamTransform.process(rng.nextGaussian());
+        double[] chunk = new double[bufferSize];
+        
+        for (int i = 0; i < totalSamples; i += bufferSize) {
+            int size = Math.min(bufferSize, totalSamples - i);
+            for (int j = 0; j < size; j++) {
+                chunk[j] = rng.nextGaussian() * 0.1 + Math.sin(2 * Math.PI * (i + j) / 100);
+            }
+            
+            if (size < bufferSize) {
+                // Handle last chunk which might be smaller
+                double[] lastChunk = Arrays.copyOf(chunk, size);
+                denoiser.denoise(lastChunk);
+            } else {
+                denoiser.denoise(chunk);
+            }
         }
 
-        streamTransform.close();
+        denoiser.close();
         sleep(100); // Wait for processing
 
         long streamMem = getUsedHeap() - startMem;
 
-        System.out.printf("Processed %d samples in %d blocks\n",
-                totalSamples, processedBlocks.get());
+        System.out.printf("Processed %d samples\n", processedSamples.get());
         System.out.printf("Memory used: %.2f MB (%.2f bytes/sample)\n",
                 streamMem / 1048576.0, (double) streamMem / totalSamples);
-        System.out.printf("Average energy per block: %.4f\n\n",
-                totalEnergy.get() / processedBlocks.get());
+        System.out.printf("Total energy: %.4f\n", totalEnergy.get());
+        System.out.printf("Estimated noise level: %.4f\n\n", denoiser.getEstimatedNoiseLevel());
     }
 
     private static void demonstrateGCFriendlyPatterns() {
-        System.out.println("4. GC-Friendly Patterns");
-        System.out.println("-----------------------");
+        System.out.println("4. GC-Friendly Patterns with MODWT");
+        System.out.println("-----------------------------------");
 
         int iterations = 1000;
-        int signalSize = 2048;
+        int signalSize = 2345; // Non-power-of-2
 
         // Bad pattern: Creating many short-lived objects
         System.out.println("Testing GC-unfriendly pattern...");
@@ -258,9 +270,9 @@ public class MemoryEfficiencyDemo {
             for (int i = 0; i < iterations; i++) {
                 // Creates multiple temporary arrays
                 double[] signal = new double[signalSize];
-                WaveletTransform transform = new WaveletTransform(
+                MODWTTransform transform = new MODWTTransform(
                         Daubechies.DB4, BoundaryMode.PERIODIC);
-                TransformResult result = transform.forward(signal);
+                MODWTResult result = transform.forward(signal);
                 // Result goes out of scope immediately
             }
         });
@@ -269,14 +281,14 @@ public class MemoryEfficiencyDemo {
         System.out.println("Testing GC-friendly pattern...");
         List<Long> goodGcTimes = measureGCPressure(() -> {
             // Reuse transform and buffers
-            WaveletTransform transform = new WaveletTransform(
+            MODWTTransform transform = new MODWTTransform(
                     Daubechies.DB4, BoundaryMode.PERIODIC);
             double[] signal = new double[signalSize];
 
             for (int i = 0; i < iterations; i++) {
                 // Reuse existing array
                 Arrays.fill(signal, i * 0.001);
-                TransformResult result = transform.forward(signal);
+                MODWTResult result = transform.forward(signal);
                 // Process result immediately
                 double sum = result.approximationCoeffs()[0] + result.detailCoeffs()[0];
             }
@@ -287,24 +299,26 @@ public class MemoryEfficiencyDemo {
         System.out.printf("GC-friendly:   %d GC pauses, total %d ms\n",
                 goodGcTimes.size(), goodGcTimes.stream().mapToLong(Long::longValue).sum());
 
-        System.out.println("\nBest practices:");
-        System.out.println("✓ Reuse WaveletTransform instances");
+        System.out.println("\nBest practices with MODWT:");
+        System.out.println("✓ Reuse MODWTTransform instances");
         System.out.println("✓ Pre-allocate arrays for repeated operations");
         System.out.println("✓ Process results immediately");
-        System.out.println("✓ Use memory pools for temporary buffers\n");
+        System.out.println("✓ Use streaming denoiser for continuous data");
+        System.out.println("✓ MODWT works with any size - no padding overhead!\n");
     }
 
     private static void demonstrateLargeDatasetHandling() throws Exception {
-        System.out.println("5. Large Dataset Strategies");
-        System.out.println("---------------------------");
+        System.out.println("5. Large Dataset Strategies with MODWT");
+        System.out.println("---------------------------------------");
 
         // Simulate processing a very large dataset
-        int numChannels = 100;
-        int samplesPerChannel = 10_000;
-        int blockSize = 1024;
+        int numChannels = 50;
+        int samplesPerChannel = 7777; // Non-power-of-2
+        int blockSize = 333; // Also non-power-of-2!
 
-        System.out.println("Processing 100 channels × 10,000 samples = 1M total samples");
-        System.out.println("Using block processing to limit memory usage...\n");
+        System.out.printf("Processing %d channels × %d samples = %d total samples\n",
+                numChannels, samplesPerChannel, numChannels * samplesPerChannel);
+        System.out.println("Using MODWT's ability to handle arbitrary block sizes...\n");
 
         // Strategy 1: Process one channel at a time
         System.gc();
@@ -312,13 +326,15 @@ public class MemoryEfficiencyDemo {
         long startMem = getUsedHeap();
         long startTime = System.currentTimeMillis();
 
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
         MemoryPool pool = new MemoryPool();
 
         // Process channels sequentially
+        double totalEnergySeq = 0;
         for (int channel = 0; channel < numChannels; channel++) {
-            processLargeChannel(samplesPerChannel, blockSize, transform, pool);
+            totalEnergySeq += processLargeChannelMODWT(
+                    samplesPerChannel, blockSize, transform, pool);
         }
 
         long seqTime = System.currentTimeMillis() - startTime;
@@ -342,10 +358,10 @@ public class MemoryEfficiencyDemo {
             futures.add(executor.submit(() -> {
                 memoryPermits.acquire();
                 try {
-                    WaveletTransform localTransform = new WaveletTransform(
+                    MODWTTransform localTransform = new MODWTTransform(
                             Daubechies.DB4, BoundaryMode.PERIODIC);
-                    return processLargeChannelParallel(samplesPerChannel, blockSize,
-                            localTransform);
+                    return processLargeChannelParallelMODWT(
+                            samplesPerChannel, blockSize, localTransform);
                 } finally {
                     memoryPermits.release();
                 }
@@ -353,9 +369,9 @@ public class MemoryEfficiencyDemo {
         }
 
         // Wait for completion
-        double totalEnergy = 0;
+        double totalEnergyPar = 0;
         for (Future<Double> future : futures) {
-            totalEnergy += future.get();
+            totalEnergyPar += future.get();
         }
 
         executor.shutdown();
@@ -363,20 +379,20 @@ public class MemoryEfficiencyDemo {
         long parMem = getUsedHeap() - startMem;
 
         System.out.println("Results:");
-        System.out.printf("Sequential: %d ms, %.2f MB peak memory\n",
-                seqTime, seqMem / 1048576.0);
-        System.out.printf("Parallel:   %d ms, %.2f MB peak memory\n",
-                parTime, parMem / 1048576.0);
+        System.out.printf("Sequential: %d ms, %.2f MB peak memory, energy=%.2f\n",
+                seqTime, seqMem / 1048576.0, totalEnergySeq);
+        System.out.printf("Parallel:   %d ms, %.2f MB peak memory, energy=%.2f\n",
+                parTime, parMem / 1048576.0, totalEnergyPar);
         System.out.printf("Speedup: %.2fx with %.1f%% memory increase\n",
                 (double) seqTime / parTime,
                 100.0 * (parMem - seqMem) / seqMem);
 
-        System.out.println("\nMemory-efficient strategies for large datasets:");
-        System.out.println("✓ Process in blocks rather than loading entire dataset");
-        System.out.println("✓ Use streaming transforms for continuous data");
-        System.out.println("✓ Limit parallelism to control memory usage");
-        System.out.println("✓ Release resources as soon as possible");
-        System.out.println("✓ Consider memory-mapped files for huge datasets");
+        System.out.println("\nMODWT advantages for large datasets:");
+        System.out.println("✓ Process blocks of ANY size - no padding waste");
+        System.out.println("✓ Shift-invariance allows flexible block boundaries");
+        System.out.println("✓ Memory usage scales linearly with signal size");
+        System.out.println("✓ Perfect for streaming and real-time applications");
+        System.out.println("✓ No need to buffer to power-of-2 sizes");
     }
 
     // Helper methods
@@ -388,26 +404,17 @@ public class MemoryEfficiencyDemo {
     private static double[] generateTestSignal(int size) {
         double[] signal = new double[size];
         for (int i = 0; i < size; i++) {
-            signal[i] = Math.sin(2 * Math.PI * i / 32);
+            signal[i] = Math.sin(2 * Math.PI * i / 32) + 
+                       0.5 * Math.sin(2 * Math.PI * i / 8);
         }
         return signal;
     }
 
-    private static void performInPlaceTransform(double[] workspace,
-                                                double[] approxBuffer,
-                                                double[] detailBuffer,
-                                                WaveletTransform transform) {
-        // Simulate in-place transform operation
-        TransformResult result = transform.forward(workspace);
-        System.arraycopy(result.approximationCoeffs(), 0, approxBuffer, 0,
-                result.approximationCoeffs().length);
-        System.arraycopy(result.detailCoeffs(), 0, detailBuffer, 0,
-                result.detailCoeffs().length);
-    }
-
-    private static void processLargeChannel(int samples, int blockSize,
-                                            WaveletTransform transform,
-                                            MemoryPool pool) {
+    private static double processLargeChannelMODWT(int samples, int blockSize,
+                                                   MODWTTransform transform,
+                                                   MemoryPool pool) {
+        double totalEnergy = 0;
+        
         // Process channel in blocks
         for (int start = 0; start < samples; start += blockSize) {
             int size = Math.min(blockSize, samples - start);
@@ -415,39 +422,44 @@ public class MemoryEfficiencyDemo {
             try {
                 // Simulate data loading
                 for (int i = 0; i < size; i++) {
-                    block[i] = Math.random();
+                    block[i] = Math.sin(2 * Math.PI * (start + i) / 100) + 
+                              0.1 * Math.random();
                 }
 
-                // Process block
-                if (size == blockSize) { // Only process full blocks
-                    TransformResult result = transform.forward(block);
-                    // Immediately discard result to save memory
-                }
+                // Process any size block with MODWT
+                MODWTResult result = transform.forward(block);
+                
+                // Calculate energy
+                for (double c : result.approximationCoeffs()) totalEnergy += c * c;
+                for (double c : result.detailCoeffs()) totalEnergy += c * c;
+                
             } finally {
                 pool.returnArray(block);
             }
         }
+        
+        return totalEnergy;
     }
 
-    private static double processLargeChannelParallel(int samples, int blockSize,
-                                                      WaveletTransform transform)
+    private static double processLargeChannelParallelMODWT(int samples, int blockSize,
+                                                          MODWTTransform transform)
             throws InterruptedException {
         double totalEnergy = 0;
 
         for (int start = 0; start < samples; start += blockSize) {
             int size = Math.min(blockSize, samples - start);
-            if (size == blockSize) {
-                double[] block = new double[size];
-                for (int i = 0; i < size; i++) {
-                    block[i] = Math.random();
-                }
-
-                TransformResult result = transform.forward(block);
-
-                // Calculate energy
-                for (double c : result.approximationCoeffs()) totalEnergy += c * c;
-                for (double c : result.detailCoeffs()) totalEnergy += c * c;
+            double[] block = new double[size];
+            
+            for (int i = 0; i < size; i++) {
+                block[i] = Math.sin(2 * Math.PI * (start + i) / 100) + 
+                          0.1 * Math.random();
             }
+
+            MODWTResult result = transform.forward(block);
+
+            // Calculate energy
+            for (double c : result.approximationCoeffs()) totalEnergy += c * c;
+            for (double c : result.detailCoeffs()) totalEnergy += c * c;
         }
 
         return totalEnergy;
@@ -487,6 +499,17 @@ public class MemoryEfficiencyDemo {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private static int nextPowerOfTwo(int n) {
+        n--;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        n++;
+        return n;
     }
 
     // Simple atomic double for demo

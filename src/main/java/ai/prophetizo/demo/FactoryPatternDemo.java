@@ -2,38 +2,29 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import static ai.prophetizo.wavelet.api.Daubechies.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
-import ai.prophetizo.wavelet.streaming.*;
+import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.modwt.streaming.*;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 
 /**
- * Demonstrates the new factory pattern implementations in VectorWave.
+ * Demonstrates the factory pattern implementations in VectorWave with MODWT.
  * 
  * <p>This demo shows:</p>
  * <ul>
  *   <li>How to use the common Factory interface</li>
- *   <li>Comparison between old static methods and new patterns</li>
+ *   <li>MODWT factory usage patterns</li>
  *   <li>Different factory implementations</li>
  *   <li>Benefits of the standardized approach</li>
  * </ul>
  */
 public class FactoryPatternDemo {
     
-    /* TODO: This demo needs to be migrated to MODWT.
-     * The demo uses DWT-specific features that need careful adaptation:
-     * - Factory patterns (MODWT uses direct instantiation)
-     * - FFM features (needs MODWT-specific FFM implementation)
-     * - Streaming features (needs MODWT streaming implementation)
-     * Temporarily disabled to allow compilation.
-     */
-    public static void main_disabled(String[] args) {
-        System.out.println("This demo is temporarily disabled during DWT to MODWT migration.");
-        System.out.println("Please check back later or contribute to the migration effort!");
-    }
-    
-    public static void main_original(String[] args) {
+    public static void main(String[] args) {
         System.out.println("=== VectorWave Factory Pattern Demo ===\n");
         
         demonstrateWaveletOpsFactory();
@@ -80,40 +71,45 @@ public class FactoryPatternDemo {
     }
     
     /**
-     * Demonstrates WaveletTransformFactory which directly implements Factory.
+     * Demonstrates MODWTTransformFactory which implements Factory interface.
      */
     private static void demonstrateWaveletTransformFactory() {
-        System.out.println("2. WaveletTransformFactory Demo");
+        System.out.println("2. MODWTTransformFactory Demo");
         System.out.println("-".repeat(50));
         
-        // Create factory instance (implements Factory<WaveletTransform, Wavelet>)
-        WaveletTransformFactory factory = new WaveletTransformFactory();
+        // Create MODWT factory instance
+        MODWTTransformFactory factory = new MODWTTransformFactory();
         
-        // Configure factory
-        factory.boundaryMode(BoundaryMode.PERIODIC);
+        // Traditional static approach
+        System.out.println("Static factory methods:");
+        MODWTTransform transform1 = MODWTTransformFactory.create(new Haar());
+        System.out.println("  Created MODWT with Haar wavelet");
         
-        // Traditional approach
-        System.out.println("Traditional approach:");
-        WaveletTransform transform1 = factory.create(new Haar());
-        System.out.println("  Created transform with Haar wavelet");
+        MODWTTransform transform2 = MODWTTransformFactory.create(
+            Daubechies.DB4, BoundaryMode.PERIODIC);
+        System.out.println("  Created MODWT with DB4 and PERIODIC boundary");
         
-        // Using Factory interface methods
+        // Create from wavelet name
+        MODWTTransform transform3 = MODWTTransformFactory.create("sym4");
+        System.out.println("  Created MODWT from wavelet name 'sym4'");
+        
+        // Using Factory interface
         System.out.println("\nFactory interface approach:");
-        WaveletTransform transform2 = factory.create(); // Uses default Haar
-        System.out.println("  Created with default wavelet");
+        MODWTTransformFactory.Config config = new MODWTTransformFactory.Config(
+            DB4, BoundaryMode.ZERO_PADDING);
+        MODWTTransform transform4 = factory.create(config);
+        System.out.println("  Created with custom config (DB4, ZERO_PADDING)");
         
-        // Create with different wavelets
-        WaveletTransform transform3 = factory.create(Daubechies.DB4);
-        System.out.println("  Created with Daubechies DB4");
+        // Multi-level MODWT
+        System.out.println("\nMulti-level MODWT:");
+        MultiLevelMODWTTransform mlTransform = MODWTTransformFactory.createMultiLevel(
+            new Haar(), BoundaryMode.PERIODIC);
+        System.out.println("  Created multi-level MODWT transform");
         
         // Validation
         System.out.println("\nValidation:");
-        System.out.println("  Valid wavelet: " + factory.isValidConfiguration(new Haar()));
-        System.out.println("  Null wavelet: " + factory.isValidConfiguration(null));
-        
-        // Static convenience method still works
-        WaveletTransform transform4 = WaveletTransformFactory.createDefault(Symlet.SYM4);
-        System.out.println("\nStatic method still works: created with Symlet SYM4");
+        System.out.println("  Valid config: " + factory.isValidConfiguration(config));
+        System.out.println("  Null config: " + factory.isValidConfiguration(null));
         
         System.out.println();
     }
@@ -163,56 +159,70 @@ public class FactoryPatternDemo {
     }
     
     /**
-     * Demonstrates StreamingDenoiserFactory with implementation selection.
+     * Demonstrates MODWT Streaming Denoiser creation and usage.
      */
     private static void demonstrateStreamingDenoiserFactory() {
-        System.out.println("4. StreamingDenoiserFactory Demo");
+        System.out.println("4. MODWT Streaming Denoiser Demo");
         System.out.println("-".repeat(50));
         
-        // Create configuration
-        StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
+        // Create basic MODWT streaming denoiser
+        System.out.println("Basic MODWT streaming denoiser:");
+        MODWTStreamingDenoiser denoiser1 = new MODWTStreamingDenoiser.Builder()
             .wavelet(new Haar())
-            .blockSize(256)
-            .overlapFactor(0.5)
-            .thresholdMethod(ThresholdMethod.UNIVERSAL)
-            .adaptiveThreshold(true)
+            .boundaryMode(BoundaryMode.PERIODIC)
+            .bufferSize(256)
             .build();
+        System.out.println("  Created with Haar wavelet, buffer size 256");
         
-        // Traditional approach with explicit implementation
-        System.out.println("Traditional approach:");
-        StreamingDenoiserStrategy denoiser1 = StreamingDenoiserFactory.create(
-            StreamingDenoiserFactory.Implementation.FAST, config);
-        System.out.println("  Created FAST implementation");
-        System.out.println("  Performance: " + denoiser1.getPerformanceProfile());
+        // Create with custom configuration
+        System.out.println("\nAdvanced configuration:");
+        MODWTStreamingDenoiser denoiser2 = new MODWTStreamingDenoiser.Builder()
+            .wavelet(DB4)
+            .boundaryMode(BoundaryMode.ZERO_PADDING)
+            .bufferSize(512)
+            .thresholdMethod(ThresholdMethod.UNIVERSAL)
+            .thresholdType(WaveletDenoiser.ThresholdType.SOFT)
+            .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
+            .build();
+        System.out.println("  Created with DB4, UNIVERSAL threshold, buffer size 512");
         
-        // Auto selection
-        StreamingDenoiserStrategy denoiser2 = StreamingDenoiserFactory.create(config);
-        System.out.println("\n  Auto-selected implementation based on config");
+        // Subscribe to denoised output
+        System.out.println("\nSubscription example:");
+        denoiser1.subscribe(new java.util.concurrent.Flow.Subscriber<double[]>() {
+            @Override
+            public void onSubscribe(java.util.concurrent.Flow.Subscription subscription) {
+                System.out.println("  Subscribed to denoised stream");
+                subscription.request(Long.MAX_VALUE);
+            }
+            
+            @Override
+            public void onNext(double[] item) {
+                System.out.println("  Received denoised block of size: " + item.length);
+            }
+            
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("  Error: " + throwable.getMessage());
+            }
+            
+            @Override
+            public void onComplete() {
+                System.out.println("  Stream complete");
+            }
+        });
         
-        // New Factory interface approach
-        System.out.println("\nFactory interface approach:");
-        Factory<StreamingDenoiserStrategy, StreamingDenoiserConfig> factory = 
-            StreamingDenoiserFactory.getInstance();
-        
-        StreamingDenoiserStrategy denoiser3 = factory.create(config);
-        System.out.println("  Created via Factory interface");
-        System.out.println("  Description: " + factory.getDescription());
-        
-        // Performance profiling
-        System.out.println("\nPerformance profiling:");
-        var profile = StreamingDenoiserFactory.getExpectedPerformance(
-            StreamingDenoiserFactory.Implementation.QUALITY, config);
-        System.out.println("  Quality implementation expected performance:");
-        System.out.println("    " + profile);
+        // Process some sample data
+        System.out.println("\nProcessing sample data:");
+        double[] testData = new double[128];
+        for (int i = 0; i < testData.length; i++) {
+            testData[i] = Math.sin(2 * Math.PI * i / 32) + 0.1 * Math.random();
+        }
+        double[] denoisedData = denoiser1.denoise(testData);
+        System.out.println("  Denoised " + testData.length + " samples");
         
         // Cleanup
-        try {
-            denoiser1.close();
-            denoiser2.close();
-            denoiser3.close();
-        } catch (Exception e) {
-            // Ignore
-        }
+        denoiser1.close();
+        denoiser2.close();
         
         System.out.println();
     }
@@ -231,8 +241,8 @@ public class FactoryPatternDemo {
         processWithFactory(WaveletOpsFactory.getInstance(), 
             TransformConfig.defaultConfig(), "WaveletOps");
         
-        processWithFactory(new WaveletTransformFactory(), 
-            new Haar(), "WaveletTransform");
+        processWithFactory(new MODWTTransformFactory(), 
+            new MODWTTransformFactory.Config(new Haar(), BoundaryMode.PERIODIC), "MODWTTransform");
         
         processWithFactory(CWTFactory.getInstance(), 
             new MorletWavelet(), "CWTTransform");
