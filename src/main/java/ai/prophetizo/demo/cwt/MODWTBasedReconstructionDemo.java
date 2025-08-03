@@ -5,19 +5,19 @@ import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.finance.*;
 
 /**
- * Demonstrates DWT-based CWT reconstruction for practical applications.
+ * Demonstrates MODWT-based CWT reconstruction for practical applications.
  */
-public class DWTBasedReconstructionDemo {
+public class MODWTBasedReconstructionDemo {
     
     public static void main(String[] args) {
-        System.out.println("DWT-Based CWT Reconstruction Demo");
-        System.out.println("=================================\n");
+        System.out.println("MODWT-Based CWT Reconstruction Demo");
+        System.out.println("===================================\n");
         
         // Create test signal
         int N = 256;
         double[] signal = createTestSignal(N);
         
-        // Use dyadic scales for better DWT compatibility
+        // Use dyadic scales for better MODWT compatibility
         double[] scales = generateDyadicScales(1, 5); // 2^1 to 2^5
         
         System.out.println("Test Configuration:");
@@ -60,24 +60,24 @@ public class DWTBasedReconstructionDemo {
         long timeStandard = System.nanoTime() - startStandard;
         double errorStandard = calculateRelativeError(signal, standardReconstructed);
         
-        // DWT-based reconstruction
-        long startDWT = System.nanoTime();
-        DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-        double[] dwtReconstructed = dwtInverse.reconstruct(cwtResult);
-        long timeDWT = System.nanoTime() - startDWT;
-        double errorDWT = calculateRelativeError(signal, dwtReconstructed);
+        // MODWT-based reconstruction
+        long startMODWT = System.nanoTime();
+        MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+        double[] modwtReconstructed = modwtInverse.reconstruct(cwtResult);
+        long timeMODWT = System.nanoTime() - startMODWT;
+        double errorMODWT = calculateRelativeError(signal, modwtReconstructed);
         
         // Results
         System.out.println("Method         | Error (%) | Time (ms) | Speedup");
         System.out.println("---------------|-----------|-----------|--------");
         System.out.printf("Standard       | %9.1f | %9.2f | %7s\n", 
             errorStandard * 100, timeStandard / 1e6, "1.0x");
-        System.out.printf("DWT-based      | %9.1f | %9.2f | %7.1fx\n", 
-            errorDWT * 100, timeDWT / 1e6, (double)timeStandard / timeDWT);
+        System.out.printf("MODWT-based    | %9.1f | %9.2f | %7.1fx\n", 
+            errorMODWT * 100, timeMODWT / 1e6, (double)timeStandard / timeMODWT);
         
         // Show improvement for specific use cases
         if (name.equals("Paul-4")) {
-            System.out.println("\nNote: DWT-based method is ideal for financial applications");
+            System.out.println("\nNote: MODWT-based method is ideal for financial applications");
             System.out.println("      where speed and stability are more important than");
             System.out.println("      perfect mathematical reconstruction accuracy.");
         }
@@ -92,9 +92,9 @@ public class DWTBasedReconstructionDemo {
         double[] returns = calculateReturns(prices);
         CWTResult cwtResult = cwt.analyze(returns, scales);
         
-        // DWT-based reconstruction
-        DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(paulWavelet);
-        double[] reconstructedReturns = dwtInverse.reconstruct(cwtResult);
+        // MODWT-based reconstruction
+        MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(paulWavelet);
+        double[] reconstructedReturns = modwtInverse.reconstruct(cwtResult);
         
         // Convert back to prices
         double[] reconstructedPrices = returnsToprices(reconstructedReturns, prices[0]);
@@ -112,13 +112,13 @@ public class DWTBasedReconstructionDemo {
         CWTResult cwtResult = cwt.analyze(signal, scales);
         
         // Test with and without refinement
-        DWTBasedInverseCWT dwtNoRefine = new DWTBasedInverseCWT(
+        MODWTBasedInverseCWT modwtNoRefine = new MODWTBasedInverseCWT(
             wavelet, Daubechies.DB4, false);
-        DWTBasedInverseCWT dwtWithRefine = new DWTBasedInverseCWT(
+        MODWTBasedInverseCWT modwtWithRefine = new MODWTBasedInverseCWT(
             wavelet, Daubechies.DB4, true);
         
-        double[] noRefine = dwtNoRefine.reconstruct(cwtResult);
-        double[] withRefine = dwtWithRefine.reconstruct(cwtResult);
+        double[] noRefine = modwtNoRefine.reconstruct(cwtResult);
+        double[] withRefine = modwtWithRefine.reconstruct(cwtResult);
         
         System.out.printf("Without refinement: %.1f%% error\n", 
             calculateRelativeError(signal, noRefine) * 100);

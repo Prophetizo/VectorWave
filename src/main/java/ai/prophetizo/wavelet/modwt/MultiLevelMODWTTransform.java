@@ -269,12 +269,34 @@ public class MultiLevelMODWTTransform {
      * Reconstructs single level by combining approximation and details.
      */
     private double[] reconstructSingleLevel(double[] approx, double[] details, int level) {
-        // Create scaled filters for reconstruction
-        double[] scaledLowPassRecon = scaleFilterForLevel(wavelet.lowPassReconstruction(), level);
-        double[] scaledHighPassRecon = scaleFilterForLevel(wavelet.highPassReconstruction(), level);
+        // For MODWT reconstruction, we need upsampled filters but NOT scaled
+        // The scaling was already applied during decomposition
+        double[] upsampledLowPass = upsampleFilterForLevel(wavelet.lowPassReconstruction(), level);
+        double[] upsampledHighPass = upsampleFilterForLevel(wavelet.highPassReconstruction(), level);
         
-        // Apply inverse MODWT with scaled filters directly
-        return applyScaledInverseMODWT(approx, details, scaledLowPassRecon, scaledHighPassRecon);
+        // Apply inverse MODWT with upsampled (but not scaled) filters
+        return applyScaledInverseMODWT(approx, details, upsampledLowPass, upsampledHighPass);
+    }
+    
+    /**
+     * Upsamples filter for MODWT at given level WITHOUT scaling.
+     * At level j, insert 2^(j-1) - 1 zeros between coefficients.
+     */
+    private double[] upsampleFilterForLevel(double[] filter, int level) {
+        if (level == 1) {
+            return filter.clone();
+        }
+        
+        int upFactor = (int) Math.pow(2, level - 1);
+        int scaledLength = (filter.length - 1) * upFactor + 1;
+        double[] upsampled = new double[scaledLength];
+        
+        // Insert zeros between filter coefficients WITHOUT scaling
+        for (int i = 0; i < filter.length; i++) {
+            upsampled[i * upFactor] = filter[i];
+        }
+        
+        return upsampled;
     }
     
     /**
@@ -302,24 +324,18 @@ public class MultiLevelMODWTTransform {
             }
         }
         
-        // Direct reconstruction using circular convolution
-        // X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
+        // MODWT reconstruction using same indexing as single-level
         for (int t = 0; t < signalLength; t++) {
             double sum = 0.0;
             
-            // Sum over filter coefficients
+            // Use backward indexing like the single-level MODWT
             for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                int idx = (t - l + signalLength) % signalLength;
-                while (idx < 0) idx += signalLength; // Ensure positive
-                sum += scaledLowPassRecon[l] * approx[idx];
+                int idx = (t - l + signalLength * scaledLowPassRecon.length) % signalLength;
+                sum += scaledLowPassRecon[l] * approx[idx] + 
+                       scaledHighPassRecon[l] * details[idx];
             }
             
-            for (int l = 0; l < scaledHighPassRecon.length; l++) {
-                int idx = (t - l + signalLength) % signalLength;
-                while (idx < 0) idx += signalLength; // Ensure positive
-                sum += scaledHighPassRecon[l] * details[idx];
-            }
-            
+            // No additional normalization needed for multi-level
             reconstructed[t] = sum;
         }
         

@@ -570,12 +570,12 @@ public final class VectorOps {
                             
                             // Non-wrapping part - direct array access
                             for (int i = 0; i < nonWrapCount; i++) {
-                                temp[i] = signal[startIdx + i] * filter[l + i];
+                                temp[i] = signal[startIdx + i] * filter[l];
                             }
                             
                             // Wrapping part - also direct array access
                             for (int i = nonWrapCount; i < VECTOR_LENGTH; i++) {
-                                temp[i] = signal[i - nonWrapCount] * filter[l + i];
+                                temp[i] = signal[i - nonWrapCount] * filter[l];
                             }
                             
                             // Now use vector operations for the final addition
