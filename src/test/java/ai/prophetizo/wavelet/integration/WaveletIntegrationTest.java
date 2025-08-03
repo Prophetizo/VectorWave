@@ -74,10 +74,10 @@ class WaveletIntegrationTest extends BaseWaveletTest {
         TransformResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
         
-        assertEquals(length / 2, result.approximationCoeffs().length,
-            "Approximation coefficients should be half the signal length");
-        assertEquals(length / 2, result.detailCoeffs().length,
-            "Detail coefficients should be half the signal length");
+        assertEquals(length, result.approximationCoeffs().length,
+            "MODWT approximation coefficients should be same length as signal");
+        assertEquals(length, result.detailCoeffs().length,
+            "MODWT detail coefficients should be same length as signal");
         assertArrayEquals(signal, reconstructed, TOLERANCE,
             "Reconstruction failed for length " + length);
     }
@@ -90,29 +90,34 @@ class WaveletIntegrationTest extends BaseWaveletTest {
         double[] signal = {3.0, 7.0};
         TransformResult result = transform.forward(signal);
         
-        assertEquals(1, result.approximationCoeffs().length);
-        assertEquals(1, result.detailCoeffs().length);
+        assertEquals(2, result.approximationCoeffs().length);
+        assertEquals(2, result.detailCoeffs().length);
         
-        // For Haar: approx = (3 + 7) / sqrt(2) ≈ 7.07
-        //           detail = (3 - 7) / sqrt(2) ≈ -2.83
-        assertEquals(7.071, result.approximationCoeffs()[0], 0.001);
-        assertEquals(-2.828, result.detailCoeffs()[0], 0.001);
+        // For MODWT Haar with {3.0, 7.0}: approx = [5.0, 5.0], detail = [-2.0, 2.0]
+        assertEquals(5.0, result.approximationCoeffs()[0], 0.001);
+        assertEquals(5.0, result.approximationCoeffs()[1], 0.001);
+        assertEquals(-2.0, result.detailCoeffs()[0], 0.001);
+        assertEquals(2.0, result.detailCoeffs()[1], 0.001);
         
         double[] reconstructed = transform.inverse(result);
         assertArrayEquals(signal, reconstructed, TOLERANCE);
     }
     
     @Test
-    @DisplayName("Should reject single element array")
+    @DisplayName("Should handle single element array")
     void testSingleElementArray() {
         WaveletTransform transform = factory.create(new Haar());
         double[] signal = {5.0};
         
-        // Single element arrays trigger assertion error in debug mode,
-        // or InvalidSignalException when assertions are disabled
-        assertThrows(Throwable.class,
-            () -> transform.forward(signal),
-            "Should reject single element array");
+        // MODWT can handle single element arrays
+        TransformResult result = transform.forward(signal);
+        assertEquals(1, result.approximationCoeffs().length);
+        assertEquals(1, result.detailCoeffs().length);
+        assertEquals(5.0, result.approximationCoeffs()[0], TOLERANCE);
+        assertEquals(0.0, result.detailCoeffs()[0], TOLERANCE);
+        
+        double[] reconstructed = transform.inverse(result);
+        assertArrayEquals(signal, reconstructed, TOLERANCE);
     }
     
     @Test

@@ -104,8 +104,8 @@ class TestFrameworkVerificationTest extends BaseWaveletTest {
         TransformResult result = transform.forward(signal);
         WaveletAssertions.assertValidTransformResult(result);
         
-        // Check coefficient lengths
-        WaveletAssertions.assertCoefficientsLength(result, signal.length / 2);
+        // Check coefficient lengths (MODWT produces same-length output)
+        WaveletAssertions.assertCoefficientsLength(result, signal.length);
         
         // Test energy preservation
         WaveletAssertions.assertEnergyPreserved(

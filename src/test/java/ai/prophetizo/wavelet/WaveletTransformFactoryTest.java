@@ -219,8 +219,9 @@ class WaveletTransformFactoryTest {
         assertNotNull(result);
         assertNotNull(result.approximationCoeffs());
         assertNotNull(result.detailCoeffs());
-        assertEquals(4, result.approximationCoeffs().length);
-        assertEquals(4, result.detailCoeffs().length);
+        // MODWT produces same-length output
+        assertEquals(8, result.approximationCoeffs().length);
+        assertEquals(8, result.detailCoeffs().length);
         
         // Verify inverse works
         double[] reconstructed = transform.inverse(result);
