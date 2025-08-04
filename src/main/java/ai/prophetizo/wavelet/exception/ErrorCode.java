@@ -53,6 +53,11 @@ public enum ErrorCode {
      */
     VAL_LENGTH_MISMATCH("VAL_007", "Array length mismatch"),
 
+    /**
+     * Invalid parameter combination
+     */
+    VAL_INVALID_COMBINATION("VAL_008", "Invalid parameter combination"),
+
     // Configuration errors (CFG_xxx)
     /**
      * Unsupported operation for given configuration
@@ -73,6 +78,16 @@ public enum ErrorCode {
      * Invalid decomposition level
      */
     CFG_INVALID_DECOMPOSITION_LEVEL("CFG_004", "Invalid decomposition level"),
+
+    /**
+     * Platform not supported for this operation
+     */
+    CFG_PLATFORM_UNSUPPORTED("CFG_005", "Platform not supported"),
+
+    /**
+     * Invalid thread count configuration
+     */
+    CFG_THREAD_COUNT_INVALID("CFG_006", "Invalid thread count"),
 
     // Signal processing errors (SIG_xxx)
     /**
@@ -115,7 +130,12 @@ public enum ErrorCode {
     /**
      * Pool is exhausted
      */
-    POOL_EXHAUSTED("POOL_002", "Pool exhausted");
+    POOL_EXHAUSTED("POOL_002", "Pool exhausted"),
+
+    /**
+     * Memory allocation failed
+     */
+    POOL_ALLOCATION_FAILED("POOL_003", "Memory allocation failed");
 
     private final String code;
     private final String description;

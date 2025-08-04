@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.util.EmpiricalPerformanceModel;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Objects;
@@ -245,7 +246,7 @@ public class MODWTTransform {
     }
     
     /**
-     * Estimates the processing time for a given signal length.
+     * Estimates processing time using empirical performance models.
      * Uses empirical measurements and system capabilities.
      * 
      * @param signalLength The length of the signal to process
@@ -254,27 +255,81 @@ public class MODWTTransform {
     public ProcessingEstimate estimateProcessingTime(int signalLength) {
         var perfInfo = getPerformanceInfo();
         
-        // Base processing time (empirically measured on reference hardware)
-        double baseTimeMs;
-        if (signalLength <= 1024) {
-            baseTimeMs = 0.1 + signalLength * 0.00001;
-        } else if (signalLength <= 4096) {
-            baseTimeMs = 0.5 + signalLength * 0.00005;  
-        } else if (signalLength <= 16384) {
-            baseTimeMs = 2.0 + signalLength * 0.0001;
-        } else {
-            baseTimeMs = 8.0 + signalLength * 0.0002;
-        }
+        // Use empirical performance model for more accurate estimates
+        var model = EmpiricalPerformanceModel.getModel("MODWT", wavelet.name());
+        double estimatedTimeMs = model.estimateProcessingTime(signalLength);
         
-        // Apply speedup factor
-        double estimatedTimeMs = baseTimeMs / perfInfo.estimateSpeedup(signalLength);
+        // If model has low confidence, fall back to enhanced heuristics
+        if (model.getConfidenceLevel() < 0.3) {
+            estimatedTimeMs = estimateWithHeuristics(signalLength, perfInfo);
+        }
         
         return new ProcessingEstimate(
             signalLength,
             estimatedTimeMs,
             perfInfo.vectorizationEnabled(),
-            perfInfo.estimateSpeedup(signalLength)
+            perfInfo.estimateSpeedup(signalLength),
+            model.getConfidenceLevel()
         );
+    }
+    
+    /**
+     * Enhanced heuristic-based estimation when empirical data is insufficient.
+     */
+    private double estimateWithHeuristics(int signalLength, PerformanceInfo perfInfo) {
+        // Enhanced base processing time based on wavelet complexity
+        double complexityFactor = getWaveletComplexityFactor();
+        
+        // Improved scaling based on signal size with better breakpoints
+        double baseTimeMs;
+        if (signalLength <= 512) {
+            baseTimeMs = (0.05 + signalLength * 0.000005) * complexityFactor;
+        } else if (signalLength <= 2048) {
+            baseTimeMs = (0.2 + signalLength * 0.00002) * complexityFactor;
+        } else if (signalLength <= 8192) {
+            baseTimeMs = (0.8 + signalLength * 0.00005) * complexityFactor;
+        } else if (signalLength <= 32768) {
+            baseTimeMs = (3.2 + signalLength * 0.0001) * complexityFactor;
+        } else {
+            baseTimeMs = (12.8 + signalLength * 0.0002) * complexityFactor;
+        }
+        
+        // Apply platform and vectorization speedup
+        double platformSpeedup = perfInfo.estimateSpeedup(signalLength);
+        return baseTimeMs / Math.max(1.0, platformSpeedup);
+    }
+    
+    /**
+     * Gets complexity factor based on wavelet characteristics.
+     */
+    private double getWaveletComplexityFactor() {
+        String name = wavelet.name().toLowerCase();
+        
+        // Haar is simplest
+        if (name.contains("haar")) {
+            return 0.8;
+        }
+        // Daubechies complexity increases with order
+        else if (name.startsWith("db")) {
+            try {
+                int order = Integer.parseInt(name.substring(2));
+                return 1.0 + (order - 2) * 0.1; // DB2 = 1.0, DB4 = 1.2, etc.
+            } catch (NumberFormatException e) {
+                return 1.2; // Default for Daubechies
+            }
+        }
+        // Biorthogonal wavelets are more complex
+        else if (name.startsWith("bior")) {
+            return 1.4;
+        }
+        // Symlets and Coiflets
+        else if (name.startsWith("sym") || name.startsWith("coif")) {
+            return 1.3;
+        }
+        // Default for unknown wavelets
+        else {
+            return 1.5;
+        }
     }
     
     /**
@@ -326,19 +381,24 @@ public class MODWTTransform {
         int signalLength,
         double estimatedTimeMs,
         boolean vectorizationUsed,
-        double speedupFactor
+        double speedupFactor,
+        double confidenceLevel
     ) {
         
         /**
          * Returns a human-readable description of the processing estimate.
          */
         public String description() {
+            String confidenceDesc = confidenceLevel > 0.7 ? " (high confidence)" :
+                                   confidenceLevel > 0.3 ? " (medium confidence)" :
+                                   " (low confidence - using heuristics)";
+            
             if (vectorizationUsed) {
-                return String.format("Signal length %d: ~%.2fms (%.1fx speedup with vectors)",
-                    signalLength, estimatedTimeMs, speedupFactor);
+                return String.format("Signal length %d: ~%.2fms (%.1fx speedup with vectors)%s",
+                    signalLength, estimatedTimeMs, speedupFactor, confidenceDesc);
             } else {
-                return String.format("Signal length %d: ~%.2fms (scalar mode)",
-                    signalLength, estimatedTimeMs);
+                return String.format("Signal length %d: ~%.2fms (scalar mode)%s",
+                    signalLength, estimatedTimeMs, confidenceDesc);
             }
         }
         
@@ -354,6 +414,13 @@ public class MODWTTransform {
          */
         public boolean hasSignificantSpeedup() {
             return speedupFactor > 2.0;
+        }
+        
+        /**
+         * Indicates if the estimate is reliable based on empirical measurements.
+         */
+        public boolean isReliableEstimate() {
+            return confidenceLevel > 0.5;
         }
     }
 }
