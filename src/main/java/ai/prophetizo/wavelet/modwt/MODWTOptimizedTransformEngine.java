@@ -17,6 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.LinkedHashMap;
+import java.util.Collections;
 
 /**
  * High-performance MODWT transform engine that integrates all optimizations.
@@ -49,8 +51,17 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
     private final int parallelism;
     private final ExecutorService executorService;
     
-    // Cache for reusable transform instances to avoid repeated object creation
-    private final Map<TransformKey, MODWTTransform> transformCache = new ConcurrentHashMap<>();
+    /**
+     * Maximum number of cached transform instances.
+     * This limit prevents unbounded memory growth in long-running applications.
+     * The value is chosen to balance memory usage with performance:
+     * - Small enough to prevent memory issues
+     * - Large enough to cache common wavelet/boundary mode combinations
+     */
+    private static final int MAX_CACHE_SIZE = 32;
+    
+    // Thread-safe LRU cache for reusable transform instances
+    private final Map<TransformKey, MODWTTransform> transformCache;
     
     /**
      * Key for caching MODWTTransform instances based on wavelet and boundary mode.
@@ -76,6 +87,16 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         this.useMemoryPool = config.useMemoryPool;
         this.useSoALayout = config.useSoALayout;
         this.useCacheBlocking = config.useCacheBlocking;
+        
+        // Initialize thread-safe LRU cache with size limit
+        this.transformCache = Collections.synchronizedMap(
+            new LinkedHashMap<TransformKey, MODWTTransform>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<TransformKey, MODWTTransform> eldest) {
+                    return size() > MAX_CACHE_SIZE;
+                }
+            }
+        );
         
         // Create dedicated thread pool for MODWT operations
         if (config.parallelism > 1) {
@@ -448,6 +469,34 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         return transformCache.computeIfAbsent(key, k -> new MODWTTransform(k.wavelet(), k.boundaryMode()));
     }
 
+    /**
+     * Gets the current size of the transform cache.
+     * Useful for monitoring cache behavior in production.
+     * 
+     * @return the number of cached transform instances
+     */
+    public int getCacheSize() {
+        return transformCache.size();
+    }
+    
+    /**
+     * Gets the maximum cache size limit.
+     * 
+     * @return the maximum number of transforms that can be cached
+     */
+    public static int getMaxCacheSize() {
+        return MAX_CACHE_SIZE;
+    }
+    
+    /**
+     * Clears the transform cache.
+     * This can be useful in memory-constrained environments or when
+     * switching between different sets of wavelets.
+     */
+    public void clearCache() {
+        transformCache.clear();
+    }
+    
     /**
      * Configuration for the optimized MODWT engine.
      */
