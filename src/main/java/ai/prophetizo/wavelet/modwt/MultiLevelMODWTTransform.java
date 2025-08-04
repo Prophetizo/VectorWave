@@ -372,11 +372,20 @@ public class MultiLevelMODWTTransform {
                 break;  // Stop searching when bit shift would overflow - we've reached the mathematical limit
             }
             
-            // Calculate scaled filter length using bit shift
+            // Calculate scaled filter length using bit shift with overflow protection
             // This is equivalent to: (filterLength - 1) * 2^(maxLevel - 1) + 1
-            long scaledFilterLength = ((long)filterLengthMinus1 << (maxLevel - 1)) + 1;
-            
-            if (scaledFilterLength > signalLength) {
+            try {
+                // Use Math.multiplyExact to detect overflow in the multiplication
+                long scaledFilterLength = Math.addExact(
+                    Math.multiplyExact((long)filterLengthMinus1, 1L << (maxLevel - 1)), 
+                    1L
+                );
+                
+                if (scaledFilterLength > signalLength) {
+                    break;
+                }
+            } catch (ArithmeticException e) {
+                // Overflow occurred - we've exceeded the maximum possible level
                 break;
             }
             
