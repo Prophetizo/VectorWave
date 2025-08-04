@@ -64,7 +64,6 @@
                 <configuration>
                     <excludes>
                         <exclude>**/demo/**</exclude>
-                        <exclude>ai/prophetizo/wavelet/streaming/**</exclude>
                     </excludes>
                     <compilerArgs>
                         <!-- Enable Vector API for high-performance SIMD operations -->

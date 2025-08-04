@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.ComplexNumber;
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
 
@@ -60,7 +61,7 @@ public final class OptimizedFFT {
     
     // Thread-local storage for temporary arrays to avoid repeated allocations
     // Each thread gets its own set of temporary arrays, sized for the vector length
-    private static final ThreadLocal<VectorTempArrays> VECTOR_TEMP_ARRAYS;
+    private static final ThreadLocalManager.ManagedThreadLocal<VectorTempArrays> VECTOR_TEMP_ARRAYS;
     
     static {
         boolean vectorAvailable = false;
@@ -87,7 +88,7 @@ public final class OptimizedFFT {
         SPECIES = speciesTemp;
         
         // Initialize thread-local arrays after determining vector availability
-        VECTOR_TEMP_ARRAYS = ThreadLocal.withInitial(() -> 
+        VECTOR_TEMP_ARRAYS = ThreadLocalManager.withInitial(() -> 
             VECTOR_API_AVAILABLE && SPECIES != null ? 
                 new VectorTempArrays(SPECIES.length()) : null);
     }

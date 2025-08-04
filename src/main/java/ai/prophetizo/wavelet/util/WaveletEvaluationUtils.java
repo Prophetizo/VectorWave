@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.util;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
+import ai.prophetizo.wavelet.math.Complex;
 
 /**
  * Utility class for evaluating continuous wavelets and working with complex-valued wavelets.

@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.internal;
 
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool.PooledArray;
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorMask;
@@ -46,15 +47,15 @@ public final class BatchSIMDTransform {
     private static final int CACHE_LINE_SIZE = 64;
     private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_SIZE / 8;
     
-    // Thread-local cache for temporary arrays to avoid allocation in hot paths
-    private static final ThreadLocal<HaarWorkArrays> HAAR_WORK_ARRAYS = 
-        ThreadLocal.withInitial(() -> new HaarWorkArrays(VECTOR_LENGTH));
+    // Thread-local cache for temporary arrays - now managed by ThreadLocalManager
+    private static final ThreadLocalManager.ManagedThreadLocal<HaarWorkArrays> HAAR_WORK_ARRAYS = 
+        ThreadLocalManager.withInitial(() -> new HaarWorkArrays(VECTOR_LENGTH));
     
-    private static final ThreadLocal<BlockWorkArrays> BLOCK_WORK_ARRAYS =
-        ThreadLocal.withInitial(() -> new BlockWorkArrays(VECTOR_LENGTH));
+    private static final ThreadLocalManager.ManagedThreadLocal<BlockWorkArrays> BLOCK_WORK_ARRAYS =
+        ThreadLocalManager.withInitial(() -> new BlockWorkArrays(VECTOR_LENGTH));
     
-    private static final ThreadLocal<AlignedWorkArrays> ALIGNED_WORK_ARRAYS =
-        ThreadLocal.withInitial(() -> new AlignedWorkArrays(VECTOR_LENGTH));
+    private static final ThreadLocalManager.ManagedThreadLocal<AlignedWorkArrays> ALIGNED_WORK_ARRAYS =
+        ThreadLocalManager.withInitial(() -> new AlignedWorkArrays(VECTOR_LENGTH));
     
     // Container for work arrays used in Haar transform
     private static class HaarWorkArrays {
@@ -111,11 +112,13 @@ public final class BatchSIMDTransform {
      * Cleans up thread-local resources for the current thread.
      * Should be called when a thread is done using BatchSIMDTransform
      * to prevent memory leaks in long-lived thread pool scenarios.
+     * 
+     * @deprecated Use {@link ThreadLocalManager#cleanupCurrentThread()} or
+     *             the try-with-resources pattern with {@link ThreadLocalManager#createScope()}
      */
+    @Deprecated(since = "3.1.0")
     public static void cleanupThreadLocals() {
-        HAAR_WORK_ARRAYS.remove();
-        BLOCK_WORK_ARRAYS.remove();
-        ALIGNED_WORK_ARRAYS.remove();
+        ThreadLocalManager.cleanupCurrentThread();
     }
     
     /**
@@ -123,7 +126,11 @@ public final class BatchSIMDTransform {
      * clean up resources when the thread terminates.
      * Note: This only works if the thread actually terminates; it won't
      * help with thread pool scenarios where threads are reused.
+     * 
+     * @deprecated Use try-with-resources with {@link ThreadLocalManager#createScope()}
+     *             for automatic cleanup instead
      */
+    @Deprecated(since = "3.1.0")
     public static void registerThreadCleanupHook() {
         Thread currentThread = Thread.currentThread();
         currentThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -502,6 +509,42 @@ public final class BatchSIMDTransform {
                 approxVec.intoArray(flatApprox, outBase + sig);
                 detailVec.intoArray(flatDetail, outBase + sig);
             }
+        }
+    }
+    
+    /**
+     * Perform Haar wavelet transform with automatic ThreadLocal cleanup.
+     * Recommended for thread pool environments.
+     * 
+     * @param signals input signals [signal_index][sample_index]
+     * @param approxResults approximation coefficients output
+     * @param detailResults detail coefficients output
+     */
+    public static void haarBatchTransformSIMDWithCleanup(double[][] signals,
+                                                        double[][] approxResults,
+                                                        double[][] detailResults) {
+        try (ThreadLocalManager.CleanupScope scope = ThreadLocalManager.createScope()) {
+            haarBatchTransformSIMD(signals, approxResults, detailResults);
+        }
+    }
+    
+    /**
+     * Adaptive batch transform with automatic ThreadLocal cleanup.
+     * Recommended for thread pool environments.
+     * 
+     * @param signals input signals
+     * @param approxResults approximation coefficients output
+     * @param detailResults detail coefficients output
+     * @param lowPass low-pass filter coefficients
+     * @param highPass high-pass filter coefficients
+     */
+    public static void adaptiveBatchTransformWithCleanup(double[][] signals,
+                                                        double[][] approxResults,
+                                                        double[][] detailResults,
+                                                        double[] lowPass,
+                                                        double[] highPass) {
+        try (ThreadLocalManager.CleanupScope scope = ThreadLocalManager.createScope()) {
+            adaptiveBatchTransform(signals, approxResults, detailResults, lowPass, highPass);
         }
     }
     

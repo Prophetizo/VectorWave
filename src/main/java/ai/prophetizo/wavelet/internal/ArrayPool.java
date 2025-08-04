@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
@@ -16,9 +17,9 @@ public final class ArrayPool {
     private static final int[] POOL_SIZES = {32, 64, 128, 256, 512, 1024};
     private static final int MAX_ARRAYS_PER_SIZE = 4; // Per thread
 
-    // Thread-local pools to avoid contention
-    private static final ThreadLocal<Pool> THREAD_LOCAL_POOL =
-            ThreadLocal.withInitial(Pool::new);
+    // Thread-local pools to avoid contention - managed by ThreadLocalManager
+    private static final ThreadLocalManager.ManagedThreadLocal<Pool> THREAD_LOCAL_POOL =
+            ThreadLocalManager.withInitial(Pool::new);
 
     private ArrayPool() {
         // Prevent instantiation

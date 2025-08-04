@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.modwt;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.memory.BatchMemoryLayout;
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorMask;
@@ -37,9 +38,9 @@ public final class BatchSIMDMODWT {
     // MODWT scaling factor
     private static final double MODWT_SCALE = 1.0 / Math.sqrt(2.0);
     
-    // Thread-local storage for temporary arrays
-    private static final ThreadLocal<MODWTWorkArrays> WORK_ARRAYS = 
-        ThreadLocal.withInitial(() -> new MODWTWorkArrays(VECTOR_LENGTH));
+    // Thread-local storage for temporary arrays - now managed by ThreadLocalManager
+    private static final ThreadLocalManager.ManagedThreadLocal<MODWTWorkArrays> WORK_ARRAYS = 
+        ThreadLocalManager.withInitial(() -> new MODWTWorkArrays(VECTOR_LENGTH));
     
     private static class MODWTWorkArrays {
         final double[] tempSum;
@@ -310,8 +311,31 @@ public final class BatchSIMDMODWT {
     /**
      * Cleans up thread-local resources.
      * Call this when done to prevent memory leaks in thread pools.
+     * 
+     * @deprecated Use {@link ThreadLocalManager#cleanupCurrentThread()} or
+     *             {@link #batchMODWTWithCleanup} for automatic cleanup
      */
+    @Deprecated(since = "3.1.0")
     public static void cleanupThreadLocals() {
-        WORK_ARRAYS.remove();
+        ThreadLocalManager.cleanupCurrentThread();
+    }
+    
+    /**
+     * Performs batch MODWT with automatic ThreadLocal cleanup.
+     * Recommended for thread pool environments.
+     * 
+     * @param soaSignals Input signals in SoA layout
+     * @param soaApprox Output approximation coefficients in SoA layout
+     * @param soaDetail Output detail coefficients in SoA layout
+     * @param wavelet The wavelet to use
+     * @param batchSize Number of signals
+     * @param signalLength Length of each signal
+     */
+    public static void batchMODWTWithCleanup(double[] soaSignals, double[] soaApprox, 
+                                           double[] soaDetail, DiscreteWavelet wavelet,
+                                           int batchSize, int signalLength) {
+        try (ThreadLocalManager.CleanupScope scope = ThreadLocalManager.createScope()) {
+            batchMODWTSoA(soaSignals, soaApprox, soaDetail, wavelet, batchSize, signalLength);
+        }
     }
 }

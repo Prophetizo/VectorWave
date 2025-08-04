@@ -462,8 +462,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             BatchSIMDMODWT.convertFromSoA(soaApprox, approx);
             BatchSIMDMODWT.convertFromSoA(soaDetail, detail);
             
-            // Clean up thread-local resources
-            BatchSIMDMODWT.cleanupThreadLocals();
+            // Note: cleanup is handled automatically by BatchSIMDMODWT.batchMODWTWithCleanup
+            // or can be done manually with ThreadLocalManager.cleanupCurrentThread()
         } else {
             // Fall back to sequential processing for small batches
             MODWTTransform transform = getOrCreateTransform(wavelet, BoundaryMode.PERIODIC);

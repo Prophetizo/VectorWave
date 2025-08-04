@@ -6,11 +6,10 @@ import ai.prophetizo.wavelet.api.Symlet;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
-// TODO: Uncomment when streaming classes are migrated to MODWT
-// import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
-// import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
-// import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
-// import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
+import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingTransform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,8 +44,8 @@ public class DenoisingDemo {
         // Demo 5: Performance comparison
         demonstratePerformance();
 
-        // Demo 6: Streaming vs Batch denoising - DISABLED until streaming is migrated
-        // demonstrateStreamingVsBatch();
+        // Demo 6: Streaming vs Batch denoising
+        demonstrateStreamingVsBatch();
     }
 
     private static void demonstrateThresholdMethods() {
@@ -342,7 +341,6 @@ public class DenoisingDemo {
         return Math.sqrt(sum / (2 * (signal.length - 1)));
     }
 
-    /* TODO: Enable when streaming classes are migrated to MODWT
     private static void demonstrateStreamingVsBatch() {
         System.out.println("6. Streaming vs Batch Denoising Comparison");
         System.out.println("------------------------------------------");
@@ -468,10 +466,10 @@ public class DenoisingDemo {
         long processingTime = System.nanoTime() - startTime;
 
         // Get performance stats
-        StreamingWaveletTransform.StreamingStatistics stats = denoiser.getStatistics();
+        MODWTStreamingTransform.StreamingStatistics stats = denoiser.getStatistics();
         System.out.printf("  - Processing time: %.3f ms\n", processingTime / 1_000_000.0);
-        System.out.printf("  - Throughput: %.1f ksamples/sec\n", stats.getThroughput() / 1000);
-        System.out.printf("  - Blocks processed: %d\n", stats.getBlocksEmitted());
+        System.out.printf("  - Throughput: %.1f ksamples/sec\n", stats.getThroughputSamplesPerSecond() / 1000);
+        System.out.printf("  - Blocks processed: %d\n", stats.getBlocksProcessed());
 
         // Reconstruct the full signal
         double[] output = new double[signal.length];
@@ -483,5 +481,4 @@ public class DenoisingDemo {
 
         return output;
     }
-    */
 }

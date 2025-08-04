@@ -1,0 +1,255 @@
+package ai.prophetizo.wavelet.streaming;
+
+import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
+import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.ErrorContext;
+
+/**
+ * Configuration for streaming wavelet denoisers.
+ * 
+ * <p>This class provides a fluent builder API for configuring streaming denoisers
+ * with support for both MODWT-based implementations.</p>
+ * 
+ * @since 3.0.0
+ */
+public final class StreamingDenoiserConfig {
+    
+    private final Wavelet wavelet;
+    private final int blockSize;
+    private final double overlapFactor;
+    private final BoundaryMode boundaryMode;
+    private final ThresholdMethod thresholdMethod;
+    private final ThresholdType thresholdType;
+    private final boolean adaptiveThreshold;
+    private final double thresholdMultiplier;
+    private final int noiseWindowSize;
+    
+    private StreamingDenoiserConfig(Builder builder) {
+        this.wavelet = builder.wavelet;
+        this.blockSize = builder.blockSize;
+        this.overlapFactor = builder.overlapFactor;
+        this.boundaryMode = builder.boundaryMode;
+        this.thresholdMethod = builder.thresholdMethod;
+        this.thresholdType = builder.thresholdType;
+        this.adaptiveThreshold = builder.adaptiveThreshold;
+        this.thresholdMultiplier = builder.thresholdMultiplier;
+        this.noiseWindowSize = builder.noiseWindowSize;
+    }
+    
+    // Getters
+    public Wavelet getWavelet() { return wavelet; }
+    public int getBlockSize() { return blockSize; }
+    public double getOverlapFactor() { return overlapFactor; }
+    public BoundaryMode getBoundaryMode() { return boundaryMode; }
+    public ThresholdMethod getThresholdMethod() { return thresholdMethod; }
+    public ThresholdType getThresholdType() { return thresholdType; }
+    public boolean isAdaptiveThreshold() { return adaptiveThreshold; }
+    public double getThresholdMultiplier() { return thresholdMultiplier; }
+    public int getNoiseWindowSize() { return noiseWindowSize; }
+    
+    /**
+     * Creates a default configuration suitable for real-time audio processing.
+     */
+    public static StreamingDenoiserConfig defaultAudioConfig() {
+        return new Builder()
+            .blockSize(512)
+            .overlapFactor(0.5)
+            .thresholdMethod(ThresholdMethod.UNIVERSAL)
+            .adaptiveThreshold(true)
+            .build();
+    }
+    
+    /**
+     * Creates a default configuration suitable for financial data processing.
+     */
+    public static StreamingDenoiserConfig defaultFinancialConfig() {
+        return new Builder()
+            .blockSize(256)
+            .overlapFactor(0.25)
+            .thresholdMethod(ThresholdMethod.SURE)
+            .thresholdMultiplier(0.8)
+            .build();
+    }
+    
+    /**
+     * Builder for StreamingDenoiserConfig.
+     */
+    public static class Builder {
+        private Wavelet wavelet = ai.prophetizo.wavelet.api.Daubechies.DB4;
+        private int blockSize = 256;
+        private double overlapFactor = 0.5;
+        private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
+        private ThresholdMethod thresholdMethod = ThresholdMethod.UNIVERSAL;
+        private ThresholdType thresholdType = ThresholdType.SOFT;
+        private boolean adaptiveThreshold = false;
+        private double thresholdMultiplier = 1.0;
+        private int noiseWindowSize = 128;
+        
+        public Builder wavelet(Wavelet wavelet) {
+            if (wavelet == null) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Wavelet cannot be null")
+                        .withContext("field", "wavelet")
+                        .withContext("value", "null")
+                        .withContext("constraint", "non-null")
+                        .withSuggestion("Use a valid wavelet like Daubechies.DB4")
+                        .build()
+                );
+            }
+            this.wavelet = wavelet;
+            return this;
+        }
+        
+        public Builder blockSize(int blockSize) {
+            if (blockSize <= 0) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Block size must be positive")
+                        .withContext("field", "blockSize")
+                        .withContext("value", blockSize)
+                        .withContext("constraint", "positive")
+                        .withSuggestion("Use a block size like 256 or 512")
+                        .build()
+                );
+            }
+            this.blockSize = blockSize;
+            return this;
+        }
+        
+        public Builder overlapFactor(double overlapFactor) {
+            if (overlapFactor < 0 || overlapFactor >= 1) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Overlap factor must be between 0 and 1")
+                        .withContext("field", "overlapFactor")
+                        .withContext("value", overlapFactor)
+                        .withContext("constraint", "[0, 1)")
+                        .withSuggestion("Use 0.5 for 50% overlap")
+                        .build()
+                );
+            }
+            this.overlapFactor = overlapFactor;
+            return this;
+        }
+        
+        public Builder boundaryMode(BoundaryMode boundaryMode) {
+            if (boundaryMode == null) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Boundary mode cannot be null")
+                        .withContext("field", "boundaryMode")
+                        .withContext("value", "null")
+                        .withContext("constraint", "non-null")
+                        .withSuggestion("Use BoundaryMode.PERIODIC for streaming")
+                        .build()
+                );
+            }
+            this.boundaryMode = boundaryMode;
+            return this;
+        }
+        
+        public Builder thresholdMethod(ThresholdMethod method) {
+            if (method == null) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Threshold method cannot be null")
+                        .withContext("field", "thresholdMethod")
+                        .withContext("value", "null")
+                        .withContext("constraint", "non-null")
+                        .withSuggestion("Use ThresholdMethod.UNIVERSAL or SURE")
+                        .build()
+                );
+            }
+            this.thresholdMethod = method;
+            return this;
+        }
+        
+        public Builder thresholdType(ThresholdType type) {
+            if (type == null) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Threshold type cannot be null")
+                        .withContext("field", "thresholdType")
+                        .withContext("value", "null")
+                        .withContext("constraint", "non-null")
+                        .withSuggestion("Use ThresholdType.SOFT for smoother results")
+                        .build()
+                );
+            }
+            this.thresholdType = type;
+            return this;
+        }
+        
+        public Builder adaptiveThreshold(boolean adaptive) {
+            this.adaptiveThreshold = adaptive;
+            return this;
+        }
+        
+        public Builder thresholdMultiplier(double multiplier) {
+            if (multiplier <= 0) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Threshold multiplier must be positive")
+                        .withContext("field", "thresholdMultiplier")
+                        .withContext("value", multiplier)
+                        .withContext("constraint", "positive")
+                        .withSuggestion("Use 1.0 for standard threshold, 0.8 for less aggressive")
+                        .build()
+                );
+            }
+            this.thresholdMultiplier = multiplier;
+            return this;
+        }
+        
+        public Builder noiseWindowSize(int windowSize) {
+            if (windowSize <= 0) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Noise window size must be positive")
+                        .withContext("field", "noiseWindowSize")
+                        .withContext("value", windowSize)
+                        .withContext("constraint", "positive")
+                        .withSuggestion("Use at least 64 samples for stable noise estimation")
+                        .build()
+                );
+            }
+            this.noiseWindowSize = windowSize;
+            return this;
+        }
+        
+        public StreamingDenoiserConfig build() {
+            // Validate configuration
+            if (overlapFactor > 0 && blockSize < 64) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Block size too small for overlap")
+                        .withContext("field", "blockSize")
+                        .withContext("value", blockSize)
+                        .withContext("constraint", "≥ 64 when using overlap")
+                        .withContext("overlapFactor", overlapFactor)
+                        .withSuggestion("Increase block size or disable overlap")
+                        .build()
+                );
+            }
+            
+            if (noiseWindowSize > blockSize) {
+                throw new InvalidArgumentException(
+                    ErrorContext.builder("Noise window size exceeds block size")
+                        .withContext("field", "noiseWindowSize")
+                        .withContext("value", noiseWindowSize)
+                        .withContext("constraint", "≤ blockSize")
+                        .withContext("blockSize", blockSize)
+                        .withSuggestion("Reduce noise window size or increase block size")
+                        .build()
+                );
+            }
+            
+            return new StreamingDenoiserConfig(this);
+        }
+    }
+    
+    @Override
+    public String toString() {
+        return String.format(
+            "StreamingDenoiserConfig[wavelet=%s, blockSize=%d, overlap=%.1f%%, " +
+            "threshold=%s/%s, adaptive=%s, multiplier=%.2f]",
+            wavelet.name(), blockSize, overlapFactor * 100,
+            thresholdMethod, thresholdType, adaptiveThreshold, thresholdMultiplier
+        );
+    }
+}
