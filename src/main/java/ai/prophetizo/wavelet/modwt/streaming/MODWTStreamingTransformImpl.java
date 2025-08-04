@@ -21,6 +21,19 @@ import java.util.concurrent.atomic.LongAdder;
  * <p>This implementation uses a circular buffer strategy that takes advantage
  * of MODWT's shift-invariant properties for seamless block processing.</p>
  *
+ * <p><strong>Sliding Window Overlap Strategy:</strong></p>
+ * <p>To ensure continuity across transform blocks, this implementation uses a sliding
+ * window approach with overlap. The overlap size is typically set to the filter length
+ * minus 1, which guarantees that boundary effects from one block don't affect the next.</p>
+ * 
+ * <p>For example, with a buffer size of 1024 and overlap of 256:</p>
+ * <ul>
+ *   <li>Each transform processes 1024 samples</li>
+ *   <li>The last 256 samples are retained for the next window</li>
+ *   <li>Only 768 new samples are consumed per transform</li>
+ *   <li>This ensures filter state continuity across blocks</li>
+ * </ul>
+ *
  * <p>Key features:</p>
  * <ul>
  *   <li>Circular buffer for continuous processing</li>
@@ -151,12 +164,20 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
         long processingTime = System.nanoTime() - startTime;
         statistics.recordBlockProcessed(processingTime);
         
-        // Slide the window: we've processed bufferSize samples but keep overlapSize
-        // So we effectively consumed (bufferSize - overlapSize) samples
+        // Sliding window overlap mechanism:
+        // - We processed a full buffer of 'bufferSize' samples
+        // - The last 'overlapSize' samples need to be included in the next window
+        // - Therefore, we only consumed (bufferSize - overlapSize) new samples
+        // 
+        // Example with bufferSize=1024, overlapSize=256:
+        // - Window 1: samples [0...1023]     (processes 1024 samples)
+        // - Window 2: samples [768...1791]   (overlaps last 256 samples)
+        // - Effective consumption: 1024 - 256 = 768 new samples per window
+        //
+        // The circular buffer naturally maintains the overlap samples without copying:
+        // - Read position stays at the beginning of unprocessed samples
+        // - The overlap samples remain in the buffer for the next window
         samplesInBuffer -= (bufferSize - overlapSize);
-        
-        // Note: The overlap samples are already in the circular buffer at the correct positions
-        // No need to copy them separately as the circular buffer maintains them
     }
 
     @Override

@@ -7,7 +7,9 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Performs multi-level MODWT (Maximal Overlap Discrete Wavelet Transform) decomposition and reconstruction.
@@ -61,9 +63,21 @@ import java.util.Objects;
  */
 public class MultiLevelMODWTTransform {
     
+    /**
+     * Maximum practical limit for decomposition levels.
+     * Beyond this, numerical issues and memory requirements become prohibitive.
+     */
+    private static final int MAX_DECOMPOSITION_LEVELS = 10;
+    
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
     private final MODWTTransform singleLevelTransform;
+    
+    /**
+     * Cache for truncated filters to avoid repeated allocations.
+     * Key: "low_<length>" or "high_<length>", Value: truncated filter
+     */
+    private final Map<String, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
     
     /**
      * Constructs a multi-level MODWT transformer.
@@ -258,7 +272,7 @@ public class MultiLevelMODWTTransform {
         // We want (L-1)*2^(j-1)+1 <= N, which gives j <= log2(N-1/L-1) + 1
         
         int maxLevels = 1;
-        while (maxLevels < 10) { // Practical limit
+        while (maxLevels < MAX_DECOMPOSITION_LEVELS) {
             int scaledFilterLength = (filterLength - 1) * (1 << (maxLevels - 1)) + 1;
             if (scaledFilterLength > signalLength) {
                 break;
@@ -338,16 +352,11 @@ public class MultiLevelMODWTTransform {
         int maxFilterLength = Math.max(scaledLowPassRecon.length, scaledHighPassRecon.length);
         if (maxFilterLength > signalLength) {
             // Truncate filters if they exceed signal length
-            int truncLength = signalLength;
-            if (scaledLowPassRecon.length > truncLength) {
-                double[] truncated = new double[truncLength];
-                System.arraycopy(scaledLowPassRecon, 0, truncated, 0, truncLength);
-                scaledLowPassRecon = truncated;
+            if (scaledLowPassRecon.length > signalLength) {
+                scaledLowPassRecon = getTruncatedFilter(scaledLowPassRecon, signalLength, "lowRecon");
             }
-            if (scaledHighPassRecon.length > truncLength) {
-                double[] truncated = new double[truncLength];
-                System.arraycopy(scaledHighPassRecon, 0, truncated, 0, truncLength);
-                scaledHighPassRecon = truncated;
+            if (scaledHighPassRecon.length > signalLength) {
+                scaledHighPassRecon = getTruncatedFilter(scaledHighPassRecon, signalLength, "highRecon");
             }
         }
         
@@ -427,14 +436,10 @@ public class MultiLevelMODWTTransform {
         // For very long filters (at high decomposition levels), we may need to truncate
         // to avoid issues with circular convolution
         if (scaledLowPass.length > signalLength) {
-            double[] truncated = new double[signalLength];
-            System.arraycopy(scaledLowPass, 0, truncated, 0, signalLength);
-            scaledLowPass = truncated;
+            scaledLowPass = getTruncatedFilter(scaledLowPass, signalLength, "low");
         }
         if (scaledHighPass.length > signalLength) {
-            double[] truncated = new double[signalLength];
-            System.arraycopy(scaledHighPass, 0, truncated, 0, signalLength);
-            scaledHighPass = truncated;
+            scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, "high");
         }
         
         // Use ScalarOps circular convolution for MODWT
@@ -464,13 +469,40 @@ public class MultiLevelMODWTTransform {
         // Ensure we don't go out of bounds with very long filters
         int effectiveFilterLen = Math.min(filterLen, signalLen);
         
+        // Optimize for the common case where we don't need wrapping
         for (int t = 0; t < signalLen; t++) {
             double sum = 0.0;
-            for (int k = 0; k < effectiveFilterLen; k++) {
-                int idx = (t - k + signalLen) % signalLen;
-                sum += filter[k] * signal[idx];
+            
+            // Process coefficients that don't need wrapping
+            int maxK = Math.min(effectiveFilterLen, t + 1);
+            for (int k = 0; k < maxK; k++) {
+                sum += filter[k] * signal[t - k];
             }
+            
+            // Process coefficients that need wrapping (circular convolution)
+            for (int k = maxK; k < effectiveFilterLen; k++) {
+                sum += filter[k] * signal[t - k + signalLen];
+            }
+            
             output[t] = sum;
         }
+    }
+    
+    /**
+     * Gets a truncated version of a filter, using cache to avoid repeated allocations.
+     * 
+     * @param filter the original filter
+     * @param targetLength the desired length
+     * @param filterType identifier for caching (e.g., "low", "high", "lowRecon", "highRecon")
+     * @return truncated filter of the specified length
+     */
+    private double[] getTruncatedFilter(double[] filter, int targetLength, String filterType) {
+        String cacheKey = filterType + "_" + targetLength;
+        
+        return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
+            double[] truncated = new double[targetLength];
+            System.arraycopy(filter, 0, truncated, 0, targetLength);
+            return truncated;
+        });
     }
 }

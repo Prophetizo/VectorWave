@@ -153,8 +153,7 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
         // Convert to single-level results and publish each level
         for (int level = 1; level <= levels; level++) {
             double[] details = multiResult.getDetailCoeffsAtLevel(level);
-            double[] approx = level == levels ? multiResult.getApproximationCoeffs() : 
-                              new double[bufferSize]; // Empty for intermediate levels
+            double[] approx = getApproximationForLevel(multiResult, level);
             
             MODWTResult levelResult = new MODWTResultWrapper(approx, details);
             submit(levelResult);
@@ -185,8 +184,7 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
             // Publish results for each level
             for (int level = 1; level <= levels; level++) {
                 double[] details = multiResult.getDetailCoeffsAtLevel(level);
-                // Only the final level has approximation coefficients; intermediate levels use empty array
-                double[] approx = level == levels ? multiResult.getApproximationCoeffs() : EMPTY_ARRAY;
+                double[] approx = getApproximationForLevel(multiResult, level);
                 
                 MODWTResult levelResult = new MODWTResultWrapper(approx, details);
                 submit(levelResult);
@@ -228,6 +226,19 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
     @Override
     public boolean isClosed() {
         return isClosed.get();
+    }
+    
+    /**
+     * Gets the appropriate approximation coefficients for a given level.
+     * Only the final level contains actual approximation coefficients;
+     * intermediate levels use an empty array.
+     * 
+     * @param multiResult the multi-level MODWT result
+     * @param currentLevel the current level being processed
+     * @return approximation coefficients for the final level, empty array otherwise
+     */
+    private double[] getApproximationForLevel(MultiLevelMODWTResult multiResult, int currentLevel) {
+        return currentLevel == levels ? multiResult.getApproximationCoeffs() : EMPTY_ARRAY;
     }
 
     @Override

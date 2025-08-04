@@ -145,7 +145,19 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         }
     }
     
+    /**
+     * Calculates the Median Absolute Deviation (MAD) of the given values.
+     * MAD is a robust measure of variability based on the median of absolute deviations.
+     * 
+     * @param values the array of values (must not be empty)
+     * @return the median absolute deviation
+     * @throws IllegalArgumentException if values array is empty
+     */
     private double calculateMAD(double[] values) {
+        if (values.length == 0) {
+            throw new IllegalArgumentException("Cannot calculate MAD of empty array");
+        }
+        
         // First, find median using quickselect (modifies array, so clone)
         double[] work = values.clone();
         double median = quickSelect(work, 0, work.length - 1, work.length / 2);
@@ -163,8 +175,27 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
      * Quickselect algorithm for finding kth smallest element.
      * More efficient than full sort for median calculation.
      * Average O(n) time complexity vs O(n log n) for sorting.
+     * 
+     * @param arr the array to select from (will be modified)
+     * @param left the left boundary of the search range (inclusive)
+     * @param right the right boundary of the search range (inclusive)
+     * @param k the index of the desired element (0-based, must be within [left, right])
+     * @return the kth smallest element in the range [left, right]
+     * @throws IllegalArgumentException if k is out of bounds
      */
     private double quickSelect(double[] arr, int left, int right, int k) {
+        // Validate bounds
+        if (k < left || k > right) {
+            throw new IllegalArgumentException(
+                String.format("k=%d is out of bounds [%d, %d]", k, left, right));
+        }
+        if (left < 0 || right >= arr.length) {
+            throw new IllegalArgumentException(
+                String.format("Invalid range [%d, %d] for array of length %d", 
+                    left, right, arr.length));
+        }
+        
+        // Base case: single element
         if (left == right) {
             return arr[left];
         }
@@ -172,6 +203,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         // Choose pivot and partition
         int pivotIndex = partition(arr, left, right);
         
+        // Recursively search the appropriate partition
         if (k == pivotIndex) {
             return arr[k];
         } else if (k < pivotIndex) {
@@ -181,14 +213,37 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         }
     }
     
+    /**
+     * Partitions the array around a pivot element.
+     * Uses the "median-of-three" strategy to choose a good pivot.
+     * 
+     * @param arr the array to partition
+     * @param left the left boundary (inclusive)
+     * @param right the right boundary (inclusive)
+     * @return the final position of the pivot
+     */
     private int partition(double[] arr, int left, int right) {
-        // Use middle element as pivot to avoid worst-case on sorted data
+        // Use median-of-three to choose pivot for better performance
         int mid = left + (right - left) / 2;
+        
+        // Sort left, middle, and right elements
+        if (arr[left] > arr[mid]) {
+            swap(arr, left, mid);
+        }
+        if (arr[mid] > arr[right]) {
+            swap(arr, mid, right);
+            if (arr[left] > arr[mid]) {
+                swap(arr, left, mid);
+            }
+        }
+        
+        // Use middle element as pivot
         double pivot = arr[mid];
         
         // Move pivot to end
         swap(arr, mid, right);
         
+        // Partition around pivot
         int storeIndex = left;
         for (int i = left; i < right; i++) {
             if (arr[i] < pivot) {
@@ -202,10 +257,19 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         return storeIndex;
     }
     
+    /**
+     * Swaps two elements in an array.
+     * 
+     * @param arr the array
+     * @param i first index
+     * @param j second index
+     */
     private void swap(double[] arr, int i, int j) {
-        double temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
+        if (i != j) {
+            double temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
     }
     
     private double calculateSTD(double[] values) {

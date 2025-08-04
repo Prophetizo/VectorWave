@@ -185,7 +185,6 @@ class MODWTOptimizedTransformEngineTest {
         var config = new MODWTOptimizedTransformEngine.EngineConfig()
             .withParallelism(parallelism)
             .withMemoryPool(true)
-            .withSpecializedKernels(true)
             .withSoALayout(true)
             .withCacheBlocking(true);
         
@@ -199,9 +198,9 @@ class MODWTOptimizedTransformEngineTest {
     }
     
     @Test
-    void testNoSpecializedKernels() {
+    void testNoSoALayout() {
         var config = new MODWTOptimizedTransformEngine.EngineConfig()
-            .withSpecializedKernels(false);
+            .withSoALayout(false);
         
         MODWTOptimizedTransformEngine customEngine = new MODWTOptimizedTransformEngine(config);
         

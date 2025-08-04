@@ -17,8 +17,8 @@ import java.util.concurrent.CompletableFuture;
  * <ul>
  *   <li>Platform capabilities (ARM, x86, SIMD support)</li>
  *   <li>Signal characteristics (size, batch size)</li>
- *   <li>Wavelet type (specialized kernels for common wavelets)</li>
  *   <li>Memory constraints (pooling, cache-aware blocking)</li>
+ *   <li>Cache-aware algorithms for large signals</li>
  * </ul>
  *
  * <p>Key differences from standard DWT OptimizedTransformEngine:</p>
@@ -35,7 +35,6 @@ public class MODWTOptimizedTransformEngine {
 
     private final ParallelWaveletEngine parallelEngine;
     private final boolean useMemoryPool;
-    private final boolean useSpecializedKernels;
     private final boolean useSoALayout;
     private final boolean useCacheBlocking;
     private final int parallelism;
@@ -56,7 +55,6 @@ public class MODWTOptimizedTransformEngine {
                 ? new ParallelWaveletEngine(config.parallelism)
                 : null;
         this.useMemoryPool = config.useMemoryPool;
-        this.useSpecializedKernels = config.useSpecializedKernels;
         this.useSoALayout = config.useSoALayout;
         this.useCacheBlocking = config.useCacheBlocking;
     }
@@ -65,10 +63,7 @@ public class MODWTOptimizedTransformEngine {
      * Single signal MODWT transform with all optimizations.
      */
     public MODWTResult transform(double[] signal, Wavelet wavelet, BoundaryMode mode) {
-        // Check for specialized kernel
-        if (useSpecializedKernels && hasSpecializedKernel(wavelet)) {
-            return transformWithSpecializedKernel(signal, wavelet, mode);
-        }
+        // No specialized kernels - optimizations should be in canonical implementations
 
         // Use cache-aware transform for large signals
         if (useCacheBlocking && signal.length > 8192) {
@@ -150,39 +145,6 @@ public class MODWTOptimizedTransformEngine {
         );
     }
 
-    /**
-     * Transform using specialized MODWT kernel implementations.
-     */
-    private MODWTResult transformWithSpecializedKernel(
-            double[] signal, Wavelet wavelet, BoundaryMode mode) {
-
-        if (mode != BoundaryMode.PERIODIC) {
-            // Fall back to regular transform for non-periodic boundaries
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
-            return transform.forward(signal);
-        }
-
-        int length = signal.length;
-        double[] approx = new double[length];  // Same length for MODWT
-        double[] detail = new double[length];
-
-        // Use specialized kernels
-        String waveletName = wavelet.name().toLowerCase();
-
-        if (waveletName.equals("haar")) {
-            // Specialized Haar MODWT
-            modwtHaarOptimized(signal, approx, detail);
-        } else if (waveletName.equals("db4")) {
-            // Specialized DB4 MODWT
-            modwtDB4Optimized(signal, approx, detail, wavelet);
-        } else {
-            // No specialized kernel, fall back
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
-            return transform.forward(signal);
-        }
-
-        return new MODWTResultImpl(approx, detail);
-    }
 
     /**
      * MODWT transform with cache-aware blocking.
@@ -364,87 +326,7 @@ public class MODWTOptimizedTransformEngine {
         return transform.decompose(signal, levels);
     }
 
-    /**
-     * Checks if a specialized kernel exists for the wavelet.
-     */
-    private boolean hasSpecializedKernel(Wavelet wavelet) {
-        // Temporarily disabled until specialized kernels are properly tested
-        // The current implementations have numerical differences that cause test failures
-        return false;
-        // TODO: Fix and re-enable specialized kernels
-        // String name = wavelet.name().toLowerCase();
-        // return name.equals("haar") || name.equals("db4");
-    }
 
-    /**
-     * Optimized Haar MODWT implementation.
-     * TODO: When re-enabling specialized kernels:
-     *   - Extract filter coefficients from the wavelet object for consistency
-     *   - Verify numerical accuracy matches standard implementation
-     *   - Add comprehensive tests for edge cases
-     */
-    private void modwtHaarOptimized(double[] signal, double[] approx, double[] detail) {
-        int length = signal.length;
-        double scale = 1.0 / Math.sqrt(2.0);
-        // TODO: Get these from wavelet.lowPassDecomposition() and scale appropriately
-        double h0 = scale;  // Haar low-pass filter coefficient
-        double h1 = scale;  // Haar low-pass filter coefficient
-        double g0 = scale;  // Haar high-pass filter coefficient  
-        double g1 = -scale; // Haar high-pass filter coefficient
-        
-        // MODWT uses (t - l) indexing for forward transform
-        for (int t = 0; t < length; t++) {
-            // Low-pass (approximation)
-            int idx0 = t;
-            int idx1 = (t - 1 + length) % length;
-            approx[t] = h0 * signal[idx0] + h1 * signal[idx1];
-            
-            // High-pass (detail)
-            detail[t] = g0 * signal[idx0] + g1 * signal[idx1];
-        }
-    }
-
-    /**
-     * Optimized DB4 MODWT implementation.
-     */
-    private void modwtDB4Optimized(double[] signal, double[] approx, double[] detail, 
-                                    Wavelet wavelet) {
-        int length = signal.length;
-        double scale = 1.0 / Math.sqrt(2.0);
-        
-        // Get DB4 filter coefficients
-        double[] h = wavelet.lowPassDecomposition();
-        double[] g = wavelet.highPassDecomposition();
-        
-        // Scale filters for MODWT
-        double[] hScaled = new double[h.length];
-        double[] gScaled = new double[g.length];
-        for (int i = 0; i < h.length; i++) {
-            hScaled[i] = h[i] * scale;
-            gScaled[i] = g[i] * scale;
-        }
-        
-        // Unrolled convolution for DB4 (4 coefficients)
-        // This avoids the overhead of generic convolution loops
-        for (int t = 0; t < length; t++) {
-            double sumLow = 0.0;
-            double sumHigh = 0.0;
-            
-            // Manual unrolling for 4 coefficients
-            int idx0 = t;
-            int idx1 = (t - 1 + length) % length;
-            int idx2 = (t - 2 + length) % length;
-            int idx3 = (t - 3 + length) % length;
-            
-            sumLow = hScaled[0] * signal[idx0] + hScaled[1] * signal[idx1] + 
-                     hScaled[2] * signal[idx2] + hScaled[3] * signal[idx3];
-            sumHigh = gScaled[0] * signal[idx0] + gScaled[1] * signal[idx1] + 
-                      gScaled[2] * signal[idx2] + gScaled[3] * signal[idx3];
-            
-            approx[t] = sumLow;
-            detail[t] = sumHigh;
-        }
-    }
 
     /**
      * Cache-aware MODWT convolution.
@@ -474,7 +356,6 @@ public class MODWTOptimizedTransformEngine {
     public static class EngineConfig {
         private int parallelism = Runtime.getRuntime().availableProcessors();
         private boolean useMemoryPool = true;
-        private boolean useSpecializedKernels = true;
         private boolean useSoALayout = true;
         private boolean useCacheBlocking = true;
 
@@ -488,10 +369,6 @@ public class MODWTOptimizedTransformEngine {
             return this;
         }
 
-        public EngineConfig withSpecializedKernels(boolean use) {
-            this.useSpecializedKernels = use;
-            return this;
-        }
 
         public EngineConfig withSoALayout(boolean use) {
             this.useSoALayout = use;
