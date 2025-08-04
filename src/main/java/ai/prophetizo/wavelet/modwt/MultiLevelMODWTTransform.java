@@ -121,7 +121,7 @@ public class MultiLevelMODWTTransform {
     /**
      * Filter types for cache key encoding.
      */
-    private static enum FilterType {
+    private enum FilterType {
         LOW(0), HIGH(1), LOW_RECON(2), HIGH_RECON(3);
         
         final int ordinal;
