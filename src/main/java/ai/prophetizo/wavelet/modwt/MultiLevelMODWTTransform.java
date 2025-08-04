@@ -119,6 +119,12 @@ public class MultiLevelMODWTTransform {
     private final Map<Long, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
     
     /**
+     * Record to hold a pair of scaled filters for efficient computation.
+     * Avoids redundant calculations when scaling both low-pass and high-pass filters.
+     */
+    private record ScaledFilterPair(double[] lowPass, double[] highPass) {}
+    
+    /**
      * Filter types for cache key encoding.
      */
     private enum FilterType {
@@ -375,41 +381,102 @@ public class MultiLevelMODWTTransform {
      * Performs single-level MODWT with appropriately scaled filters.
      */
     private MODWTResult transformAtLevel(double[] signal, int level) {
-        // For level j, scale filters by 2^(j-1) through upsampling
-        double[] scaledLowPass = scaleFilterForLevel(wavelet.lowPassDecomposition(), level);
-        double[] scaledHighPass = scaleFilterForLevel(wavelet.highPassDecomposition(), level);
+        // For level j, scale both filters together to avoid redundant calculations
+        ScaledFilterPair scaledFilters = scaleFiltersForLevel(
+            wavelet.lowPassDecomposition(), 
+            wavelet.highPassDecomposition(), 
+            level
+        );
         
         // Apply MODWT with scaled filters directly
-        return applyScaledMODWT(signal, scaledLowPass, scaledHighPass);
+        return applyScaledMODWT(signal, scaledFilters.lowPass(), scaledFilters.highPass());
     }
     
     /**
      * Reconstructs single level by combining approximation and details.
      */
     private double[] reconstructSingleLevel(double[] approx, double[] details, int level) {
-        // For MODWT reconstruction, we need upsampled filters
-        double[] upsampledLowPass = upsampleFilterForLevel(wavelet.lowPassReconstruction(), level);
-        double[] upsampledHighPass = upsampleFilterForLevel(wavelet.highPassReconstruction(), level);
+        // For MODWT reconstruction, we need upsampled filters - process both together
+        ScaledFilterPair upsampledFilters = upsampleFiltersForLevel(
+            wavelet.lowPassReconstruction(), 
+            wavelet.highPassReconstruction(), 
+            level
+        );
         
-        // Scale filters by 1/sqrt(2) for MODWT (same as single-level)
-        double scale = 1.0 / Math.sqrt(2.0);
-        double[] scaledLowPass = new double[upsampledLowPass.length];
-        double[] scaledHighPass = new double[upsampledHighPass.length];
-        
-        for (int i = 0; i < upsampledLowPass.length; i++) {
-            scaledLowPass[i] = upsampledLowPass[i] * scale;
+        // Apply inverse MODWT with the upsampled and scaled filters
+        return applyScaledInverseMODWT(approx, details, upsampledFilters.lowPass(), upsampledFilters.highPass());
+    }
+    
+    /**
+     * Upsamples both low-pass and high-pass filters for MODWT at given level with scaling.
+     * This optimized method avoids redundant calculations by processing both filters together.
+     * At level j, insert 2^(j-1) - 1 zeros between coefficients and apply 1/sqrt(2) scaling.
+     */
+    private ScaledFilterPair upsampleFiltersForLevel(double[] lowFilter, double[] highFilter, int level) {
+        if (level == 1) {
+            // Level 1: no upsampling, just scale by 1/sqrt(2)
+            double scale = 1.0 / Math.sqrt(2.0);
+            
+            double[] scaledLow = lowFilter.clone();
+            double[] scaledHigh = highFilter.clone();
+            
+            for (int i = 0; i < scaledLow.length; i++) {
+                scaledLow[i] *= scale;
+            }
+            for (int i = 0; i < scaledHigh.length; i++) {
+                scaledHigh[i] *= scale;
+            }
+            
+            return new ScaledFilterPair(scaledLow, scaledHigh);
         }
-        for (int i = 0; i < upsampledHighPass.length; i++) {
-            scaledHighPass[i] = upsampledHighPass[i] * scale;
-        }
         
-        // Apply inverse MODWT with scaled filters
-        return applyScaledInverseMODWT(approx, details, scaledLowPass, scaledHighPass);
+        try {
+            // Check for potential overflow in bit shift (once for both filters)
+            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
+                throw new InvalidArgumentException(
+                    "Level " + level + " would cause integer overflow in filter upsampling");
+            }
+            
+            // Calculate shared values once
+            int upFactor = 1 << (level - 1);
+            double scale = 1.0 / Math.sqrt(2.0); // MODWT scaling
+            
+            // Process low-pass filter
+            int upsampledLowLength = Math.addExact(
+                Math.multiplyExact(lowFilter.length - 1, upFactor), 
+                1
+            );
+            double[] upsampledLow = new double[upsampledLowLength];
+            
+            for (int i = 0; i < lowFilter.length; i++) {
+                upsampledLow[i * upFactor] = lowFilter[i] * scale;
+            }
+            
+            // Process high-pass filter
+            int upsampledHighLength = Math.addExact(
+                Math.multiplyExact(highFilter.length - 1, upFactor), 
+                1
+            );
+            double[] upsampledHigh = new double[upsampledHighLength];
+            
+            for (int i = 0; i < highFilter.length; i++) {
+                upsampledHigh[i * upFactor] = highFilter[i] * scale;
+            }
+            
+            return new ScaledFilterPair(upsampledLow, upsampledHigh);
+            
+        } catch (ArithmeticException e) {
+            throw new InvalidArgumentException(
+                "Arithmetic overflow when upsampling filters for level " + level + 
+                ": " + e.getMessage());
+        }
     }
     
     /**
      * Upsamples filter for MODWT at given level WITHOUT scaling.
      * At level j, insert 2^(j-1) - 1 zeros between coefficients.
+     * 
+     * @deprecated Use upsampleFiltersForLevel for better performance when processing both filters
      */
     private double[] upsampleFilterForLevel(double[] filter, int level) {
         if (level == 1) {
@@ -482,9 +549,77 @@ public class MultiLevelMODWTTransform {
     }
     
     /**
+     * Scales both low-pass and high-pass filters for MODWT at given level.
+     * This optimized method avoids redundant calculations by processing both filters together.
+     * At level j, insert 2^(j-1) - 1 zeros between coefficients.
+     * MODWT only uses 1/sqrt(2) scaling, regardless of level.
+     */
+    private ScaledFilterPair scaleFiltersForLevel(double[] lowFilter, double[] highFilter, int level) {
+        if (level == 1) {
+            // Level 1: no upsampling, just scale by 1/sqrt(2)
+            double scale = 1.0 / Math.sqrt(2.0);
+            
+            double[] scaledLow = lowFilter.clone();
+            double[] scaledHigh = highFilter.clone();
+            
+            for (int i = 0; i < scaledLow.length; i++) {
+                scaledLow[i] *= scale;
+            }
+            for (int i = 0; i < scaledHigh.length; i++) {
+                scaledHigh[i] *= scale;
+            }
+            
+            return new ScaledFilterPair(scaledLow, scaledHigh);
+        }
+        
+        try {
+            // Check for potential overflow in bit shift (once for both filters)
+            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
+                throw new InvalidArgumentException(
+                    "Level " + level + " would cause integer overflow in filter scaling");
+            }
+            
+            // Calculate shared values once
+            int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
+            double scale = 1.0 / Math.sqrt(2.0); // MODWT always uses 1/sqrt(2) scaling
+            
+            // Process low-pass filter
+            int scaledLowLength = Math.addExact(
+                Math.multiplyExact(lowFilter.length - 1, upFactor), 
+                1
+            );
+            double[] scaledLow = new double[scaledLowLength];
+            
+            for (int i = 0; i < lowFilter.length; i++) {
+                scaledLow[i * upFactor] = lowFilter[i] * scale;
+            }
+            
+            // Process high-pass filter
+            int scaledHighLength = Math.addExact(
+                Math.multiplyExact(highFilter.length - 1, upFactor), 
+                1
+            );
+            double[] scaledHigh = new double[scaledHighLength];
+            
+            for (int i = 0; i < highFilter.length; i++) {
+                scaledHigh[i * upFactor] = highFilter[i] * scale;
+            }
+            
+            return new ScaledFilterPair(scaledLow, scaledHigh);
+            
+        } catch (ArithmeticException e) {
+            throw new InvalidArgumentException(
+                "Arithmetic overflow when scaling filters for level " + level + 
+                ": " + e.getMessage());
+        }
+    }
+    
+    /**
      * Scales filter for MODWT at given level by upsampling with zeros.
      * At level j, insert 2^(j-1) - 1 zeros between coefficients.
      * MODWT only uses 1/sqrt(2) scaling, regardless of level.
+     * 
+     * @deprecated Use scaleFiltersForLevel for better performance when scaling both filters
      */
     private double[] scaleFilterForLevel(double[] filter, int level) {
         if (level == 1) {
