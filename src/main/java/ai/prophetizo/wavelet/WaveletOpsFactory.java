@@ -370,12 +370,11 @@ public final class WaveletOpsFactory {
         public double[] upsampleAndConvolve(double[] signal, double[] filter,
                                             int signalLength, int filterLength,
                                             BoundaryMode mode) {
-            // For now, fall back to regular vector ops for upsampling
-            // TODO: Implement ARM-specific upsampling
+            // Use ARM-optimized upsampling implementations
             return switch (mode) {
-                case PERIODIC -> VectorOps.upsampleAndConvolvePeriodic(
+                case PERIODIC -> VectorOpsARM.upsampleAndConvolvePeriodicARM(
                         signal, filter, signalLength, filterLength);
-                case ZERO_PADDING -> VectorOps.upsampleAndConvolveZeroPadding(
+                case ZERO_PADDING -> VectorOpsARM.upsampleAndConvolveZeroPaddingARM(
                         signal, filter, signalLength, filterLength);
                 default -> throw new UnsupportedOperationException(
                         "Boundary mode " + mode + " is not yet implemented");

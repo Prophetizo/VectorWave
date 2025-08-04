@@ -280,4 +280,226 @@ public final class VectorOpsARM {
     public static boolean isAppleSilicon() {
         return PlatformDetector.isAppleSilicon();
     }
+
+    /**
+     * ARM-optimized upsampling and convolution for periodic boundary mode.
+     * Inserts zeros between samples and convolves with filter.
+     * 
+     * @param signal Input signal (downsampled)
+     * @param filter Wavelet filter coefficients
+     * @param signalLength Length of input signal
+     * @param filterLength Length of filter
+     * @return Upsampled and convolved result
+     */
+    public static double[] upsampleAndConvolvePeriodicARM(
+            double[] signal, double[] filter, int signalLength, int filterLength) {
+        
+        if (signal == null || filter == null) {
+            throw new IllegalArgumentException("Signal and filter cannot be null");
+        }
+        
+        int outputLength = signalLength * 2;
+        double[] output = new double[outputLength];
+        
+        // Special case for Haar (2-tap filter)
+        if (filterLength == 2) {
+            return upsampleAndConvolveHaarARM(signal, filter, signalLength);
+        }
+        
+        // Special case for DB2 (4-tap filter)
+        if (filterLength == 4) {
+            return upsampleAndConvolveDB2ARM(signal, filter, signalLength);
+        }
+        
+        // General case - follows the standard upsampling algorithm:
+        // For each input coefficient at position i, it contributes to output
+        // starting at position 2*i, convolved with the filter
+        
+        // Process input coefficients in pairs for ARM 2-element vectors
+        for (int i = 0; i < signalLength - 1; i += 2) {
+            double coeff0 = signal[i];
+            double coeff1 = signal[i + 1];
+            
+            int baseIndex0 = 2 * i;
+            int baseIndex1 = 2 * (i + 1);
+            
+            // Process filter coefficients in pairs using 2-element vectors
+            int j = 0;
+            for (; j < filterLength - 1; j += 2) {
+                // Load filter pair
+                DoubleVector filterVec = DoubleVector.fromArray(SPECIES, filter, j);
+                
+                // Apply coeff0's contribution
+                int idx0_0 = (baseIndex0 + j) % outputLength;
+                int idx0_1 = (baseIndex0 + j + 1) % outputLength;
+                output[idx0_0] += coeff0 * filter[j];
+                output[idx0_1] += coeff0 * filter[j + 1];
+                
+                // Apply coeff1's contribution
+                int idx1_0 = (baseIndex1 + j) % outputLength;
+                int idx1_1 = (baseIndex1 + j + 1) % outputLength;
+                output[idx1_0] += coeff1 * filter[j];
+                output[idx1_1] += coeff1 * filter[j + 1];
+            }
+            
+            // Handle remaining filter coefficient if filterLength is odd
+            if (j < filterLength) {
+                int idx0 = (baseIndex0 + j) % outputLength;
+                int idx1 = (baseIndex1 + j) % outputLength;
+                output[idx0] += coeff0 * filter[j];
+                output[idx1] += coeff1 * filter[j];
+            }
+        }
+        
+        // Handle last coefficient if signalLength is odd
+        if (signalLength % 2 == 1) {
+            int i = signalLength - 1;
+            double coeff = signal[i];
+            int baseIndex = 2 * i;
+            
+            for (int j = 0; j < filterLength; j++) {
+                int outputIndex = (baseIndex + j) % outputLength;
+                output[outputIndex] += coeff * filter[j];
+            }
+        }
+        
+        return output;
+    }
+
+    /**
+     * ARM-optimized upsampling and convolution for zero-padding boundary mode.
+     * 
+     * @param signal Input signal (downsampled)
+     * @param filter Wavelet filter coefficients
+     * @param signalLength Length of input signal
+     * @param filterLength Length of filter
+     * @return Upsampled and convolved result
+     */
+    public static double[] upsampleAndConvolveZeroPaddingARM(
+            double[] signal, double[] filter, int signalLength, int filterLength) {
+        
+        if (signal == null || filter == null) {
+            throw new IllegalArgumentException("Signal and filter cannot be null");
+        }
+        
+        int outputLength = signalLength * 2;
+        double[] output = new double[outputLength];
+        
+        // Process in pairs for ARM 2-element vectors
+        for (int i = 0; i < outputLength - 1; i += 2) {
+            double sum0 = 0.0;
+            double sum1 = 0.0;
+            
+            // For even output index i
+            for (int k = 0; k < filterLength; k++) {
+                int idx = i - k;
+                if (idx >= 0 && idx < outputLength && idx % 2 == 0) {
+                    int srcIdx = idx / 2;
+                    if (srcIdx < signalLength) {
+                        sum0 += filter[k] * signal[srcIdx];
+                    }
+                }
+            }
+            
+            // For odd output index i+1
+            for (int k = 0; k < filterLength; k++) {
+                int idx = i + 1 - k;
+                if (idx >= 0 && idx < outputLength && idx % 2 == 0) {
+                    int srcIdx = idx / 2;
+                    if (srcIdx < signalLength) {
+                        sum1 += filter[k] * signal[srcIdx];
+                    }
+                }
+            }
+            
+            output[i] = sum0;
+            output[i + 1] = sum1;
+        }
+        
+        // Handle last element if outputLength is odd
+        if (outputLength % 2 == 1) {
+            int i = outputLength - 1;
+            double sum = 0.0;
+            for (int k = 0; k < filterLength; k++) {
+                int idx = i - k;
+                if (idx >= 0 && idx < outputLength && idx % 2 == 0) {
+                    int srcIdx = idx / 2;
+                    if (srcIdx < signalLength) {
+                        sum += filter[k] * signal[srcIdx];
+                    }
+                }
+            }
+            output[i] = sum;
+        }
+        
+        return output;
+    }
+
+    /**
+     * Specialized Haar upsampling for ARM (2 coefficients).
+     */
+    private static double[] upsampleAndConvolveHaarARM(
+            double[] signal, double[] filter, int signalLength) {
+        
+        int outputLength = signalLength * 2;
+        double[] output = new double[outputLength];
+        
+        double f0 = filter[0];
+        double f1 = filter[1];
+        
+        // Unrolled by 4 outputs (2 input samples) for better performance
+        int i = 0;
+        for (; i < signalLength - 1; i += 2) {
+            double coeff0 = signal[i];
+            double coeff1 = signal[i + 1];
+            
+            // For coefficient at position i, contribute to positions 2*i and 2*i+1
+            int base0 = 2 * i;
+            int base1 = 2 * (i + 1);
+            
+            // Apply Haar filter with periodic boundary
+            output[base0 % outputLength] += coeff0 * f0;
+            output[(base0 + 1) % outputLength] += coeff0 * f1;
+            
+            output[base1 % outputLength] += coeff1 * f0;
+            output[(base1 + 1) % outputLength] += coeff1 * f1;
+        }
+        
+        // Handle last element if signalLength is odd
+        if (i < signalLength) {
+            double coeff = signal[i];
+            int base = 2 * i;
+            output[base % outputLength] += coeff * f0;
+            output[(base + 1) % outputLength] += coeff * f1;
+        }
+        
+        return output;
+    }
+
+    /**
+     * Specialized DB2 upsampling for ARM (4 coefficients).
+     */
+    private static double[] upsampleAndConvolveDB2ARM(
+            double[] signal, double[] filter, int signalLength) {
+        
+        int outputLength = signalLength * 2;
+        double[] output = new double[outputLength];
+        
+        double f0 = filter[0], f1 = filter[1], f2 = filter[2], f3 = filter[3];
+        
+        // Process each input coefficient
+        // Each coefficient at position i contributes to output starting at position 2*i
+        for (int i = 0; i < signalLength; i++) {
+            double coeff = signal[i];
+            int baseIndex = 2 * i;
+            
+            // Apply all 4 filter coefficients with periodic boundary
+            output[(baseIndex) % outputLength] += coeff * f0;
+            output[(baseIndex + 1) % outputLength] += coeff * f1;
+            output[(baseIndex + 2) % outputLength] += coeff * f2;
+            output[(baseIndex + 3) % outputLength] += coeff * f3;
+        }
+        
+        return output;
+    }
 }

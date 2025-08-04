@@ -4,8 +4,11 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.internal.*;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
+import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -405,14 +408,23 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
 
     /**
      * Multi-level MODWT with parallel processing.
+     * 
+     * This implementation uses CompletableFuture chains to parallelize the multi-level
+     * decomposition. Each level depends on the approximation coefficients from the
+     * previous level, creating a dependency chain that we handle with futures.
      */
     private MultiLevelMODWTResult transformMultiLevelParallel(
             double[] signal, Wavelet wavelet, BoundaryMode mode, int levels) {
         
-        // For now, use sequential processing
-        // TODO: Implement true parallel multi-level MODWT
-        MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, mode);
-        return transform.decompose(signal, levels);
+        if (parallelEngine == null || levels < 2) {
+            // Fall back to sequential for small decompositions
+            MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, mode);
+            return transform.decompose(signal, levels);
+        }
+        
+        // Use the optimized parallel implementation with the executor service
+        ParallelMultiLevelMODWT parallelTransform = new ParallelMultiLevelMODWT(executorService);
+        return parallelTransform.decompose(signal, wavelet, mode, levels);
     }
 
 
@@ -425,17 +437,41 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
     }
 
     /**
-     * Batch MODWT with SIMD optimization.
+     * Batch MODWT with SIMD optimization using Structure-of-Arrays layout.
      */
     private void batchMODWTOptimized(double[][] signals, double[][] approx, 
                                      double[][] detail, DiscreteWavelet wavelet) {
-        // For now, process sequentially - use cached transform
-        // TODO: Implement true SIMD batch MODWT
-        MODWTTransform transform = getOrCreateTransform(wavelet, BoundaryMode.PERIODIC);
-        for (int i = 0; i < signals.length; i++) {
-            MODWTResult result = transform.forward(signals[i]);
-            System.arraycopy(result.approximationCoeffs(), 0, approx[i], 0, signals[i].length);
-            System.arraycopy(result.detailCoeffs(), 0, detail[i], 0, signals[i].length);
+        int batchSize = signals.length;
+        int signalLength = signals[0].length;
+        
+        // Use SIMD batch processing for larger batches
+        if (batchSize >= 4 && signalLength >= 64) {
+            // Allocate SoA buffers
+            double[] soaSignals = new double[batchSize * signalLength];
+            double[] soaApprox = new double[batchSize * signalLength];
+            double[] soaDetail = new double[batchSize * signalLength];
+            
+            // Convert to SoA layout
+            BatchSIMDMODWT.convertToSoA(signals, soaSignals);
+            
+            // Perform SIMD batch MODWT
+            BatchSIMDMODWT.batchMODWTSoA(soaSignals, soaApprox, soaDetail, 
+                                         wavelet, batchSize, signalLength);
+            
+            // Convert back to AoS layout
+            BatchSIMDMODWT.convertFromSoA(soaApprox, approx);
+            BatchSIMDMODWT.convertFromSoA(soaDetail, detail);
+            
+            // Clean up thread-local resources
+            BatchSIMDMODWT.cleanupThreadLocals();
+        } else {
+            // Fall back to sequential processing for small batches
+            MODWTTransform transform = getOrCreateTransform(wavelet, BoundaryMode.PERIODIC);
+            for (int i = 0; i < signals.length; i++) {
+                MODWTResult result = transform.forward(signals[i]);
+                System.arraycopy(result.approximationCoeffs(), 0, approx[i], 0, signals[i].length);
+                System.arraycopy(result.detailCoeffs(), 0, detail[i], 0, signals[i].length);
+            }
         }
     }
 
