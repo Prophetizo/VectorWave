@@ -6,7 +6,7 @@ import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.ErrorContext;
-import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.WaveletOperations;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import ai.prophetizo.wavelet.performance.AdaptivePerformanceEstimator;
 import ai.prophetizo.wavelet.performance.PredictionResult;
@@ -142,13 +142,13 @@ public class MODWTTransform {
         
         // Perform convolution without downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
-            // ScalarOps.circularConvolveMODWT internally delegates to vectorized
+            // WaveletOperations.circularConvolveMODWT internally delegates to vectorized
             // implementation when beneficial, falling back to scalar otherwise
-            ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-            ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+            WaveletOperations.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            WaveletOperations.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
         } else { // ZERO_PADDING
-            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+            WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
         }
         
         long endTime = System.nanoTime();
@@ -158,11 +158,11 @@ public class MODWTTransform {
         if (signalLength >= 64 && actualTimeMs > 0.01) {
             AdaptivePerformanceEstimator.getInstance().recordMeasurement(
                 "MODWT", signalLength, actualTimeMs, 
-                ScalarOps.getPerformanceInfo().vectorizationEnabled()
+                WaveletOperations.getPerformanceInfo().vectorizationEnabled()
             );
         }
         
-        return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
+        return MODWTResult.create(approximationCoeffs, detailCoeffs);
     }
     
     /**
@@ -277,8 +277,8 @@ public class MODWTTransform {
      * 
      * @return Performance characteristics and capabilities
      */
-    public ScalarOps.PerformanceInfo getPerformanceInfo() {
-        return ScalarOps.getPerformanceInfo();
+    public WaveletOperations.PerformanceInfo getPerformanceInfo() {
+        return WaveletOperations.getPerformanceInfo();
     }
     
     /**
@@ -525,20 +525,20 @@ public class MODWTTransform {
         if (boundaryMode == BoundaryMode.PERIODIC) {
             // For periodic mode, we can use more efficient batch processing
             for (int b = 0; b < batchSize; b++) {
-                ScalarOps.circularConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
-                ScalarOps.circularConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
+                WaveletOperations.circularConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
+                WaveletOperations.circularConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
             }
         } else { // ZERO_PADDING
             for (int b = 0; b < batchSize; b++) {
-                ScalarOps.zeroPaddingConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
-                ScalarOps.zeroPaddingConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
+                WaveletOperations.zeroPaddingConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
+                WaveletOperations.zeroPaddingConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
             }
         }
         
         // Create results
         MODWTResult[] results = new MODWTResult[batchSize];
         for (int i = 0; i < batchSize; i++) {
-            results[i] = new MODWTResultImpl(approxCoeffs[i], detailCoeffs[i]);
+            results[i] = MODWTResult.create(approxCoeffs[i], detailCoeffs[i]);
         }
         
         return results;

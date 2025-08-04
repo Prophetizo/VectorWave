@@ -16,7 +16,7 @@ import java.nio.ByteOrder;
  *
  * @since 1.0.0
  */
-public final class GatherScatterOps {
+final class GatherScatterOps {
 
     private static final VectorSpecies<Double> DOUBLE_SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final VectorSpecies<Integer> INT_SPECIES = IntVector.SPECIES_PREFERRED;

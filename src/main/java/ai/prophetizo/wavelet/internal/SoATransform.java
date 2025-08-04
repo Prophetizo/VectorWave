@@ -21,7 +21,7 @@ import jdk.incubator.vector.VectorSpecies;
  *
  * @since 1.0.0
  */
-public final class SoATransform {
+final class SoATransform {
 
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
     private static final int VECTOR_LENGTH = SPECIES.length();

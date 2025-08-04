@@ -22,7 +22,7 @@ import jdk.incubator.vector.VectorSpecies;
  *
  * @since 1.0.0
  */
-public final class VectorOpsARM {
+final class VectorOpsARM {
 
     private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_128;
     private static final int VECTOR_LENGTH = 2; // ARM NEON has 128-bit vectors = 2 doubles

@@ -5,7 +5,7 @@ import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
-import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.WaveletOperations;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.concurrent.CompletableFuture;
@@ -102,7 +102,7 @@ public class ParallelMultiLevelMODWT {
                 CompletableFuture<Void> lowPassFuture = CompletableFuture.runAsync(() -> {
                     // Apply low-pass filter
                     if (mode == BoundaryMode.PERIODIC) {
-                        ScalarOps.circularConvolveMODWT(
+                        WaveletOperations.circularConvolveMODWT(
                             approxArrays[prevLevel], 
                             filters.scaledLowPass, 
                             approxArrays[currentLevel]
@@ -120,7 +120,7 @@ public class ParallelMultiLevelMODWT {
                 CompletableFuture<Void> highPassFuture = CompletableFuture.runAsync(() -> {
                     // Apply high-pass filter
                     if (mode == BoundaryMode.PERIODIC) {
-                        ScalarOps.circularConvolveMODWT(
+                        WaveletOperations.circularConvolveMODWT(
                             approxArrays[prevLevel], 
                             filters.scaledHighPass, 
                             detailArrays[currentLevel - 1]
@@ -219,7 +219,7 @@ public class ParallelMultiLevelMODWT {
     private void applyZeroPaddingMODWT(double[] input, double[] filter, double[] output) {
         // For consistency with MultiLevelMODWTTransform, use circular convolution
         // even in ZERO_PADDING mode. This is a known limitation.
-        ScalarOps.circularConvolveMODWT(input, filter, output);
+        WaveletOperations.circularConvolveMODWT(input, filter, output);
     }
     
     /**

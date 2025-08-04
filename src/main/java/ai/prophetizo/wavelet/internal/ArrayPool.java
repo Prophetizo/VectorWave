@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * wavelet transforms. Arrays are borrowed and returned to avoid
  * frequent allocations during batch processing.</p>
  */
-public final class ArrayPool {
+final class ArrayPool {
 
     // Common signal sizes for financial time series
     private static final int[] POOL_SIZES = {32, 64, 128, 256, 512, 1024};

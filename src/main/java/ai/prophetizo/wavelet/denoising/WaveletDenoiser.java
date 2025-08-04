@@ -2,7 +2,6 @@ package ai.prophetizo.wavelet.denoising;
 
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
-import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
@@ -12,7 +11,7 @@ import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidStateException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.ErrorContext;
-import ai.prophetizo.wavelet.internal.VectorOps;
+import ai.prophetizo.wavelet.WaveletOperations;
 
 /**
  * Wavelet-based signal denoising using various thresholding strategies.
@@ -78,7 +77,7 @@ public class WaveletDenoiser {
 
         this.wavelet = wavelet;
         this.boundaryMode = boundaryMode;
-        this.useVectorOps = VectorOps.isVectorizedOperationBeneficial(256); // Check if SIMD is beneficial
+        this.useVectorOps = WaveletOperations.getPerformanceInfo().vectorizationEnabled();
     }
 
     /**
@@ -124,7 +123,7 @@ public class WaveletDenoiser {
         double[] denoisedDetails = applyThreshold(result.detailCoeffs(), threshold, type);
 
         // Reconstruct with denoised coefficients
-        MODWTResult denoisedResult = new MODWTResultImpl(
+        MODWTResult denoisedResult = MODWTResult.create(
                 result.approximationCoeffs(), denoisedDetails);
 
         return transform.inverse(denoisedResult);
@@ -345,7 +344,7 @@ public class WaveletDenoiser {
 
         double[] denoisedDetails = applyThreshold(result.detailCoeffs(), threshold, type);
 
-        MODWTResult denoisedResult = new MODWTResultImpl(
+        MODWTResult denoisedResult = MODWTResult.create(
                 result.approximationCoeffs(), denoisedDetails);
 
         return transform.inverse(denoisedResult);
@@ -493,8 +492,8 @@ public class WaveletDenoiser {
         if (useVectorOps) {
             // Use SIMD-optimized thresholding
             return type == ThresholdType.SOFT
-                    ? VectorOps.Denoising.softThreshold(coeffs, threshold)
-                    : VectorOps.Denoising.hardThreshold(coeffs, threshold);
+                    ? WaveletOperations.softThreshold(coeffs, threshold)
+                    : WaveletOperations.hardThreshold(coeffs, threshold);
         } else {
             // Scalar implementation
             double[] result = new double[coeffs.length];

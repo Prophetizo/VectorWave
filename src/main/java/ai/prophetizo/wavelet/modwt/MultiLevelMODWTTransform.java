@@ -698,7 +698,7 @@ public class MultiLevelMODWTTransform {
                 signal, scaledHighPass, detailCoeffs);
         }
         
-        return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
+        return MODWTResult.create(approximationCoeffs, detailCoeffs);
     }
     
     /**

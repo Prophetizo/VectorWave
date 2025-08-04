@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.modwt;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 
@@ -19,7 +20,8 @@ public class BatchSIMDMODWTTest {
     
     @AfterEach
     void cleanup() {
-        BatchSIMDMODWT.cleanupThreadLocals();
+        // Use ThreadLocalManager directly for cleanup
+        ThreadLocalManager.cleanupCurrentThread();
     }
     
     @Test

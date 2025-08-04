@@ -27,7 +27,8 @@ public class FactoryPatternDemo {
     public static void main(String[] args) {
         System.out.println("=== VectorWave Factory Pattern Demo ===\n");
         
-        demonstrateWaveletOpsFactory();
+        // WaveletOpsFactory removed - using WaveletOperations facade instead
+        // demonstrateWaveletOpsFactory();
         demonstrateWaveletTransformFactory();
         demonstrateCWTFactory();
         demonstrateStreamingDenoiserFactory();
@@ -36,7 +37,10 @@ public class FactoryPatternDemo {
     
     /**
      * Demonstrates WaveletOpsFactory with both old and new patterns.
+     * NOTE: WaveletOpsFactory has been removed in favor of the WaveletOperations facade.
+     * This method is kept for historical reference but commented out.
      */
+    /*
     private static void demonstrateWaveletOpsFactory() {
         System.out.println("1. WaveletOpsFactory Demo");
         System.out.println("-".repeat(50));
@@ -69,6 +73,7 @@ public class FactoryPatternDemo {
         
         System.out.println();
     }
+    */
     
     /**
      * Demonstrates MODWTTransformFactory which implements Factory interface.
@@ -238,8 +243,9 @@ public class FactoryPatternDemo {
         System.out.println("Treating different factories polymorphically:\n");
         
         // Create a method that works with any factory
-        processWithFactory(WaveletOpsFactory.getInstance(), 
-            TransformConfig.defaultConfig(), "WaveletOps");
+        // WaveletOpsFactory removed - example commented out
+        // processWithFactory(WaveletOpsFactory.getInstance(), 
+        //     TransformConfig.defaultConfig(), "WaveletOps");
         
         processWithFactory(new MODWTTransformFactory(), 
             new MODWTTransformFactory.Config(new Haar(), BoundaryMode.PERIODIC), "MODWTTransform");

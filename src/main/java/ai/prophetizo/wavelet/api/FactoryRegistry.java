@@ -179,16 +179,6 @@ public final class FactoryRegistry {
         FactoryRegistry registry = getInstance();
         
         // Register the default factories if they haven't been registered yet
-        if (!registry.isRegistered("waveletOps")) {
-            try {
-                registry.register("waveletOps", 
-                    ai.prophetizo.wavelet.WaveletOpsFactory.getInstance());
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                    "Failed to register default WaveletOpsFactory with key 'waveletOps': " + 
-                    e.getMessage(), e);
-            }
-        }
         
         // WaveletTransformFactory temporarily disabled during DWT -> MODWT migration
         /*

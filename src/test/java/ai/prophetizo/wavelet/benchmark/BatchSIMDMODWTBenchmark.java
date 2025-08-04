@@ -6,6 +6,7 @@ import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.modwt.BatchSIMDMODWT;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 
 import java.util.Random;
 
@@ -102,7 +103,7 @@ public class BatchSIMDMODWTBenchmark {
         long simdTime = System.nanoTime() - simdStart;
         
         // Clean up
-        BatchSIMDMODWT.cleanupThreadLocals();
+        ThreadLocalManager.cleanupCurrentThread();
         
         // Calculate results
         double seqMs = seqTime / 1e6 / MEASURE_ITERATIONS;

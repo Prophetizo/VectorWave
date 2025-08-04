@@ -929,4 +929,28 @@ public final class ScalarOps {
             }
         }
     }
+    
+    /**
+     * Applies soft thresholding to wavelet coefficients.
+     * Uses VectorOps for SIMD optimization when beneficial.
+     * 
+     * @param coefficients the wavelet coefficients to threshold
+     * @param threshold the threshold value
+     * @return new array with thresholded coefficients
+     */
+    public static double[] softThreshold(double[] coefficients, double threshold) {
+        return VectorOps.Denoising.softThreshold(coefficients, threshold);
+    }
+    
+    /**
+     * Applies hard thresholding to wavelet coefficients.
+     * Uses VectorOps for SIMD optimization when beneficial.
+     * 
+     * @param coefficients the wavelet coefficients to threshold
+     * @param threshold the threshold value
+     * @return new array with thresholded coefficients
+     */
+    public static double[] hardThreshold(double[] coefficients, double threshold) {
+        return VectorOps.Denoising.hardThreshold(coefficients, threshold);
+    }
 }

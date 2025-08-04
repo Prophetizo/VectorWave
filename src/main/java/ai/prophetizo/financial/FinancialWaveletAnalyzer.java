@@ -209,7 +209,7 @@ public class FinancialWaveletAnalyzer {
         
         // Create a new MODWTResult with original approximation and zeroed details
         // Note: approxCoeffs and detailCoeffs have the same length by design from the forward transform
-        MODWTResult denoisedResult = new ai.prophetizo.wavelet.modwt.MODWTResultImpl(approxCoeffs, zeroDetails);
+        MODWTResult denoisedResult = MODWTResult.create(approxCoeffs, zeroDetails);
         
         // Perform inverse transform to get denoised signal
         double[] denoisedReturns = transform.inverse(denoisedResult);

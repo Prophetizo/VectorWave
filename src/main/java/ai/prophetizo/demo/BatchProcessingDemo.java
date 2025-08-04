@@ -3,7 +3,7 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.*;
-import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
+import ai.prophetizo.wavelet.modwt.MODWTBatchSIMD;
 import ai.prophetizo.wavelet.memory.BatchMemoryLayout;
 import jdk.incubator.vector.DoubleVector;
 
@@ -20,7 +20,7 @@ public class BatchProcessingDemo {
         // Check SIMD capabilities
         System.out.println("Platform Information:");
         System.out.println("SIMD vector length: " + DoubleVector.SPECIES_PREFERRED.length());
-        System.out.println(BatchSIMDTransform.getBatchSIMDInfo());
+        System.out.println(MODWTBatchSIMD.getBatchSIMDInfo());
         System.out.println();
         
         // Demo 1: Basic batch transform
@@ -314,8 +314,7 @@ public class BatchProcessingDemo {
         
         System.out.println("\nNote: Speedup increases with batch size due to SIMD utilization");
         
-        // Cleanup thread locals
-        BatchSIMDTransform.cleanupThreadLocals();
+        // No cleanup needed for MODWT operations
     }
     
     // Helper methods

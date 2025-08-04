@@ -20,7 +20,7 @@ import ai.prophetizo.wavelet.util.PlatformDetector;
  *
  * @since 1.0.0
  */
-public final class PrefetchOptimizer {
+final class PrefetchOptimizer {
 
     // Cache line size (typical for modern processors)
     private static final int CACHE_LINE_SIZE = 64;

@@ -13,7 +13,7 @@ import java.util.Objects;
  * <h2>Thread Safety:</h2>
  * <p>This class is immutable and thread-safe after construction.</p>
  */
-public final class MODWTResultImpl implements MODWTResult {
+final class MODWTResultImpl implements MODWTResult {
     
     private final double[] approximationCoeffs;
     private final double[] detailCoeffs;

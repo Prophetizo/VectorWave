@@ -309,18 +309,6 @@ public final class BatchSIMDMODWT {
     }
     
     /**
-     * Cleans up thread-local resources.
-     * Call this when done to prevent memory leaks in thread pools.
-     * 
-     * @deprecated Use {@link ThreadLocalManager#cleanupCurrentThread()} or
-     *             {@link #batchMODWTWithCleanup} for automatic cleanup
-     */
-    @Deprecated(since = "3.1.0")
-    public static void cleanupThreadLocals() {
-        ThreadLocalManager.cleanupCurrentThread();
-    }
-    
-    /**
      * Performs batch MODWT with automatic ThreadLocal cleanup.
      * Recommended for thread pool environments.
      * 

@@ -6,7 +6,7 @@ import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
-import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.WaveletOperations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,7 +138,7 @@ public class PerformanceCalibrator {
                 }
                 
                 double avgTimeMs = TimeUnit.NANOSECONDS.toMillis(totalTime) / (double) iterations;
-                boolean hasVectorization = ScalarOps.getPerformanceInfo().vectorizationEnabled();
+                boolean hasVectorization = WaveletOperations.getPerformanceInfo().vectorizationEnabled();
                 
                 measurements.add(new PerformanceModel.Measurement(size, avgTimeMs, hasVectorization));
                 
@@ -180,18 +180,18 @@ public class PerformanceCalibrator {
                 
                 // Warm up
                 for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-                    ScalarOps.circularConvolveMODWT(signal, filter, output);
+                    WaveletOperations.circularConvolveMODWT(signal, filter, output);
                 }
                 
                 // Measure
                 long totalTime = measureOperation(
-                    () -> ScalarOps.circularConvolveMODWT(signal, filter, output),
+                    () -> WaveletOperations.circularConvolveMODWT(signal, filter, output),
                     MEASUREMENT_ITERATIONS
                 );
                 
                 double avgTimeMs = TimeUnit.NANOSECONDS.toMillis(totalTime) / 
                     (double) MEASUREMENT_ITERATIONS;
-                boolean hasVectorization = ScalarOps.getPerformanceInfo().vectorizationEnabled();
+                boolean hasVectorization = WaveletOperations.getPerformanceInfo().vectorizationEnabled();
                 
                 measurements.add(new PerformanceModel.Measurement(size, avgTimeMs, hasVectorization));
             }
@@ -245,7 +245,7 @@ public class PerformanceCalibrator {
                 double avgTimeMs = TimeUnit.NANOSECONDS.toMillis(totalTime) / 
                     (double) (MEASUREMENT_ITERATIONS / 10);
                 double avgTimePerSignal = avgTimeMs / batchSize;
-                boolean hasVectorization = ScalarOps.getPerformanceInfo().vectorizationEnabled();
+                boolean hasVectorization = WaveletOperations.getPerformanceInfo().vectorizationEnabled();
                 
                 // Store as effective single-signal time
                 measurements.add(new PerformanceModel.Measurement(
