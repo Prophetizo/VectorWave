@@ -9,6 +9,9 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.InvalidStateException;
+import ai.prophetizo.wavelet.exception.ErrorCode;
+import ai.prophetizo.wavelet.exception.ErrorContext;
 import ai.prophetizo.wavelet.internal.VectorOps;
 
 /**
@@ -175,10 +178,17 @@ public class WaveletDenoiser {
             
             // Validate maximum level before processing to prevent overflow
             if (original.getLevels() > MAX_SAFE_LEVEL_FOR_SCALING) {
-                throw new IllegalArgumentException(
-                    "Number of decomposition levels (" + original.getLevels() + 
-                    ") exceeds maximum safe level (" + MAX_SAFE_LEVEL_FOR_SCALING + 
-                    ") for scaling calculations");
+                throw new InvalidArgumentException(
+                    ErrorCode.VAL_TOO_LARGE,
+                    ErrorContext.builder("Decomposition level exceeds safe limit for scale-dependent thresholds")
+                        .withContext("Operation", "Multi-level denoising")
+                        .withLevelInfo(original.getLevels(), MAX_SAFE_LEVEL_FOR_SCALING)
+                        .withContext("Threshold method", method.name())
+                        .withContext("Threshold type", type.name())
+                        .withSuggestion("Reduce decomposition levels to " + MAX_SAFE_LEVEL_FOR_SCALING + " or less")
+                        .withSuggestion("Use level-independent threshold methods")
+                        .build()
+                );
             }
             
             // Pre-compute denoised details for all levels
@@ -190,9 +200,15 @@ public class WaveletDenoiser {
                 // Safety guarantee: Constructor validation ensures original.getLevels() <= MAX_SAFE_LEVEL_FOR_SCALING (31)
                 // Therefore: level <= 31, so (level - 1) <= 30, making 1 << (level - 1) safe from overflow
                 if (level > MAX_SAFE_LEVEL_FOR_SCALING) {
-                    throw new IllegalStateException(
-                        "Bit shift overflow protection: level must be <= " + MAX_SAFE_LEVEL_FOR_SCALING + 
-                        ", got " + level);
+                    throw new InvalidStateException(
+                        ErrorCode.STATE_INVALID,
+                        ErrorContext.builder("Internal error: Level exceeds bit shift safety limit")
+                            .withContext("Operation", "Scale factor calculation")
+                            .withLevelInfo(level, MAX_SAFE_LEVEL_FOR_SCALING)
+                            .withContext("This should have been caught earlier", "Internal consistency check")
+                            .withSuggestion("This is an internal error - please report this as a bug")
+                            .build()
+                    );
                 }
                 double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
@@ -221,7 +237,15 @@ public class WaveletDenoiser {
         @Override
         public double[] getDetailCoeffsAtLevel(int level) {
             if (level < 1 || level > getLevels()) {
-                throw new IllegalArgumentException("Invalid level: " + level);
+                throw new InvalidArgumentException(
+                    ErrorCode.CFG_INVALID_DECOMPOSITION_LEVEL,
+                    ErrorContext.builder("Invalid level for detail coefficient access")
+                        .withContext("Operation", "getDetailCoeffsAtLevel")
+                        .withLevelInfo(level, getLevels())
+                        .withContext("Result type", "DenoisedMultiLevelResult")
+                        .withSuggestion("Level must be between 1 and " + getLevels())
+                        .build()
+                );
             }
             // Return denoised detail coefficients
             return denoisedDetails[level - 1].clone();
@@ -230,7 +254,15 @@ public class WaveletDenoiser {
         @Override
         public double getDetailEnergyAtLevel(int level) {
             if (level < 1 || level > getLevels()) {
-                throw new IllegalArgumentException("Invalid level: " + level);
+                throw new InvalidArgumentException(
+                    ErrorCode.CFG_INVALID_DECOMPOSITION_LEVEL,
+                    ErrorContext.builder("Invalid level for detail energy calculation")
+                        .withContext("Operation", "getDetailEnergyAtLevel")
+                        .withLevelInfo(level, getLevels())
+                        .withContext("Result type", "DenoisedMultiLevelResult")
+                        .withSuggestion("Level must be between 1 and " + getLevels())
+                        .build()
+                );
             }
             double energy = 0.0;
             double[] details = denoisedDetails[level - 1];
@@ -360,10 +392,25 @@ public class WaveletDenoiser {
 
             case FIXED:
                 // Should not reach here for automatic threshold selection
-                throw new InvalidArgumentException("Use denoiseFixed() for fixed threshold");
+                throw new InvalidArgumentException(
+                    ErrorCode.CFG_UNSUPPORTED_OPERATION,
+                    ErrorContext.builder("Fixed threshold method requires explicit threshold value")
+                        .withContext("Operation", "denoise")
+                        .withContext("Threshold method", "FIXED")
+                        .withSuggestion("Use denoiseFixed() method with explicit threshold value")
+                        .withSuggestion("Or select an automatic threshold method: VISU_SHRINK, SURE_SHRINK, or BAYES_SHRINK")
+                        .build()
+                );
 
             default:
-                throw new InvalidArgumentException("Unknown threshold method: " + method);
+                throw new InvalidArgumentException(
+                    ErrorCode.CFG_UNSUPPORTED_OPERATION,
+                    ErrorContext.builder("Unknown threshold selection method")
+                        .withContext("Operation", "selectThreshold")
+                        .withContext("Unknown method", method.toString())
+                        .withSuggestion("Supported methods: VISU_SHRINK, SURE_SHRINK, BAYES_SHRINK, FIXED")
+                        .build()
+                );
         }
     }
 

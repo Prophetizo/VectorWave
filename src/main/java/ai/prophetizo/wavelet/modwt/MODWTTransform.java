@@ -3,8 +3,13 @@ package ai.prophetizo.wavelet.modwt;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.ErrorCode;
+import ai.prophetizo.wavelet.exception.ErrorContext;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.performance.AdaptivePerformanceEstimator;
+import ai.prophetizo.wavelet.performance.PredictionResult;
 
 import java.util.Objects;
 
@@ -79,7 +84,16 @@ public class MODWTTransform {
         
         // MODWT supports PERIODIC and ZERO_PADDING boundary modes
         if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
-            throw new IllegalArgumentException("MODWT only supports PERIODIC and ZERO_PADDING boundary modes, got: " + boundaryMode);
+            throw new InvalidArgumentException(
+                ErrorCode.CFG_UNSUPPORTED_BOUNDARY_MODE,
+                ErrorContext.builder("MODWT only supports PERIODIC and ZERO_PADDING boundary modes")
+                    .withBoundaryMode(boundaryMode)
+                    .withWavelet(wavelet)
+                    .withSuggestion("Use BoundaryMode.PERIODIC for circular convolution")
+                    .withSuggestion("Use BoundaryMode.ZERO_PADDING for zero-padding at edges")
+                    .withContext("Transform type", "MODWT")
+                    .build()
+            );
         }
     }
     
@@ -123,6 +137,9 @@ public class MODWTTransform {
         double[] approximationCoeffs = new double[signalLength];
         double[] detailCoeffs = new double[signalLength];
         
+        // Measure actual execution time for adaptive learning
+        long startTime = System.nanoTime();
+        
         // Perform convolution without downsampling based on boundary mode
         if (boundaryMode == BoundaryMode.PERIODIC) {
             // ScalarOps.circularConvolveMODWT internally delegates to vectorized
@@ -132,6 +149,17 @@ public class MODWTTransform {
         } else { // ZERO_PADDING
             ScalarOps.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
             ScalarOps.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        }
+        
+        long endTime = System.nanoTime();
+        double actualTimeMs = (endTime - startTime) / 1_000_000.0;
+        
+        // Record measurement for adaptive learning (only for significant operations)
+        if (signalLength >= 64 && actualTimeMs > 0.01) {
+            AdaptivePerformanceEstimator.getInstance().recordMeasurement(
+                "MODWT", signalLength, actualTimeMs, 
+                ScalarOps.getPerformanceInfo().vectorizationEnabled()
+            );
         }
         
         return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
@@ -152,7 +180,16 @@ public class MODWTTransform {
         Objects.requireNonNull(modwtResult, "modwtResult cannot be null");
         
         if (!modwtResult.isValid()) {
-            throw new InvalidSignalException("MODWTResult contains invalid coefficients");
+            throw new InvalidSignalException(
+                ErrorCode.VAL_NON_FINITE_VALUES,
+                ErrorContext.builder("MODWTResult contains invalid coefficients")
+                    .withContext("Coefficient validity", "Contains NaN or Infinity values")
+                    .withWavelet(wavelet)
+                    .withBoundaryMode(boundaryMode)
+                    .withSuggestion("Check input signal for NaN or Infinity values")
+                    .withSuggestion("Verify wavelet filter coefficients are valid")
+                    .build()
+            );
         }
         
         // Get coefficients (defensive copies)
@@ -246,7 +283,7 @@ public class MODWTTransform {
     
     /**
      * Estimates the processing time for a given signal length.
-     * Uses empirical measurements and system capabilities.
+     * Uses adaptive performance models calibrated for this platform.
      * 
      * @param signalLength The length of the signal to process
      * @return Estimated processing time information
@@ -254,26 +291,22 @@ public class MODWTTransform {
     public ProcessingEstimate estimateProcessingTime(int signalLength) {
         var perfInfo = getPerformanceInfo();
         
-        // Base processing time (empirically measured on reference hardware)
-        double baseTimeMs;
-        if (signalLength <= 1024) {
-            baseTimeMs = 0.1 + signalLength * 0.00001;
-        } else if (signalLength <= 4096) {
-            baseTimeMs = 0.5 + signalLength * 0.00005;  
-        } else if (signalLength <= 16384) {
-            baseTimeMs = 2.0 + signalLength * 0.0001;
-        } else {
-            baseTimeMs = 8.0 + signalLength * 0.0002;
-        }
-        
-        // Apply speedup factor
-        double estimatedTimeMs = baseTimeMs / perfInfo.estimateSpeedup(signalLength);
+        // Use adaptive performance estimator
+        AdaptivePerformanceEstimator estimator = AdaptivePerformanceEstimator.getInstance();
+        PredictionResult prediction = estimator.estimateMODWT(
+            signalLength, 
+            wavelet.name(), 
+            perfInfo.vectorizationEnabled()
+        );
         
         return new ProcessingEstimate(
             signalLength,
-            estimatedTimeMs,
+            prediction.estimatedTime(),
             perfInfo.vectorizationEnabled(),
-            perfInfo.estimateSpeedup(signalLength)
+            perfInfo.estimateSpeedup(signalLength),
+            prediction.confidence(),
+            prediction.lowerBound(),
+            prediction.upperBound()
         );
     }
     
@@ -304,7 +337,16 @@ public class MODWTTransform {
      */
     private void validateNotEmpty(double[] signal) {
         if (signal.length == 0) {
-            throw new InvalidSignalException("Signal cannot be empty");
+            throw new InvalidSignalException(
+                ErrorCode.VAL_EMPTY,
+                ErrorContext.builder("Signal cannot be empty")
+                    .withContext("Transform type", "MODWT")
+                    .withWavelet(wavelet)
+                    .withBoundaryMode(boundaryMode)
+                    .withSuggestion("Provide a signal with at least one sample")
+                    .withSuggestion("Check data loading/generation logic")
+                    .build()
+            );
         }
     }
     
@@ -319,27 +361,32 @@ public class MODWTTransform {
     }
     
     /**
-     * Record representing processing time estimation.
+     * Record representing processing time estimation with confidence bounds.
      * Uses Java 17+ record pattern for clean data structure.
      */
     public record ProcessingEstimate(
         int signalLength,
         double estimatedTimeMs,
         boolean vectorizationUsed,
-        double speedupFactor
+        double speedupFactor,
+        double confidence,
+        double lowerBoundMs,
+        double upperBoundMs
     ) {
         
         /**
          * Returns a human-readable description of the processing estimate.
          */
         public String description() {
+            String baseDesc;
             if (vectorizationUsed) {
-                return String.format("Signal length %d: ~%.2fms (%.1fx speedup with vectors)",
-                    signalLength, estimatedTimeMs, speedupFactor);
+                baseDesc = String.format("Signal length %d: %.2fms [%.2f-%.2fms] (%.1fx speedup with vectors)",
+                    signalLength, estimatedTimeMs, lowerBoundMs, upperBoundMs, speedupFactor);
             } else {
-                return String.format("Signal length %d: ~%.2fms (scalar mode)",
-                    signalLength, estimatedTimeMs);
+                baseDesc = String.format("Signal length %d: %.2fms [%.2f-%.2fms] (scalar mode)",
+                    signalLength, estimatedTimeMs, lowerBoundMs, upperBoundMs);
             }
+            return baseDesc + String.format(" - %.0f%% confidence", confidence * 100);
         }
         
         /**
