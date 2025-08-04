@@ -641,14 +641,14 @@ public final class ScalarOps {
                 
                 // Optimize modulo operation for common cases to avoid expensive double modulo
                 int signalIndex;
-                if (idx >= 0) {
-                    // Most common case: non-negative index (includes idx < signalLen)
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
                     signalIndex = idx;
-                } else if (idx >= -signalLen) {
+                } else if (idx < 0 && idx >= -signalLen) {
                     // Common case for negative indices: only one wrap needed
                     signalIndex = idx + signalLen;
                 } else {
-                    // Rare case for very negative indices
+                    // Rare case for very negative or very positive indices
                     signalIndex = ((idx % signalLen) + signalLen) % signalLen;
                 }
                 
