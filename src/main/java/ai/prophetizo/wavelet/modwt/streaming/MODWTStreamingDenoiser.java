@@ -104,8 +104,17 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
             updateNoiseEstimation(samples);
         }
         
-        // Denoise using WaveletDenoiser (which internally uses MODWT)
-        double[] denoised = denoiser.denoise(samples, thresholdMethod, thresholdType);
+        // Denoise using WaveletDenoiser with threshold multiplier applied
+        double[] denoised;
+        if (Math.abs(thresholdMultiplier - 1.0) < 1e-10) {
+            // No multiplier adjustment needed - use standard denoising
+            denoised = denoiser.denoise(samples, thresholdMethod, thresholdType);
+        } else {
+            // Calculate threshold using the selected method, then apply multiplier
+            double baseThreshold = calculateThreshold(samples);
+            double adjustedThreshold = baseThreshold * thresholdMultiplier;
+            denoised = denoiser.denoiseFixed(samples, adjustedThreshold, thresholdType);
+        }
         
         // Update statistics
         samplesProcessed.addAndGet(samples.length);
@@ -262,6 +271,63 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         return MathUtils.standardDeviation(values);
     }
     
+    /**
+     * Calculates the base threshold using the selected method and current noise estimation.
+     * This threshold can then be adjusted by the threshold multiplier.
+     * 
+     * @param samples the input samples to analyze
+     * @return the calculated base threshold
+     */
+    private double calculateThreshold(double[] samples) {
+        // Get current noise level estimate
+        double sigma = estimatedNoiseLevel;
+        
+        // If no noise estimation available yet, estimate from current samples
+        if (sigma <= 0.0 || noiseEstimation == NoiseEstimation.FIXED) {
+            // Transform samples to get detail coefficients for noise estimation
+            MODWTResult result = transform.forward(samples);
+            double[] details = result.detailCoeffs();
+            
+            // Estimate noise using MAD (consistent with default noise estimation)
+            double[] absDetails = new double[details.length];
+            for (int i = 0; i < details.length; i++) {
+                absDetails[i] = Math.abs(details[i]);
+            }
+            sigma = calculateMAD(absDetails) / 0.6745;
+        }
+        
+        // Calculate threshold based on selected method
+        int n = samples.length;
+        switch (thresholdMethod) {
+            case UNIVERSAL:
+                // Universal threshold (VisuShrink): sigma * sqrt(2 * log(n))
+                return sigma * Math.sqrt(2.0 * Math.log(n));
+                
+            case SURE:
+                // For SURE threshold, we need the actual coefficients
+                // This is more complex, so we'll approximate with a conservative factor
+                return sigma * Math.sqrt(2.0 * Math.log(n)) * 0.8;
+                
+            case MINIMAX:
+                // Minimax threshold approximation
+                double logN = Math.log(n);
+                if (n <= 32) {
+                    return 0.0;
+                } else if (n <= 64) {
+                    return sigma * (0.3936 + 0.1829 * logN);
+                } else {
+                    return sigma * (0.4745 + 0.1148 * logN);
+                }
+                
+            case FIXED:
+                // For fixed method, return a reasonable default that will be multiplied
+                return sigma;
+                
+            default:
+                throw new IllegalArgumentException("Unknown threshold method: " + thresholdMethod);
+        }
+    }
+    
     
     /**
      * Get the current estimated noise level.
@@ -386,7 +452,14 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         }
         
         /**
-         * Set the threshold multiplier.
+         * Set the threshold multiplier for fine-tuning denoising aggressiveness.
+         * 
+         * <p>The multiplier is applied to the automatically calculated threshold:</p>
+         * <ul>
+         *   <li>Values > 1.0: More aggressive denoising (removes more noise but may lose signal details)</li>
+         *   <li>Values < 1.0: Less aggressive denoising (preserves more signal details but may retain noise)</li>
+         *   <li>Value = 1.0: Uses the standard threshold calculation without adjustment</li>
+         * </ul>
          * 
          * @param thresholdMultiplier the threshold multiplier (must be positive)
          * @return this builder
