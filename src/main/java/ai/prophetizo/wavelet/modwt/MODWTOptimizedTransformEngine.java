@@ -368,16 +368,25 @@ public class MODWTOptimizedTransformEngine {
      * Checks if a specialized kernel exists for the wavelet.
      */
     private boolean hasSpecializedKernel(Wavelet wavelet) {
-        String name = wavelet.name().toLowerCase();
-        return name.equals("haar") || name.equals("db4");
+        // Temporarily disabled until specialized kernels are properly tested
+        // The current implementations have numerical differences that cause test failures
+        return false;
+        // TODO: Fix and re-enable specialized kernels
+        // String name = wavelet.name().toLowerCase();
+        // return name.equals("haar") || name.equals("db4");
     }
 
     /**
      * Optimized Haar MODWT implementation.
+     * TODO: When re-enabling specialized kernels:
+     *   - Extract filter coefficients from the wavelet object for consistency
+     *   - Verify numerical accuracy matches standard implementation
+     *   - Add comprehensive tests for edge cases
      */
     private void modwtHaarOptimized(double[] signal, double[] approx, double[] detail) {
         int length = signal.length;
         double scale = 1.0 / Math.sqrt(2.0);
+        // TODO: Get these from wavelet.lowPassDecomposition() and scale appropriately
         double h0 = scale;  // Haar low-pass filter coefficient
         double h1 = scale;  // Haar low-pass filter coefficient
         double g0 = scale;  // Haar high-pass filter coefficient  

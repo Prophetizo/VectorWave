@@ -1,0 +1,312 @@
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/opt/homebrew/Cellar/maven/3.9.11/libexec/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< ai.prophetizo:vector-wave >----------------------
+[INFO] Building Vector Wave 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ vector-wave ---
+[INFO] Deleting /Users/stephen/Development/Prophetizo/VectorWave/target
+[INFO] 
+[INFO] --- jacoco:0.8.13:prepare-agent (prepare-agent) @ vector-wave ---
+[INFO] argLine set to -javaagent:/Users/stephen/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/Users/stephen/Development/Prophetizo/VectorWave/target/jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ vector-wave ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ vector-wave ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 136 source files with javac [debug release 23] to target/classes
+[WARNING] using incubating module(s): jdk.incubator.vector
+[WARNING] using incubating module(s): jdk.incubator.vector
+[WARNING] using incubating module(s): jdk.incubator.vector
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ vector-wave ---
+[INFO] skip non existing resourceDirectory /Users/stephen/Development/Prophetizo/VectorWave/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ vector-wave ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 86 source files with javac [debug release 23] to target/test-classes
+[WARNING] using incubating module(s): jdk.incubator.vector
+[WARNING] No processor claimed any of these annotations: /org.junit.jupiter.api.Timeout,/org.junit.jupiter.params.provider.ValueSource,/org.junit.jupiter.api.Test,/org.junit.jupiter.api.BeforeEach,/org.junit.jupiter.api.condition.EnabledIfSystemProperty,/org.junit.jupiter.params.provider.CsvSource,/org.junit.jupiter.api.AfterEach,/org.junit.jupiter.api.DisplayName,/org.junit.jupiter.params.provider.MethodSource,/org.junit.jupiter.params.ParameterizedTest,/org.junit.jupiter.api.Disabled
+[WARNING] using incubating module(s): jdk.incubator.vector
+[WARNING] using incubating module(s): jdk.incubator.vector
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ vector-wave ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+WARNING: Using incubator modules: jdk.incubator.vector
+[INFO] Running ai.prophetizo.documentation.Issue91DocumentationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in ai.prophetizo.documentation.Issue91DocumentationTest
+[INFO] Running ai.prophetizo.financial.integration.FinancialAnalysisIntegrationTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in ai.prophetizo.financial.integration.FinancialAnalysisIntegrationTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MODWTOptimizedTransformEngineTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.107 s -- in ai.prophetizo.wavelet.modwt.MODWTOptimizedTransformEngineTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MODWTAlgorithmTest
+
+Perfect reconstruction condition:
+sum(h^2) = 0.9999999999999998
+sum(g^2) = 0.9999999999999998
+Total = 1.9999999999999996
+
+Multi-level MODWT test:
+Original signal: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+
+Level 1:
+W1 (details): [-3.499999999999999, 0.4999999999999999, 0.4999999999999998, 0.5, 0.5, 0.49999999999999956, 0.5, 0.5]
+V1 (approx): [4.499999999999999, 1.4999999999999996, 2.499999999999999, 3.499999999999999, 4.499999999999999, 5.499999999999998, 6.499999999999998, 7.499999999999998]
+
+Level 2:
+W2 (details): [-0.707106781186547, -2.121320343559642, -0.7071067811865475, 0.7071067811865472, 0.7071067811865475, 0.7071067811865472, 0.707106781186547, 0.7071067811865475]
+V2 (approx): [3.88908729652601, 3.181980515339463, 2.4748737341529154, 1.7677669529663682, 2.4748737341529154, 3.181980515339463, 3.88908729652601, 4.596194077712557]
+Original Haar filters:
+h = [0.7071067811865475, 0.7071067811865475]
+g = [0.7071067811865475, -0.7071067811865475]
+
+Level 1 scale: 0.7071067811865475
+Level 2 scale: 0.5
+
+Level 1 MODWT of [1,2,3,4]:
+Wavelet coeffs: [-1.4999999999999996, 0.4999999999999999, 0.4999999999999998, 0.5, 2.4999999999999996, 1.4999999999999996, 2.499999999999999, 3.499999999999999]
+Reconstructed: [0.9999999999999997, 1.9999999999999991, 2.9999999999999982, 3.9999999999999982]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.modwt.MODWTAlgorithmTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransformTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransformTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MODWTResultTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in ai.prophetizo.wavelet.modwt.MODWTResultTest
+[INFO] Running ai.prophetizo.wavelet.modwt.SimpleMODWTTest
+
+Haar Filters:
+Low-pass decomp: [0.7071067811865475, 0.7071067811865475]
+High-pass decomp: [0.7071067811865475, -0.7071067811865475]
+Low-pass recon: [0.7071067811865475, 0.7071067811865475]
+High-pass recon: [0.7071067811865475, -0.7071067811865475]
+
+Signal: [1, 2, 3, 4, 5, 6, 7, 8]
+Level 1 Detail: [-3.499999999999999, 0.4999999999999999, 0.4999999999999998, 0.5, 0.5, 0.49999999999999956, 0.5, 0.5]
+Level 2 Detail: [-0.9999999999999991, -2.9999999999999987, -0.9999999999999998, 0.9999999999999994, 0.9999999999999998, 0.9999999999999996, 0.9999999999999991, 0.9999999999999996]
+Approximation: [5.499999999999997, 4.499999999999998, 3.4999999999999982, 2.4999999999999987, 3.4999999999999982, 4.499999999999998, 5.499999999999997, 6.4999999999999964]
+Reconstructed: [0.9999999999999982, 1.9999999999999982, 2.999999999999997, 3.9999999999999964, 4.9999999999999964, 5.999999999999995, 6.999999999999993, 7.999999999999993]
+Index 0: expected=1.0, actual=0.9999999999999982, diff=1.7763568394002505E-15
+Index 1: expected=2.0, actual=1.9999999999999982, diff=1.7763568394002505E-15
+Index 2: expected=3.0, actual=2.999999999999997, diff=3.1086244689504383E-15
+Index 3: expected=4.0, actual=3.9999999999999964, diff=3.552713678800501E-15
+Index 4: expected=5.0, actual=4.9999999999999964, diff=3.552713678800501E-15
+Index 5: expected=6.0, actual=5.999999999999995, diff=5.329070518200751E-15
+Index 6: expected=7.0, actual=6.999999999999993, diff=7.105427357601002E-15
+Index 7: expected=8.0, actual=7.999999999999993, diff=7.105427357601002E-15
+Signal: [1, 2, 3, 4]
+Approx: [2.4999999999999996, 1.4999999999999996, 2.499999999999999, 3.499999999999999]
+Detail: [-1.4999999999999996, 0.4999999999999999, 0.4999999999999998, 0.5]
+Reconstructed: [0.9999999999999997, 1.9999999999999991, 2.9999999999999982, 3.9999999999999982]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.modwt.SimpleMODWTTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MODWTTransformTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in ai.prophetizo.wavelet.modwt.MODWTTransformTest
+[INFO] Running ai.prophetizo.wavelet.modwt.MODWTTransformFactoryTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in ai.prophetizo.wavelet.modwt.MODWTTransformFactoryTest
+[INFO] Running ai.prophetizo.wavelet.memory.MemoryPoolTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in ai.prophetizo.wavelet.memory.MemoryPoolTest
+[INFO] Running ai.prophetizo.wavelet.memory.AlignedMemoryPoolTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in ai.prophetizo.wavelet.memory.AlignedMemoryPoolTest
+[INFO] Running ai.prophetizo.wavelet.util.PlatformDetectorTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.util.PlatformDetectorTest
+[INFO] Running ai.prophetizo.wavelet.util.FFTThresholdTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in ai.prophetizo.wavelet.util.FFTThresholdTest
+[INFO] Running ai.prophetizo.wavelet.util.SignalProcessorValidationTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in ai.prophetizo.wavelet.util.SignalProcessorValidationTest
+[INFO] Running ai.prophetizo.wavelet.util.NullChecksTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in ai.prophetizo.wavelet.util.NullChecksTest
+[INFO] Running ai.prophetizo.wavelet.util.BatchValidationTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in ai.prophetizo.wavelet.util.BatchValidationTest
+[INFO] Running ai.prophetizo.wavelet.util.SignalProcessorPaddingTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in ai.prophetizo.wavelet.util.SignalProcessorPaddingTest
+[INFO] Running ai.prophetizo.wavelet.util.WaveletConstantsTest
+[INFO] Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in ai.prophetizo.wavelet.util.WaveletConstantsTest
+[INFO] Running ai.prophetizo.wavelet.util.PlatformDetectionExampleTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.util.PlatformDetectionExampleTest
+[INFO] Running ai.prophetizo.wavelet.util.ValidationUtilsTest
+[INFO] Tests run: 93, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in ai.prophetizo.wavelet.util.ValidationUtilsTest
+[INFO] Running ai.prophetizo.wavelet.util.WaveletEvaluationUtilsTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in ai.prophetizo.wavelet.util.WaveletEvaluationUtilsTest
+[INFO] Running ai.prophetizo.wavelet.util.FFTBoundsAnalysisTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.util.FFTBoundsAnalysisTest
+[INFO] Running ai.prophetizo.wavelet.util.EdgeCaseRegressionTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in ai.prophetizo.wavelet.util.EdgeCaseRegressionTest
+[INFO] Running ai.prophetizo.wavelet.util.ToleranceConstantsTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.util.ToleranceConstantsTest
+[INFO] Running ai.prophetizo.wavelet.util.PowerOf2UtilsTest
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.util.PowerOf2UtilsTest
+[INFO] Running ai.prophetizo.wavelet.util.ValidationPerformanceTest
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s -- in ai.prophetizo.wavelet.util.ValidationPerformanceTest
+[INFO] Running ai.prophetizo.wavelet.util.OptimizedFFTTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.055 s -- in ai.prophetizo.wavelet.util.OptimizedFFTTest
+[INFO] Running ai.prophetizo.wavelet.util.SignalUtilsTest
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in ai.prophetizo.wavelet.util.SignalUtilsTest
+[INFO] Running ai.prophetizo.wavelet.cwt.RealFFTOptimizationTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.139 s -- in ai.prophetizo.wavelet.cwt.RealFFTOptimizationTest
+[INFO] Running ai.prophetizo.wavelet.cwt.InverseCWTDebugTest
+
+Scale weights:
+da[0] = 8.0000
+da[1] = 16.0000
+
+Wavelet values at t=0:
+ψ(0) at scale 8.0 = 0.7511
+ψ(0) at scale 16.0 = 0.7511
+ψ(0) at scale 32.0 = 0.7511
+
+Coefficient statistics:
+Scale 8.0: sum=21.4299, max=1.1220, avg=0.3348
+Scale 16.0: sum=63.6696, max=2.2974, avg=0.9948
+Scale 32.0: sum=14.8387, max=0.4921, avg=0.2319
+
+CWT Coefficients (sample):
+Scale 4.0: max=0.3756
+Scale 8.0: max=0.2656
+Scale 16.0: max=0.1878
+Scale 32.0: max=0.1328
+
+Reconstruction:
+Peak at index: 64 (expected: 64)
+Peak value: 0.03619562846302286 (expected: ~1.0)
+Mean value: -1.1279812854788462E-7
+Total energy: 0.0039394654023014964
+Morlet admissibility constant: 3.141592653589793
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in ai.prophetizo.wavelet.cwt.InverseCWTDebugTest
+[INFO] Running ai.prophetizo.wavelet.cwt.CWTFactoryTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.CWTFactoryTest
+[INFO] Running ai.prophetizo.wavelet.cwt.memory.CWTMemoryPoolTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.170 s -- in ai.prophetizo.wavelet.cwt.memory.CWTMemoryPoolTest
+[INFO] Running ai.prophetizo.wavelet.cwt.FFTPerformanceComparisonTest
+[WARNING] Tests run: 2, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.FFTPerformanceComparisonTest
+[INFO] Running ai.prophetizo.wavelet.cwt.CWTEdgeHandlingTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in ai.prophetizo.wavelet.cwt.CWTEdgeHandlingTest
+[INFO] Running ai.prophetizo.wavelet.cwt.util.WaveletEvaluationHelperTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.util.WaveletEvaluationHelperTest
+[INFO] Running ai.prophetizo.wavelet.cwt.AdaptiveScaleSelectionTest
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.040 s -- in ai.prophetizo.wavelet.cwt.AdaptiveScaleSelectionTest
+[INFO] Running ai.prophetizo.wavelet.cwt.optimization.CWTVectorOpsValidationTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in ai.prophetizo.wavelet.cwt.optimization.CWTVectorOpsValidationTest
+[INFO] Running ai.prophetizo.wavelet.cwt.optimization.CacheAwareOpsTest
+Cache-aware time: 6.29 ms, Regular time: 0.28 ms
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in ai.prophetizo.wavelet.cwt.optimization.CacheAwareOpsTest
+[INFO] Running ai.prophetizo.wavelet.cwt.providers.ContinuousWaveletProviderTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in ai.prophetizo.wavelet.cwt.providers.ContinuousWaveletProviderTest
+[INFO] Running ai.prophetizo.wavelet.cwt.InverseCWTTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.492 s -- in ai.prophetizo.wavelet.cwt.InverseCWTTest
+[INFO] Running ai.prophetizo.wavelet.cwt.ComplexNumberTest
+[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in ai.prophetizo.wavelet.cwt.ComplexNumberTest
+[INFO] Running ai.prophetizo.wavelet.cwt.GaussianDerivativeWaveletTest
+[WARNING] Tests run: 18, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.GaussianDerivativeWaveletTest
+[INFO] Running ai.prophetizo.wavelet.cwt.ComplexMorletWaveletTest
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in ai.prophetizo.wavelet.cwt.ComplexMorletWaveletTest
+[INFO] Running ai.prophetizo.wavelet.cwt.ComplexCWTTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in ai.prophetizo.wavelet.cwt.ComplexCWTTest
+[INFO] Running ai.prophetizo.wavelet.cwt.CWTResultTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.CWTResultTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.SimpleStreamingAnalyzerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.314 s -- in ai.prophetizo.wavelet.cwt.finance.SimpleStreamingAnalyzerTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParametersTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisParametersTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.PaulWaveletTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.finance.PaulWaveletTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.providers.FinancialWaveletProviderTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.finance.providers.FinancialWaveletProviderTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisPoolingTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.183 s -- in ai.prophetizo.wavelet.cwt.finance.FinancialAnalysisPoolingTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.WaveletReferenceTest
+MATLAB peak: 0.8673250706
+Standard peak: 0.8673250705840776
+Testing MATLAB-compatible Mexican Hat implementation:
+t= -5.0: Expected=-0.0000888178, Actual=-0.0000888178, Error=0.00e+00
+t= -3.0: Expected=-0.0131550316, Actual=-0.0131550316, Error=0.00e+00
+t= -2.0: Expected=-0.1711006461, Actual=-0.1711006461, Error=0.00e+00
+t= -1.0: Expected=-0.3520653268, Actual=-0.3520653268, Error=0.00e+00
+t=  0.0: Expected= 0.8673250706, Actual= 0.8673250706, Error=0.00e+00
+t=  1.0: Expected=-0.3520653268, Actual=-0.3520653268, Error=0.00e+00
+t=  2.0: Expected=-0.1711006461, Actual=-0.1711006461, Error=0.00e+00
+t=  3.0: Expected=-0.0131550316, Actual=-0.0131550316, Error=0.00e+00
+t=  5.0: Expected=-0.0000888178, Actual=-0.0000888178, Error=0.00e+00
+
+Testing general DOG2 implementation (standard mathematical form):
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.finance.WaveletReferenceTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzerSharpeRatioTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzerSharpeRatioTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.PaulWaveletMathTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.028 s -- in ai.prophetizo.wavelet.cwt.finance.PaulWaveletMathTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzerTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.121 s -- in ai.prophetizo.wavelet.cwt.finance.FinancialWaveletAnalyzerTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.ShannonGaborWaveletTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.finance.ShannonGaborWaveletTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.DOGWaveletTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in ai.prophetizo.wavelet.cwt.finance.DOGWaveletTest
+[INFO] Running ai.prophetizo.wavelet.cwt.finance.ShannonWaveletMathTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in ai.prophetizo.wavelet.cwt.finance.ShannonWaveletMathTest
+[INFO] Running ai.prophetizo.wavelet.cwt.ScaleSpaceTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.cwt.ScaleSpaceTest
+[INFO] Running ai.prophetizo.wavelet.cwt.CWTConfigTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.cwt.CWTConfigTest
+[INFO] Running ai.prophetizo.wavelet.cwt.CWTLinearConvolutionTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.CWTLinearConvolutionTest
+[INFO] Running ai.prophetizo.wavelet.cwt.MorletWaveletTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in ai.prophetizo.wavelet.cwt.MorletWaveletTest
+[INFO] Running ai.prophetizo.wavelet.WaveletOpsFactoryTest
+[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in ai.prophetizo.wavelet.WaveletOpsFactoryTest
+[INFO] Running ai.prophetizo.wavelet.ComplexTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.ComplexTest
+[INFO] Running ai.prophetizo.wavelet.api.WaveletRegistryTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in ai.prophetizo.wavelet.api.WaveletRegistryTest
+[INFO] Running ai.prophetizo.wavelet.api.GaussianDerivativeRegistrationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in ai.prophetizo.wavelet.api.GaussianDerivativeRegistrationTest
+[INFO] Running ai.prophetizo.wavelet.api.providers.OrthogonalWaveletProviderTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.api.providers.OrthogonalWaveletProviderTest
+[INFO] Running ai.prophetizo.wavelet.api.providers.BiorthogonalWaveletProviderTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.api.providers.BiorthogonalWaveletProviderTest
+[INFO] Running ai.prophetizo.wavelet.api.WaveletProviderTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.api.WaveletProviderTest
+[INFO] Running ai.prophetizo.wavelet.api.ServiceLoaderTest
+Discovered wavelets by provider:
+  OrthogonalWaveletProvider: 9
+  BiorthogonalWaveletProvider: 1
+  ContinuousWaveletProvider: 5
+  FinancialWaveletProvider: 4
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.api.ServiceLoaderTest
+[INFO] Running ai.prophetizo.wavelet.api.BiorthogonalSplineTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.api.BiorthogonalSplineTest
+[INFO] Running ai.prophetizo.wavelet.api.SimpleFactoryTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in ai.prophetizo.wavelet.api.SimpleFactoryTest
+[INFO] Running ai.prophetizo.wavelet.api.WaveletRegistryEdgeCaseTest
+Concurrent test results: 10 successes, 9 temporary wavelet unavailability, 0 other exceptions
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in ai.prophetizo.wavelet.api.WaveletRegistryEdgeCaseTest
+[INFO] Running ai.prophetizo.wavelet.api.PaddingStrategyTest
+[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in ai.prophetizo.wavelet.api.PaddingStrategyTest
+[INFO] Running ai.prophetizo.wavelet.exception.ErrorCodeTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in ai.prophetizo.wavelet.exception.ErrorCodeTest
+[INFO] Running ai.prophetizo.wavelet.exception.ExceptionTest
+[INFO] Tests run: 20, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in ai.prophetizo.wavelet.exception.ExceptionTest
+[INFO] Running ai.prophetizo.wavelet.PaddingStrategyTest
+[INFO] Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in ai.prophetizo.wavelet.PaddingStrategyTest
+[INFO] Running ai.prophetizo.wavelet.OptimizedTransformEngineTest
+[INFO] Tests run: 35, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in ai.prophetizo.wavelet.OptimizedTransformEngineTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[WARNING] Tests run: 894, Failures: 0, Errors: 0, Skipped: 3
+[INFO] 
+[INFO] 
+[INFO] --- jacoco:0.8.13:report (report) @ vector-wave ---
+[INFO] Loading execution data file /Users/stephen/Development/Prophetizo/VectorWave/target/jacoco.exec
+[INFO] Analyzed bundle 'Vector Wave' with 236 classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.671 s
+[INFO] Finished at: 2025-08-04T08:12:56-04:00
+[INFO] ------------------------------------------------------------------------

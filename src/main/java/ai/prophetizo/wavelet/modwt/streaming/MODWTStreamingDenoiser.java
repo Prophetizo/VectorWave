@@ -146,17 +146,66 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
     }
     
     private double calculateMAD(double[] values) {
-        double[] sorted = values.clone();
-        java.util.Arrays.sort(sorted);
-        double median = sorted[sorted.length / 2];
+        // First, find median using quickselect (modifies array, so clone)
+        double[] work = values.clone();
+        double median = quickSelect(work, 0, work.length - 1, work.length / 2);
         
-        double[] deviations = new double[values.length];
-        for (int i = 0; i < values.length; i++) {
-            deviations[i] = Math.abs(values[i] - median);
+        // Calculate absolute deviations in-place
+        for (int i = 0; i < work.length; i++) {
+            work[i] = Math.abs(values[i] - median);
         }
         
-        java.util.Arrays.sort(deviations);
-        return deviations[deviations.length / 2];
+        // Find median of deviations using quickselect
+        return quickSelect(work, 0, work.length - 1, work.length / 2);
+    }
+    
+    /**
+     * Quickselect algorithm for finding kth smallest element.
+     * More efficient than full sort for median calculation.
+     * Average O(n) time complexity vs O(n log n) for sorting.
+     */
+    private double quickSelect(double[] arr, int left, int right, int k) {
+        if (left == right) {
+            return arr[left];
+        }
+        
+        // Choose pivot and partition
+        int pivotIndex = partition(arr, left, right);
+        
+        if (k == pivotIndex) {
+            return arr[k];
+        } else if (k < pivotIndex) {
+            return quickSelect(arr, left, pivotIndex - 1, k);
+        } else {
+            return quickSelect(arr, pivotIndex + 1, right, k);
+        }
+    }
+    
+    private int partition(double[] arr, int left, int right) {
+        // Use middle element as pivot to avoid worst-case on sorted data
+        int mid = left + (right - left) / 2;
+        double pivot = arr[mid];
+        
+        // Move pivot to end
+        swap(arr, mid, right);
+        
+        int storeIndex = left;
+        for (int i = left; i < right; i++) {
+            if (arr[i] < pivot) {
+                swap(arr, storeIndex, i);
+                storeIndex++;
+            }
+        }
+        
+        // Move pivot to its final position
+        swap(arr, storeIndex, right);
+        return storeIndex;
+    }
+    
+    private void swap(double[] arr, int i, int j) {
+        double temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
     }
     
     private double calculateSTD(double[] values) {

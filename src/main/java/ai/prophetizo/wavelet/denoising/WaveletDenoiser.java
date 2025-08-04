@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
-import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResultImpl;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
@@ -135,31 +134,140 @@ public class WaveletDenoiser {
         // Estimate noise from the finest scale (level 1) detail coefficients
         double sigma = estimateNoiseSigma(multiResult.getDetailCoeffsAtLevel(1));
         
-        // Create arrays to store denoised detail coefficients for each level
-        double[][] denoisedDetails = new double[levels][];
-        
-        // Apply thresholding to detail coefficients at each level
-        for (int level = 1; level <= levels; level++) {
-            double[] levelDetails = multiResult.getDetailCoeffsAtLevel(level);
-            
-            // Calculate threshold with level-dependent scaling
-            // Higher levels (lower frequencies) typically need less aggressive thresholding
-            double levelScale = Math.sqrt(Math.pow(2, level - 1));
-            double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
-            
-            // Apply thresholding
-            denoisedDetails[level - 1] = applyThreshold(levelDetails, threshold, type);
-        }
-        
-        // Create denoised multi-level result
-        MultiLevelMODWTResult denoisedMultiResult = new MultiLevelMODWTResultImpl(
-            multiResult.getApproximationCoeffs(),
-            denoisedDetails,
-            levels
-        );
+        // Create a wrapper that applies denoising on-the-fly
+        MultiLevelMODWTResult denoisedResult = new DenoisedMultiLevelResult(
+            multiResult, sigma, method, type);
         
         // Reconstruct the denoised signal
-        return multiTransform.reconstruct(denoisedMultiResult);
+        return multiTransform.reconstruct(denoisedResult);
+    }
+    
+    /**
+     * Wrapper class that applies denoising to multi-level MODWT coefficients on-the-fly.
+     */
+    private class DenoisedMultiLevelResult implements MultiLevelMODWTResult {
+        private final MultiLevelMODWTResult original;
+        private final double sigma;
+        private final ThresholdMethod method;
+        private final ThresholdType type;
+        private final double[][] denoisedDetails;
+        
+        DenoisedMultiLevelResult(MultiLevelMODWTResult original, double sigma,
+                                ThresholdMethod method, ThresholdType type) {
+            this.original = original;
+            this.sigma = sigma;
+            this.method = method;
+            this.type = type;
+            this.denoisedDetails = new double[original.getLevels()][];
+            
+            // Pre-compute denoised details for all levels
+            for (int level = 1; level <= original.getLevels(); level++) {
+                double[] levelDetails = original.getDetailCoeffsAtLevel(level);
+                
+                // Calculate threshold with level-dependent scaling
+                double levelScale = Math.sqrt(Math.pow(2, level - 1));
+                double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
+                
+                // Apply thresholding and store
+                denoisedDetails[level - 1] = applyThreshold(levelDetails, threshold, type);
+            }
+        }
+        
+        @Override
+        public int getSignalLength() {
+            return original.getSignalLength();
+        }
+        
+        @Override
+        public int getLevels() {
+            return original.getLevels();
+        }
+        
+        @Override
+        public double[] getApproximationCoeffs() {
+            // Return original approximation coefficients (not denoised)
+            return original.getApproximationCoeffs();
+        }
+        
+        @Override
+        public double[] getDetailCoeffsAtLevel(int level) {
+            if (level < 1 || level > getLevels()) {
+                throw new IllegalArgumentException("Invalid level: " + level);
+            }
+            // Return denoised detail coefficients
+            return denoisedDetails[level - 1].clone();
+        }
+        
+        @Override
+        public double getDetailEnergyAtLevel(int level) {
+            if (level < 1 || level > getLevels()) {
+                throw new IllegalArgumentException("Invalid level: " + level);
+            }
+            double energy = 0.0;
+            double[] details = denoisedDetails[level - 1];
+            for (double val : details) {
+                energy += val * val;
+            }
+            return energy;
+        }
+        
+        @Override
+        public double getApproximationEnergy() {
+            double energy = 0.0;
+            double[] approx = getApproximationCoeffs();
+            for (double val : approx) {
+                energy += val * val;
+            }
+            return energy;
+        }
+        
+        @Override
+        public double getTotalEnergy() {
+            // Recalculate based on denoised coefficients
+            double energy = getApproximationEnergy();
+            for (int level = 1; level <= getLevels(); level++) {
+                energy += getDetailEnergyAtLevel(level);
+            }
+            return energy;
+        }
+        
+        @Override
+        public double[] getRelativeEnergyDistribution() {
+            // Recalculate based on denoised coefficients
+            double totalEnergy = getTotalEnergy();
+            double[] distribution = new double[getLevels() + 1];
+            
+            // Approximation energy
+            double[] approx = getApproximationCoeffs();
+            double approxEnergy = 0.0;
+            for (double val : approx) {
+                approxEnergy += val * val;
+            }
+            distribution[0] = approxEnergy / totalEnergy;
+            
+            // Detail energies
+            for (int level = 1; level <= getLevels(); level++) {
+                double[] details = denoisedDetails[level - 1];
+                double levelEnergy = 0.0;
+                for (double val : details) {
+                    levelEnergy += val * val;
+                }
+                distribution[level] = levelEnergy / totalEnergy;
+            }
+            
+            return distribution;
+        }
+        
+        @Override
+        public boolean isValid() {
+            return original.isValid();
+        }
+        
+        @Override
+        public MultiLevelMODWTResult copy() {
+            // Return a new wrapper with the same parameters
+            return new DenoisedMultiLevelResult(original.copy(), sigma, method, type);
+        }
     }
 
     /**

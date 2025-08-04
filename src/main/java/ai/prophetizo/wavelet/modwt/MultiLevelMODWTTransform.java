@@ -216,6 +216,7 @@ public class MultiLevelMODWTTransform {
         // Start with zeros for both approximation and details
         double[] reconstruction = new double[result.getSignalLength()];
         double[] zeroApprox = new double[result.getSignalLength()];
+        double[] zeroDetails = new double[result.getSignalLength()];  // Reusable zero array
         
         // Reconstruct each level within the range properly
         for (int level = result.getLevels(); level >= 1; level--) {
@@ -225,8 +226,8 @@ public class MultiLevelMODWTTransform {
                 // Use actual detail coefficients for levels in range
                 details = result.getDetailCoeffsAtLevel(level);
             } else {
-                // Use zeros for levels outside the range
-                details = new double[result.getSignalLength()];
+                // Use pre-allocated zeros for levels outside the range
+                details = zeroDetails;
             }
             
             // Use proper convolution-based reconstruction

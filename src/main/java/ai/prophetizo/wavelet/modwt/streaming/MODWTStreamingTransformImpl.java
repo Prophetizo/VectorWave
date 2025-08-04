@@ -151,14 +151,12 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
         long processingTime = System.nanoTime() - startTime;
         statistics.recordBlockProcessed(processingTime);
         
-        // Reset buffer counter (keep overlap samples)
-        samplesInBuffer = overlapSize;
+        // Slide the window: we've processed bufferSize samples but keep overlapSize
+        // So we effectively consumed (bufferSize - overlapSize) samples
+        samplesInBuffer -= (bufferSize - overlapSize);
         
-        // Copy last samples for overlap
-        for (int i = 0; i < overlapSize; i++) {
-            int pos = (writePosition - overlapSize + i + circularBuffer.length) % circularBuffer.length;
-            previousOverlap[i] = circularBuffer[pos];
-        }
+        // Note: The overlap samples are already in the circular buffer at the correct positions
+        // No need to copy them separately as the circular buffer maintains them
     }
 
     @Override
