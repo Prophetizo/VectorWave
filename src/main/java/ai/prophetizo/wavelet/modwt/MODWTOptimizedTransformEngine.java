@@ -417,7 +417,7 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
                     executorService.shutdownNow();
                     // Wait again after shutdownNow
                     if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                        System.err.println("ExecutorService did not terminate");
+                        throw new RuntimeException("ExecutorService did not terminate within timeout period");
                     }
                 }
             } catch (InterruptedException e) {
