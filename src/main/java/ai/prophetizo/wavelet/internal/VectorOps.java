@@ -560,7 +560,17 @@ public final class VectorOps {
                         for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
                             int idx = t + i - l;
                             // Use robust modulo operation that handles all negative values correctly
-                            int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
+                            int signalIndex;
+                            if (idx >= 0 && idx < signalLen) {
+                                // Most common case: index already in bounds
+                                signalIndex = idx;
+                            } else if (idx < 0 && idx >= -signalLen) {
+                                // Common case for negative indices: only one wrap needed
+                                signalIndex = idx + signalLen;
+                            } else {
+                                // Rare case for very negative or very positive indices
+                                signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                            }
                             
                             // Direct scalar accumulation - faster than vector lane manipulation
                             output[t + i] += signal[signalIndex] * filter[l];
@@ -573,8 +583,18 @@ public final class VectorOps {
             for (int t = vectorLoopBound; t < signalLen; t++) {
                 // Use robust modulo operation for circular indexing
                 int idx = t - l;
-                // Optimize for common case where index is already in bounds
-                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
+                // Optimize for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
                 output[t] += signal[signalIndex] * filter[l];
             }
         }
@@ -596,8 +616,18 @@ public final class VectorOps {
                 // Use (t - l) indexing to match MODWT time-reversed filter convention
                 // Use robust modulo operation that handles all negative values correctly
                 int idx = t - l;
-                // Optimize for common case where index is already in bounds
-                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
+                // Optimize for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
                 sum += signal[signalIndex] * filter[l];
             }
             

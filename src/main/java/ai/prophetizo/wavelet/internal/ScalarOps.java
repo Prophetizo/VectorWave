@@ -637,10 +637,21 @@ public final class ScalarOps {
             for (int l = 0; l < filterLen; l++) {
                 // MODWT convolution: W_j,t = Σ h_j,l * X_{(t-l) mod N}
                 // The (t - l) indexing implements the time-reversed filter convolution
-                // Use robust modulo operation that handles all negative values correctly
                 int idx = t - l;
-                // Optimize for common case where index is already in bounds
-                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
+                
+                // Optimize modulo operation for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0) {
+                    // Most common case: non-negative index (includes idx < signalLen)
+                    signalIndex = idx;
+                } else if (idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
+                
                 sum += signal[signalIndex] * filter[l];
             }
             
@@ -684,11 +695,20 @@ public final class ScalarOps {
                 // Multi-level MODWT: W_j,t = Σ h_l * X_{(t - 2^(j-1) * l) mod N}
                 // The shift factor 2^(j-1) implements the filter upsampling at level j
                 int idx = t - shift * l;
-                // Optimize modulo operation to match pattern in circularConvolveMODWTScalar
-                // For large shifts at high decomposition levels, idx can be very negative,
-                // so we need to handle the general case with proper modulo
-                // Optimized modulo: avoid unnecessary modulo for indices already in bounds
-                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
+                
+                // Optimize modulo operation for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // General case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
+                
                 sum += signal[signalIndex] * filter[l];
             }
             
