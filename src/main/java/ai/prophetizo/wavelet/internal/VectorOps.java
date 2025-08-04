@@ -559,11 +559,8 @@ public final class VectorOps {
                         // This is more efficient than lane-by-lane vector manipulation
                         for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
                             int idx = t + i - l;
-                            int signalIndex = idx >= 0 ? idx : idx + signalLen;
-                            // Handle positive wrapping too
-                            if (signalIndex >= signalLen) {
-                                signalIndex -= signalLen;
-                            }
+                            // Use robust modulo operation that handles all negative values correctly
+                            int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
                             
                             // Direct scalar accumulation - faster than vector lane manipulation
                             output[t + i] += signal[signalIndex] * filter[l];
@@ -574,9 +571,10 @@ public final class VectorOps {
             
             // Handle remainder
             for (int t = vectorLoopBound; t < signalLen; t++) {
-                // Circular indexing optimization: when idx >= 0, no wrapping needed
+                // Use robust modulo operation for circular indexing
                 int idx = t - l;
-                int signalIndex = idx >= 0 ? idx : idx + signalLen;
+                // Optimize for common case where index is already in bounds
+                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
                 output[t] += signal[signalIndex] * filter[l];
             }
         }
@@ -596,9 +594,10 @@ public final class VectorOps {
             
             for (int l = 0; l < filterLen; l++) {
                 // Use (t - l) indexing to match MODWT time-reversed filter convention
-                // Optimize modulo operation: when t >= l, no wrapping needed
+                // Use robust modulo operation that handles all negative values correctly
                 int idx = t - l;
-                int signalIndex = idx >= 0 ? idx : idx + signalLen;
+                // Optimize for common case where index is already in bounds
+                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
                 sum += signal[signalIndex] * filter[l];
             }
             
