@@ -125,6 +125,21 @@ public class MultiLevelMODWTTransform {
     private record ScaledFilterPair(double[] lowPass, double[] highPass) {}
     
     /**
+     * Validates that a decomposition level is safe for bit shift operations.
+     * Prevents integer overflow in calculations like 1 << (level - 1).
+     * 
+     * @param level the decomposition level to validate (1-based)
+     * @param operationName descriptive name of the operation for error message
+     * @throws InvalidArgumentException if level would cause overflow
+     */
+    private static void validateLevelForBitShift(int level, String operationName) {
+        if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
+            throw new InvalidArgumentException(
+                "Level " + level + " would cause integer overflow in " + operationName);
+        }
+    }
+    
+    /**
      * Filter types for cache key encoding.
      */
     private enum FilterType {
@@ -347,7 +362,7 @@ public class MultiLevelMODWTTransform {
         while (maxLevel < MAX_DECOMPOSITION_LEVELS) {
             // Check for potential overflow before shifting
             if (maxLevel - 1 >= MAX_SAFE_SHIFT_BITS) {
-                break;
+                break;  // Keep original logic for this case - it's breaking from loop, not throwing
             }
             
             // Calculate scaled filter length using bit shift
@@ -419,10 +434,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift (once for both filters)
-            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
-                throw new InvalidArgumentException(
-                    "Level " + level + " would cause integer overflow in filter upsampling");
-            }
+            validateLevelForBitShift(level, "filter upsampling");
             
             // Calculate shared values once
             int upFactor = 1 << (level - 1);
@@ -472,10 +484,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift
-            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
-                throw new InvalidArgumentException(
-                    "Level " + level + " would cause integer overflow in filter upsampling");
-            }
+            validateLevelForBitShift(level, "filter upsampling");
             
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
@@ -561,10 +570,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift (once for both filters)
-            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
-                throw new InvalidArgumentException(
-                    "Level " + level + " would cause integer overflow in filter scaling");
-            }
+            validateLevelForBitShift(level, "filter scaling");
             
             // Calculate shared values once
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
@@ -621,10 +627,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift
-            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
-                throw new InvalidArgumentException(
-                    "Level " + level + " would cause integer overflow in filter scaling");
-            }
+            validateLevelForBitShift(level, "filter scaling");
             
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
