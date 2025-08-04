@@ -4,6 +4,8 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -128,5 +130,35 @@ class MODWTStreamingDenoiserOverflowTest {
         });
         
         denoiser.close();
+    }
+    
+    @Test
+    void testCalculateSafeStepMethod() throws Exception {
+        // Use reflection to test the private static method
+        Method calculateSafeStep = MODWTStreamingDenoiser.class.getDeclaredMethod(
+            "calculateSafeStep", int.class, int.class);
+        calculateSafeStep.setAccessible(true);
+        
+        // Test normal cases
+        assertEquals(1, calculateSafeStep.invoke(null, 100, 100));
+        assertEquals(10, calculateSafeStep.invoke(null, 1000, 100));
+        assertEquals(100, calculateSafeStep.invoke(null, 10000, 100));
+        
+        // Test edge cases
+        assertEquals(1, calculateSafeStep.invoke(null, 50, 100)); // More window than details
+        assertEquals(1, calculateSafeStep.invoke(null, 100, 0)); // Zero window size
+        assertEquals(1, calculateSafeStep.invoke(null, 0, 100)); // Zero details
+        
+        // Test large values (close to overflow)
+        int largeValue = Integer.MAX_VALUE / 2 - 1;
+        int result = (int) calculateSafeStep.invoke(null, largeValue, 1000);
+        assertTrue(result > 0);
+        assertEquals(largeValue / 1000, result);
+        
+        // Test extremely large values (would overflow)
+        int veryLargeValue = Integer.MAX_VALUE - 1000;
+        result = (int) calculateSafeStep.invoke(null, veryLargeValue, 100);
+        assertTrue(result > 0);
+        assertTrue(result <= Integer.MAX_VALUE / 2);
     }
 }

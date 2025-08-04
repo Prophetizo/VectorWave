@@ -309,43 +309,47 @@ public class MultiLevelMODWTTransform {
     /**
      * Calculates the maximum number of decomposition levels.
      * For MODWT, this is based on filter length and signal length.
+     * 
+     * <p>Optimized implementation that avoids expensive operations in loops
+     * by using direct calculation where possible.</p>
      */
     private int calculateMaxLevels(int signalLength) {
         int filterLength = wavelet.lowPassDecomposition().length;
         
-        // For MODWT, we need to ensure the scaled filter doesn't exceed signal length
-        // At level j, the filter is scaled by 2^(j-1), so effective length is (L-1)*2^(j-1)+1
-        // We want (L-1)*2^(j-1)+1 <= N, which gives j <= log2(N-1/L-1) + 1
-        
-        int maxLevels = 1;
-        while (maxLevels < MAX_DECOMPOSITION_LEVELS) {
-            try {
-                // Check if bit shift would overflow before performing it
-                if (maxLevels - 1 >= MAX_SAFE_SHIFT_BITS) {
-                    // 1 << MAX_SAFE_SHIFT_BITS would overflow to negative, so stop here
-                    break;
-                }
-                
-                // Safe to perform bit shift
-                int scaleFactor = 1 << (maxLevels - 1);
-                
-                // Use Math.multiplyExact to detect overflow in the multiplication
-                int scaledFilterLength = Math.addExact(
-                    Math.multiplyExact(filterLength - 1, scaleFactor), 
-                    1
-                );
-                
-                if (scaledFilterLength > signalLength) {
-                    break;
-                }
-                maxLevels++;
-            } catch (ArithmeticException e) {
-                // Overflow occurred in multiplication - we've reached the practical limit
-                break;
-            }
+        // Quick check for edge cases
+        if (signalLength <= filterLength) {
+            return 0;  // Can't even do one level
         }
         
-        return maxLevels - 1;
+        // For MODWT: at level j, effective filter length = (L-1)*2^(j-1)+1
+        // We need (L-1)*2^(j-1)+1 <= N
+        
+        // Use the original algorithm's approach, but optimized
+        // Start from level 1 and find the maximum valid level
+        int maxLevel = 1;
+        
+        // Pre-compute values to avoid repeated calculations
+        int filterLengthMinus1 = filterLength - 1;
+        
+        // Use bit shifting for powers of 2
+        while (maxLevel < MAX_DECOMPOSITION_LEVELS) {
+            // Check for potential overflow before shifting
+            if (maxLevel - 1 >= MAX_SAFE_SHIFT_BITS) {
+                break;
+            }
+            
+            // Calculate scaled filter length using bit shift
+            // This is equivalent to: (filterLength - 1) * 2^(maxLevel - 1) + 1
+            long scaledFilterLength = ((long)filterLengthMinus1 << (maxLevel - 1)) + 1;
+            
+            if (scaledFilterLength > signalLength) {
+                break;
+            }
+            
+            maxLevel++;
+        }
+        
+        return maxLevel - 1;
     }
     
     /**

@@ -40,6 +40,19 @@ import ai.prophetizo.wavelet.internal.VectorOps;
  * @since 1.0.0
  */
 public class WaveletDenoiser {
+    
+    /**
+     * Maximum safe level for bit shift scaling operations.
+     * 
+     * <p>When calculating level-dependent scaling using bit shifts (1 << (level - 1)),
+     * we need to ensure the shift amount doesn't exceed 30 to avoid integer overflow.
+     * Since level - 1 must be <= 30, the maximum safe level is 31.</p>
+     * 
+     * <p>In practice, wavelet decomposition rarely exceeds 10-15 levels due to
+     * signal length constraints and numerical stability, so this limit provides
+     * a large safety margin.</p>
+     */
+    private static final int MAX_SAFE_LEVEL_FOR_SCALING = 31;
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -166,8 +179,7 @@ public class WaveletDenoiser {
                 
                 // Calculate threshold with level-dependent scaling
                 // Use bit shift for efficient power of 2 calculation
-                // Add overflow protection: levels should be reasonable (typically <= 10)
-                if (level > 31) {
+                if (level > MAX_SAFE_LEVEL_FOR_SCALING) {
                     throw new IllegalArgumentException(
                         "Level " + level + " is too large and would cause integer overflow in scaling calculation");
                 }

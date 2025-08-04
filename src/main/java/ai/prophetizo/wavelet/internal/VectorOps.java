@@ -581,7 +581,7 @@ public final class VectorOps {
             
             // Handle remainder
             for (int t = vectorLoopBound; t < signalLen; t++) {
-                // Optimize modulo: avoid unnecessary addition when t >= l
+                // Circular indexing optimization: when idx >= 0, no wrapping needed
                 int idx = t - l;
                 int signalIndex = idx >= 0 ? idx : idx + signalLen;
                 output[t] += signal[signalIndex] * filter[l];

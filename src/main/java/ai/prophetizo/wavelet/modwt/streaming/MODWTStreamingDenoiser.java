@@ -138,22 +138,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         } else {
             // Case 2: More details than window size - sample uniformly
             // This ensures we don't just keep the last noiseWindowSize values
-            
-            // Use safe division to prevent overflow
-            int step;
-            try {
-                // For very large arrays, ensure we don't overflow when calculating step
-                if (details.length > Integer.MAX_VALUE / 2) {
-                    // For extremely large arrays, use a larger step to avoid overflow
-                    step = details.length / noiseWindowSize;
-                } else {
-                    step = Math.max(1, details.length / noiseWindowSize);
-                }
-            } catch (ArithmeticException e) {
-                // Fallback to safe value if any arithmetic issues
-                step = Math.max(1, details.length / noiseWindowSize);
-            }
-            
+            int step = calculateSafeStep(details.length, noiseWindowSize);
             int added = 0;
             
             for (int i = 0; i < details.length && added < noiseWindowSize; i += step) {
@@ -252,6 +237,40 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         }
         
         return MathUtils.standardDeviation(values);
+    }
+    
+    /**
+     * Calculates a safe step size for uniform sampling that avoids integer overflow.
+     * 
+     * <p>When we have more detail coefficients than the noise window size, we need to
+     * sample uniformly across the coefficients. This method calculates the appropriate
+     * step size while protecting against integer overflow for very large arrays.</p>
+     * 
+     * @param detailsLength the number of detail coefficients
+     * @param windowSize the size of the noise estimation window
+     * @return a safe step size (always at least 1)
+     */
+    private static int calculateSafeStep(int detailsLength, int windowSize) {
+        // Basic validation
+        if (windowSize <= 0) {
+            return 1;
+        }
+        
+        // Simple case: if details length is reasonable, just do the division
+        if (detailsLength <= Integer.MAX_VALUE / 2) {
+            return Math.max(1, detailsLength / windowSize);
+        }
+        
+        // For extremely large arrays, we need to be more careful
+        // Use long arithmetic to avoid overflow, then clamp to int range
+        long longStep = ((long) detailsLength) / windowSize;
+        
+        // Clamp to reasonable int range
+        if (longStep > Integer.MAX_VALUE / 2) {
+            return Integer.MAX_VALUE / 2;
+        }
+        
+        return Math.max(1, (int) longStep);
     }
     
     /**
