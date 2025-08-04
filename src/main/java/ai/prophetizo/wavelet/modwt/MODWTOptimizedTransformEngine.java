@@ -9,7 +9,9 @@ import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +48,15 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
     private final boolean useCacheBlocking;
     private final int parallelism;
     private final ExecutorService executorService;
+    
+    // Cache for reusable transform instances to avoid repeated object creation
+    private final Map<TransformKey, MODWTTransform> transformCache = new ConcurrentHashMap<>();
+    
+    /**
+     * Key for caching MODWTTransform instances based on wavelet and boundary mode.
+     * Using a record for efficient immutable key with proper equals/hashCode.
+     */
+    private record TransformKey(Wavelet wavelet, BoundaryMode boundaryMode) {}
 
     /**
      * Creates an optimized MODWT engine with default settings.
@@ -99,8 +110,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             return transformPooled(signal, wavelet, mode);
         }
 
-        // Default transform
-        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        // Default transform - use cached instance
+        MODWTTransform transform = getOrCreateTransform(wavelet, mode);
         return transform.forward(signal);
     }
 
@@ -142,9 +153,9 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             return transformBatchPooled(signals, wavelet, mode);
         }
 
-        // Sequential processing
+        // Sequential processing - use cached instance
         MODWTResult[] results = new MODWTResult[signals.length];
-        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        MODWTTransform transform = getOrCreateTransform(wavelet, mode);
         for (int i = 0; i < signals.length; i++) {
             results[i] = transform.forward(signals[i]);
         }
@@ -177,8 +188,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             double[] signal, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw)) {
-            // Fall back for continuous wavelets
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
+            // Fall back for continuous wavelets - use cached instance
+            MODWTTransform transform = getOrCreateTransform(wavelet, mode);
             return transform.forward(signal);
         }
 
@@ -202,8 +213,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             cacheAwareMODWTConvolve(signal, scaledLowPass, approx);
             cacheAwareMODWTConvolve(signal, scaledHighPass, detail);
         } else {
-            // Fall back for non-periodic
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
+            // Fall back for non-periodic - use cached instance
+            MODWTTransform transform = getOrCreateTransform(wavelet, mode);
             return transform.forward(signal);
         }
 
@@ -217,7 +228,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             double[] signal, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw)) {
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
+            // Fall back for continuous wavelets - use cached instance
+            MODWTTransform transform = getOrCreateTransform(wavelet, mode);
             return transform.forward(signal);
         }
 
@@ -260,8 +272,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             }
         }
 
-        // Fall back for non-periodic
-        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        // Fall back for non-periodic - use cached instance
+        MODWTTransform transform = getOrCreateTransform(wavelet, mode);
         return transform.forward(signal);
     }
 
@@ -273,9 +285,9 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
 
         // Check if we can use optimized batch processing
         if (!(wavelet instanceof DiscreteWavelet) || mode != BoundaryMode.PERIODIC) {
-            // Fall back to sequential processing
+            // Fall back to sequential processing - use cached instance
             MODWTResult[] results = new MODWTResult[signals.length];
-            MODWTTransform transform = new MODWTTransform(wavelet, mode);
+            MODWTTransform transform = getOrCreateTransform(wavelet, mode);
             for (int i = 0; i < signals.length; i++) {
                 results[i] = transform.forward(signals[i]);
             }
@@ -313,7 +325,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         int numSignals = signals.length;
         MODWTResult[] results = new MODWTResult[numSignals];
         
-        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        // Use cached transform instance
+        MODWTTransform transform = getOrCreateTransform(wavelet, mode);
         
         // Process each signal with pooled memory
         for (int i = 0; i < numSignals; i++) {
@@ -335,13 +348,14 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         }
         
         MODWTResult[] results = new MODWTResult[signals.length];
-        MODWTTransform transform = new MODWTTransform(wavelet, mode);
         
-        // Submit tasks to executor service
+        // Submit tasks to executor service - each task gets its own cached transform
         List<CompletableFuture<Void>> futures = new ArrayList<>(signals.length);
         for (int i = 0; i < signals.length; i++) {
             final int index = i;
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                // Each thread gets its own cached transform instance for thread safety
+                MODWTTransform transform = getOrCreateTransform(wavelet, mode);
                 results[index] = transform.forward(signals[index]);
             }, executorService);
             futures.add(future);
@@ -379,9 +393,9 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
      */
     private void batchMODWTOptimized(double[][] signals, double[][] approx, 
                                      double[][] detail, DiscreteWavelet wavelet) {
-        // For now, process sequentially
+        // For now, process sequentially - use cached transform
         // TODO: Implement true SIMD batch MODWT
-        MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+        MODWTTransform transform = getOrCreateTransform(wavelet, BoundaryMode.PERIODIC);
         for (int i = 0; i < signals.length; i++) {
             MODWTResult result = transform.forward(signals[i]);
             System.arraycopy(result.approximationCoeffs(), 0, approx[i], 0, signals[i].length);
@@ -416,6 +430,22 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         if (parallelEngine != null) {
             parallelEngine.close();
         }
+        
+        // Clear the transform cache
+        transformCache.clear();
+    }
+    
+    /**
+     * Gets or creates a cached MODWTTransform instance for the given wavelet and boundary mode.
+     * This method is thread-safe and reuses instances to avoid repeated object creation.
+     * 
+     * @param wavelet the wavelet to use
+     * @param mode the boundary mode
+     * @return a cached or newly created MODWTTransform instance
+     */
+    private MODWTTransform getOrCreateTransform(Wavelet wavelet, BoundaryMode mode) {
+        TransformKey key = new TransformKey(wavelet, mode);
+        return transformCache.computeIfAbsent(key, k -> new MODWTTransform(k.wavelet(), k.boundaryMode()));
     }
 
     /**
