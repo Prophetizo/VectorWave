@@ -92,6 +92,19 @@ public class MultiLevelMODWTTransform {
      */
     private static final int MAX_DECOMPOSITION_LEVELS = 10;
     
+    /**
+     * Maximum safe bit shift amount to prevent integer overflow.
+     * 
+     * <p>In Java, left-shifting an integer by 31 or more bits results in undefined behavior
+     * or integer overflow. Specifically, {@code 1 << 31} would overflow to a negative value
+     * (Integer.MIN_VALUE). This constant is used to ensure bit shift operations remain safe
+     * when calculating powers of 2 for filter upsampling at different decomposition levels.</p>
+     * 
+     * <p>For MODWT, at level j, filters are upsampled by 2^(j-1), so we need to ensure
+     * that (j-1) never exceeds this limit to prevent overflow in scale factor calculations.</p>
+     */
+    private static final int MAX_SAFE_SHIFT_BITS = 31;
+    
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
     private final MODWTTransform singleLevelTransform;
@@ -308,8 +321,8 @@ public class MultiLevelMODWTTransform {
         while (maxLevels < MAX_DECOMPOSITION_LEVELS) {
             try {
                 // Check if bit shift would overflow before performing it
-                if (maxLevels - 1 >= 31) {
-                    // 1 << 31 would overflow to negative, so stop here
+                if (maxLevels - 1 >= MAX_SAFE_SHIFT_BITS) {
+                    // 1 << MAX_SAFE_SHIFT_BITS would overflow to negative, so stop here
                     break;
                 }
                 
@@ -382,7 +395,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift
-            if (level - 1 >= 31) {
+            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
                 throw new InvalidArgumentException(
                     "Level " + level + " would cause integer overflow in filter upsampling");
             }
@@ -463,7 +476,7 @@ public class MultiLevelMODWTTransform {
         
         try {
             // Check for potential overflow in bit shift
-            if (level - 1 >= 31) {
+            if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
                 throw new InvalidArgumentException(
                     "Level " + level + " would cause integer overflow in filter scaling");
             }

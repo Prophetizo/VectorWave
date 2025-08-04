@@ -166,6 +166,11 @@ public class WaveletDenoiser {
                 
                 // Calculate threshold with level-dependent scaling
                 // Use bit shift for efficient power of 2 calculation
+                // Add overflow protection: levels should be reasonable (typically <= 10)
+                if (level > 31) {
+                    throw new IllegalArgumentException(
+                        "Level " + level + " is too large and would cause integer overflow in scaling calculation");
+                }
                 double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
                 

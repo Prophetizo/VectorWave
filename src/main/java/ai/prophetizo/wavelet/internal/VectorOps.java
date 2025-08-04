@@ -523,11 +523,13 @@ public final class VectorOps {
         // Pre-allocate indices array for reuse
         int[] indices = new int[VECTOR_LENGTH];
         
+        // Calculate vector loop bound once, outside the filter loop
+        int vectorLoopBound = SPECIES.loopBound(signalLen);
+        
         for (int l = 0; l < filterLen; l++) {
             if (filter[l] == 0.0) continue; // Skip zero coefficients
             
             DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
-            int vectorLoopBound = SPECIES.loopBound(signalLen);
             
             // Check if we can use direct vectorization without circular indexing
             // For MODWT with time-reversed indexing, we need t - l >= 0 for all t in [l, vectorLoopBound + l)

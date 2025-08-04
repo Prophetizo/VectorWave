@@ -7,6 +7,8 @@ import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine;
 import ai.prophetizo.wavelet.internal.*;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -332,17 +334,17 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         MODWTTransform transform = new MODWTTransform(wavelet, mode);
         
         // Submit tasks to executor service
-        @SuppressWarnings("unchecked")
-        CompletableFuture<Void>[] futures = new CompletableFuture[signals.length];
+        List<CompletableFuture<Void>> futures = new ArrayList<>(signals.length);
         for (int i = 0; i < signals.length; i++) {
             final int index = i;
-            futures[i] = CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 results[index] = transform.forward(signals[index]);
             }, executorService);
+            futures.add(future);
         }
         
         // Wait for all tasks to complete
-        CompletableFuture.allOf(futures).join();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).join();
         
         return results;
     }

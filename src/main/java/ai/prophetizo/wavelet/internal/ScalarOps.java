@@ -669,15 +669,11 @@ public final class ScalarOps {
                 // Multi-level MODWT: W_j,t = Σ h_l * X_{(t - 2^(j-1) * l) mod N}
                 // The shift factor 2^(j-1) implements the filter upsampling at level j
                 int idx = t - shift * l;
-                // Optimize modulo: only add signalLen when necessary
-                // For large shifts, we may need to add multiple times
-                int signalIndex;
-                if (idx >= 0) {
-                    signalIndex = idx % signalLen;
-                } else {
-                    // For negative indices, we need to wrap around
-                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
-                }
+                // Branchless modulo operation that handles both positive and negative indices
+                // This formula works because: for negative idx, idx % signalLen is negative,
+                // adding signalLen makes it positive, and the outer modulo handles the edge case
+                // where idx was already positive and adding signalLen made it >= signalLen
+                int signalIndex = ((idx % signalLen) + signalLen) % signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             
