@@ -78,8 +78,11 @@ public class MultiLevelMODWTTransform {
      *       more than 6-8 levels of decomposition</li>
      * </ul>
      * 
-     * <p>For a signal of length N with filter length L, the maximum meaningful level is
-     * approximately log2(N/L). For example:</p>
+     * <p>For a signal of length N with filter length L, the maximum meaningful level J
+     * is determined by the relationship (L-1)(2^J - 1) < N, which gives approximately
+     * J ≤ log2(N/(L-1)) levels. This ensures the scaled filter doesn't exceed the signal length.</p>
+     * 
+     * <p>Examples:</p>
      * <ul>
      *   <li>Signal length 1024, Haar filter (L=2): max ≈ 9 levels</li>
      *   <li>Signal length 4096, DB4 filter (L=8): max ≈ 9 levels</li>
@@ -89,6 +92,9 @@ public class MultiLevelMODWTTransform {
      * <p>The limit of 10 provides a reasonable balance between flexibility and practicality.
      * If higher levels are needed for specific applications, this constant can be increased,
      * though performance and numerical stability should be carefully evaluated.</p>
+     * 
+     * @see Percival, D.B. and Walden, A.T. (2000). "Wavelet Methods for Time Series Analysis",
+     *      Cambridge University Press, Section 5.2, pp. 159-161.
      */
     private static final int MAX_DECOMPOSITION_LEVELS = 10;
     
