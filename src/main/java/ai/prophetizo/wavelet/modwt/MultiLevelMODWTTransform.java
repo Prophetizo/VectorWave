@@ -772,7 +772,7 @@ public class MultiLevelMODWTTransform {
         }
         
         // Use primitive long key to avoid object allocation - inline for performance
-        long cacheKey = ((long) filterType.ordinal << 32) | (targetLength & 0xFFFFFFFFL);
+        long cacheKey = (((long) filterType.ordinal) << 32) | (targetLength & 0xFFFFFFFFL);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
             double[] truncated = new double[targetLength];
