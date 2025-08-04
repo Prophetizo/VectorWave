@@ -3,6 +3,9 @@ package ai.prophetizo.wavelet.denoising;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResultImpl;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
@@ -125,41 +128,38 @@ public class WaveletDenoiser {
      */
     public double[] denoiseMultiLevel(double[] signal, int levels,
                                       ThresholdMethod method, ThresholdType type) {
-        // With MODWT, multi-level decomposition preserves signal length at each level
-        // This approach uses iterative single-level transforms
-        double[] result = signal.clone();
-
-        // Apply wavelet transform and threshold at each level
-        for (int level = 0; level < levels; level++) {
-            // MODWT preserves signal length, so we work with full-length signal
-            // Apply single-level transform
-            MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
-            MODWTResult levelResult = transform.forward(result);
-
-            // Estimate noise from detail coefficients at first level and reuse for other levels
-            double sigma;
-            if (level == 0) {
-                sigma = estimateNoiseSigma(levelResult.detailCoeffs());
-            } else {
-                // Reuse sigma from first level, but scale based on level
-                sigma = estimateNoiseSigma(levelResult.detailCoeffs());
-            }
-
+        // Use proper multi-level MODWT decomposition
+        MultiLevelMODWTTransform multiTransform = new MultiLevelMODWTTransform(wavelet, boundaryMode);
+        MultiLevelMODWTResult multiResult = multiTransform.decompose(signal, levels);
+        
+        // Estimate noise from the finest scale (level 1) detail coefficients
+        double sigma = estimateNoiseSigma(multiResult.getDetailCoeffsAtLevel(1));
+        
+        // Create arrays to store denoised detail coefficients for each level
+        double[][] denoisedDetails = new double[levels][];
+        
+        // Apply thresholding to detail coefficients at each level
+        for (int level = 1; level <= levels; level++) {
+            double[] levelDetails = multiResult.getDetailCoeffsAtLevel(level);
+            
             // Calculate threshold with level-dependent scaling
-            double levelScale = Math.sqrt(1.0 / (level + 1));
-            double threshold = calculateThreshold(levelResult.detailCoeffs(), sigma, method) * levelScale;
-
-            // Apply thresholding to detail coefficients
-            double[] denoisedDetails = applyThreshold(levelResult.detailCoeffs(), threshold, type);
-
-            // Reconstruct with denoised coefficients
-            MODWTResult denoisedResult = new MODWTResultImpl(
-                    levelResult.approximationCoeffs(), denoisedDetails);
-
-            result = transform.inverse(denoisedResult);
+            // Higher levels (lower frequencies) typically need less aggressive thresholding
+            double levelScale = Math.sqrt(Math.pow(2, level - 1));
+            double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
+            
+            // Apply thresholding
+            denoisedDetails[level - 1] = applyThreshold(levelDetails, threshold, type);
         }
-
-        return result;
+        
+        // Create denoised multi-level result
+        MultiLevelMODWTResult denoisedMultiResult = new MultiLevelMODWTResultImpl(
+            multiResult.getApproximationCoeffs(),
+            denoisedDetails,
+            levels
+        );
+        
+        // Reconstruct the denoised signal
+        return multiTransform.reconstruct(denoisedMultiResult);
     }
 
     /**

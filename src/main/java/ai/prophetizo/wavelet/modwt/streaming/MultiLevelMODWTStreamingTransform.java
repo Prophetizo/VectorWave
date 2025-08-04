@@ -49,6 +49,9 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
     
     // Statistics
     private final StreamingStatisticsImpl statistics = new StreamingStatisticsImpl();
+    
+    // Shared empty array to avoid unnecessary allocations
+    private static final double[] EMPTY_ARRAY = new double[0];
 
     /**
      * Creates a new multi-level streaming MODWT transform.
@@ -182,8 +185,8 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
             // Publish results for each level
             for (int level = 1; level <= levels; level++) {
                 double[] details = multiResult.getDetailCoeffsAtLevel(level);
-                double[] approx = level == levels ? multiResult.getApproximationCoeffs() : 
-                                  new double[bufferSize];
+                // Only the final level has approximation coefficients; intermediate levels use empty array
+                double[] approx = level == levels ? multiResult.getApproximationCoeffs() : EMPTY_ARRAY;
                 
                 MODWTResult levelResult = new MODWTResultWrapper(approx, details);
                 submit(levelResult);

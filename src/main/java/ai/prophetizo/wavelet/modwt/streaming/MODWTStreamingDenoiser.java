@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.modwt.streaming;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
@@ -214,7 +215,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
      * Builder for creating MODWTStreamingDenoiser instances.
      */
     public static class Builder {
-        private Wavelet wavelet = ai.prophetizo.wavelet.api.Daubechies.DB4;
+        private Wavelet wavelet = Daubechies.DB4;
         private BoundaryMode boundaryMode = BoundaryMode.PERIODIC;
         private int bufferSize = 256;
         private ThresholdType thresholdType = ThresholdType.SOFT;

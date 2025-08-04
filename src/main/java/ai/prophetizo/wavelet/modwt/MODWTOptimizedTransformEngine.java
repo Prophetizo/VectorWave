@@ -368,10 +368,8 @@ public class MODWTOptimizedTransformEngine {
      * Checks if a specialized kernel exists for the wavelet.
      */
     private boolean hasSpecializedKernel(Wavelet wavelet) {
-        // Disabled for now - specialized kernels need more work
-        return false;
-        // String name = wavelet.name().toLowerCase();
-        // return name.equals("haar") || name.equals("db4");
+        String name = wavelet.name().toLowerCase();
+        return name.equals("haar") || name.equals("db4");
     }
 
     /**
@@ -402,11 +400,41 @@ public class MODWTOptimizedTransformEngine {
      */
     private void modwtDB4Optimized(double[] signal, double[] approx, double[] detail, 
                                     Wavelet wavelet) {
-        // For now, use standard implementation
-        MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
-        MODWTResult result = transform.forward(signal);
-        System.arraycopy(result.approximationCoeffs(), 0, approx, 0, signal.length);
-        System.arraycopy(result.detailCoeffs(), 0, detail, 0, signal.length);
+        int length = signal.length;
+        double scale = 1.0 / Math.sqrt(2.0);
+        
+        // Get DB4 filter coefficients
+        double[] h = wavelet.lowPassDecomposition();
+        double[] g = wavelet.highPassDecomposition();
+        
+        // Scale filters for MODWT
+        double[] hScaled = new double[h.length];
+        double[] gScaled = new double[g.length];
+        for (int i = 0; i < h.length; i++) {
+            hScaled[i] = h[i] * scale;
+            gScaled[i] = g[i] * scale;
+        }
+        
+        // Unrolled convolution for DB4 (4 coefficients)
+        // This avoids the overhead of generic convolution loops
+        for (int t = 0; t < length; t++) {
+            double sumLow = 0.0;
+            double sumHigh = 0.0;
+            
+            // Manual unrolling for 4 coefficients
+            int idx0 = t;
+            int idx1 = (t - 1 + length) % length;
+            int idx2 = (t - 2 + length) % length;
+            int idx3 = (t - 3 + length) % length;
+            
+            sumLow = hScaled[0] * signal[idx0] + hScaled[1] * signal[idx1] + 
+                     hScaled[2] * signal[idx2] + hScaled[3] * signal[idx3];
+            sumHigh = gScaled[0] * signal[idx0] + gScaled[1] * signal[idx1] + 
+                      gScaled[2] * signal[idx2] + gScaled[3] * signal[idx3];
+            
+            approx[t] = sumLow;
+            detail[t] = sumHigh;
+        }
     }
 
     /**
