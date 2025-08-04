@@ -448,10 +448,10 @@ public class MultiLevelMODWTTransform {
             return new ScaledFilterPair(scaledLow, scaledHigh);
         }
         
+        // Check for potential overflow in bit shift (once for both filters)
+        validateLevelForBitShift(level, "filter upsampling");
+        
         try {
-            // Check for potential overflow in bit shift (once for both filters)
-            validateLevelForBitShift(level, "filter upsampling");
-            
             // Calculate shared values once
             int upFactor = 1 << (level - 1);
             double scale = 1.0 / Math.sqrt(2.0); // MODWT scaling
@@ -499,10 +499,10 @@ public class MultiLevelMODWTTransform {
             return filter.clone();
         }
         
+        // Check for potential overflow in bit shift
+        validateLevelForBitShift(level, "filter upsampling");
+        
         try {
-            // Check for potential overflow in bit shift
-            validateLevelForBitShift(level, "filter upsampling");
-            
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
                 Math.multiplyExact(filter.length - 1, upFactor), 
@@ -585,10 +585,10 @@ public class MultiLevelMODWTTransform {
             return new ScaledFilterPair(scaledLow, scaledHigh);
         }
         
+        // Check for potential overflow in bit shift (once for both filters)
+        validateLevelForBitShift(level, "filter scaling");
+        
         try {
-            // Check for potential overflow in bit shift (once for both filters)
-            validateLevelForBitShift(level, "filter scaling");
-            
             // Calculate shared values once
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             double scale = 1.0 / Math.sqrt(2.0); // MODWT always uses 1/sqrt(2) scaling
@@ -643,10 +643,10 @@ public class MultiLevelMODWTTransform {
             return scaled;
         }
         
+        // Check for potential overflow in bit shift
+        validateLevelForBitShift(level, "filter scaling");
+        
         try {
-            // Check for potential overflow in bit shift
-            validateLevelForBitShift(level, "filter scaling");
-            
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
                 Math.multiplyExact(filter.length - 1, upFactor), 
