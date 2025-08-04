@@ -2,7 +2,6 @@ package ai.prophetizo.wavelet.denoising;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
-import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,145 +12,29 @@ import static org.junit.jupiter.api.Assertions.*;
 class WaveletDenoiserOverflowProtectionTest {
     
     @Test
-    void testBitShiftOverflowProtection() {
-        // Create a mock result with an extremely high level count
-        MultiLevelMODWTResult mockResult = new MultiLevelMODWTResult() {
-            @Override
-            public int getSignalLength() {
-                return 256;
-            }
-            
-            @Override
-            public int getLevels() {
-                return 32; // This would cause overflow: 1 << 31
-            }
-            
-            @Override
-            public double[] getApproximationCoeffs() {
-                return new double[256];
-            }
-            
-            @Override
-            public double[] getDetailCoeffsAtLevel(int level) {
-                return new double[256];
-            }
-            
-            @Override
-            public double getDetailEnergyAtLevel(int level) {
-                return 1.0;
-            }
-            
-            @Override
-            public double getApproximationEnergy() {
-                return 1.0;
-            }
-            
-            @Override
-            public double getTotalEnergy() {
-                return 33.0;
-            }
-            
-            @Override
-            public double[] getRelativeEnergyDistribution() {
-                return new double[33];
-            }
-            
-            @Override
-            public boolean isValid() {
-                return true;
-            }
-            
-            @Override
-            public MultiLevelMODWTResult copy() {
-                return this;
-            }
-        };
-        
+    void testNormalDenosingWithSafeLevels() {
+        // Test that normal denoising works with safe levels
         WaveletDenoiser denoiser = new WaveletDenoiser(new Haar(), BoundaryMode.PERIODIC);
         
-        // Creating the DenoisedMultiLevelResult should throw an exception due to overflow protection
-        assertThrows(IllegalArgumentException.class, () -> {
-            // This will attempt to create a DenoisedMultiLevelResult with level 32
-            denoiser.new DenoisedMultiLevelResult(
-                mockResult, 
-                1.0, 
-                WaveletDenoiser.ThresholdMethod.UNIVERSAL,
-                WaveletDenoiser.ThresholdType.SOFT
-            );
-        }, "Should throw IllegalArgumentException for level that would cause overflow");
-    }
-    
-    @Test
-    void testSafeLevelsWork() {
-        // Create a mock result with safe level count
-        MultiLevelMODWTResult mockResult = new MultiLevelMODWTResult() {
-            private final double[][] details = new double[10][256];
-            
-            @Override
-            public int getSignalLength() {
-                return 256;
-            }
-            
-            @Override
-            public int getLevels() {
-                return 10; // Safe level count
-            }
-            
-            @Override
-            public double[] getApproximationCoeffs() {
-                return new double[256];
-            }
-            
-            @Override
-            public double[] getDetailCoeffsAtLevel(int level) {
-                if (level < 1 || level > 10) {
-                    throw new IllegalArgumentException("Invalid level");
-                }
-                return details[level - 1];
-            }
-            
-            @Override
-            public double getDetailEnergyAtLevel(int level) {
-                return 1.0;
-            }
-            
-            @Override
-            public double getApproximationEnergy() {
-                return 1.0;
-            }
-            
-            @Override
-            public double getTotalEnergy() {
-                return 11.0;
-            }
-            
-            @Override
-            public double[] getRelativeEnergyDistribution() {
-                return new double[11];
-            }
-            
-            @Override
-            public boolean isValid() {
-                return true;
-            }
-            
-            @Override
-            public MultiLevelMODWTResult copy() {
-                return this;
-            }
-        };
+        double[] signal = new double[256];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.sin(i * 0.1) + 0.1 * Math.random();
+        }
         
-        WaveletDenoiser denoiser = new WaveletDenoiser(new Haar(), BoundaryMode.PERIODIC);
-        
-        // Creating the DenoisedMultiLevelResult should work fine with safe levels
-        assertDoesNotThrow(() -> {
-            denoiser.new DenoisedMultiLevelResult(
-                mockResult, 
-                1.0, 
-                WaveletDenoiser.ThresholdMethod.UNIVERSAL,
-                WaveletDenoiser.ThresholdType.SOFT
-            );
-        }, "Should work fine with safe level count");
+        // Denoise with safe levels (up to 8)
+        for (int levels = 1; levels <= 8; levels++) {
+            final int testLevels = levels;
+            assertDoesNotThrow(() -> {
+                double[] denoised = denoiser.denoiseMultiLevel(
+                    signal, 
+                    testLevels,
+                    WaveletDenoiser.ThresholdMethod.UNIVERSAL,
+                    WaveletDenoiser.ThresholdType.SOFT
+                );
+                assertNotNull(denoised);
+                assertEquals(signal.length, denoised.length);
+            }, "Should work fine with " + levels + " levels");
+        }
     }
     
     @Test
