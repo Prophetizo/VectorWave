@@ -686,16 +686,8 @@ public final class ScalarOps {
                 // Optimize modulo operation to match pattern in circularConvolveMODWTScalar
                 // For large shifts at high decomposition levels, idx can be very negative,
                 // so we need to handle the general case with proper modulo
-                int signalIndex;
-                if (idx >= 0) {
-                    signalIndex = idx % signalLen;
-                } else {
-                    // For negative indices, compute positive equivalent
-                    signalIndex = idx % signalLen;
-                    if (signalIndex < 0) {
-                        signalIndex += signalLen;
-                    }
-                }
+                // Optimized modulo: avoid unnecessary modulo for indices already in bounds
+                int signalIndex = (idx >= 0 && idx < signalLen) ? idx : ((idx % signalLen + signalLen) % signalLen);
                 sum += signal[signalIndex] * filter[l];
             }
             
