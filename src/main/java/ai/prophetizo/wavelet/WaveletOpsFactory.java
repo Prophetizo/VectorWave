@@ -6,7 +6,6 @@ import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.internal.ScalarOps;
 import ai.prophetizo.wavelet.internal.VectorOps;
 import ai.prophetizo.wavelet.internal.VectorOpsARM;
-import ai.prophetizo.wavelet.internal.VectorOpsOptimized;
 
 /**
  * Factory for creating optimal wavelet operation implementations.
@@ -319,7 +318,7 @@ public final class WaveletOpsFactory {
                                               int signalLength, int filterLength,
                                               BoundaryMode mode) {
             return switch (mode) {
-                case PERIODIC -> VectorOpsOptimized.convolveAndDownsamplePeriodicOptimized(
+                case PERIODIC -> VectorOps.convolveAndDownsamplePeriodic(
                         signal, filter, signalLength, filterLength);
                 case ZERO_PADDING -> VectorOps.convolveAndDownsampleZeroPadding(
                         signal, filter, signalLength, filterLength);
@@ -333,7 +332,7 @@ public final class WaveletOpsFactory {
                                             int signalLength, int filterLength,
                                             BoundaryMode mode) {
             return switch (mode) {
-                case PERIODIC -> VectorOpsOptimized.upsampleAndConvolvePeriodicOptimized(
+                case PERIODIC -> VectorOps.upsampleAndConvolvePeriodic(
                         signal, filter, signalLength, filterLength);
                 case ZERO_PADDING -> VectorOps.upsampleAndConvolveZeroPadding(
                         signal, filter, signalLength, filterLength);
@@ -344,7 +343,7 @@ public final class WaveletOpsFactory {
 
         @Override
         public String getImplementationType() {
-            return "Optimized " + VectorOpsOptimized.getVectorInfo();
+            return "Optimized " + VectorOps.getVectorInfo();
         }
     }
 
