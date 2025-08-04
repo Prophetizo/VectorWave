@@ -356,7 +356,7 @@ public class MultiLevelMODWTTransform {
         while (maxLevel < MAX_DECOMPOSITION_LEVELS) {
             // Check for potential overflow before shifting
             if (maxLevel - 1 >= MAX_SAFE_SHIFT_BITS) {
-                break;  // Keep original logic for this case - it's breaking from loop, not throwing
+                break;  // Stop searching when bit shift would overflow - we've reached the mathematical limit
             }
             
             // Calculate scaled filter length using bit shift
