@@ -8,6 +8,11 @@ import ai.prophetizo.wavelet.internal.*;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * High-performance MODWT transform engine that integrates all optimizations.
@@ -31,13 +36,14 @@ import java.util.concurrent.CompletableFuture;
  *
  * @since 3.0.0
  */
-public class MODWTOptimizedTransformEngine {
+public class MODWTOptimizedTransformEngine implements AutoCloseable {
 
     private final ParallelWaveletEngine parallelEngine;
     private final boolean useMemoryPool;
     private final boolean useSoALayout;
     private final boolean useCacheBlocking;
     private final int parallelism;
+    private final ExecutorService executorService;
 
     /**
      * Creates an optimized MODWT engine with default settings.
@@ -57,6 +63,22 @@ public class MODWTOptimizedTransformEngine {
         this.useMemoryPool = config.useMemoryPool;
         this.useSoALayout = config.useSoALayout;
         this.useCacheBlocking = config.useCacheBlocking;
+        
+        // Create dedicated thread pool for MODWT operations
+        if (config.parallelism > 1) {
+            ThreadFactory threadFactory = new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "MODWT-Worker-" + threadNumber.getAndIncrement());
+                    t.setDaemon(true);
+                    return t;
+                }
+            };
+            this.executorService = Executors.newFixedThreadPool(config.parallelism, threadFactory);
+        } else {
+            this.executorService = null;
+        }
     }
 
     /**
@@ -296,20 +318,31 @@ public class MODWTOptimizedTransformEngine {
     }
 
     /**
-     * Parallel batch MODWT transform.
+     * Parallel batch MODWT transform using dedicated thread pool.
      */
     private MODWTResult[] transformBatchParallel(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
         
-        // ParallelWaveletEngine uses DWT which requires power-of-2 signals
-        // For MODWT, we need to process in parallel without using DWT
+        if (executorService == null) {
+            // Fallback to sequential if no executor
+            return transformBatchPooled(signals, wavelet, mode);
+        }
+        
         MODWTResult[] results = new MODWTResult[signals.length];
         MODWTTransform transform = new MODWTTransform(wavelet, mode);
         
-        // Use parallel streams for processing
-        java.util.stream.IntStream.range(0, signals.length)
-            .parallel()
-            .forEach(i -> results[i] = transform.forward(signals[i]));
+        // Submit tasks to executor service
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Void>[] futures = new CompletableFuture[signals.length];
+        for (int i = 0; i < signals.length; i++) {
+            final int index = i;
+            futures[i] = CompletableFuture.runAsync(() -> {
+                results[index] = transform.forward(signals[index]);
+            }, executorService);
+        }
+        
+        // Wait for all tasks to complete
+        CompletableFuture.allOf(futures).join();
         
         return results;
     }
@@ -347,6 +380,35 @@ public class MODWTOptimizedTransformEngine {
             MODWTResult result = transform.forward(signals[i]);
             System.arraycopy(result.approximationCoeffs(), 0, approx[i], 0, signals[i].length);
             System.arraycopy(result.detailCoeffs(), 0, detail[i], 0, signals[i].length);
+        }
+    }
+
+    /**
+     * Closes the engine and releases resources.
+     * This method shuts down the executor service gracefully.
+     */
+    @Override
+    public void close() {
+        if (executorService != null) {
+            executorService.shutdown();
+            try {
+                // Wait for tasks to complete
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                    // Wait again after shutdownNow
+                    if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                        System.err.println("ExecutorService did not terminate");
+                    }
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        // Also close the parallel engine if it exists
+        if (parallelEngine != null) {
+            // ParallelWaveletEngine doesn't have a close method, but if it did, we'd call it here
         }
     }
 

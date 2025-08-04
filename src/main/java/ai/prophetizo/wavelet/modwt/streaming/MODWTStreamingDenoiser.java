@@ -138,7 +138,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         } else {
             // Case 2: More details than window size - sample uniformly
             // This ensures we don't just keep the last noiseWindowSize values
-            int step = details.length / noiseWindowSize;
+            int step = Math.max(1, details.length / noiseWindowSize);
             int added = 0;
             
             for (int i = 0; i < details.length && added < noiseWindowSize; i += step) {

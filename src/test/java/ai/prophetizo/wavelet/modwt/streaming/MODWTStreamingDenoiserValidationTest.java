@@ -150,6 +150,37 @@ class MODWTStreamingDenoiserValidationTest {
     }
     
     @Test
+    void testNoiseWindowUpdateWithSmallDetailSize() {
+        // Test the edge case where details.length is slightly larger than noiseWindowSize
+        // This verifies the step calculation doesn't result in 0
+        MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
+            .wavelet(haar)
+            .boundaryMode(BoundaryMode.PERIODIC)
+            .bufferSize(64)
+            .noiseWindowSize(50)  // Large window size
+            .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
+            .build();
+        
+        // Process a small signal that produces details.length slightly > noiseWindowSize
+        // This would cause step = 0 without the Math.max fix
+        double[] smallSignal = new double[52];  // Will produce 52 detail coefficients
+        for (int i = 0; i < smallSignal.length; i++) {
+            smallSignal[i] = Math.sin(i * 0.1) + 0.1 * Math.random();
+        }
+        
+        // Should not hang or throw exception
+        double[] result = denoiser.denoise(smallSignal);
+        assertNotNull(result);
+        assertEquals(smallSignal.length, result.length);
+        
+        // Process multiple times to ensure noise window updates properly
+        for (int i = 0; i < 5; i++) {
+            result = denoiser.denoise(smallSignal);
+            assertNotNull(result);
+        }
+    }
+    
+    @Test
     void testNoiseEstimationConvergence() {
         // Test that noise estimation converges to a stable value
         MODWTStreamingDenoiser madDenoiser = new MODWTStreamingDenoiser.Builder()

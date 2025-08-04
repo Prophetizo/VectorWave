@@ -107,7 +107,7 @@ public class MultiLevelMODWTTransform {
      * More efficient than string concatenation for high-frequency access.
      */
     private static record FilterCacheKey(FilterType type, int length) {
-        enum FilterType {
+        static enum FilterType {
             LOW, HIGH, LOW_RECON, HIGH_RECON
         }
     }
@@ -307,8 +307,16 @@ public class MultiLevelMODWTTransform {
         int maxLevels = 1;
         while (maxLevels < MAX_DECOMPOSITION_LEVELS) {
             try {
-                // Use Math.multiplyExact to detect overflow
+                // Check if bit shift would overflow before performing it
+                if (maxLevels - 1 >= 31) {
+                    // 1 << 31 would overflow to negative, so stop here
+                    break;
+                }
+                
+                // Safe to perform bit shift
                 int scaleFactor = 1 << (maxLevels - 1);
+                
+                // Use Math.multiplyExact to detect overflow in the multiplication
                 int scaledFilterLength = Math.addExact(
                     Math.multiplyExact(filterLength - 1, scaleFactor), 
                     1
@@ -319,7 +327,7 @@ public class MultiLevelMODWTTransform {
                 }
                 maxLevels++;
             } catch (ArithmeticException e) {
-                // Overflow occurred - we've reached the practical limit
+                // Overflow occurred in multiplication - we've reached the practical limit
                 break;
             }
         }
@@ -373,6 +381,12 @@ public class MultiLevelMODWTTransform {
         }
         
         try {
+            // Check for potential overflow in bit shift
+            if (level - 1 >= 31) {
+                throw new InvalidArgumentException(
+                    "Level " + level + " would cause integer overflow in filter upsampling");
+            }
+            
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
                 Math.multiplyExact(filter.length - 1, upFactor), 
@@ -448,6 +462,12 @@ public class MultiLevelMODWTTransform {
         }
         
         try {
+            // Check for potential overflow in bit shift
+            if (level - 1 >= 31) {
+                throw new InvalidArgumentException(
+                    "Level " + level + " would cause integer overflow in filter scaling");
+            }
+            
             int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
             int scaledLength = Math.addExact(
                 Math.multiplyExact(filter.length - 1, upFactor), 

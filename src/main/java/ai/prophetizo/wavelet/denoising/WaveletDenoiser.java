@@ -165,7 +165,8 @@ public class WaveletDenoiser {
                 double[] levelDetails = original.getDetailCoeffsAtLevel(level);
                 
                 // Calculate threshold with level-dependent scaling
-                double levelScale = Math.sqrt(Math.pow(2, level - 1));
+                // Use bit shift for efficient power of 2 calculation
+                double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
                 
                 // Apply thresholding and store

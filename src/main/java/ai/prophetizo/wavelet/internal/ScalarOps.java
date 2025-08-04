@@ -630,8 +630,9 @@ public final class ScalarOps {
             for (int l = 0; l < filterLen; l++) {
                 // MODWT convolution: W_j,t = Σ h_j,l * X_{(t-l) mod N}
                 // The (t - l) indexing implements the time-reversed filter convolution
-                // Adding signalLen before modulo ensures positive index
-                int signalIndex = (t - l + signalLen) % signalLen;
+                // Optimize modulo operation by avoiding unnecessary addition when t >= l
+                int idx = t - l;
+                int signalIndex = idx >= 0 ? idx : idx + signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             
@@ -667,7 +668,16 @@ public final class ScalarOps {
             for (int l = 0; l < filterLen; l++) {
                 // Multi-level MODWT: W_j,t = Σ h_l * X_{(t - 2^(j-1) * l) mod N}
                 // The shift factor 2^(j-1) implements the filter upsampling at level j
-                int signalIndex = (t - shift * l + signalLen * filterLen) % signalLen;
+                int idx = t - shift * l;
+                // Optimize modulo: only add signalLen when necessary
+                // For large shifts, we may need to add multiple times
+                int signalIndex;
+                if (idx >= 0) {
+                    signalIndex = idx % signalLen;
+                } else {
+                    // For negative indices, we need to wrap around
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
                 sum += signal[signalIndex] * filter[l];
             }
             

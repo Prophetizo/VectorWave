@@ -48,7 +48,6 @@ import java.util.concurrent.Flow;
  *
  * @since 3.0.0
  */
-@SuppressWarnings("try")
 public interface MODWTStreamingTransform extends Flow.Publisher<MODWTResult>, AutoCloseable {
     
     /**
