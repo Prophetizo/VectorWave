@@ -25,6 +25,13 @@ public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
     
+    /**
+     * Maximum safe bit shift amount to prevent integer overflow.
+     * When performing bit shift operations like (1 << n), n must be <= 30
+     * to avoid overflow in 32-bit integers.
+     */
+    private static final int MAX_SAFE_SHIFT_BITS = 31;
+    
     // Vectorization threshold constants
     private static final int MIN_VECTORIZATION_LENGTH = 32;
     private static final int MEDIUM_ARRAY_THRESHOLD = 128;
@@ -607,6 +614,18 @@ public final class ScalarOps {
     
     /**
      * Scalar implementation of circular convolution for MODWT.
+     * 
+     * Mathematical justification for (t - l) indexing:
+     * In standard wavelet literature, the MODWT uses time-reversed filters where:
+     * W_j,t = Σ_{l=0}^{L-1} h_j,l * X_{t-l mod N}
+     * 
+     * This differs from standard convolution (t + l) because:
+     * 1. Wavelet filters are defined as h_l = h(-l) in continuous time
+     * 2. The MODWT preserves the time-ordering of coefficients
+     * 3. Using (t - l) ensures causality: coefficient at time t depends on past values
+     * 
+     * Reference: Percival & Walden (2000), "Wavelet Methods for Time Series Analysis", 
+     * Chapter 5, equation 5.4
      */
     private static void circularConvolveMODWTScalar(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
@@ -616,8 +635,23 @@ public final class ScalarOps {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                // Circular indexing: (t + l) mod N for periodic boundary conditions
-                int signalIndex = (t + l) % signalLen;
+                // MODWT convolution: W_j,t = Σ h_j,l * X_{(t-l) mod N}
+                // The (t - l) indexing implements the time-reversed filter convolution
+                int idx = t - l;
+                
+                // Optimize modulo operation for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
+                
                 sum += signal[signalIndex] * filter[l];
             }
             
@@ -627,25 +661,83 @@ public final class ScalarOps {
 
     /**
      * Performs circular convolution with level-based shift for multi-level MODWT.
-     * This handles the modulo operation: (t - 2^(j-1) * l) mod N for level j.
+     * 
+     * Mathematical foundation:
+     * At decomposition level j, the MODWT uses upsampled filters where zeros are inserted
+     * between filter coefficients. The convolution formula becomes:
+     * W_j,t = Σ_{l=0}^{L-1} h_j,l * X_{t - 2^(j-1) * l mod N}
+     * 
+     * The factor 2^(j-1) represents the upsampling factor at level j, effectively
+     * spreading the filter coefficients across a wider time range. This allows the
+     * MODWT to capture features at different time scales.
      * 
      * @param signal    The input signal of length N.
-     * @param filter    The filter coefficients.
+     * @param filter    The filter coefficients (not upsampled).
      * @param output    The output array of length N.
      * @param level     The decomposition level (1-based, where level 1 = j=1).
      */
     public static void circularConvolveMODWTLevel(double[] signal, double[] filter, double[] output, int level) {
         int signalLen = signal.length;
         int filterLen = filter.length;
+        
+        // Check for potential overflow before bit shift
+        if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
+            throw new IllegalArgumentException(
+                "Level " + level + " would cause integer overflow in shift calculation");
+        }
+        
         int shift = 1 << (level - 1); // 2^(j-1) where j = level
         
         for (int t = 0; t < signalLen; t++) {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                // Level-adjusted circular indexing: (t - 2^(j-1) * l) mod N
-                int signalIndex = (t - shift * l + signalLen * filterLen) % signalLen;
+                // Multi-level MODWT: W_j,t = Σ h_l * X_{(t - 2^(j-1) * l) mod N}
+                // The shift factor 2^(j-1) implements the filter upsampling at level j
+                int idx = t - shift * l;
+                
+                // Optimize modulo operation for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // General case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
+                
                 sum += signal[signalIndex] * filter[l];
+            }
+            
+            output[t] = sum;
+        }
+    }
+
+    /**
+     * Performs zero-padding convolution for MODWT (without downsampling).
+     * This treats values outside the signal boundaries as zeros.
+     * 
+     * @param signal The input signal of length N.
+     * @param filter The filter coefficients of length L.
+     * @param output The output array of length N (same as input).
+     */
+    public static void zeroPaddingConvolveMODWT(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+            
+            for (int l = 0; l < filterLen; l++) {
+                // Zero-padding indexing: if index is outside bounds, treat as zero
+                int signalIndex = t - l;
+                if (signalIndex >= 0 && signalIndex < signalLen) {
+                    sum += signal[signalIndex] * filter[l];
+                }
+                // else: signal value is zero, no contribution to sum
             }
             
             output[t] = sum;

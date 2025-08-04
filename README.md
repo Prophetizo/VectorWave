@@ -1,13 +1,18 @@
 # VectorWave
 
-High-performance wavelet transform library for Java 23+ with comprehensive wavelet family support, SIMD optimizations, and both Discrete (DWT) and Continuous (CWT) wavelet transforms.
+High-performance wavelet transform library for Java 23+ featuring the Maximal Overlap Discrete Wavelet Transform (MODWT) as the primary transform, with shift-invariance, arbitrary signal length support, and comprehensive wavelet family coverage. Also includes Continuous Wavelet Transform (CWT) with FFT acceleration.
 
 ## Features
 
 ### Core Capabilities
+- **MODWT (Maximal Overlap Discrete Wavelet Transform)**: Primary transform offering:
+  - Shift-invariance (translation-invariant) - crucial for pattern detection
+  - Works with ANY signal length (no power-of-2 restriction)
+  - Non-decimated output (same length as input)
+  - Perfect reconstruction with machine precision
+  - Ideal for streaming and real-time applications
 - **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
 - **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
-- **Maximal Overlap DWT (MODWT)**: Shift-invariant transform for arbitrary length signals
 - **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
 - **Financial Wavelets**: Specialized wavelets for market analysis
   - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
@@ -51,7 +56,7 @@ High-performance wavelet transform library for Java 23+ with comprehensive wavel
   - Fast mode: < 1 µs/sample latency
   - Quality mode: Enhanced SNR with overlap
   - Factory-based automatic mode selection
-- **Multi-level Transforms**: Configurable decomposition levels
+- **Multi-level MODWT**: Configurable decomposition levels with MultiLevelMODWTTransform
 - **Complex Wavelet Analysis**: Full magnitude and phase information
   - Complex coefficient computation
   - Instantaneous frequency extraction
@@ -60,8 +65,8 @@ High-performance wavelet transform library for Java 23+ with comprehensive wavel
   - Signal-adaptive placement based on energy distribution
   - Multiple spacing strategies (dyadic, logarithmic, mel-scale)
   - Real-time adaptation with sub-millisecond overhead
-- **DWT-Based CWT Reconstruction**: Fast and stable reconstruction method
-  - Leverages orthogonal DWT properties
+- **MODWT-Based CWT Reconstruction**: Fast and stable reconstruction method
+  - Leverages orthogonal wavelet properties
   - 10-300x faster than standard methods
   - O(N log N) complexity
   - Ideal for financial applications and real-time processing
@@ -107,21 +112,23 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 
 ## Usage
 
-### Basic Transform
+### Basic Transform (MODWT)
 ```java
-// Simple transform
-WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
-double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-TransformResult result = transform.forward(signal);
+// Simple transform using MODWT
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0}; // Any length!
+MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
 
 // Using different wavelets
-transform = WaveletTransformFactory.createDefault(Daubechies.DB4);
-transform = WaveletTransformFactory.createDefault(BiorthogonalSpline.BIOR1_3);
-transform = WaveletTransformFactory.createDefault(new MorletWavelet(6.0, 1.0));
+transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+transform = new MODWTTransform(BiorthogonalSpline.BIOR1_3, BoundaryMode.PERIODIC);
+
+// Factory pattern for convenience
+MODWTTransform transform = MODWTTransformFactory.create(new Haar());
 ```
 
-### MODWT (Maximal Overlap DWT)
+### MODWT Features
 ```java
 // MODWT for shift-invariant analysis with arbitrary length signals
 MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
@@ -146,26 +153,26 @@ MODWTResult shiftedResult = modwt.forward(shifted);
 ### Batch Processing
 ```java
 // Process multiple signals in parallel using SIMD
-WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-double[][] signals = generateSignals(32, 1024); // 32 signals of length 1024
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = generateSignals(32, 250); // 32 signals of any length!
 
 // Batch forward transform - processes multiple signals simultaneously
-TransformResult[] results = transform.forwardBatch(signals);
+MODWTResult[] results = transform.forwardBatch(signals);
 
 // Batch inverse transform
 double[][] reconstructed = transform.inverseBatch(results);
 
 // For maximum performance with large batches
-OptimizedTransformEngine engine = new OptimizedTransformEngine();
-TransformResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
+MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
+MODWTResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
 
 // Configure batch processing
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
+MODWTOptimizedTransformEngine.EngineConfig config = new MODWTOptimizedTransformEngine.EngineConfig()
     .withParallelism(8)           // Use 8 threads
     .withSoALayout(true)          // Enable Structure-of-Arrays optimization
     .withSpecializedKernels(true) // Use optimized kernels
     .withCacheBlocking(true);     // Enable cache-aware blocking
-OptimizedTransformEngine customEngine = new OptimizedTransformEngine(config);
+MODWTOptimizedTransformEngine customEngine = new MODWTOptimizedTransformEngine(config);
 
 // Thread-local cleanup for batch SIMD operations (important in thread pools)
 try {
@@ -175,27 +182,27 @@ try {
 }
 ```
 
-### FFM-Based Transform (Java 23+)
+### FFM-Based Operations (Java 23+)
 ```java
-// Using Foreign Function & Memory API for zero-copy operations
-try (FFMMemoryPool pool = new FFMMemoryPool();
-     FFMWaveletTransform ffmTransform = new FFMWaveletTransform(wavelet, pool)) {
-    
-    TransformResult result = ffmTransform.forward(signal);
-    double[] reconstructed = ffmTransform.inverse(result);
-    
-    // Get memory pool statistics
-    var stats = ffmTransform.getPoolStatistics();
-    System.out.println("Pool hit rate: " + stats.hitRate());
+// Note: FFM integration with MODWT is planned for future releases
+// Current FFM support includes memory pooling and aligned allocations
+
+// Using FFM memory pools for efficient memory management
+MemoryPool pool = new MemoryPool();
+pool.setMaxArraysPerSize(10);
+
+// Borrow arrays for MODWT operations
+double[] signal = pool.borrowArray(1777); // Any size!
+try {
+    MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+    MODWTResult result = transform.forward(signal);
+    // Process results...
+} finally {
+    pool.returnArray(signal);
 }
 
-// Streaming with FFM
-try (FFMStreamingTransform streaming = new FFMStreamingTransform(wavelet, blockSize)) {
-    streaming.processChunk(data, offset, length);
-    if (streaming.hasCompleteBlock()) {
-        TransformResult result = streaming.getNextResult();
-    }
-}
+// Get memory pool statistics
+pool.printStatistics();
 ```
 
 ### Financial Analysis
@@ -219,32 +226,37 @@ FinancialConfig waveletConfig = new FinancialConfig(0.045); // 4.5% annual risk-
 
 FinancialWaveletAnalyzer waveletAnalyzer = new FinancialWaveletAnalyzer(waveletConfig);
 double sharpeRatio = waveletAnalyzer.calculateSharpeRatio(returns);
-double waveletSharpe = waveletAnalyzer.calculateWaveletSharpeRatio(returns); // Must be power-of-2 length
+double waveletSharpe = waveletAnalyzer.calculateWaveletSharpeRatio(returns); // Works with any length
 
 // Live trading simulation with real-time analysis
 LiveTradingSimulation simulation = new LiveTradingSimulation();
 simulation.run(); // Interactive console-based trading bot
 ```
 
-### Denoising
+### Denoising with MODWT
 ```java
-WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4);
-double[] clean = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL);
+// MODWT-based denoising (works with any signal length!)
+MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
+    .wavelet(Daubechies.DB4)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .bufferSize(333) // Any size - no padding needed!
+    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+    .thresholdType(ThresholdType.SOFT)
+    .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
+    .build();
 
-// Multi-level denoising
-double[] clean = denoiser.denoise(noisySignal, 
-    ThresholdMethod.SURE, 
-    4, // levels
-    ThresholdType.SOFT
-);
+// Process streaming data
+double[] denoisedBlock = denoiser.denoise(noisyBlock);
+double noiseLevel = denoiser.getEstimatedNoiseLevel();
 
-// Streaming denoiser with automatic implementation selection
-StreamingDenoiser streamDenoiser = StreamingDenoiserFactory.create(
-    Daubechies.DB4,
-    ThresholdMethod.UNIVERSAL,
-    512, // block size
-    0.5  // overlap ratio - auto-selects fast or quality mode
-);
+// Subscribe to denoised output stream
+denoiser.subscribe(new Flow.Subscriber<double[]>() {
+    @Override
+    public void onNext(double[] denoised) {
+        // Process denoised data
+    }
+    // ... other methods
+});
 ```
 
 ### Continuous Wavelet Transform (CWT)
@@ -289,10 +301,10 @@ CWTConfig config = CWTConfig.builder()
     .build();
 CWTTransform fftCwt = new CWTTransform(wavelet, config);
 
-// Fast DWT-based CWT reconstruction (recommended)
-DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-double[] reconstructed = dwtInverse.reconstruct(cwtResult);
-// Works best with dyadic scales for optimal accuracy
+// Fast MODWT-based CWT reconstruction (recommended)
+MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+double[] reconstructed = modwtInverse.reconstruct(cwtResult);
+// Works with any scales due to MODWT's flexibility
 ```
 
 ### Wavelet Registry and Discovery
@@ -355,57 +367,56 @@ FactoryRegistry.registerDefaults();
 | **Symlets** | Symmetric signal analysis | Near-symmetric, orthogonal |
 | **Coiflets** | Numerical analysis | Vanishing moments for polynomial signals |
 
-### Streaming
+### Streaming with MODWT
 ```java
-// Real-time streaming transform with zero-copy ring buffer
-StreamingWaveletTransform stream = StreamingWaveletTransform.create(
-    Daubechies.DB4,
+// Real-time MODWT streaming (works with any block size!)
+MODWTStreamingTransform stream = new MODWTStreamingTransformImpl(
+    new Haar(),
     BoundaryMode.PERIODIC,
-    512 // block size
+    480 // Exactly 10ms at 48kHz - no padding needed!
 );
 
 stream.subscribe(result -> processResult(result));
-stream.process(dataChunk);
+stream.onNext(dataChunk);
 
-// Zero-copy optimized streaming with configurable overlap
-OptimizedStreamingWaveletTransform optimizedStream = new OptimizedStreamingWaveletTransform(
-    Daubechies.DB4,
-    BoundaryMode.PERIODIC,
-    512,  // block size
-    0.5,  // overlap factor (0.0-1.0)
-    8     // buffer capacity multiplier
-);
+// Streaming denoiser with shift-invariant processing
+MODWTStreamingDenoiser streamDenoiser = new MODWTStreamingDenoiser.Builder()
+    .wavelet(Daubechies.DB4)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .bufferSize(100) // Any size!
+    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+    .build();
 
-// Streaming denoiser with automatic mode selection
-StreamingDenoiser denoiser = StreamingDenoiserFactory.create(
-    Daubechies.DB4,
-    ThresholdMethod.UNIVERSAL,
-    512, // block size
-    0.5  // overlap ratio - auto-selects implementation
-);
+// Process continuous stream
+for (double[] chunk : audioStream) {
+    double[] denoised = streamDenoiser.denoise(chunk);
+    // Shift-invariant denoising preserves signal timing
+}
 ```
 
 ### Performance Configuration
 ```java
-// Force specific optimization path
-TransformConfig config = TransformConfig.builder()
-    .forceVector(true)  // or forceScalar(true)
-    .enablePrefetch(true)
-    .cacheOptimized(true)
-    .build();
+// MODWT performance optimization
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
 
-WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode, config);
+// Get performance information
+MODWTTransform.PerformanceInfo perfInfo = transform.getPerformanceInfo();
+System.out.println(perfInfo.description()); // Shows if SIMD is being used
 
-// Platform-adaptive cache configuration
-CacheAwareOps.CacheConfig cacheConfig = CacheAwareOps.getDefaultCacheConfig();
-// Auto-detects: Apple Silicon (128KB L1, 4MB L2) vs x86 (32KB L1, 256KB L2)
+// Estimate processing time for planning
+long estimatedNanos = transform.estimateProcessingTime(signalLength);
 
-// Custom cache configuration
-CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
-    64 * 1024,  // L1 size
-    512 * 1024, // L2 size  
-    64          // cache line size
-);
+// Multi-level MODWT with optimal decomposition
+MultiLevelMODWTTransform mlTransform = new MultiLevelMODWTTransform(
+    Daubechies.DB4, BoundaryMode.PERIODIC);
+int maxLevels = mlTransform.getMaxDecompositionLevel(signalLength);
+
+// Batch processing configuration for MODWT
+MODWTOptimizedTransformEngine.EngineConfig config = 
+    new MODWTOptimizedTransformEngine.EngineConfig()
+        .withParallelism(8)
+        .withSoALayout(true)
+        .withSpecializedKernels(true);
 ```
 
 ## Documentation
@@ -425,13 +436,14 @@ CacheAwareOps.CacheConfig customConfig = CacheAwareOps.CacheConfig.create(
 
 ## Available Demos
 
-The project includes comprehensive demos showcasing various features:
+The project includes comprehensive demos showcasing MODWT and other features:
 
-### Core Functionality
+### Core MODWT Functionality
 - `Main` - Interactive menu system for all demos
-- `WaveletShowcase` - Comprehensive wavelet transform demonstrations
-- `PerformanceDemo` - Performance comparisons and benchmarks
-- `ScalarVsVectorDemo` - SIMD vs scalar implementation comparison
+- `MODWTDemo` - Comprehensive MODWT demonstrations with 7 examples
+- `BasicUsageDemo` - Getting started with MODWT transforms
+- `BoundaryModesDemo` - MODWT boundary handling (PERIODIC, ZERO_PADDING)
+- `ScalarVsVectorDemo` - MODWT SIMD optimization comparison
 
 ### Financial Analysis
 - `FinancialDemo` - Basic financial time series analysis
@@ -439,24 +451,27 @@ The project includes comprehensive demos showcasing various features:
 - `FinancialOptimizationDemo` - Performance-optimized financial processing
 - `LiveTradingSimulation` - Interactive trading bot simulation
 
-### Advanced Features
-- `BatchProcessingDemo` - True SIMD batch processing examples
-- `StreamingDemo` - Real-time streaming transform examples
-- `FFMDemo` - Foreign Function & Memory API demonstrations
-- `MemoryPoolLifecycleDemo` - Memory management patterns
-- `ComplexCWTDemo` - Complex wavelet analysis with phase
-- `AdaptiveScaleDemo` - Automatic scale selection strategies
+### Advanced MODWT Features
+- `SignalAnalysisDemo` - Time-frequency analysis with MODWT shift-invariance
+- `StreamingDenoiserDemo` - Real-time MODWT denoising with arbitrary block sizes
+- `OptimizationDemo` - MODWT performance optimization techniques
+- `MemoryEfficiencyDemo` - MODWT memory advantages over DWT
+- `MemoryPoolLifecycleDemo` - Memory management with MODWT
+- `FactoryPatternDemo` - Factory pattern with MODWTTransformFactory
+- `FFMDemo` - Memory efficiency focus with MODWT
+- `FFMSimpleDemo` - Simple FFM concepts with MODWT
 
 ### CWT Demonstrations
 - `CWTBasicDemo` - Continuous wavelet transform basics
 - `CWTFFTOptimizationDemo` - FFT acceleration examples
-- `DWTBasedReconstructionDemo` - Fast reconstruction methods
+- `MODWTBasedReconstructionDemo` - Fast reconstruction methods
 - `ShannonWaveletComparisonDemo` - Shannon vs Shannon-Gabor comparison
 
-### Performance and Optimization
-- `FFTOptimizationDemo` - FFT performance improvements
-- `ConvolutionDemo` - Convolution optimization strategies
-- `CacheOptimizationDemo` - Cache-aware algorithm demonstrations
+### Streaming and Real-time Processing
+- `StreamingDemo` - Real-time MODWT streaming examples
+- `BatchProcessingDemo` - MODWT batch processing with SIMD
+- `ComplexCWTDemo` - Complex wavelet analysis with phase
+- `AdaptiveScaleDemo` - Automatic scale selection for CWT
 
 Run demos with:
 ```bash
@@ -469,9 +484,9 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
 
 ## Known Issues
 
-- **Boundary Modes** (#135-137): SYMMETRIC and CONSTANT modes not fully implemented for FFM upsampling operations.
-- **FFM Requirements**: Requires Java 23+ with `--enable-native-access=ALL-UNNAMED` flag.
-- **Power-of-Two Requirement**: Wavelet-based methods in FinancialWaveletAnalyzer require input arrays with power-of-two length.
+- **MODWT Boundary Modes**: SYMMETRIC mode is not supported by MODWT (only PERIODIC and ZERO_PADDING)
+- **FFM Integration**: Full FFM integration with MODWT is planned for future releases
+- **Demo Compilation**: Demo files are excluded from Maven compilation (in pom.xml) but can be run individually
 
 ## Requirements
 

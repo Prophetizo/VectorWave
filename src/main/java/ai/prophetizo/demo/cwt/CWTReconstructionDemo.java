@@ -26,11 +26,11 @@ public class CWTReconstructionDemo {
         System.out.println("   - Simple but limited accuracy (~85-95% error)");
         System.out.println("   - Suitable for visualization and rough reconstruction\n");
         
-        System.out.println("2. DWT-Based Inverse CWT (Recommended):");
-        System.out.println("   - Leverages orthogonal DWT properties");
+        System.out.println("2. MODWT-Based Inverse CWT (Recommended):");
+        System.out.println("   - Leverages shift-invariant MODWT properties");
         System.out.println("   - Fast: O(N log N) complexity");
         System.out.println("   - Stable: No iterative optimization");
-        System.out.println("   - Best for dyadic scales");
+        System.out.println("   - Works with arbitrary length signals");
         System.out.println("   - Ideal for real-time applications\n");
         
         // Test with Morlet wavelet
@@ -49,10 +49,10 @@ public class CWTReconstructionDemo {
         System.out.println("   - Visualization is the primary goal");
         System.out.println("   - Working with any scale distribution\n");
         
-        System.out.println("   Use DWT-Based InverseCWT when:");
+        System.out.println("   Use MODWT-Based InverseCWT when:");
         System.out.println("   - Speed is critical (10-300x faster)");
         System.out.println("   - Working with dyadic or near-dyadic scales");
-        System.out.println("   - Stability is more important than accuracy");
+        System.out.println("   - Shift-invariance is important");
         System.out.println("   - Real-time processing is required");
         System.out.println("   - Financial applications (preserves structure)");
     }
@@ -73,24 +73,24 @@ public class CWTReconstructionDemo {
         long timeStandard = System.nanoTime() - startStandard;
         double errorStandard = calculateError(signal, standardRecon);
         
-        // DWT-based reconstruction
-        long startDWT = System.nanoTime();
-        DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-        double[] dwtRecon = dwtInverse.reconstruct(cwtResult);
-        long timeDWT = System.nanoTime() - startDWT;
-        double errorDWT = calculateError(signal, dwtRecon);
+        // MODWT-based reconstruction
+        long startMODWT = System.nanoTime();
+        MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+        double[] modwtRecon = modwtInverse.reconstruct(cwtResult);
+        long timeMODWT = System.nanoTime() - startMODWT;
+        double errorMODWT = calculateError(signal, modwtRecon);
         
         // Results
         System.out.printf("Standard:   %.1f%% error, %.2f ms\n", 
             errorStandard * 100, timeStandard / 1e6);
-        System.out.printf("DWT-based:  %.1f%% error, %.2f ms (%.1fx faster)\n", 
-            errorDWT * 100, timeDWT / 1e6, (double)timeStandard / timeDWT);
+        System.out.printf("MODWT-based:  %.1f%% error, %.2f ms (%.1fx faster)\n", 
+            errorMODWT * 100, timeMODWT / 1e6, (double)timeStandard / timeMODWT);
         
         // Analysis
         if (isDyadicScales(scales)) {
-            System.out.println("Analysis: Dyadic scales - DWT method works well");
+            System.out.println("Analysis: Dyadic scales - MODWT method works well");
         } else {
-            System.out.println("Analysis: Mixed scales - DWT method less accurate but still fast");
+            System.out.println("Analysis: Mixed scales - MODWT method less accurate but still fast");
         }
     }
     
@@ -106,16 +106,16 @@ public class CWTReconstructionDemo {
         CWTTransform cwt = new CWTTransform(paul);
         CWTResult cwtResult = cwt.analyze(returns, scales);
         
-        // DWT-based reconstruction
-        DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(paul);
-        double[] reconReturns = dwtInverse.reconstruct(cwtResult);
+        // MODWT-based reconstruction
+        MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(paul);
+        double[] reconReturns = modwtInverse.reconstruct(cwtResult);
         
         // Convert back to prices
         double[] reconPrices = returnsToprices(reconReturns, prices[0]);
         
         double priceError = calculateError(prices, reconPrices);
         System.out.printf("Price reconstruction error: %.1f%%\n", priceError * 100);
-        System.out.println("DWT method preserves price structure despite return-space errors");
+        System.out.println("MODWT method preserves price structure despite return-space errors");
     }
     
     private static double[] createTestSignal(int N) {

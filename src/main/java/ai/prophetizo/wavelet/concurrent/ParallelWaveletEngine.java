@@ -1,7 +1,9 @@
 package ai.prophetizo.wavelet.concurrent;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 
@@ -10,10 +12,10 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Multi-threaded wavelet transform engine for batch processing of signals.
+ * Multi-threaded MODWT (Maximal Overlap Discrete Wavelet Transform) engine for batch processing of signals.
  *
  * <p>This engine provides efficient parallel processing of multiple signals using
- * the Fork/Join framework. It's particularly useful for:</p>
+ * the Fork/Join framework with MODWT's shift-invariant properties. It's particularly useful for:</p>
  * <ul>
  *   <li>Processing large batches of financial time series</li>
  *   <li>Real-time multi-channel signal analysis</li>
@@ -36,7 +38,7 @@ import java.util.concurrent.*;
  * try (ParallelWaveletEngine engine = new ParallelWaveletEngine()) {
  *     double[][] priceSeries = loadStockData(); // e.g., 1000 stocks × 256 prices
  *     
- *     TransformResult[] results = engine.transformBatch(
+ *     MODWTResult[] results = engine.transformBatch(
  *         priceSeries, 
  *         Daubechies.DB4, 
  *         BoundaryMode.PERIODIC
@@ -120,7 +122,7 @@ public class ParallelWaveletEngine implements AutoCloseable {
      * @param mode    boundary handling mode
      * @return array of transform results
      */
-    public TransformResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) {
+    public MODWTResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) {
         if (signals.length < parallelism * 2) {
             // For small batches, sequential might be faster
             return transformSequential(signals, wavelet, mode);
@@ -138,7 +140,7 @@ public class ParallelWaveletEngine implements AutoCloseable {
     /**
      * Transforms multiple signals asynchronously.
      */
-    public CompletableFuture<TransformResult[]> transformBatchAsync(
+    public CompletableFuture<MODWTResult[]> transformBatchAsync(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
         return CompletableFuture.supplyAsync(() ->
@@ -167,34 +169,19 @@ public class ParallelWaveletEngine implements AutoCloseable {
     /**
      * Multi-level decomposition in parallel.
      */
-    public MultiLevelResult[] multiLevelDecomposeBatch(
+    public MultiLevelMODWTResult[] multiLevelDecomposeBatch(
             double[][] signals, Wavelet wavelet, int levels, BoundaryMode mode) {
 
         return processBatch(signals, signal -> {
-            MultiLevelResult result = new MultiLevelResult(levels);
-            double[] current = signal;
-
-            for (int level = 0; level < levels; level++) {
-                WaveletTransform transform = new WaveletTransform(wavelet, mode);
-                TransformResult levelResult = transform.forward(current);
-
-                result.setLevel(level, levelResult);
-                current = levelResult.approximationCoeffs();
-
-                // Stop if signal becomes too small
-                if (current.length < 4) {  // Minimum signal length for transforms
-                    break;
-                }
-            }
-
-            return result;
-        }).toArray(new MultiLevelResult[0]);
+            MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, mode);
+            return transform.decompose(signal, levels);
+        }).toArray(new MultiLevelMODWTResult[0]);
     }
 
     /**
      * Parallel transform implementation using Fork/Join.
      */
-    private TransformResult[] parallelTransform(
+    private MODWTResult[] parallelTransform(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
         TransformTask task = new TransformTask(signals, 0, signals.length, wavelet, mode);
@@ -212,11 +199,11 @@ public class ParallelWaveletEngine implements AutoCloseable {
     /**
      * Sequential fallback for small batches.
      */
-    private TransformResult[] transformSequential(
+    private MODWTResult[] transformSequential(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
-        TransformResult[] results = new TransformResult[signals.length];
-        WaveletTransform transform = new WaveletTransform(wavelet, mode);
+        MODWTResult[] results = new MODWTResult[signals.length];
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
 
         for (int i = 0; i < signals.length; i++) {
             results[i] = transform.forward(signals[i]);
@@ -264,7 +251,7 @@ public class ParallelWaveletEngine implements AutoCloseable {
     /**
      * Fork/Join task for wavelet transforms.
      */
-    private static class TransformTask extends RecursiveTask<TransformResult[]> {
+    private static class TransformTask extends RecursiveTask<MODWTResult[]> {
         private static final long serialVersionUID = 1L;
         
         private final double[][] signals;
@@ -283,13 +270,13 @@ public class ParallelWaveletEngine implements AutoCloseable {
         }
 
         @Override
-        protected TransformResult[] compute() {
+        protected MODWTResult[] compute() {
             int length = end - start;
 
             // Base case: process directly
             if (length <= MIN_BATCH_SIZE) {
-                TransformResult[] results = new TransformResult[length];
-                WaveletTransform transform = new WaveletTransform(wavelet, mode);
+                MODWTResult[] results = new MODWTResult[length];
+                MODWTTransform transform = new MODWTTransform(wavelet, mode);
 
                 for (int i = 0; i < length; i++) {
                     results[i] = transform.forward(signals[start + i]);
@@ -304,11 +291,11 @@ public class ParallelWaveletEngine implements AutoCloseable {
             TransformTask rightTask = new TransformTask(signals, mid, end, wavelet, mode);
 
             leftTask.fork();
-            TransformResult[] rightResult = rightTask.compute();
-            TransformResult[] leftResult = leftTask.join();
+            MODWTResult[] rightResult = rightTask.compute();
+            MODWTResult[] leftResult = leftTask.join();
 
             // Merge results
-            TransformResult[] results = new TransformResult[length];
+            MODWTResult[] results = new MODWTResult[length];
             System.arraycopy(leftResult, 0, results, 0, leftResult.length);
             System.arraycopy(rightResult, 0, results, leftResult.length, rightResult.length);
 
@@ -363,33 +350,4 @@ public class ParallelWaveletEngine implements AutoCloseable {
         }
     }
 
-    /**
-     * Container for multi-level decomposition results.
-     */
-    public static class MultiLevelResult {
-        private final TransformResult[] levels;
-        private int actualLevels;
-
-        public MultiLevelResult(int maxLevels) {
-            this.levels = new TransformResult[maxLevels];
-            this.actualLevels = 0;
-        }
-
-        public void setLevel(int level, TransformResult result) {
-            levels[level] = result;
-            actualLevels = Math.max(actualLevels, level + 1);
-        }
-
-        public TransformResult getLevel(int level) {
-            return levels[level];
-        }
-
-        public int getLevels() {
-            return actualLevels;
-        }
-
-        public double[] getFinalApproximation() {
-            return actualLevels > 0 ? levels[actualLevels - 1].approximationCoeffs() : null;
-        }
-    }
 }

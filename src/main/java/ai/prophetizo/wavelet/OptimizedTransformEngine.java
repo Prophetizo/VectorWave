@@ -7,6 +7,9 @@ import ai.prophetizo.wavelet.concurrent.ParallelWaveletEngine;
 import ai.prophetizo.wavelet.internal.*;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
 import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -55,7 +58,7 @@ public class OptimizedTransformEngine {
     /**
      * Single signal transform with all optimizations.
      */
-    public TransformResult transform(double[] signal, Wavelet wavelet, BoundaryMode mode) {
+    public MODWTResult transform(double[] signal, Wavelet wavelet, BoundaryMode mode) {
         // Check for specialized kernel
         if (useSpecializedKernels && hasSpecializedKernel(wavelet)) {
             return transformWithSpecializedKernel(signal, wavelet, mode);
@@ -72,16 +75,16 @@ public class OptimizedTransformEngine {
         }
 
         // Default transform
-        WaveletTransform transform = new WaveletTransform(wavelet, mode);
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
         return transform.forward(signal);
     }
 
     /**
      * Batch transform with automatic optimization selection.
      */
-    public TransformResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) {
+    public MODWTResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) {
         if (signals.length == 0) {
-            return new TransformResult[0];
+            return new MODWTResult[0];
         }
 
         // Use parallel engine for very large batches
@@ -100,8 +103,8 @@ public class OptimizedTransformEngine {
         }
 
         // Sequential processing
-        TransformResult[] results = new TransformResult[signals.length];
-        WaveletTransform transform = new WaveletTransform(wavelet, mode);
+        MODWTResult[] results = new MODWTResult[signals.length];
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
         for (int i = 0; i < signals.length; i++) {
             results[i] = transform.forward(signals[i]);
         }
@@ -111,7 +114,7 @@ public class OptimizedTransformEngine {
     /**
      * Asynchronous batch transform.
      */
-    public CompletableFuture<TransformResult[]> transformBatchAsync(
+    public CompletableFuture<MODWTResult[]> transformBatchAsync(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
         if (parallelEngine != null) {
@@ -127,118 +130,75 @@ public class OptimizedTransformEngine {
     /**
      * Transform using specialized kernel implementations.
      */
-    private TransformResult transformWithSpecializedKernel(
+    private MODWTResult transformWithSpecializedKernel(
             double[] signal, Wavelet wavelet, BoundaryMode mode) {
 
         int length = signal.length;
-        int halfLength = length / 2;
-        double[] approx = new double[halfLength];
-        double[] detail = new double[halfLength];
+        // MODWT produces same-length coefficients
+        double[] approx = new double[length];
+        double[] detail = new double[length];
 
-        if (mode != BoundaryMode.PERIODIC) {
-            // Fall back to regular transform for non-periodic boundaries
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
-            return transform.forward(signal);
-        }
-
-        // Use specialized kernels
-        String waveletName = wavelet.name().toLowerCase();
-
-        if (waveletName.equals("db4")) {
-            SpecializedKernels.db4ForwardOptimized(signal, approx, detail, length);
-        } else if (waveletName.equals("sym4")) {
-            SpecializedKernels.sym4ForwardOptimized(signal, approx, detail, length);
-        } else if (waveletName.equals("haar")) {
-            // Use vectorized Haar
-            double[][] batch = {signal};
-            double[][] approxBatch = {approx};
-            double[][] detailBatch = {detail};
-            SpecializedKernels.haarBatchOptimized(batch, approxBatch, detailBatch);
-        } else {
-            // No specialized kernel, fall back
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
-            return transform.forward(signal);
-        }
-
-        return TransformResult.create(approx, detail);
+        // For MODWT, we can't use DWT-based specialized kernels directly
+        // since they perform downsampling. Fall back to regular MODWT transform
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        return transform.forward(signal);
     }
 
     /**
      * Transform with cache-aware blocking.
      */
-    private TransformResult transformCacheAware(
+    private MODWTResult transformCacheAware(
             double[] signal, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw)) {
             // Fall back for continuous wavelets
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            MODWTTransform transform = new MODWTTransform(wavelet, mode);
             return transform.forward(signal);
         }
 
         double[] lowPass = dw.lowPassDecomposition();
         double[] highPass = dw.highPassDecomposition();
 
-        int halfLength = signal.length / 2;
-        double[] approx = new double[halfLength];
-        double[] detail = new double[halfLength];
+        // MODWT produces same-length coefficients
+        double[] approx = new double[signal.length];
+        double[] detail = new double[signal.length];
 
-        if (mode == BoundaryMode.PERIODIC) {
-            CacheAwareOps.forwardTransformBlocked(
-                    signal, approx, detail, lowPass, highPass,
-                    signal.length, lowPass.length
-            );
-        } else {
-            // Fall back for non-periodic
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
-            return transform.forward(signal);
-        }
-
-        return TransformResult.create(approx, detail);
+        // Cache-aware ops are DWT-based (with downsampling)
+        // For MODWT, fall back to regular transform
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        return transform.forward(signal);
     }
 
     /**
      * Transform using pooled memory.
      */
-    private TransformResult transformPooled(
+    private MODWTResult transformPooled(
             double[] signal, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw)) {
             // Fall back for continuous wavelets
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            MODWTTransform transform = new MODWTTransform(wavelet, mode);
             return transform.forward(signal);
         }
 
-        double[] filter = dw.lowPassDecomposition();
-
-        if (mode == BoundaryMode.PERIODIC) {
-            double[] approx = VectorOpsPooled.convolveAndDownsamplePeriodicPooled(
-                    signal, filter, signal.length, filter.length
-            );
-
-            // Compute detail coefficients
-            double[] highPass = dw.highPassDecomposition();
-            double[] detail = VectorOpsPooled.convolveAndDownsamplePeriodicPooled(
-                    signal, highPass, signal.length, highPass.length
-            );
-
-            return TransformResult.create(approx, detail);
-        }
+        // VectorOpsPooled operations are DWT-based (with downsampling)
+        // For MODWT, we need non-downsampling operations
 
         // Fall back for non-periodic
-        WaveletTransform transform = new WaveletTransform(wavelet, mode);
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
         return transform.forward(signal);
     }
 
     /**
      * Batch transform using Structure-of-Arrays layout.
      */
-    private TransformResult[] transformBatchSoA(
+    private MODWTResult[] transformBatchSoA(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw) || mode != BoundaryMode.PERIODIC) {
             // Fall back to sequential processing to avoid infinite recursion
-            TransformResult[] results = new TransformResult[signals.length];
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            MODWTResult[] results = new MODWTResult[signals.length];
+            MODWTTransform transform = new MODWTTransform(wavelet, mode);
             for (int i = 0; i < signals.length; i++) {
                 results[i] = transform.forward(signals[i]);
             }
@@ -247,24 +207,24 @@ public class OptimizedTransformEngine {
 
         int numSignals = signals.length;
         int signalLength = signals[0].length;
-        int halfLength = signalLength / 2;
 
-        // Use new BatchSIMDTransform for true parallel processing
-        double[][] approxResults = new double[numSignals][halfLength];
-        double[][] detailResults = new double[numSignals][halfLength];
+        // MODWT produces same-length coefficients
+        double[][] approxResults = new double[numSignals][signalLength];
+        double[][] detailResults = new double[numSignals][signalLength];
         
-        double[] lowPass = dw.lowPassDecomposition();
-        double[] highPass = dw.highPassDecomposition();
-        
-        // Use adaptive batch transform that selects best algorithm
-        BatchSIMDTransform.adaptiveBatchTransform(
-                signals, approxResults, detailResults, lowPass, highPass
-        );
+        // BatchSIMDTransform is DWT-based (performs downsampling)
+        // For MODWT batch processing, fall back to sequential
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        for (int i = 0; i < numSignals; i++) {
+            MODWTResult result = transform.forward(signals[i]);
+            approxResults[i] = result.approximationCoeffs();
+            detailResults[i] = result.detailCoeffs();
+        }
 
         // Create results
-        TransformResult[] results = new TransformResult[numSignals];
+        MODWTResult[] results = new MODWTResult[numSignals];
         for (int i = 0; i < numSignals; i++) {
-            results[i] = TransformResult.create(approxResults[i], detailResults[i]);
+            results[i] = new MODWTResultImpl(approxResults[i], detailResults[i]);
         }
 
         return results;
@@ -273,34 +233,36 @@ public class OptimizedTransformEngine {
     /**
      * Batch transform using pooled memory.
      */
-    private TransformResult[] transformBatchPooled(
+    private MODWTResult[] transformBatchPooled(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
         if (!(wavelet instanceof DiscreteWavelet dw) || mode != BoundaryMode.PERIODIC) {
             // Fall back to regular batch processing
-            TransformResult[] results = new TransformResult[signals.length];
-            WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            MODWTResult[] results = new MODWTResult[signals.length];
+            MODWTTransform transform = new MODWTTransform(wavelet, mode);
             for (int i = 0; i < signals.length; i++) {
                 results[i] = transform.forward(signals[i]);
             }
             return results;
         }
 
-        double[] lowPass = dw.lowPassDecomposition();
-        double[] highPass = dw.highPassDecomposition();
-
-        // Process batch with pooled memory
-        double[][] approxResults = VectorOpsPooled.batchConvolveAndDownsample(
-                signals, lowPass, signals[0].length, lowPass.length
-        );
-        double[][] detailResults = VectorOpsPooled.batchConvolveAndDownsample(
-                signals, highPass, signals[0].length, highPass.length
-        );
+        // VectorOpsPooled batch operations are DWT-based (with downsampling)
+        // For MODWT, process each signal individually
+        int numSignals = signals.length;
+        double[][] approxResults = new double[numSignals][];
+        double[][] detailResults = new double[numSignals][];
+        
+        MODWTTransform transform = new MODWTTransform(wavelet, mode);
+        for (int i = 0; i < numSignals; i++) {
+            MODWTResult result = transform.forward(signals[i]);
+            approxResults[i] = result.approximationCoeffs();
+            detailResults[i] = result.detailCoeffs();
+        }
 
         // Create results
-        TransformResult[] results = new TransformResult[signals.length];
+        MODWTResult[] results = new MODWTResult[signals.length];
         for (int i = 0; i < signals.length; i++) {
-            results[i] = TransformResult.create(
+            results[i] = new MODWTResultImpl(
                     approxResults[i], detailResults[i]
             );
         }

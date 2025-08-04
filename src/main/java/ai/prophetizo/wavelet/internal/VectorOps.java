@@ -498,9 +498,14 @@ public final class VectorOps {
     /**
      * Vectorized circular convolution for MODWT.
      * 
+     * Implements the MODWT convolution formula: W_j,t = Σ_{l=0}^{L-1} h_j,l * X_{t-l mod N}
+     * This uses (t - l) indexing to implement time-reversed filter convolution, which is
+     * standard in wavelet analysis for maintaining causality and proper time-ordering.
+     * 
      * @param signal The input signal
      * @param filter The filter coefficients
      * @param output The output array
+     * @see ScalarOps#circularConvolveMODWTScalar for mathematical justification
      */
     public static void circularConvolveMODWTVectorized(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
@@ -518,18 +523,20 @@ public final class VectorOps {
         // Pre-allocate indices array for reuse
         int[] indices = new int[VECTOR_LENGTH];
         
+        // Calculate vector loop bound once, outside the filter loop
+        int vectorLoopBound = SPECIES.loopBound(signalLen);
+        
         for (int l = 0; l < filterLen; l++) {
             if (filter[l] == 0.0) continue; // Skip zero coefficients
             
             DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[l]);
-            int vectorLoopBound = SPECIES.loopBound(signalLen);
             
             // Check if we can use direct vectorization without circular indexing
-            // We need to ensure that t + l < signalLen for all t in [0, vectorLoopBound)
-            if (vectorLoopBound + l <= signalLen) {
-                // Simple case: no wrap-around within vector width
+            // For MODWT with time-reversed indexing, we need t - l >= 0 for all t in [l, vectorLoopBound + l)
+            if (l == 0) {
+                // Special case: no shift needed
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t + l);
+                    DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, t);
                     DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                     DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                     result.intoArray(output, t);
@@ -538,67 +545,60 @@ public final class VectorOps {
                 // Complex case: need to handle circular indexing
                 // Most indices won't wrap, so we can optimize by checking boundaries
                 for (int t = 0; t < vectorLoopBound; t += VECTOR_LENGTH) {
-                    int startIdx = t + l;
+                    int startIdx = t - l;
                     int endIdx = startIdx + VECTOR_LENGTH;
                     
-                    if (endIdx <= signalLen) {
+                    if (startIdx >= 0 && endIdx <= signalLen) {
                         // No wrapping needed for this vector
                         DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, startIdx);
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
-                    } else if (startIdx >= signalLen) {
-                        // All indices wrap - can use direct indexing from beginning
-                        int wrappedStart = startIdx - signalLen;
-                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, wrappedStart);
+                    } else {
+                        // Complex wrapping case - use vector gather for wrapped indices
+                        // This is more efficient than falling back to scalar processing
+                        
+                        // Build index array for gather operation
+                        for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
+                            int idx = t + i - l;
+                            // Use robust modulo operation that handles all negative values correctly
+                            if (idx >= 0 && idx < signalLen) {
+                                // Most common case: index already in bounds
+                                indices[i] = idx;
+                            } else if (idx < 0 && idx >= -signalLen) {
+                                // Common case for negative indices: only one wrap needed
+                                indices[i] = idx + signalLen;
+                            } else {
+                                // Rare case for very negative or very positive indices
+                                indices[i] = ((idx % signalLen) + signalLen) % signalLen;
+                            }
+                        }
+                        
+                        // Use vector gather to load wrapped values
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
-                    } else {
-                        // Mixed case: some indices wrap, some don't
-                        // Hybrid approach: process non-wrapping elements with vector ops,
-                        // handle boundary elements individually
-                        int nonWrapCount = signalLen - startIdx;
-                        
-                        // Load output vector
-                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                        
-                        // Process non-wrapping elements with direct vector access if there are enough
-                        if (nonWrapCount >= SPECIES.length() / 2) {
-                            // Build result vector element by element for mixed case
-                            double[] temp = new double[VECTOR_LENGTH];
-                            
-                            // Non-wrapping part - direct array access
-                            for (int i = 0; i < nonWrapCount; i++) {
-                                temp[i] = signal[startIdx + i] * filter[l + i];
-                            }
-                            
-                            // Wrapping part - also direct array access
-                            for (int i = nonWrapCount; i < VECTOR_LENGTH; i++) {
-                                temp[i] = signal[i - nonWrapCount] * filter[l + i];
-                            }
-                            
-                            // Now use vector operations for the final addition
-                            DoubleVector tempVec = DoubleVector.fromArray(SPECIES, temp, 0);
-                            DoubleVector result = outputVec.add(tempVec);
-                            result.intoArray(output, t);
-                        } else {
-                            // Too few non-wrapping elements, fall back to gather
-                            for (int i = 0; i < VECTOR_LENGTH; i++) {
-                                int idx = startIdx + i;
-                                indices[i] = idx >= signalLen ? idx - signalLen : idx;
-                            }
-                            DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                            DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                            result.intoArray(output, t);
-                        }
                     }
                 }
             }
             
             // Handle remainder
             for (int t = vectorLoopBound; t < signalLen; t++) {
-                int signalIndex = (t + l) % signalLen;
+                // Use robust modulo operation for circular indexing
+                int idx = t - l;
+                // Optimize for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
                 output[t] += signal[signalIndex] * filter[l];
             }
         }
@@ -606,6 +606,8 @@ public final class VectorOps {
     
     /**
      * Scalar fallback for circular convolution.
+     * Uses the same (t - l) indexing as the main ScalarOps implementation
+     * to ensure consistent results between vectorized and scalar paths.
      */
     private static void circularConvolveMODWTScalar(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
@@ -615,7 +617,21 @@ public final class VectorOps {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                int signalIndex = (t + l) % signalLen;
+                // Use (t - l) indexing to match MODWT time-reversed filter convention
+                // Use robust modulo operation that handles all negative values correctly
+                int idx = t - l;
+                // Optimize for common cases to avoid expensive double modulo
+                int signalIndex;
+                if (idx >= 0 && idx < signalLen) {
+                    // Most common case: index already in bounds
+                    signalIndex = idx;
+                } else if (idx < 0 && idx >= -signalLen) {
+                    // Common case for negative indices: only one wrap needed
+                    signalIndex = idx + signalLen;
+                } else {
+                    // Rare case for very negative or very positive indices
+                    signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                }
                 sum += signal[signalIndex] * filter[l];
             }
             

@@ -5,14 +5,14 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.CWTTransform;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
-import ai.prophetizo.wavelet.streaming.*;
+import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 
 import java.util.Optional;
 import java.util.Random;
 
 /**
- * Demonstrates the FactoryRegistry for centralized factory management.
+ * Demonstrates the FactoryRegistry for centralized factory management with MODWT.
  * 
  * <p>This demo shows:</p>
  * <ul>
@@ -48,24 +48,25 @@ public class FactoryRegistryDemo {
         System.out.println("Registry cleared");
         
         // Register a factory
-        WaveletTransformFactory transformFactory = new WaveletTransformFactory();
-        registry.register("myTransformFactory", transformFactory);
-        System.out.println("Registered 'myTransformFactory'");
+        MODWTTransformFactory transformFactory = new MODWTTransformFactory();
+        registry.register("modwtFactory", transformFactory);
+        System.out.println("Registered 'modwtFactory'");
         
         // Check if registered
-        System.out.println("Is registered: " + registry.isRegistered("myTransformFactory"));
+        System.out.println("Is registered: " + registry.isRegistered("modwtFactory"));
         
         // Retrieve factory
-        Optional<Factory<?, ?>> retrieved = registry.getFactory("myTransformFactory");
+        Optional<Factory<?, ?>> retrieved = registry.getFactory("modwtFactory");
         System.out.println("Retrieved: " + retrieved.isPresent());
         
         // Use retrieved factory
         if (retrieved.isPresent()) {
             @SuppressWarnings("unchecked")
-            Factory<WaveletTransform, Wavelet> factory = 
-                (Factory<WaveletTransform, Wavelet>) retrieved.get();
-            WaveletTransform transform = factory.create(new Haar());
-            System.out.println("Created transform using retrieved factory");
+            Factory<MODWTTransform, MODWTTransformFactory.Config> factory = 
+                (Factory<MODWTTransform, MODWTTransformFactory.Config>) retrieved.get();
+            MODWTTransform transform = factory.create(
+                new MODWTTransformFactory.Config(new Haar(), BoundaryMode.PERIODIC));
+            System.out.println("Created MODWT transform using retrieved factory");
         }
         
         // List all registered keys
@@ -103,13 +104,15 @@ public class FactoryRegistryDemo {
                 System.out.println("  WaveletOps: " + ops.getImplementationType());
             });
         
-        // WaveletTransform factory
-        registry.getFactory("waveletTransform", 
-                WaveletTransform.class, 
-                Wavelet.class)
+        // MODWT Transform factory
+        registry.getFactory("modwtTransform", 
+                MODWTTransform.class, 
+                MODWTTransformFactory.Config.class)
             .ifPresent(factory -> {
-                var transform = factory.create(Daubechies.DB4);
-                System.out.println("  WaveletTransform: created with DB4");
+                var config = new MODWTTransformFactory.Config(
+                    Daubechies.DB4, BoundaryMode.PERIODIC);
+                var transform = factory.create(config);
+                System.out.println("  MODWTTransform: created with DB4");
             });
         
         // CWT factory
@@ -121,19 +124,9 @@ public class FactoryRegistryDemo {
                 System.out.println("  CWTTransform: created with Morlet");
             });
         
-        // Streaming denoiser factory
-        registry.getFactory("streamingDenoiser", 
-                StreamingDenoiserStrategy.class, 
-                StreamingDenoiserConfig.class)
-            .ifPresent(factory -> {
-                var config = new StreamingDenoiserConfig.Builder()
-                    .wavelet(new Haar())
-                    .blockSize(128)
-                    .build();
-                var denoiser = factory.create(config);
-                System.out.println("  StreamingDenoiser: created");
-                try { denoiser.close(); } catch (Exception e) {}
-            });
+        // Note: Streaming denoiser factory would be registered here
+        // For MODWT, use MODWTStreamingDenoiser directly
+        System.out.println("  Note: Use MODWTStreamingDenoiser for streaming denoising");
         
         System.out.println();
     }
@@ -263,31 +256,18 @@ public class FactoryRegistryDemo {
         void processSignal(double[] signal) {
             System.out.println("Processing signal using injected factories:");
             
-            // Get transform factory from registry
-            registry.getFactory("waveletTransform", WaveletTransform.class, Wavelet.class)
+            // Get MODWT transform factory from registry
+            registry.getFactory("modwtTransform", MODWTTransform.class, MODWTTransformFactory.Config.class)
                 .ifPresent(factory -> {
-                    WaveletTransform transform = factory.create(new Haar());
+                    var config = new MODWTTransformFactory.Config(new Haar(), BoundaryMode.PERIODIC);
+                    MODWTTransform transform = factory.create(config);
                     var result = transform.forward(signal);
                     int totalCoeffs = result.approximationCoeffs().length + result.detailCoeffs().length;
-                    System.out.println("  - Decomposed signal into " + totalCoeffs + " coefficients");
+                    System.out.println("  - Decomposed signal into " + totalCoeffs + " MODWT coefficients");
                 });
             
-            // Get denoiser factory from registry
-            registry.getFactory("streamingDenoiser", 
-                    StreamingDenoiserStrategy.class, 
-                    StreamingDenoiserConfig.class)
-                .ifPresent(factory -> {
-                    var config = new StreamingDenoiserConfig.Builder()
-                        .wavelet(new Haar())
-                        .blockSize(signal.length)
-                        .build();
-                    try (var denoiser = factory.create(config)) {
-                        denoiser.process(signal);
-                        System.out.println("  - Applied denoising");
-                    } catch (Exception e) {
-                        // Handle error
-                    }
-                });
+            // Use MODWT for analysis
+            System.out.println("  - Using MODWT provides shift-invariance and works with any signal length");
         }
     }
     

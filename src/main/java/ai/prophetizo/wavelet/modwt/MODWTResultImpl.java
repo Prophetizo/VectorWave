@@ -8,8 +8,7 @@ import java.util.Objects;
  * Default implementation of the MODWTResult interface.
  * 
  * <p>This implementation provides defensive copying of coefficient arrays
- * and validation to ensure data integrity. It follows the same pattern
- * as the existing TransformResult implementation in the library.</p>
+ * and validation to ensure data integrity.</p>
  * 
  * <h2>Thread Safety:</h2>
  * <p>This class is immutable and thread-safe after construction.</p>

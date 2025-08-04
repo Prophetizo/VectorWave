@@ -1,7 +1,10 @@
 package ai.prophetizo.wavelet.denoising;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;
+import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
@@ -15,8 +18,11 @@ import ai.prophetizo.wavelet.internal.VectorOps;
  * corrupted by noise, particularly effective for financial time series data
  * where preserving important features while removing noise is critical.</p>
  *
- * <p>Key features:</p>
+ * <p>Now uses MODWT (Maximal Overlap Discrete Wavelet Transform) which provides:</p>
  * <ul>
+ *   <li>Shift-invariant denoising (better for time series)</li>
+ *   <li>Works with any signal length (not just power-of-2)</li>
+ *   <li>Same-length coefficients preserve temporal alignment</li>
  *   <li>Multiple threshold selection methods (Universal, SURE, Minimax)</li>
  *   <li>Soft and hard thresholding</li>
  *   <li>Level-dependent thresholding</li>
@@ -34,6 +40,19 @@ import ai.prophetizo.wavelet.internal.VectorOps;
  * @since 1.0.0
  */
 public class WaveletDenoiser {
+    
+    /**
+     * Maximum safe level for bit shift scaling operations.
+     * 
+     * <p>When calculating level-dependent scaling using bit shifts (1 << (level - 1)),
+     * we need to ensure the shift amount doesn't exceed 30 to avoid integer overflow.
+     * Since level - 1 must be <= 30, the maximum safe level is 31.</p>
+     * 
+     * <p>In practice, wavelet decomposition rarely exceeds 10-15 levels due to
+     * signal length constraints and numerical stability, so this limit provides
+     * a large safety margin.</p>
+     */
+    private static final int MAX_SAFE_LEVEL_FOR_SCALING = 31;
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -89,8 +108,8 @@ public class WaveletDenoiser {
      * @throws InvalidSignalException if signal is invalid
      */
     public double[] denoise(double[] signal, ThresholdMethod method, ThresholdType type) {
-        WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode);
-        TransformResult result = transform.forward(signal);
+        MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
+        MODWTResult result = transform.forward(signal);
 
         // Estimate noise level from detail coefficients
         double sigma = estimateNoiseSigma(result.detailCoeffs());
@@ -102,7 +121,7 @@ public class WaveletDenoiser {
         double[] denoisedDetails = applyThreshold(result.detailCoeffs(), threshold, type);
 
         // Reconstruct with denoised coefficients
-        TransformResult denoisedResult = TransformResult.create(
+        MODWTResult denoisedResult = new MODWTResultImpl(
                 result.approximationCoeffs(), denoisedDetails);
 
         return transform.inverse(denoisedResult);
@@ -121,50 +140,163 @@ public class WaveletDenoiser {
      */
     public double[] denoiseMultiLevel(double[] signal, int levels,
                                       ThresholdMethod method, ThresholdType type) {
-        // Multi-level decomposition is achieved by applying single-level transform recursively
-        double[] result = signal.clone();
-
-        // Apply wavelet transform and threshold at each level
-        for (int level = 0; level < levels; level++) {
-            // The signal gets smaller at each level
-            int currentLength = signal.length >> level;
-            if (currentLength < 2) break;
-
-            // Create a temporary signal for this level
-            double[] levelSignal = new double[currentLength];
-            System.arraycopy(result, 0, levelSignal, 0, currentLength);
-
-            // Apply single-level transform
-            WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode);
-            TransformResult levelResult = transform.forward(levelSignal);
-
-            // Estimate noise from detail coefficients at first level and reuse for other levels
-            double sigma;
-            if (level == 0) {
-                sigma = estimateNoiseSigma(levelResult.detailCoeffs());
-            } else {
-                // Reuse sigma from first level, but scale based on level
-                sigma = estimateNoiseSigma(levelResult.detailCoeffs());
+        // Use proper multi-level MODWT decomposition
+        MultiLevelMODWTTransform multiTransform = new MultiLevelMODWTTransform(wavelet, boundaryMode);
+        MultiLevelMODWTResult multiResult = multiTransform.decompose(signal, levels);
+        
+        // Estimate noise from the finest scale (level 1) detail coefficients
+        double sigma = estimateNoiseSigma(multiResult.getDetailCoeffsAtLevel(1));
+        
+        // Create a wrapper that applies denoising on-the-fly
+        MultiLevelMODWTResult denoisedResult = new DenoisedMultiLevelResult(
+            multiResult, sigma, method, type);
+        
+        // Reconstruct the denoised signal
+        return multiTransform.reconstruct(denoisedResult);
+    }
+    
+    /**
+     * Wrapper class that applies denoising to multi-level MODWT coefficients on-the-fly.
+     */
+    private class DenoisedMultiLevelResult implements MultiLevelMODWTResult {
+        private final MultiLevelMODWTResult original;
+        private final double sigma;
+        private final ThresholdMethod method;
+        private final ThresholdType type;
+        private final double[][] denoisedDetails;
+        
+        DenoisedMultiLevelResult(MultiLevelMODWTResult original, double sigma,
+                                ThresholdMethod method, ThresholdType type) {
+            this.original = original;
+            this.sigma = sigma;
+            this.method = method;
+            this.type = type;
+            this.denoisedDetails = new double[original.getLevels()][];
+            
+            // Validate maximum level before processing to prevent overflow
+            if (original.getLevels() > MAX_SAFE_LEVEL_FOR_SCALING) {
+                throw new IllegalArgumentException(
+                    "Number of decomposition levels (" + original.getLevels() + 
+                    ") exceeds maximum safe level (" + MAX_SAFE_LEVEL_FOR_SCALING + 
+                    ") for scaling calculations");
             }
-
-            // Calculate threshold with level-dependent scaling
-            double levelScale = Math.sqrt(1.0 / (level + 1));
-            double threshold = calculateThreshold(levelResult.detailCoeffs(), sigma, method) * levelScale;
-
-            // Apply thresholding to detail coefficients
-            double[] denoisedDetails = applyThreshold(levelResult.detailCoeffs(), threshold, type);
-
-            // Reconstruct with denoised coefficients
-            TransformResult denoisedResult = TransformResult.create(
-                    levelResult.approximationCoeffs(), denoisedDetails);
-
-            double[] reconstructed = transform.inverse(denoisedResult);
-
-            // Copy back to result
-            System.arraycopy(reconstructed, 0, result, 0, currentLength);
+            
+            // Pre-compute denoised details for all levels
+            for (int level = 1; level <= original.getLevels(); level++) {
+                double[] levelDetails = original.getDetailCoeffsAtLevel(level);
+                
+                // Calculate threshold with level-dependent scaling
+                // Use bit shift for efficient power of 2 calculation
+                // Safety guarantee: Constructor validation ensures original.getLevels() <= MAX_SAFE_LEVEL_FOR_SCALING (31)
+                // Therefore: level <= 31, so (level - 1) <= 30, making 1 << (level - 1) safe from overflow
+                if (level > MAX_SAFE_LEVEL_FOR_SCALING) {
+                    throw new IllegalStateException(
+                        "Bit shift overflow protection: level must be <= " + MAX_SAFE_LEVEL_FOR_SCALING + 
+                        ", got " + level);
+                }
+                double levelScale = Math.sqrt(1 << (level - 1));
+                double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
+                
+                // Apply thresholding and store
+                denoisedDetails[level - 1] = applyThreshold(levelDetails, threshold, type);
+            }
         }
-
-        return result;
+        
+        @Override
+        public int getSignalLength() {
+            return original.getSignalLength();
+        }
+        
+        @Override
+        public int getLevels() {
+            return original.getLevels();
+        }
+        
+        @Override
+        public double[] getApproximationCoeffs() {
+            // Return original approximation coefficients (not denoised)
+            return original.getApproximationCoeffs();
+        }
+        
+        @Override
+        public double[] getDetailCoeffsAtLevel(int level) {
+            if (level < 1 || level > getLevels()) {
+                throw new IllegalArgumentException("Invalid level: " + level);
+            }
+            // Return denoised detail coefficients
+            return denoisedDetails[level - 1].clone();
+        }
+        
+        @Override
+        public double getDetailEnergyAtLevel(int level) {
+            if (level < 1 || level > getLevels()) {
+                throw new IllegalArgumentException("Invalid level: " + level);
+            }
+            double energy = 0.0;
+            double[] details = denoisedDetails[level - 1];
+            for (double val : details) {
+                energy += val * val;
+            }
+            return energy;
+        }
+        
+        @Override
+        public double getApproximationEnergy() {
+            double energy = 0.0;
+            double[] approx = getApproximationCoeffs();
+            for (double val : approx) {
+                energy += val * val;
+            }
+            return energy;
+        }
+        
+        @Override
+        public double getTotalEnergy() {
+            // Recalculate based on denoised coefficients
+            double energy = getApproximationEnergy();
+            for (int level = 1; level <= getLevels(); level++) {
+                energy += getDetailEnergyAtLevel(level);
+            }
+            return energy;
+        }
+        
+        @Override
+        public double[] getRelativeEnergyDistribution() {
+            // Recalculate based on denoised coefficients
+            double totalEnergy = getTotalEnergy();
+            double[] distribution = new double[getLevels() + 1];
+            
+            // Approximation energy
+            double[] approx = getApproximationCoeffs();
+            double approxEnergy = 0.0;
+            for (double val : approx) {
+                approxEnergy += val * val;
+            }
+            distribution[0] = approxEnergy / totalEnergy;
+            
+            // Detail energies
+            for (int level = 1; level <= getLevels(); level++) {
+                double[] details = denoisedDetails[level - 1];
+                double levelEnergy = 0.0;
+                for (double val : details) {
+                    levelEnergy += val * val;
+                }
+                distribution[level] = levelEnergy / totalEnergy;
+            }
+            
+            return distribution;
+        }
+        
+        @Override
+        public boolean isValid() {
+            return original.isValid();
+        }
+        
+        @Override
+        public MultiLevelMODWTResult copy() {
+            // Return a new wrapper with the same parameters
+            return new DenoisedMultiLevelResult(original.copy(), sigma, method, type);
+        }
     }
 
     /**
@@ -176,12 +308,12 @@ public class WaveletDenoiser {
      * @return the denoised signal
      */
     public double[] denoiseFixed(double[] signal, double threshold, ThresholdType type) {
-        WaveletTransform transform = new WaveletTransform(wavelet, boundaryMode);
-        TransformResult result = transform.forward(signal);
+        MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
+        MODWTResult result = transform.forward(signal);
 
         double[] denoisedDetails = applyThreshold(result.detailCoeffs(), threshold, type);
 
-        TransformResult denoisedResult = TransformResult.create(
+        MODWTResult denoisedResult = new MODWTResultImpl(
                 result.approximationCoeffs(), denoisedDetails);
 
         return transform.inverse(denoisedResult);

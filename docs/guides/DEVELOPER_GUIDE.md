@@ -29,7 +29,7 @@ mvn test
 mvn clean install
 
 # Run specific test
-mvn test -Dtest=WaveletTransformTest
+mvn test -Dtest=MODWTTransformTest
 
 # Generate documentation
 mvn javadoc:javadoc
@@ -72,14 +72,16 @@ For explicit close() calls within try-with-resources:
 @Test
 void testFeatureName() {
     // Given - setup test data
-    double[] signal = {1, 2, 3, 4};
+    double[] signal = {1, 2, 3, 4, 5, 6, 7}; // MODWT works with any length!
+    MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
     
     // When - execute operation
-    TransformResult result = transform.forward(signal);
+    MODWTResult result = transform.forward(signal);
     
     // Then - verify results
     assertNotNull(result);
-    assertEquals(expectedValue, actualValue, TOLERANCE);
+    assertEquals(signal.length, result.approximationCoeffs().length);
+    assertEquals(signal.length, result.detailCoeffs().length);
 }
 ```
 
@@ -128,14 +130,21 @@ double[] sine = generateSine();      // RMSE ≈ 0.2
 
 ## Memory Management
 
-### FFM API Usage
+### Memory Pool Usage
 
 ```java
-try (FFMMemoryPool pool = new FFMMemoryPool()) {
-    // Use pool for operations
-    FFMWaveletTransform transform = new FFMWaveletTransform(wavelet, pool);
+MemoryPool pool = new MemoryPool();
+pool.setMaxArraysPerSize(10);
+
+try {
+    // Borrow arrays for MODWT operations
+    double[] signal = pool.borrowArray(1777); // Any size!
+    MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+    MODWTResult result = transform.forward(signal);
     // Operations...
-} // Automatic cleanup
+} finally {
+    pool.returnArray(signal);
+}
 ```
 
 ### Thread-Local Cleanup

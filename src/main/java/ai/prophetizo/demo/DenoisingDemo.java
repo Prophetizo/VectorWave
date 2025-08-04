@@ -6,10 +6,11 @@ import ai.prophetizo.wavelet.api.Symlet;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
-import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
-import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
+// TODO: Uncomment when streaming classes are migrated to MODWT
+// import ai.prophetizo.wavelet.streaming.StreamingDenoiserConfig;
+// import ai.prophetizo.wavelet.streaming.StreamingDenoiserFactory;
+// import ai.prophetizo.wavelet.streaming.StreamingDenoiserStrategy;
+// import ai.prophetizo.wavelet.streaming.StreamingWaveletTransform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,15 +20,15 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Demonstrates wavelet-based signal denoising capabilities.
+ * Demonstrates wavelet-based signal denoising capabilities using MODWT.
  *
- * <p>This demo shows how to use the WaveletDenoiser class to remove
- * noise from signals while preserving important features.</p>
+ * <p>This demo shows how to use the WaveletDenoiser class (which now uses MODWT internally)
+ * to remove noise from signals while preserving important features.</p>
  */
 public class DenoisingDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Denoising Demo ===\n");
+        System.out.println("=== VectorWave Denoising Demo (MODWT) ===\n");
 
         // Demo 1: Basic denoising with different threshold methods
         demonstrateThresholdMethods();
@@ -44,8 +45,8 @@ public class DenoisingDemo {
         // Demo 5: Performance comparison
         demonstratePerformance();
 
-        // Demo 6: Streaming vs Batch denoising
-        demonstrateStreamingVsBatch();
+        // Demo 6: Streaming vs Batch denoising - DISABLED until streaming is migrated
+        // demonstrateStreamingVsBatch();
     }
 
     private static void demonstrateThresholdMethods() {
@@ -341,6 +342,7 @@ public class DenoisingDemo {
         return Math.sqrt(sum / (2 * (signal.length - 1)));
     }
 
+    /* TODO: Enable when streaming classes are migrated to MODWT
     private static void demonstrateStreamingVsBatch() {
         System.out.println("6. Streaming vs Batch Denoising Comparison");
         System.out.println("------------------------------------------");
@@ -481,4 +483,5 @@ public class DenoisingDemo {
 
         return output;
     }
+    */
 }

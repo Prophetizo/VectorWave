@@ -1,31 +1,28 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.MultiLevelTransformResult;
-import ai.prophetizo.wavelet.MultiLevelWaveletTransform;
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.api.BoundaryMode;
-import ai.prophetizo.wavelet.api.Daubechies;
-import ai.prophetizo.wavelet.api.Symlet;
+import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.api.*;
 
 import java.util.*;
 
 /**
- * Demonstrates signal analysis capabilities using wavelet transforms.
+ * Demonstrates signal analysis capabilities using MODWT wavelet transforms.
  *
  * <p>This demo covers:
  * <ul>
- *   <li>Time-frequency analysis</li>
- *   <li>Feature extraction</li>
- *   <li>Anomaly detection</li>
- *   <li>Signal classification</li>
- *   <li>Pattern recognition</li>
+ *   <li>Time-frequency analysis with shift-invariance</li>
+ *   <li>Feature extraction from arbitrary-length signals</li>
+ *   <li>Anomaly detection using MODWT coefficients</li>
+ *   <li>Signal classification with wavelet features</li>
+ *   <li>Pattern recognition across scales</li>
  * </ul>
+ * 
+ * @since 3.0.0
  */
 public class SignalAnalysisDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Signal Analysis Demo ===\n");
+        System.out.println("=== VectorWave MODWT Signal Analysis Demo ===\n");
 
         // Demo 1: Time-frequency analysis
         demonstrateTimeFrequencyAnalysis();
@@ -44,11 +41,11 @@ public class SignalAnalysisDemo {
     }
 
     private static void demonstrateTimeFrequencyAnalysis() {
-        System.out.println("1. Time-Frequency Analysis");
-        System.out.println("--------------------------");
+        System.out.println("1. Time-Frequency Analysis with MODWT");
+        System.out.println("-------------------------------------");
 
         // Create chirp signal (frequency increases with time)
-        int length = 512;
+        int length = 777; // Non-power-of-2 to showcase MODWT!
         double[] chirp = new double[length];
         for (int i = 0; i < length; i++) {
             double t = (double) i / length;
@@ -56,22 +53,23 @@ public class SignalAnalysisDemo {
             chirp[i] = Math.sin(2 * Math.PI * frequency * t * length / 100);
         }
 
-        System.out.println("Analyzing chirp signal (frequency increases over time)...\n");
+        System.out.println("Analyzing chirp signal (frequency increases over time)...");
+        System.out.println("Signal length: " + length + " (non-power-of-2!)\n");
 
-        // Multi-level decomposition for time-frequency analysis
-        MultiLevelWaveletTransform mwt = new MultiLevelWaveletTransform(
+        // Multi-level MODWT decomposition for time-frequency analysis
+        MultiLevelMODWTTransform mwt = new MultiLevelMODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
         int levels = 5;
-        MultiLevelTransformResult result = mwt.decompose(chirp, levels);
+        MultiLevelMODWTResult result = mwt.forward(chirp, levels);
 
-        System.out.println("Time-Frequency content by scale:");
-        System.out.println("Level | Scale | Frequency Band | Energy | Characteristics");
-        System.out.println("------|-------|----------------|--------|---------------");
+        System.out.println("Time-Frequency content by scale (MODWT preserves time alignment):");
+        System.out.println("Level | Scale | Frequency Band | Energy | Peak Location | Shift-Invariant");
+        System.out.println("------|-------|----------------|--------|---------------|----------------");
 
         double samplingRate = 100; // Hz
         for (int level = 1; level <= levels; level++) {
-            double[] details = result.detailsAtLevel(level);
+            double[] details = result.getDetailCoeffsAtLevel(level);
             double energy = calculateEnergy(details);
             int scale = 1 << level;
 
@@ -83,37 +81,40 @@ public class SignalAnalysisDemo {
             int maxIndex = findMaxEnergyWindow(details, 10);
             double maxTime = (double) maxIndex / details.length;
 
-            System.out.printf("%5d | %5d | %4.1f-%4.1f Hz | %6.2f | Max at t=%.2f\n",
-                    level, scale, lowFreq, highFreq, energy, maxTime);
+            System.out.printf("%5d | %5d | %4.1f-%4.1f Hz | %6.2f | t=%.2f (%.0f%%) | YES\n",
+                    level, scale, lowFreq, highFreq, energy, maxTime, maxTime * 100);
         }
 
-        System.out.println("\nObservation: Higher frequencies dominate later in the signal\n");
+        System.out.println("\nMODWT Advantage: Time alignment preserved across all scales!");
+        System.out.println("DWT would decimate coefficients, losing precise time information.\n");
     }
 
     private static void demonstrateFeatureExtraction() {
-        System.out.println("2. Feature Extraction");
-        System.out.println("---------------------");
+        System.out.println("2. Feature Extraction with MODWT");
+        System.out.println("---------------------------------");
 
-        // Create different test signals
+        // Create different test signals of varying lengths
         Map<String, double[]> signals = createFeatureTestSignals();
 
-        System.out.println("Extracting wavelet features from different signal types:\n");
+        System.out.println("Extracting wavelet features from different signal types:");
+        System.out.println("(Note: MODWT handles arbitrary signal lengths)\n");
 
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
-        System.out.println("Signal Type    | Mean | Std  | Energy | Entropy | Zero-X | Dominant");
-        System.out.println("---------------|------|------|--------|---------|--------|----------");
+        System.out.println("Signal Type    | Length | Mean | Std  | Energy | Entropy | Zero-X | Dominant");
+        System.out.println("---------------|--------|------|------|--------|---------|--------|----------");
 
         for (Map.Entry<String, double[]> entry : signals.entrySet()) {
             String name = entry.getKey();
             double[] signal = entry.getValue();
 
-            // Extract features
-            WaveletFeatures features = extractWaveletFeatures(transform, signal);
+            // Extract features using MODWT
+            WaveletFeatures features = extractMODWTFeatures(transform, signal);
 
-            System.out.printf("%-14s | %4.2f | %4.2f | %6.2f | %7.3f | %6d | %s\n",
+            System.out.printf("%-14s | %6d | %4.2f | %4.2f | %6.2f | %7.3f | %6d | %s\n",
                     name,
+                    signal.length,
                     features.mean,
                     features.stdDev,
                     features.energy,
@@ -122,18 +123,18 @@ public class SignalAnalysisDemo {
                     features.dominantScale);
         }
 
-        System.out.println("\nThese features can be used for:");
-        System.out.println("- Machine learning classification");
-        System.out.println("- Signal quality assessment");
-        System.out.println("- Compression rate estimation\n");
+        System.out.println("\nMODWT advantages for feature extraction:");
+        System.out.println("- Works with any signal length (no padding needed)");
+        System.out.println("- Shift-invariant features (robust to signal shifts)");
+        System.out.println("- Better time-frequency localization\n");
     }
 
     private static void demonstrateAnomalyDetection() {
-        System.out.println("3. Anomaly Detection");
-        System.out.println("--------------------");
+        System.out.println("3. Anomaly Detection with MODWT");
+        System.out.println("--------------------------------");
 
         // Create signal with anomalies
-        int length = 256;
+        int length = 333; // Non-power-of-2
         double[] normalSignal = new double[length];
         Random rng = new Random(42);
 
@@ -143,19 +144,19 @@ public class SignalAnalysisDemo {
                     0.1 * rng.nextGaussian();
 
             // Inject anomalies
-            if (i == 80) normalSignal[i] += 3.0;  // Spike anomaly
-            if (i >= 150 && i <= 160) {           // Pattern anomaly
+            if (i == 100) normalSignal[i] += 3.0;  // Spike anomaly
+            if (i >= 200 && i <= 210) {           // Pattern anomaly
                 normalSignal[i] = 0.5 * Math.sin(2 * Math.PI * i / 4);
             }
         }
 
-        System.out.println("Detecting anomalies in signal...\n");
+        System.out.println("Detecting anomalies in signal of length " + length + "...\n");
 
-        // Use wavelet transform for anomaly detection
-        WaveletTransform transform = new WaveletTransform(
+        // Use MODWT for anomaly detection
+        MODWTTransform transform = new MODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
-        // Sliding window analysis
+        // Sliding window analysis with MODWT
         int windowSize = 32;
         int stride = 8;
         List<AnomalyScore> anomalies = new ArrayList<>();
@@ -163,8 +164,8 @@ public class SignalAnalysisDemo {
         for (int start = 0; start <= length - windowSize; start += stride) {
             double[] window = Arrays.copyOfRange(normalSignal, start, start + windowSize);
 
-            TransformResult result = transform.forward(window);
-            double score = calculateAnomalyScore(result);
+            MODWTResult result = transform.forward(window);
+            double score = calculateMODWTAnomalyScore(result);
 
             anomalies.add(new AnomalyScore(start, start + windowSize, score));
         }
@@ -174,35 +175,35 @@ public class SignalAnalysisDemo {
         double threshold = anomalies.get(anomalies.size() / 10).score;
 
         System.out.println("Detected anomalies (score > " + String.format("%.2f", threshold) + "):");
-        System.out.println("Position | Score | Type");
-        System.out.println("---------|-------|---------------------");
+        System.out.println("Position | Score | Type             | MODWT Advantage");
+        System.out.println("---------|-------|------------------|------------------");
 
         for (AnomalyScore anomaly : anomalies) {
             if (anomaly.score > threshold) {
                 String type = classifyAnomaly(normalSignal, anomaly.start, anomaly.end);
-                System.out.printf("%3d-%3d  | %5.2f | %s\n",
+                System.out.printf("%3d-%3d  | %5.2f | %-16s | Shift-invariant detection\n",
                         anomaly.start, anomaly.end, anomaly.score, type);
             }
         }
 
-        System.out.println("\nAnomaly detection applications:");
-        System.out.println("- Equipment fault detection");
-        System.out.println("- Financial fraud detection");
-        System.out.println("- Network intrusion detection\n");
+        System.out.println("\nMODWT benefits for anomaly detection:");
+        System.out.println("- Consistent detection regardless of anomaly position");
+        System.out.println("- No edge effects from signal padding");
+        System.out.println("- Better localization of transient anomalies\n");
     }
 
     private static void demonstrateSignalClassification() {
-        System.out.println("4. Signal Classification");
-        System.out.println("------------------------");
+        System.out.println("4. Signal Classification with MODWT");
+        System.out.println("------------------------------------");
 
-        // Create different signal classes
+        // Create different signal classes with varying lengths
         Map<String, List<double[]>> signalClasses = createSignalClasses();
 
-        System.out.println("Training wavelet-based classifier...\n");
+        System.out.println("Training MODWT-based classifier on variable-length signals...\n");
 
         // Extract features for each class
         Map<String, List<WaveletFeatures>> classFeatures = new HashMap<>();
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 Symlet.SYM4, BoundaryMode.PERIODIC);
 
         for (Map.Entry<String, List<double[]>> entry : signalClasses.entrySet()) {
@@ -210,16 +211,16 @@ public class SignalAnalysisDemo {
             List<WaveletFeatures> features = new ArrayList<>();
 
             for (double[] signal : entry.getValue()) {
-                features.add(extractWaveletFeatures(transform, signal));
+                features.add(extractMODWTFeatures(transform, signal));
             }
 
             classFeatures.put(className, features);
         }
 
         // Compute class statistics
-        System.out.println("Class Statistics:");
-        System.out.println("Class       | Avg Energy | Avg Entropy | Characteristic");
-        System.out.println("------------|------------|-------------|---------------");
+        System.out.println("Class Statistics (from variable-length training signals):");
+        System.out.println("Class       | Avg Energy | Avg Entropy | MODWT Characteristic");
+        System.out.println("------------|------------|-------------|---------------------");
 
         for (Map.Entry<String, List<WaveletFeatures>> entry : classFeatures.entrySet()) {
             String className = entry.getKey();
@@ -234,62 +235,63 @@ public class SignalAnalysisDemo {
 
             System.out.printf("%-11s | %10.2f | %11.3f | %s\n",
                     className, avgEnergy, avgEntropy,
-                    getClassCharacteristic(className));
+                    getMODWTCharacteristic(className));
         }
 
-        // Test classification
-        System.out.println("\nClassification test on new signals:");
-        testSignalClassification(transform, classFeatures);
+        // Test classification on new signals
+        System.out.println("\nClassification test on new signals (various lengths):");
+        testMODWTSignalClassification(transform, classFeatures);
 
         System.out.println();
     }
 
     private static void demonstratePatternRecognition() {
-        System.out.println("5. Pattern Recognition");
-        System.out.println("----------------------");
+        System.out.println("5. Pattern Recognition with MODWT");
+        System.out.println("----------------------------------");
 
         // Create signal with repeating patterns
-        int length = 512;
+        int length = 555; // Non-power-of-2
         double[] signal = createPatternSignal(length);
 
-        System.out.println("Detecting repeating patterns in signal...\n");
+        System.out.println("Detecting repeating patterns in signal of length " + length + "...\n");
 
-        // Multi-resolution pattern analysis
-        MultiLevelWaveletTransform mwt = new MultiLevelWaveletTransform(
+        // Multi-resolution pattern analysis with MODWT
+        MultiLevelMODWTTransform mwt = new MultiLevelMODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
-        MultiLevelTransformResult result = mwt.decompose(signal, 4);
+        MultiLevelMODWTResult result = mwt.forward(signal, 4);
 
         // Analyze each scale for patterns
-        System.out.println("Pattern Detection Results:");
-        System.out.println("Level | Scale | Pattern Period | Confidence | Pattern Type");
-        System.out.println("------|-------|----------------|------------|-------------");
+        System.out.println("Pattern Detection Results (MODWT preserves pattern alignment):");
+        System.out.println("Level | Scale | Pattern Period | Confidence | Time Alignment | Pattern Type");
+        System.out.println("------|-------|----------------|------------|----------------|-------------");
 
         for (int level = 1; level <= 4; level++) {
-            double[] coeffs = result.detailsAtLevel(level);
-            PatternInfo pattern = detectPattern(coeffs);
+            double[] coeffs = result.getDetailCoeffsAtLevel(level);
+            PatternInfo pattern = detectMODWTPattern(coeffs);
 
             if (pattern.confidence > 0.5) {
                 int scale = 1 << level;
-                int actualPeriod = pattern.period * scale;
+                int actualPeriod = pattern.period; // MODWT preserves length!
 
-                System.out.printf("%5d | %5d | %14d | %10.2f | %s\n",
+                System.out.printf("%5d | %5d | %14d | %10.2f | Preserved      | %s\n",
                         level, scale, actualPeriod,
                         pattern.confidence, pattern.type);
             }
         }
 
-        // Correlation-based pattern matching
-        System.out.println("\nCross-scale correlation analysis:");
-        demonstrateCrossScaleCorrelation(result);
+        // Cross-scale correlation analysis
+        System.out.println("\nCross-scale correlation (MODWT maintains alignment):");
+        demonstrateMODWTCrossScaleCorrelation(result);
 
-        System.out.println("\nPattern recognition applications:");
-        System.out.println("- Speech recognition");
-        System.out.println("- ECG arrhythmia detection");
-        System.out.println("- Mechanical vibration analysis\n");
+        System.out.println("\nMODWT advantages for pattern recognition:");
+        System.out.println("- Patterns remain aligned across scales");
+        System.out.println("- No phase distortion from downsampling");
+        System.out.println("- Works with patterns of any period");
+        System.out.println("- Better detection of non-stationary patterns\n");
     }
 
-    // Helper classes and methods
+    // Helper methods updated for MODWT
 
     private static double calculateEnergy(double[] coeffs) {
         double energy = 0;
@@ -321,36 +323,38 @@ public class SignalAnalysisDemo {
         Map<String, double[]> signals = new LinkedHashMap<>();
         Random rng = new Random(42);
 
-        // Sinusoidal
-        double[] sine = new double[128];
+        // Different lengths to showcase MODWT flexibility
+        
+        // Sinusoidal (length 137 - prime number!)
+        double[] sine = new double[137];
         for (int i = 0; i < sine.length; i++) {
             sine[i] = Math.sin(2 * Math.PI * i / 16);
         }
         signals.put("Sinusoidal", sine);
 
-        // Square wave
-        double[] square = new double[128];
+        // Square wave (length 200)
+        double[] square = new double[200];
         for (int i = 0; i < square.length; i++) {
             square[i] = (i / 16) % 2 == 0 ? 1.0 : -1.0;
         }
         signals.put("Square", square);
 
-        // White noise
-        double[] noise = new double[128];
+        // White noise (length 99)
+        double[] noise = new double[99];
         for (int i = 0; i < noise.length; i++) {
             noise[i] = rng.nextGaussian();
         }
         signals.put("WhiteNoise", noise);
 
-        // Impulse train
-        double[] impulse = new double[128];
+        // Impulse train (length 150)
+        double[] impulse = new double[150];
         for (int i = 0; i < impulse.length; i += 16) {
             impulse[i] = 1.0;
         }
         signals.put("Impulse", impulse);
 
-        // Chirp
-        double[] chirp = new double[128];
+        // Chirp (length 256)
+        double[] chirp = new double[256];
         for (int i = 0; i < chirp.length; i++) {
             double f = 1 + 10.0 * i / chirp.length;
             chirp[i] = Math.sin(2 * Math.PI * f * i / chirp.length);
@@ -360,9 +364,9 @@ public class SignalAnalysisDemo {
         return signals;
     }
 
-    private static WaveletFeatures extractWaveletFeatures(WaveletTransform transform,
-                                                          double[] signal) {
-        TransformResult result = transform.forward(signal);
+    private static WaveletFeatures extractMODWTFeatures(MODWTTransform transform,
+                                                        double[] signal) {
+        MODWTResult result = transform.forward(signal);
 
         // Basic statistics
         double mean = 0;
@@ -378,8 +382,8 @@ public class SignalAnalysisDemo {
         // Energy
         double energy = calculateEnergy(signal);
 
-        // Entropy of wavelet coefficients
-        double entropy = calculateWaveletEntropy(result);
+        // Entropy of MODWT coefficients
+        double entropy = calculateMODWTEntropy(result);
 
         // Zero crossings in detail coefficients
         int zeroCrossings = countZeroCrossings(result.detailCoeffs());
@@ -391,7 +395,7 @@ public class SignalAnalysisDemo {
                 zeroCrossings, dominantScale);
     }
 
-    private static double calculateWaveletEntropy(TransformResult result) {
+    private static double calculateMODWTEntropy(MODWTResult result) {
         List<Double> allCoeffs = new ArrayList<>();
         for (double c : result.approximationCoeffs()) allCoeffs.add(Math.abs(c));
         for (double c : result.detailCoeffs()) allCoeffs.add(Math.abs(c));
@@ -420,14 +424,14 @@ public class SignalAnalysisDemo {
         return count;
     }
 
-    private static String findDominantScale(TransformResult result) {
+    private static String findDominantScale(MODWTResult result) {
         double approxEnergy = calculateEnergy(result.approximationCoeffs());
         double detailEnergy = calculateEnergy(result.detailCoeffs());
 
         return approxEnergy > detailEnergy ? "Low" : "High";
     }
 
-    private static double calculateAnomalyScore(TransformResult result) {
+    private static double calculateMODWTAnomalyScore(MODWTResult result) {
         // High-frequency energy indicates anomaly
         double detailEnergy = calculateEnergy(result.detailCoeffs());
         double approxEnergy = calculateEnergy(result.approximationCoeffs());
@@ -441,6 +445,7 @@ public class SignalAnalysisDemo {
             maxDetail = Math.max(maxDetail, Math.abs(d));
         }
 
+        // MODWT coefficients are not decimated, so we get better localization
         return ratio * 0.7 + maxDetail * 0.3;
     }
 
@@ -459,50 +464,52 @@ public class SignalAnalysisDemo {
         }
         localVar /= (end - start);
 
-        if (localVar > 1.0) return "High variance anomaly";
-        if (Math.abs(localMean) > 2.0) return "Level shift anomaly";
-        return "Pattern anomaly";
+        if (localVar > 1.0) return "High variance";
+        if (Math.abs(localMean) > 2.0) return "Level shift";
+        return "Pattern change";
     }
 
     private static Map<String, List<double[]>> createSignalClasses() {
         Map<String, List<double[]>> classes = new HashMap<>();
         Random rng = new Random(42);
 
-        // Create multiple examples per class
+        // Create multiple examples per class with varying lengths
         int samplesPerClass = 5;
-        int signalLength = 64;
 
-        // Periodic signals
+        // Periodic signals (varying lengths)
         List<double[]> periodic = new ArrayList<>();
         for (int i = 0; i < samplesPerClass; i++) {
-            double[] signal = new double[signalLength];
+            int length = 50 + rng.nextInt(100); // 50-150 samples
+            double[] signal = new double[length];
             double freq = 2 + rng.nextDouble() * 3;
             double phase = rng.nextDouble() * 2 * Math.PI;
-            for (int j = 0; j < signalLength; j++) {
-                signal[j] = Math.sin(freq * 2 * Math.PI * j / signalLength + phase);
+            for (int j = 0; j < length; j++) {
+                signal[j] = Math.sin(freq * 2 * Math.PI * j / length + phase);
             }
             periodic.add(signal);
         }
         classes.put("Periodic", periodic);
 
-        // Transient signals
+        // Transient signals (varying lengths)
         List<double[]> transientSignals = new ArrayList<>();
         for (int i = 0; i < samplesPerClass; i++) {
-            double[] signal = new double[signalLength];
-            int position = rng.nextInt(signalLength - 10) + 5;
+            int length = 60 + rng.nextInt(80); // 60-140 samples
+            double[] signal = new double[length];
+            int position = length/4 + rng.nextInt(length/2);
             double amplitude = 1 + rng.nextDouble() * 2;
-            for (int j = 0; j < signalLength; j++) {
+            for (int j = 0; j < length; j++) {
                 signal[j] = amplitude * Math.exp(-0.5 * (j - position) * (j - position) / 4);
             }
             transientSignals.add(signal);
         }
         classes.put("Transient", transientSignals);
 
-        // Noisy signals
+        // Noisy signals (varying lengths)
         List<double[]> noisy = new ArrayList<>();
         for (int i = 0; i < samplesPerClass; i++) {
-            double[] signal = new double[signalLength];
-            for (int j = 0; j < signalLength; j++) {
+            int length = 70 + rng.nextInt(60); // 70-130 samples
+            double[] signal = new double[length];
+            for (int j = 0; j < length; j++) {
                 signal[j] = rng.nextGaussian() * (0.5 + 0.5 * rng.nextDouble());
             }
             noisy.add(signal);
@@ -512,55 +519,59 @@ public class SignalAnalysisDemo {
         return classes;
     }
 
-    private static String getClassCharacteristic(String className) {
+    private static String getMODWTCharacteristic(String className) {
         switch (className) {
             case "Periodic":
-                return "Regular oscillations";
+                return "Shift-invariant oscillations";
             case "Transient":
-                return "Short-duration events";
+                return "Localized events preserved";
             case "Noisy":
-                return "Random fluctuations";
+                return "Scale-invariant randomness";
             default:
                 return "Unknown";
         }
     }
 
-    private static void testSignalClassification(WaveletTransform transform,
-                                                 Map<String, List<WaveletFeatures>> classFeatures) {
+    private static void testMODWTSignalClassification(MODWTTransform transform,
+                                                      Map<String, List<WaveletFeatures>> classFeatures) {
         Random rng = new Random(123);
 
-        // Create test signals
+        // Create test signals with different lengths
         String[] testClasses = {"Periodic", "Transient", "Noisy"};
+        int[] testLengths = {77, 93, 111}; // All different, non-power-of-2
 
-        for (String actualClass : testClasses) {
+        for (int idx = 0; idx < testClasses.length; idx++) {
+            String actualClass = testClasses[idx];
+            int length = testLengths[idx];
+            
             // Generate test signal
-            double[] testSignal = new double[64];
+            double[] testSignal = new double[length];
             switch (actualClass) {
                 case "Periodic":
-                    for (int i = 0; i < testSignal.length; i++) {
-                        testSignal[i] = Math.sin(2.5 * 2 * Math.PI * i / testSignal.length);
+                    for (int i = 0; i < length; i++) {
+                        testSignal[i] = Math.sin(2.5 * 2 * Math.PI * i / length);
                     }
                     break;
                 case "Transient":
-                    for (int i = 0; i < testSignal.length; i++) {
-                        testSignal[i] = Math.exp(-0.5 * (i - 30) * (i - 30) / 9);
+                    for (int i = 0; i < length; i++) {
+                        testSignal[i] = Math.exp(-0.5 * (i - length/2) * (i - length/2) / 9);
                     }
                     break;
                 case "Noisy":
-                    for (int i = 0; i < testSignal.length; i++) {
+                    for (int i = 0; i < length; i++) {
                         testSignal[i] = rng.nextGaussian() * 0.7;
                     }
                     break;
             }
 
             // Extract features
-            WaveletFeatures features = extractWaveletFeatures(transform, testSignal);
+            WaveletFeatures features = extractMODWTFeatures(transform, testSignal);
 
             // Simple nearest neighbor classification
             String predictedClass = classifySignal(features, classFeatures);
 
-            System.out.printf("Test signal (actual: %s) → predicted: %s %s\n",
-                    actualClass, predictedClass,
+            System.out.printf("Test signal (length=%d, actual: %s) → predicted: %s %s\n",
+                    length, actualClass, predictedClass,
                     actualClass.equals(predictedClass) ? "✓" : "✗");
         }
     }
@@ -622,8 +633,9 @@ public class SignalAnalysisDemo {
         return signal;
     }
 
-    private static PatternInfo detectPattern(double[] coeffs) {
+    private static PatternInfo detectMODWTPattern(double[] coeffs) {
         // Autocorrelation for pattern detection
+        // MODWT preserves time structure, making pattern detection more reliable
         int maxLag = coeffs.length / 2;
         double maxCorr = 0;
         int bestPeriod = 0;
@@ -658,44 +670,44 @@ public class SignalAnalysisDemo {
         return new PatternInfo(bestPeriod, confidence, type);
     }
 
-    private static void demonstrateCrossScaleCorrelation(MultiLevelTransformResult result) {
-        System.out.println("\nScale | Correlation with next scale");
-        System.out.println("------|----------------------------");
+    private static void demonstrateMODWTCrossScaleCorrelation(MultiLevelMODWTResult result) {
+        System.out.println("\nScale | Correlation with next | MODWT Benefit");
+        System.out.println("------|----------------------|---------------");
 
-        for (int level = 1; level < result.levels(); level++) {
-            double[] current = result.detailsAtLevel(level);
-            double[] next = result.detailsAtLevel(level + 1);
+        for (int level = 1; level < result.getLevels(); level++) {
+            double[] current = result.getDetailCoeffsAtLevel(level);
+            double[] next = result.getDetailCoeffsAtLevel(level + 1);
 
-            // Compute correlation (accounting for different lengths)
-            double corr = computeScaleCorrelation(current, next);
+            // MODWT coefficients have same length - direct correlation!
+            double corr = computeMODWTScaleCorrelation(current, next);
 
-            System.out.printf("  %d   | %.3f\n", level, corr);
+            System.out.printf("  %d   | %20.3f | Same length alignment\n", level, corr);
         }
     }
 
-    private static double computeScaleCorrelation(double[] scale1, double[] scale2) {
-        // Downsample longer scale to match shorter
-        int minLength = Math.min(scale1.length, scale2.length);
+    private static double computeMODWTScaleCorrelation(double[] scale1, double[] scale2) {
+        // MODWT advantage: scales have same length!
+        assert scale1.length == scale2.length : "MODWT scales should have equal length";
 
         double sum1 = 0, sum2 = 0, sum12 = 0, sum11 = 0, sum22 = 0;
+        int n = scale1.length;
 
-        for (int i = 0; i < minLength; i++) {
-            double v1 = scale1[i * scale1.length / minLength];
-            double v2 = scale2[i * scale2.length / minLength];
-
-            sum1 += v1;
-            sum2 += v2;
-            sum12 += v1 * v2;
-            sum11 += v1 * v1;
-            sum22 += v2 * v2;
+        for (int i = 0; i < n; i++) {
+            sum1 += scale1[i];
+            sum2 += scale2[i];
+            sum12 += scale1[i] * scale2[i];
+            sum11 += scale1[i] * scale1[i];
+            sum22 += scale2[i] * scale2[i];
         }
 
-        double corr = (minLength * sum12 - sum1 * sum2) /
-                Math.sqrt((minLength * sum11 - sum1 * sum1) *
-                        (minLength * sum22 - sum2 * sum2) + 1e-10);
+        double corr = (n * sum12 - sum1 * sum2) /
+                Math.sqrt((n * sum11 - sum1 * sum1) *
+                        (n * sum22 - sum2 * sum2) + 1e-10);
 
         return corr;
     }
+
+    // Helper classes
 
     static class WaveletFeatures {
         double mean;

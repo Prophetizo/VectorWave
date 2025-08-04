@@ -1,8 +1,7 @@
 package ai.prophetizo.financial;
 
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
-import ai.prophetizo.wavelet.TransformResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 
@@ -24,7 +23,7 @@ public final class FinancialAnalyzer {
     private static final double EPSILON = 1e-10; // Tolerance for zero comparison
     
     private final FinancialAnalysisConfig config;
-    private final WaveletTransform transform;
+    private final MODWTTransform transform;
     
     /**
      * Creates a new FinancialAnalyzer with the specified configuration.
@@ -37,9 +36,7 @@ public final class FinancialAnalyzer {
             throw new IllegalArgumentException("Configuration cannot be null");
         }
         this.config = config;
-        this.transform = new WaveletTransformFactory()
-                .boundaryMode(BoundaryMode.PERIODIC)
-                .create(Daubechies.DB4);
+        this.transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
     }
     
     
@@ -61,7 +58,7 @@ public final class FinancialAnalyzer {
         double[] returns = calculateReturns(prices);
         
         // Perform wavelet transform
-        TransformResult result = transform.forward(returns);
+        MODWTResult result = transform.forward(returns);
         double[] details = result.detailCoeffs();
         
         // Calculate asymmetry between positive and negative movements
@@ -112,7 +109,7 @@ public final class FinancialAnalyzer {
         double[] returns = calculateReturns(prices);
         
         // Perform wavelet transform
-        TransformResult result = transform.forward(returns);
+        MODWTResult result = transform.forward(returns);
         double[] details = result.detailCoeffs();
         
         // Calculate energy in detail coefficients (volatility measure)
@@ -141,7 +138,7 @@ public final class FinancialAnalyzer {
         double[] returns = calculateReturns(prices);
         
         // Perform wavelet transform
-        TransformResult result = transform.forward(returns);
+        MODWTResult result = transform.forward(returns);
         double[] approx = result.approximationCoeffs();
         
         if (approx.length < 2) {
@@ -175,7 +172,7 @@ public final class FinancialAnalyzer {
         double[] returns = calculateReturns(prices);
         
         // Perform wavelet transform
-        TransformResult result = transform.forward(returns);
+        MODWTResult result = transform.forward(returns);
         double[] details = result.detailCoeffs();
         
         // Calculate mean and standard deviation of detail coefficients

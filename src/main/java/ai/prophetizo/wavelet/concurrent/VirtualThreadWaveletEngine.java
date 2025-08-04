@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.concurrent;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Wavelet;
 
@@ -30,7 +30,7 @@ import java.util.function.Function;
  * try (VirtualThreadWaveletEngine engine = new VirtualThreadWaveletEngine()) {
  *     double[][] signals = loadSignals();
  *     
- *     TransformResult[] results = engine.transformBatch(
+ *     MODWTResult[] results = engine.transformBatch(
  *         signals, 
  *         Daubechies.DB4, 
  *         BoundaryMode.PERIODIC
@@ -74,26 +74,26 @@ public class VirtualThreadWaveletEngine implements AutoCloseable {
      * @return array of transform results
      * @throws InterruptedException if interrupted while waiting
      */
-    public TransformResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) 
+    public MODWTResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode) 
             throws InterruptedException {
         
         if (signals == null || signals.length == 0) {
-            return new TransformResult[0];
+            return new MODWTResult[0];
         }
         
-        List<Future<TransformResult>> futures = new ArrayList<>(signals.length);
+        List<Future<MODWTResult>> futures = new ArrayList<>(signals.length);
         
         // Submit each transform as a separate virtual thread task
         for (double[] signal : signals) {
-            Future<TransformResult> future = executor.submit(() -> {
-                WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            Future<MODWTResult> future = executor.submit(() -> {
+                MODWTTransform transform = new MODWTTransform(wavelet, mode);
                 return transform.forward(signal);
             });
             futures.add(future);
         }
         
         // Collect results
-        TransformResult[] results = new TransformResult[signals.length];
+        MODWTResult[] results = new MODWTResult[signals.length];
         for (int i = 0; i < futures.size(); i++) {
             try {
                 results[i] = futures.get(i).get();
@@ -118,27 +118,27 @@ public class VirtualThreadWaveletEngine implements AutoCloseable {
      * @throws TimeoutException if timeout expires
      * @throws ExecutionException if a transform fails
      */
-    public TransformResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode,
+    public MODWTResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode,
                                           long timeout, TimeUnit unit) 
             throws InterruptedException, TimeoutException, ExecutionException {
         
         if (signals == null || signals.length == 0) {
-            return new TransformResult[0];
+            return new MODWTResult[0];
         }
         
-        List<Future<TransformResult>> futures = new ArrayList<>(signals.length);
+        List<Future<MODWTResult>> futures = new ArrayList<>(signals.length);
         
         // Submit all tasks
         for (double[] signal : signals) {
-            Future<TransformResult> future = executor.submit(() -> {
-                WaveletTransform transform = new WaveletTransform(wavelet, mode);
+            Future<MODWTResult> future = executor.submit(() -> {
+                MODWTTransform transform = new MODWTTransform(wavelet, mode);
                 return transform.forward(signal);
             });
             futures.add(future);
         }
         
         // Collect results with timeout
-        TransformResult[] results = new TransformResult[signals.length];
+        MODWTResult[] results = new MODWTResult[signals.length];
         long deadline = System.nanoTime() + unit.toNanos(timeout);
         
         for (int i = 0; i < futures.size(); i++) {

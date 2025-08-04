@@ -1,33 +1,34 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.WaveletTransformFactory;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.api.*;
 
 import java.util.Arrays;
 
 /**
- * Demonstrates basic usage patterns for the VectorWave library.
+ * Demonstrates basic usage patterns for the VectorWave library using MODWT.
  *
  * <p>This demo covers:
  * <ul>
- *   <li>Creating wavelet transforms</li>
+ *   <li>Creating MODWT transforms</li>
  *   <li>Forward and inverse transforms</li>
  *   <li>Using different wavelet families</li>
+ *   <li>Working with arbitrary length signals (not just power-of-2)</li>
  *   <li>Error handling best practices</li>
  * </ul>
  */
 public class BasicUsageDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Basic Usage Demo ===\n");
+        System.out.println("=== VectorWave Basic Usage Demo (MODWT) ===\n");
 
         // Demo 1: Simple transform with Haar wavelet
         demonstrateBasicTransform();
 
-        // Demo 2: Using the factory pattern
-        demonstrateFactoryPattern();
+        // Demo 2: Working with different wavelets
+        demonstrateDifferentWavelets();
 
         // Demo 3: Working with different signal lengths
         demonstrateSignalLengths();
@@ -47,11 +48,11 @@ public class BasicUsageDemo {
         double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
         System.out.println("Original signal: " + Arrays.toString(signal));
 
-        // Create transform with Haar wavelet
-        WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+        // Create MODWT transform with Haar wavelet
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
 
         // Forward transform
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
         System.out.println("\nForward transform:");
         System.out.println("  Approximation: " + Arrays.toString(result.approximationCoeffs()));
         System.out.println("  Detail:        " + Arrays.toString(result.detailCoeffs()));
@@ -65,51 +66,48 @@ public class BasicUsageDemo {
         System.out.printf("Max error: %.2e (should be ~0)\n\n", error);
     }
 
-    private static void demonstrateFactoryPattern() {
-        System.out.println("2. Factory Pattern Usage");
-        System.out.println("------------------------");
+    private static void demonstrateDifferentWavelets() {
+        System.out.println("2. Different Wavelet Families");
+        System.out.println("-----------------------------");
 
         double[] signal = generateSineWave(64);
+        System.out.println("Signal length: " + signal.length);
 
-        // Method 1: Using factory with configuration
-        WaveletTransformFactory factory = new WaveletTransformFactory()
-                .boundaryMode(BoundaryMode.ZERO_PADDING);
+        // Try different wavelets
+        Wavelet[] wavelets = {
+            new Haar(),
+            Daubechies.DB4,
+            Symlet.SYM3,
+            Coiflet.COIF1
+        };
 
-        WaveletTransform transform1 = factory.create(Daubechies.DB4);
-        TransformResult result1 = transform1.forward(signal);
-        System.out.printf("Factory created transform: %d coefficients\n",
-                result1.approximationCoeffs().length + result1.detailCoeffs().length);
-
-        // Method 2: Quick creation with defaults
-        WaveletTransform transform2 = WaveletTransformFactory.createDefault(Symlet.SYM3);
-        TransformResult result2 = transform2.forward(signal);
-        System.out.printf("Default transform: %d coefficients\n",
-                result2.approximationCoeffs().length + result2.detailCoeffs().length);
-
-        // Method 3: Direct instantiation
-        WaveletTransform transform3 = new WaveletTransform(
-                Coiflet.COIF1, BoundaryMode.PERIODIC);
-        TransformResult result3 = transform3.forward(signal);
-        System.out.printf("Direct transform: %d coefficients\n\n",
-                result3.approximationCoeffs().length + result3.detailCoeffs().length);
+        for (Wavelet wavelet : wavelets) {
+            MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+            MODWTResult result = transform.forward(signal);
+            
+            System.out.printf("%s: %d coefficients (same as input)\n",
+                    wavelet.getClass().getSimpleName(),
+                    result.approximationCoeffs().length);
+        }
+        System.out.println();
     }
 
     private static void demonstrateSignalLengths() {
-        System.out.println("3. Different Signal Lengths");
-        System.out.println("---------------------------");
+        System.out.println("3. Different Signal Lengths (MODWT Advantage)");
+        System.out.println("---------------------------------------------");
 
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 Daubechies.DB2, BoundaryMode.PERIODIC);
 
-        // Test various power-of-2 lengths
-        int[] lengths = {8, 16, 32, 64, 128, 256};
+        // Test various lengths - MODWT works with ANY length!
+        int[] lengths = {7, 13, 25, 64, 100, 256};
 
         System.out.println("Signal Length -> Approx + Detail Coefficients");
         for (int length : lengths) {
             double[] signal = new double[length];
             Arrays.fill(signal, 1.0); // Constant signal
 
-            TransformResult result = transform.forward(signal);
+            MODWTResult result = transform.forward(signal);
             System.out.printf("  %4d -> %d + %d = %d total\n",
                     length,
                     result.approximationCoeffs().length,
@@ -117,22 +115,22 @@ public class BasicUsageDemo {
                     result.approximationCoeffs().length + result.detailCoeffs().length);
         }
 
-        System.out.println("\nNote: Signal length must be a power of 2\n");
+        System.out.println("\nNote: MODWT works with ANY signal length!\n");
     }
 
     private static void demonstrateErrorHandling() {
         System.out.println("4. Error Handling Best Practices");
         System.out.println("--------------------------------");
 
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 new Haar(), BoundaryMode.PERIODIC);
 
-        // Example 1: Invalid signal length
+        // Example 1: Empty signal (MODWT still requires non-empty signal)
         try {
-            double[] invalidSignal = new double[13]; // Not a power of 2
-            transform.forward(invalidSignal);
+            double[] emptySignal = new double[0];
+            transform.forward(emptySignal);
         } catch (Exception e) {
-            System.out.println("Expected error for length 13: " + e.getMessage());
+            System.out.println("Expected error for empty signal: " + e.getMessage());
         }
 
         // Example 2: Null signal
@@ -142,22 +140,20 @@ public class BasicUsageDemo {
             System.out.println("Expected error for null signal: " + e.getMessage());
         }
 
-        // Example 3: Empty signal
+        // Example 3: Signal with NaN
         try {
-            double[] emptySignal = new double[0];
-            transform.forward(emptySignal);
+            double[] nanSignal = {1.0, 2.0, Double.NaN, 4.0};
+            transform.forward(nanSignal);
         } catch (Exception e) {
-            System.out.println("Expected error for empty signal: " + e.getMessage());
+            System.out.println("Expected error for NaN in signal: " + e.getMessage());
         }
 
-        // Example 4: Signal too small for wavelet
+        // Example 4: Signal with Infinity
         try {
-            WaveletTransform db4Transform = new WaveletTransform(
-                    Daubechies.DB4, BoundaryMode.PERIODIC);
-            double[] tooSmall = new double[4]; // DB4 needs at least 8 samples
-            db4Transform.forward(tooSmall);
+            double[] infSignal = {1.0, 2.0, Double.POSITIVE_INFINITY, 4.0};
+            transform.forward(infSignal);
         } catch (Exception e) {
-            System.out.println("Expected error for signal too small: " + e.getMessage());
+            System.out.println("Expected error for infinity in signal: " + e.getMessage());
         }
 
         System.out.println("\nAlways validate input data before transformation!\n");
@@ -176,10 +172,10 @@ public class BasicUsageDemo {
                     0.1 * Math.sin(2 * Math.PI * i / 2.0);   // High frequency
         }
 
-        WaveletTransform transform = new WaveletTransform(
+        MODWTTransform transform = new MODWTTransform(
                 Daubechies.DB4, BoundaryMode.PERIODIC);
 
-        TransformResult result = transform.forward(signal);
+        MODWTResult result = transform.forward(signal);
 
         // Analyze approximation coefficients (low frequency)
         double approxEnergy = calculateEnergy(result.approximationCoeffs());
@@ -215,7 +211,7 @@ public class BasicUsageDemo {
                 100.0 * zeroedCount / detailCoeffs.length);
 
         // Reconstruct with modified coefficients
-        TransformResult modifiedResult = TransformResult.create(
+        MODWTResult modifiedResult = new MODWTResultImpl(
                 result.approximationCoeffs(), detailCoeffs);
         double[] reconstructed = transform.inverse(modifiedResult);
 

@@ -3,8 +3,7 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.TransformResult;
+// DWT imports removed - using only MODWT
 import ai.prophetizo.wavelet.internal.ScalarOps;
 
 import java.util.Arrays;
@@ -20,12 +19,12 @@ import java.util.Arrays;
  *   <li>MODWT provides better time-frequency localization</li>
  * </ul>
  * 
- * <h2>When to Use MODWT vs DWT:</h2>
+ * <h2>When to Use MODWT:</h2>
  * <ul>
- *   <li><strong>Use MODWT for:</strong> Time series analysis, pattern detection, 
- *       feature extraction, when shift-invariance is important</li>
- *   <li><strong>Use DWT for:</strong> Data compression, denoising, when computational 
- *       efficiency is critical</li>
+ *   <li><strong>Time series analysis:</strong> Financial data, economic indicators</li>
+ *   <li><strong>Pattern detection:</strong> When shift-invariance is critical</li>
+ *   <li><strong>Feature extraction:</strong> Machine learning applications</li>
+ *   <li><strong>Arbitrary length signals:</strong> Real-world data that isn't power-of-2</li>
  * </ul>
  * 
  * <h2>Performance Characteristics:</h2>
@@ -34,7 +33,7 @@ import java.util.Arrays;
  * many signal analysis tasks.</p>
  * 
  * @see ai.prophetizo.wavelet.modwt.MODWTTransform
- * @see ai.prophetizo.wavelet.WaveletTransform
+ * @see ai.prophetizo.wavelet.modwt.MODWTTransform
  */
 public class MODWTDemo {
     
@@ -201,8 +200,8 @@ public class MODWTDemo {
         System.out.println();
         
         // DWT
-        WaveletTransform dwt = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-        TransformResult dwtResult = dwt.forward(signal);
+        // DWT comparison removed - focusing on MODWT capabilities
+        // For DWT comparison, see historical documentation
         
         // MODWT
         MODWTTransform modwt = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);

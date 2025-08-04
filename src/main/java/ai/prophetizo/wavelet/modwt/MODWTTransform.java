@@ -11,8 +11,8 @@ import java.util.Objects;
 /**
  * Implementation of the MODWT (Maximal Overlap Discrete Wavelet Transform) with Java 23 optimizations.
  * 
- * <p>The MODWT is a non-decimated form of the discrete wavelet transform that offers
- * several advantages over the standard DWT:</p>
+ * <p>The MODWT is a non-decimated wavelet transform that offers
+ * several advantages:</p>
  * <ul>
  *   <li><strong>Shift-invariant:</strong> Translation of input results in corresponding translation of coefficients</li>
  *   <li><strong>Arbitrary length signals:</strong> Can handle signals of any length, not just powers of two</li>
@@ -57,7 +57,7 @@ import java.util.Objects;
  * System.out.println(perfInfo.description());
  * }</pre>
  * 
- * @see ai.prophetizo.wavelet.WaveletTransform
+ * @see MODWTResult
  */
 public class MODWTTransform {
     
@@ -69,7 +69,7 @@ public class MODWTTransform {
      * Automatically configures performance optimizations based on system capabilities.
      * 
      * @param wavelet      The wavelet to use for the transformations
-     * @param boundaryMode The boundary handling mode (currently only PERIODIC is supported)
+     * @param boundaryMode The boundary handling mode (PERIODIC or ZERO_PADDING)
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if boundary mode is not supported
      */
@@ -77,9 +77,9 @@ public class MODWTTransform {
         this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null");
         this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null");
         
-        // MODWT currently only supports periodic boundary mode
-        if (boundaryMode != BoundaryMode.PERIODIC) {
-            throw new IllegalArgumentException("MODWT only supports PERIODIC boundary mode, got: " + boundaryMode);
+        // MODWT supports PERIODIC and ZERO_PADDING boundary modes
+        if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
+            throw new IllegalArgumentException("MODWT only supports PERIODIC and ZERO_PADDING boundary modes, got: " + boundaryMode);
         }
     }
     
@@ -105,16 +105,34 @@ public class MODWTTransform {
         double[] lowPassFilter = wavelet.lowPassDecomposition();
         double[] highPassFilter = wavelet.highPassDecomposition();
         
+        // Scale filters by 1/sqrt(2) for MODWT
+        // This is essential for shift-invariance property
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPass = new double[lowPassFilter.length];
+        double[] scaledHighPass = new double[highPassFilter.length];
+        
+        for (int i = 0; i < lowPassFilter.length; i++) {
+            scaledLowPass[i] = lowPassFilter[i] * scale;
+        }
+        for (int i = 0; i < highPassFilter.length; i++) {
+            scaledHighPass[i] = highPassFilter[i] * scale;
+        }
+        
         // Prepare output arrays (same length as input)
         int signalLength = signal.length;
         double[] approximationCoeffs = new double[signalLength];
         double[] detailCoeffs = new double[signalLength];
         
-        // Perform circular convolution without downsampling
-        // ScalarOps.circularConvolveMODWT internally delegates to vectorized
-        // implementation when beneficial, falling back to scalar otherwise
-        ScalarOps.circularConvolveMODWT(signal, lowPassFilter, approximationCoeffs);
-        ScalarOps.circularConvolveMODWT(signal, highPassFilter, detailCoeffs);
+        // Perform convolution without downsampling based on boundary mode
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // ScalarOps.circularConvolveMODWT internally delegates to vectorized
+            // implementation when beneficial, falling back to scalar otherwise
+            ScalarOps.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            ScalarOps.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        } else { // ZERO_PADDING
+            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            ScalarOps.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        }
         
         return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
     }
@@ -142,25 +160,57 @@ public class MODWTTransform {
         double[] detailCoeffs = modwtResult.detailCoeffs();
         int signalLength = modwtResult.getSignalLength();
         
-        // Get reconstruction filter coefficients (use original, no scaling for inverse)
+        // Get reconstruction filter coefficients
         double[] lowPassRecon = wavelet.lowPassReconstruction();
         double[] highPassRecon = wavelet.highPassReconstruction();
+        
+        // Scale reconstruction filters by 1/sqrt(2) for MODWT
+        double scale = 1.0 / Math.sqrt(2.0);
+        double[] scaledLowPassRecon = new double[lowPassRecon.length];
+        double[] scaledHighPassRecon = new double[highPassRecon.length];
+        
+        for (int i = 0; i < lowPassRecon.length; i++) {
+            scaledLowPassRecon[i] = lowPassRecon[i] * scale;
+        }
+        for (int i = 0; i < highPassRecon.length; i++) {
+            scaledHighPassRecon[i] = highPassRecon[i] * scale;
+        }
         
         // Prepare output array
         double[] reconstructed = new double[signalLength];
         
-        // Direct reconstruction: X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
-        for (int t = 0; t < signalLength; t++) {
-            double sum = 0.0;
-            
-            // Sum over filter coefficients using reverse indexing for reconstruction
-            for (int l = 0; l < lowPassRecon.length; l++) {
-                int coeffIndex = (t - l + signalLength * lowPassRecon.length) % signalLength;
-                sum += lowPassRecon[l] * approxCoeffs[coeffIndex] + 
-                       highPassRecon[l] * detailCoeffs[coeffIndex];
+        // Direct reconstruction based on boundary mode
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                
+                // Sum over filter coefficients
+                // For MODWT reconstruction, we use (t + l) indexing since we used (t - l) in forward
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int coeffIndex = (t + l) % signalLength;
+                    sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                           scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+                }
+                
+                reconstructed[t] = sum; // No additional normalization needed with scaled filters
             }
-            
-            reconstructed[t] = sum / 2.0; // Normalize by factor of 2
+        } else { // ZERO_PADDING
+            // X_t = Σ(l=0 to L-1) [h_l * s_(t+l) + g_l * d_(t+l)] with zero padding
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int coeffIndex = t + l;
+                    if (coeffIndex < signalLength) {
+                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                               scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+                    }
+                    // else: treat as zero (no contribution to sum)
+                }
+                
+                reconstructed[t] = sum;
+            }
         }
         
         return reconstructed;

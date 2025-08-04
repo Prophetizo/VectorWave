@@ -1,12 +1,8 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.memory.MemoryPool;
-import ai.prophetizo.wavelet.memory.AlignedMemoryPool;
-import ai.prophetizo.wavelet.memory.ffm.FFMMemoryPool;
-import ai.prophetizo.wavelet.WaveletTransform;
-import ai.prophetizo.wavelet.api.Wavelet;
-import ai.prophetizo.wavelet.api.Haar;
-import ai.prophetizo.wavelet.api.Daubechies;
+import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.api.*;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -16,19 +12,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Demonstrates proper memory pool lifecycle management patterns.
+ * Demonstrates proper memory pool lifecycle management patterns with MODWT.
  * 
- * This demo shows:
- * - Different pool types and their use cases
- * - Proper resource management with try-finally
- * - Thread-safe pool usage patterns
- * - Performance monitoring and pool clearing strategies
- * - Common pitfalls and how to avoid them
+ * <p>This demo shows:
+ * <ul>
+ *   <li>Different pool types and their use cases</li>
+ *   <li>Proper resource management with try-finally</li>
+ *   <li>Thread-safe pool usage patterns</li>
+ *   <li>Performance monitoring and pool clearing strategies</li>
+ *   <li>Common pitfalls and how to avoid them</li>
+ * </ul>
+ * 
+ * @since 3.0.0
  */
 public class MemoryPoolLifecycleDemo {
     
     public static void main(String[] args) throws Exception {
-        System.out.println("=== Memory Pool Lifecycle Demo ===\n");
+        System.out.println("=== MODWT Memory Pool Lifecycle Demo ===\n");
         
         // 1. Basic pool usage with try-finally
         demonstrateBasicPoolUsage();
@@ -39,8 +39,8 @@ public class MemoryPoolLifecycleDemo {
         // 3. Thread-local pool pattern
         demonstrateThreadLocalPattern();
         
-        // 4. FFM pool with automatic lifecycle
-        demonstrateFFMPoolLifecycle();
+        // 4. MODWT with memory pooling
+        demonstrateMODWTWithPooling();
         
         // 5. Pool clearing strategies
         demonstratePoolClearingStrategies();
@@ -161,34 +161,55 @@ public class MemoryPoolLifecycleDemo {
     }
     
     /**
-     * 4. FFM pool with automatic lifecycle management
+     * 4. MODWT with memory pooling for efficient processing
      */
-    private static void demonstrateFFMPoolLifecycle() {
-        System.out.println("4. FFM Pool with Automatic Lifecycle");
-        System.out.println("------------------------------------");
+    private static void demonstrateMODWTWithPooling() {
+        System.out.println("4. MODWT with Memory Pooling");
+        System.out.println("-----------------------------");
         
-        // FFM pools are AutoCloseable - use try-with-resources
-        try (FFMMemoryPool ffmPool = new FFMMemoryPool()) {
-            System.out.println("Created FFM pool with automatic arena management");
+        MemoryPool pool = new MemoryPool();
+        pool.setMaxArraysPerSize(10);
+        
+        // Create MODWT transform
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+        
+        System.out.println("Processing multiple signals with pooled memory:");
+        
+        // Process multiple signals of varying sizes
+        int[] signalSizes = {256, 333, 512, 777, 1024}; // MODWT handles any size!
+        
+        for (int size : signalSizes) {
+            // Borrow array from pool
+            double[] signal = pool.borrowArray(size);
             
-            // Perform multiple operations
-            for (int i = 0; i < 3; i++) {
-                var segment = ffmPool.acquire(1024);
-                try {
-                    System.out.printf("Acquired segment of size %d bytes\n", segment.byteSize());
-                    // Process with segment...
-                } finally {
-                    ffmPool.release(segment);
+            try {
+                // Generate test signal
+                for (int i = 0; i < size; i++) {
+                    signal[i] = Math.sin(2 * Math.PI * i / 32) + 0.1 * Math.random();
                 }
+                
+                // Process with MODWT
+                MODWTResult result = transform.forward(signal);
+                
+                // Use result (calculate energy)
+                double energy = 0;
+                for (double c : result.approximationCoeffs()) energy += c * c;
+                for (double c : result.detailCoeffs()) energy += c * c;
+                
+                System.out.printf("  Size %4d: Energy = %.2f, Pool hit rate = %.1f%%\n", 
+                    size, energy, pool.getHitRate() * 100);
+                    
+            } finally {
+                pool.returnArray(signal);
             }
-            
-            // Print statistics
-            var stats = ffmPool.getStatistics();
-            System.out.printf("Pool efficiency: %.1f%%\n", stats.hitRate() * 100);
-            
-        } // Pool and arena automatically closed here
+        }
         
-        System.out.println("FFM pool closed automatically\n");
+        System.out.println("\nPool statistics after MODWT processing:");
+        pool.printStatistics();
+        
+        // Clear pool to free memory
+        pool.clear();
+        System.out.println("Pool cleared\n");
     }
     
     /**
@@ -242,6 +263,32 @@ public class MemoryPoolLifecycleDemo {
             }
         }
         
+        // Strategy 3: MODWT-specific clearing
+        System.out.println("\nc) MODWT batch processing with clearing:");
+        MemoryPool modwtPool = new MemoryPool();
+        MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        
+        for (int batch = 0; batch < 3; batch++) {
+            System.out.printf("   Batch %d:\n", batch + 1);
+            
+            // Process batch
+            for (int i = 0; i < 5; i++) {
+                int size = 500 + i * 100; // Varying non-power-of-2 sizes
+                double[] signal = modwtPool.borrowArray(size);
+                
+                try {
+                    MODWTResult result = transform.forward(signal);
+                    System.out.printf("     Processed signal of size %d\n", size);
+                } finally {
+                    modwtPool.returnArray(signal);
+                }
+            }
+            
+            // Clear between batches
+            modwtPool.clear();
+            System.out.println("   Cleared pool after batch");
+        }
+        
         System.out.println();
     }
     
@@ -255,6 +302,9 @@ public class MemoryPoolLifecycleDemo {
         MemoryPool pool = new MemoryPool();
         pool.setMaxArraysPerSize(10);
         
+        // Create MODWT transform for realistic workload
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+        
         // Simulate workload with monitoring
         long startTime = System.nanoTime();
         int iterations = 1000;
@@ -263,9 +313,19 @@ public class MemoryPoolLifecycleDemo {
             // Vary array sizes to simulate real workload
             int size = 512 + (i % 8) * 256;
             double[] array = pool.borrowArray(size);
+            
             try {
-                // Simulate deterministic work
-                processSignal(array);
+                // Fill with test data
+                for (int j = 0; j < size; j++) {
+                    array[j] = Math.sin(j * 0.1);
+                }
+                
+                // Process with MODWT
+                MODWTResult result = transform.forward(array);
+                
+                // Simulate using the result
+                double sum = result.approximationCoeffs()[0] + result.detailCoeffs()[0];
+                
             } finally {
                 pool.returnArray(array);
             }
@@ -321,6 +381,11 @@ public class MemoryPoolLifecycleDemo {
         unboundedPool.setMaxArraysPerSize(Integer.MAX_VALUE); // Bad idea!
         System.out.println("   Setting max arrays to Integer.MAX_VALUE allows unbounded growth");
         
+        // Anti-pattern 4: Wrong size assumptions with MODWT
+        System.out.println("\n❌ Anti-pattern 4: Assuming power-of-2 sizes (not needed with MODWT!)");
+        System.out.println("   DWT required padding to power-of-2, wasting memory");
+        System.out.println("   MODWT works with ANY size - no padding needed!");
+        
         // Correct patterns summary
         System.out.println("\n✅ Correct Patterns:");
         System.out.println("   1. Always use try-finally to ensure arrays are returned");
@@ -328,6 +393,7 @@ public class MemoryPoolLifecycleDemo {
         System.out.println("   3. Set reasonable pool size limits");
         System.out.println("   4. Monitor pool statistics in production");
         System.out.println("   5. Clear pools periodically or at phase boundaries");
+        System.out.println("   6. With MODWT, borrow exact sizes needed - no padding!");
     }
     
     /**
@@ -339,5 +405,4 @@ public class MemoryPoolLifecycleDemo {
             workspace[i] = Math.sin(i * 0.1);
         }
     }
-    
 }

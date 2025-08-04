@@ -107,16 +107,16 @@ double[] scales = generateLogScales(1.5, 47.3, 50);  // Dense arbitrary scales
 
 ## Financial Applications
 
-The DWT-based method is particularly well-suited for financial data:
+The MODWT-based method is particularly well-suited for financial data:
 
 ```java
 // Analyze returns rather than prices
 double[] returns = calculateReturns(prices);
-CWTResult cwtResult = cwt.analyze(returns, dyadicScales);
+CWTResult cwtResult = cwt.analyze(returns, scales);  // Any scales work!
 
-// Reconstruct with DWT method
-DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-double[] reconstructedReturns = dwtInverse.reconstruct(cwtResult);
+// Reconstruct with MODWT method
+MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+double[] reconstructedReturns = modwtInverse.reconstruct(cwtResult);
 
 // Convert back to prices
 double[] reconstructedPrices = returnsToprices(reconstructedReturns, initialPrice);
@@ -130,7 +130,7 @@ double[] reconstructedPrices = returnsToprices(reconstructedReturns, initialPric
 
 ## Wavelet Mapping
 
-The DWT-based method automatically maps continuous wavelets to suitable discrete wavelets:
+The MODWT-based method automatically maps continuous wavelets to suitable discrete wavelets:
 
 | Continuous Wavelet | Mapped Discrete Wavelet | Rationale |
 |-------------------|------------------------|-----------|
@@ -148,16 +148,17 @@ int N = 1024;
 double[] signal = loadFinancialData(N);
 MorletWavelet wavelet = new MorletWavelet();
 
-// 2. Choose appropriate scales
-double[] scales = {2, 4, 8, 16, 32, 64};  // Dyadic for best DWT performance
+// 2. Choose appropriate scales (any distribution works with MODWT)
+double[] scales = {2, 4, 8, 16, 32, 64};  // Example: dyadic
+// or: double[] scales = {1.5, 3, 6, 12, 24};  // Non-dyadic also works!
 
 // 3. Perform CWT
 CWTTransform cwt = new CWTTransform(wavelet);
 CWTResult cwtResult = cwt.analyze(signal, scales);
 
-// 4. Reconstruct using DWT method
-DWTBasedInverseCWT dwtInverse = new DWTBasedInverseCWT(wavelet);
-double[] reconstructed = dwtInverse.reconstruct(cwtResult);
+// 4. Reconstruct using MODWT method
+MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
+double[] reconstructed = modwtInverse.reconstruct(cwtResult);
 
 // 5. Evaluate quality
 double error = calculateRelativeError(signal, reconstructed);
@@ -166,8 +167,8 @@ System.out.printf("Reconstruction error: %.1f%%\n", error * 100);
 
 ## Limitations and Considerations
 
-### DWT-Based Method
-- Works best with dyadic scales
+### MODWT-Based Method
+- Works well with any scale distribution
 - May have higher mathematical error than iterative methods
 - Requires mapping between continuous and discrete wavelets
 - Not suitable when exact mathematical reconstruction is required
@@ -184,7 +185,7 @@ The regularized reconstruction methods (iterative optimization) were explored bu
 - Impractical computational cost (O(iterations × scales × N²))
 - Memory requirements for reconstruction matrices
 - Convergence issues
-- DWT-based method provides better practical trade-offs
+- MODWT-based method provides better practical trade-offs
 
 ## References
 

@@ -1,26 +1,26 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.TransformResult;
-import ai.prophetizo.wavelet.WaveletTransform;
+import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.api.*;
 
 import java.util.*;
 
 /**
- * Interactive guide for selecting the appropriate wavelet for different applications.
+ * Interactive guide for selecting the appropriate wavelet for different applications with MODWT.
  *
  * <p>This demo helps users understand:
  * <ul>
  *   <li>Characteristics of different wavelet families</li>
  *   <li>How to match wavelets to signal properties</li>
  *   <li>Trade-offs between different wavelets</li>
- *   <li>Visual comparison of wavelet behaviors</li>
+ *   <li>Visual comparison of wavelet behaviors with MODWT</li>
  * </ul>
  */
 public class WaveletSelectionGuideDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Wavelet Selection Guide ===\n");
+        System.out.println("=== VectorWave Wavelet Selection Guide (MODWT) ===\n");
 
         // Demo 1: Wavelet characteristics overview
         demonstrateWaveletCharacteristics();
@@ -86,7 +86,7 @@ public class WaveletSelectionGuideDemo {
         System.out.println("  Best for: Time-frequency analysis");
         System.out.println("  Advantages: Excellent frequency resolution");
         System.out.println("  Disadvantages: No compact support");
-        System.out.println("  Note: Discretized for DWT use\n");
+        System.out.println("  Note: Use CWT for Morlet, not MODWT\n");
     }
 
     private static void demonstrateSignalTypeMatching() {
@@ -101,17 +101,32 @@ public class WaveletSelectionGuideDemo {
             double[] signal = entry.getValue();
 
             System.out.println("Signal Type: " + signalType);
-            System.out.println("Recommended wavelets:");
+            System.out.println("Testing different wavelets...");
 
-            Map<Wavelet, Double> scores = evaluateWavelets(signal);
-            List<Map.Entry<Wavelet, Double>> sorted = new ArrayList<>(scores.entrySet());
-            sorted.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+            // Test wavelets
+            Wavelet[] wavelets = {
+                new Haar(),
+                Daubechies.DB2,
+                Daubechies.DB4,
+                Symlet.SYM3,
+                Coiflet.COIF1
+            };
 
-            for (int i = 0; i < 3 && i < sorted.size(); i++) {
-                Map.Entry<Wavelet, Double> e = sorted.get(i);
-                System.out.printf("  %d. %-6s (score: %.3f)\n",
-                        i + 1, e.getKey().name(), e.getValue());
+            double bestScore = Double.MAX_VALUE;
+            Wavelet bestWavelet = null;
+
+            for (Wavelet wavelet : wavelets) {
+                double score = evaluateWaveletForSignal(wavelet, signal);
+                System.out.printf("  %-10s: score = %.4f\n", 
+                    wavelet.getClass().getSimpleName(), score);
+                
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestWavelet = wavelet;
+                }
             }
+
+            System.out.println("  Best match: " + bestWavelet.getClass().getSimpleName());
             System.out.println();
         }
     }
@@ -120,377 +135,229 @@ public class WaveletSelectionGuideDemo {
         System.out.println("3. Visual Wavelet Comparison");
         System.out.println("----------------------------\n");
 
-        // Create test signal with multiple features
-        double[] testSignal = createComplexTestSignal(128);
+        // Create a test signal with multiple features
+        double[] testSignal = createComplexTestSignal(256);
 
         System.out.println("Analyzing complex test signal with different wavelets:");
-        System.out.println("(Signal contains: trend + oscillation + spikes + noise)\n");
+        System.out.println("(Lower reconstruction error = better match)\n");
 
         Wavelet[] wavelets = {
-                new Haar(),
-                Daubechies.DB2,
-                Daubechies.DB4,
-                Symlet.SYM4,
-                Coiflet.COIF1
+            new Haar(),
+            Daubechies.DB2,
+            Daubechies.DB4,
+            Symlet.SYM4,
+            Coiflet.COIF2
         };
 
+        System.out.println("Wavelet    | Recon Error | Compression (90%) | Time (μs)");
+        System.out.println("-----------|-------------|-------------------|----------");
+
         for (Wavelet wavelet : wavelets) {
-            analyzeSignalWithWavelet(testSignal, wavelet);
+            analyzeWaveletPerformance(wavelet, testSignal);
         }
+        System.out.println();
     }
 
     private static void demonstrateApplicationRecommendations() {
         System.out.println("4. Application-Specific Recommendations");
         System.out.println("---------------------------------------\n");
 
-        System.out.println("FINANCIAL TIME SERIES ANALYSIS");
-        System.out.println("  Primary: Daubechies DB4");
-        System.out.println("  Alternative: Symlet SYM4");
-        System.out.println("  Reason: Good balance of smoothness and localization");
-        System.out.println("  Use case: Volatility estimation, trend extraction\n");
+        System.out.println("FINANCIAL TIME SERIES:");
+        System.out.println("  Recommended: DB4, SYM4");
+        System.out.println("  Reason: Good balance of smoothness and time localization");
+        System.out.println("  MODWT advantage: Shift-invariant for time series alignment\n");
 
-        System.out.println("AUDIO SIGNAL PROCESSING");
-        System.out.println("  Primary: Daubechies DB6-DB10");
-        System.out.println("  Alternative: Symlet SYM8");
-        System.out.println("  Reason: Better frequency resolution for complex signals");
-        System.out.println("  Use case: Compression, denoising, feature extraction\n");
+        System.out.println("AUDIO SIGNAL PROCESSING:");
+        System.out.println("  Recommended: DB6-DB10, COIF2-COIF3");
+        System.out.println("  Reason: Better frequency resolution");
+        System.out.println("  MODWT advantage: Works with any audio frame length\n");
 
-        System.out.println("IMAGE COMPRESSION");
-        System.out.println("  Primary: Biorthogonal BIOR1.3, BIOR2.2");
-        System.out.println("  Alternative: CDF 9/7 (if available)");
-        System.out.println("  Reason: Symmetric filters, linear phase");
-        System.out.println("  Use case: JPEG2000, medical imaging\n");
+        System.out.println("EDGE DETECTION:");
+        System.out.println("  Recommended: Haar, DB2");
+        System.out.println("  Reason: Sharp transitions in coefficients");
+        System.out.println("  MODWT advantage: Preserves edge timing information\n");
 
-        System.out.println("EDGE DETECTION");
-        System.out.println("  Primary: Haar");
-        System.out.println("  Alternative: Daubechies DB2");
-        System.out.println("  Reason: Sharp transitions, simple structure");
-        System.out.println("  Use case: Feature detection, segmentation\n");
+        System.out.println("DENOISING:");
+        System.out.println("  Recommended: SYM4-SYM8, COIF2-COIF3");
+        System.out.println("  Reason: Smoother wavelets reduce artifacts");
+        System.out.println("  MODWT advantage: Better noise statistics estimation\n");
 
-        System.out.println("ECG/BIOMEDICAL SIGNALS");
-        System.out.println("  Primary: Symlet SYM4-SYM8");
-        System.out.println("  Alternative: Coiflet COIF1-COIF2");
-        System.out.println("  Reason: Near-symmetry, smooth reconstruction");
-        System.out.println("  Use case: QRS detection, artifact removal\n");
-
-        System.out.println("REAL-TIME PROCESSING");
-        System.out.println("  Primary: Haar");
-        System.out.println("  Alternative: Daubechies DB2");
-        System.out.println("  Reason: Minimal computational complexity");
-        System.out.println("  Use case: Streaming analytics, IoT sensors\n");
+        System.out.println("COMPRESSION:");
+        System.out.println("  Recommended: BIOR wavelets, DB4-DB6");
+        System.out.println("  Reason: Good energy compaction");
+        System.out.println("  Note: DWT typically better than MODWT for compression\n");
     }
 
     private static void demonstrateTradeoffs() {
         System.out.println("5. Performance vs Accuracy Trade-offs");
         System.out.println("-------------------------------------\n");
 
-        // Create signals for testing
-        double[] smoothSignal = createSmoothSignal(256);
-        double[] sharpSignal = createSharpSignal(256);
-        double[] noisySignal = createNoisySignal(256);
+        int signalSize = 1024;
+        double[] signal = createComplexTestSignal(signalSize);
 
-        Wavelet[] wavelets = {
-                new Haar(),
-                Daubechies.DB2,
-                Daubechies.DB4,
-                Symlet.SYM4,
-                Coiflet.COIF1
-        };
+        System.out.println("Filter Length | Wavelet | Time (ms) | Accuracy | Energy Preserved");
+        System.out.println("--------------|---------|-----------|----------|------------------");
 
-        System.out.println("Wavelet | Filter | Compute | Smooth | Sharp | Noisy");
-        System.out.println("        | Length | Time(µs)| Error  | Error | SNR");
-        System.out.println("--------|--------|---------|--------|-------|------");
+        testWaveletTradeoff(new Haar(), signal, "Haar (2)");
+        testWaveletTradeoff(Daubechies.DB2, signal, "DB2 (4)");
+        testWaveletTradeoff(Daubechies.DB4, signal, "DB4 (8)");
+        testWaveletTradeoff(Daubechies.DB8, signal, "DB8 (16)");
+        testWaveletTradeoff(Coiflet.COIF3, signal, "COIF3 (18)");
 
-        for (Wavelet wavelet : wavelets) {
-            int filterLength = wavelet.lowPassDecomposition().length;
-
-            // Measure computation time
-            long computeTime = measureComputeTime(wavelet, smoothSignal);
-
-            // Measure reconstruction error
-            double smoothError = measureReconstructionError(wavelet, smoothSignal);
-            double sharpError = measureReconstructionError(wavelet, sharpSignal);
-            double noisySNR = measureDenoisingSNR(wavelet, noisySignal);
-
-            System.out.printf("%-7s | %6d | %7d | %.2e | %.2e | %.1f\n",
-                    wavelet.name(), filterLength, computeTime,
-                    smoothError, sharpError, noisySNR);
-        }
-
-        System.out.println("\nKey insights:");
+        System.out.println("\nKey Insights:");
         System.out.println("- Shorter filters = faster computation");
         System.out.println("- Longer filters = better frequency localization");
-        System.out.println("- Haar excels at sharp edges but poor for smooth signals");
-        System.out.println("- Higher-order wavelets better for denoising\n");
-
-        // Decision flowchart
-        printDecisionFlowchart();
+        System.out.println("- MODWT preserves energy perfectly for all wavelets");
+        System.out.println("- Choose based on your speed vs accuracy requirements");
     }
 
     // Helper methods
 
-    private static void printWaveletCoefficients(OrthogonalWavelet wavelet) {
+    private static void printWaveletCoefficients(Wavelet wavelet) {
         double[] lowPass = wavelet.lowPassDecomposition();
-        System.out.printf("  Filter length: %d\n", lowPass.length);
-        System.out.print("  Low-pass filter: [");
-        for (int i = 0; i < Math.min(4, lowPass.length); i++) {
-            System.out.printf("%.4f", lowPass[i]);
-            if (i < Math.min(4, lowPass.length) - 1) System.out.print(", ");
-        }
-        if (lowPass.length > 4) System.out.print(", ...");
-        System.out.println("]");
+        double[] highPass = wavelet.highPassDecomposition();
+        
+        System.out.printf("  Low-pass filter length: %d\n", lowPass.length);
+        System.out.printf("  High-pass filter length: %d\n", highPass.length);
     }
 
     private static void printBiorthogonalCoefficients(BiorthogonalWavelet wavelet) {
-        double[] decLow = wavelet.lowPassDecomposition();
-        double[] recLow = wavelet.lowPassReconstruction();
-        System.out.printf("  Decomposition filter length: %d\n", decLow.length);
-        System.out.printf("  Reconstruction filter length: %d\n", recLow.length);
+        System.out.printf("  Decomposition filters: %d, %d\n", 
+            wavelet.lowPassDecomposition().length,
+            wavelet.highPassDecomposition().length);
+        System.out.printf("  Reconstruction filters: %d, %d\n",
+            wavelet.lowPassReconstruction().length,
+            wavelet.highPassReconstruction().length);
     }
 
     private static Map<String, double[]> createTestSignals() {
         Map<String, double[]> signals = new LinkedHashMap<>();
-
+        
+        // Step signal
+        double[] step = new double[128];
+        Arrays.fill(step, 0, 64, 1.0);
+        Arrays.fill(step, 64, 128, -1.0);
+        signals.put("Step/Edge", step);
+        
         // Smooth signal
-        double[] smooth = new double[64];
-        for (int i = 0; i < smooth.length; i++) {
-            smooth[i] = Math.sin(2 * Math.PI * i / smooth.length);
+        double[] smooth = new double[128];
+        for (int i = 0; i < 128; i++) {
+            smooth[i] = Math.sin(2 * Math.PI * i / 32);
         }
-        signals.put("Smooth Sinusoid", smooth);
-
-        // Step function
-        double[] step = new double[64];
-        Arrays.fill(step, 0, 32, 0.0);
-        Arrays.fill(step, 32, 64, 1.0);
-        signals.put("Step Function", step);
-
-        // Spiky signal
-        double[] spiky = new double[64];
-        spiky[16] = 1.0;
-        spiky[32] = -1.0;
-        spiky[48] = 0.5;
-        signals.put("Sparse Spikes", spiky);
-
-        // Polynomial trend
-        double[] poly = new double[64];
-        for (int i = 0; i < poly.length; i++) {
-            double x = (double) i / poly.length;
-            poly[i] = x * x - 0.5 * x + 0.1;
+        signals.put("Smooth/Sinusoidal", smooth);
+        
+        // Noisy signal
+        double[] noisy = new double[128];
+        Random rand = new Random(42);
+        for (int i = 0; i < 128; i++) {
+            noisy[i] = Math.sin(2 * Math.PI * i / 32) + 0.3 * rand.nextGaussian();
         }
-        signals.put("Polynomial Trend", poly);
-
+        signals.put("Noisy", noisy);
+        
         return signals;
-    }
-
-    private static Map<Wavelet, Double> evaluateWavelets(double[] signal) {
-        Map<Wavelet, Double> scores = new HashMap<>();
-
-        Wavelet[] candidates = {
-                new Haar(),
-                Daubechies.DB2,
-                Daubechies.DB4,
-                Symlet.SYM3,
-                Coiflet.COIF1
-        };
-
-        for (Wavelet wavelet : candidates) {
-            double score = calculateWaveletScore(wavelet, signal);
-            scores.put(wavelet, score);
-        }
-
-        return scores;
-    }
-
-    private static double calculateWaveletScore(Wavelet wavelet, double[] signal) {
-        try {
-            WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-            TransformResult result = transform.forward(signal);
-
-            // Score based on energy compaction
-            double[] approx = result.approximationCoeffs();
-            double[] detail = result.detailCoeffs();
-
-            double approxEnergy = 0, detailEnergy = 0;
-            for (double a : approx) approxEnergy += a * a;
-            for (double d : detail) detailEnergy += d * d;
-
-            // Also consider sparsity of detail coefficients
-            int sparseCount = 0;
-            for (double d : detail) {
-                if (Math.abs(d) < 0.01) sparseCount++;
-            }
-            double sparsity = (double) sparseCount / detail.length;
-
-            // Combined score (higher is better)
-            double energyRatio = approxEnergy / (approxEnergy + detailEnergy + 1e-10);
-            return 0.7 * energyRatio + 0.3 * sparsity;
-
-        } catch (Exception e) {
-            return 0.0;
-        }
     }
 
     private static double[] createComplexTestSignal(int length) {
         double[] signal = new double[length];
-        Random rng = new Random(42);
-
         for (int i = 0; i < length; i++) {
-            // Trend
-            signal[i] = 0.01 * i;
-
-            // Oscillation
-            signal[i] += 0.5 * Math.sin(2 * Math.PI * i / 16);
-
-            // Spikes
-            if (i % 32 == 16) signal[i] += 2.0;
-
-            // Noise
-            signal[i] += 0.1 * rng.nextGaussian();
-        }
-
-        return signal;
-    }
-
-    private static void analyzeSignalWithWavelet(double[] signal, Wavelet wavelet) {
-        WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-        TransformResult result = transform.forward(signal);
-
-        // Calculate metrics
-        double approxEnergy = calculateEnergy(result.approximationCoeffs());
-        double detailEnergy = calculateEnergy(result.detailCoeffs());
-        double totalEnergy = approxEnergy + detailEnergy;
-
-        int sparseDetails = countSparse(result.detailCoeffs(), 0.01);
-
-        System.out.printf("%-6s: Energy distribution: %.1f%% approx, %.1f%% detail | " +
-                        "Sparse details: %d/%d\n",
-                wavelet.name(),
-                100 * approxEnergy / totalEnergy,
-                100 * detailEnergy / totalEnergy,
-                sparseDetails,
-                result.detailCoeffs().length);
-    }
-
-    private static double calculateEnergy(double[] coeffs) {
-        double energy = 0;
-        for (double c : coeffs) energy += c * c;
-        return energy;
-    }
-
-    private static int countSparse(double[] coeffs, double threshold) {
-        int count = 0;
-        for (double c : coeffs) {
-            if (Math.abs(c) < threshold) count++;
-        }
-        return count;
-    }
-
-    private static double[] createSmoothSignal(int length) {
-        double[] signal = new double[length];
-        for (int i = 0; i < length; i++) {
-            signal[i] = Math.sin(2 * Math.PI * i / 32) +
-                    0.3 * Math.sin(2 * Math.PI * i / 16);
-        }
-        return signal;
-    }
-
-    private static double[] createSharpSignal(int length) {
-        double[] signal = new double[length];
-        for (int i = 0; i < length; i++) {
-            if ((i / 32) % 2 == 0) {
-                signal[i] = 1.0;
-            } else {
-                signal[i] = -1.0;
+            // Multiple frequency components
+            signal[i] = Math.sin(2 * Math.PI * i / 64) +      // Low freq
+                       0.5 * Math.sin(2 * Math.PI * i / 16) +  // Med freq
+                       0.25 * Math.sin(2 * Math.PI * i / 4);   // High freq
+            
+            // Add a discontinuity
+            if (i > length/2 && i < length/2 + 10) {
+                signal[i] += 2.0;
             }
         }
         return signal;
     }
 
-    private static double[] createNoisySignal(int length) {
-        Random rng = new Random(42);
-        double[] signal = new double[length];
-        for (int i = 0; i < length; i++) {
-            signal[i] = Math.sin(2 * Math.PI * i / 32) +
-                    0.3 * rng.nextGaussian();
+    private static double evaluateWaveletForSignal(Wavelet wavelet, double[] signal) {
+        MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+        MODWTResult result = transform.forward(signal);
+        
+        // Simple sparsity measure: count small coefficients
+        double threshold = 0.01;
+        int sparseCount = 0;
+        
+        for (double coeff : result.detailCoeffs()) {
+            if (Math.abs(coeff) < threshold) sparseCount++;
         }
-        return signal;
+        
+        // Return inverse sparsity (lower is better)
+        return (double)(result.detailCoeffs().length - sparseCount) / result.detailCoeffs().length;
     }
 
-    private static long measureComputeTime(Wavelet wavelet, double[] signal) {
-        WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-
-        // Warmup
-        for (int i = 0; i < 100; i++) {
-            transform.forward(signal);
-        }
-
-        // Measure
-        long start = System.nanoTime();
-        for (int i = 0; i < 1000; i++) {
-            transform.forward(signal);
-        }
-        return (System.nanoTime() - start) / 1000000; // Convert to microseconds
-    }
-
-    private static double measureReconstructionError(Wavelet wavelet, double[] signal) {
-        WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-        TransformResult result = transform.forward(signal);
+    private static void analyzeWaveletPerformance(Wavelet wavelet, double[] signal) {
+        MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+        
+        // Time the transform
+        long startTime = System.nanoTime();
+        MODWTResult result = transform.forward(signal);
         double[] reconstructed = transform.inverse(result);
+        long endTime = System.nanoTime();
+        
+        // Calculate reconstruction error
+        double error = 0;
+        for (int i = 0; i < signal.length; i++) {
+            error += Math.pow(signal[i] - reconstructed[i], 2);
+        }
+        error = Math.sqrt(error / signal.length);
+        
+        // Simulate compression by zeroing small coefficients
+        double[] details = result.detailCoeffs().clone();
+        Arrays.sort(details);
+        double threshold = Math.abs(details[(int)(details.length * 0.1)]); // Keep top 90%
+        
+        int compressed = 0;
+        for (double d : result.detailCoeffs()) {
+            if (Math.abs(d) < threshold) compressed++;
+        }
+        double compressionRatio = (double)compressed / details.length * 100;
+        
+        double microseconds = (endTime - startTime) / 1000.0;
+        
+        System.out.printf("%-10s | %.2e | %6.1f%%      | %8.1f\n",
+            wavelet.getClass().getSimpleName(),
+            error, compressionRatio, microseconds);
+    }
 
+    private static void testWaveletTradeoff(Wavelet wavelet, double[] signal, String name) {
+        MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+        
+        // Measure time
+        long totalTime = 0;
+        int runs = 100;
+        for (int i = 0; i < runs; i++) {
+            long start = System.nanoTime();
+            MODWTResult result = transform.forward(signal);
+            double[] recon = transform.inverse(result);
+            totalTime += System.nanoTime() - start;
+        }
+        double avgMs = totalTime / (runs * 1_000_000.0);
+        
+        // Measure accuracy (one run)
+        MODWTResult result = transform.forward(signal);
+        double[] reconstructed = transform.inverse(result);
+        
         double maxError = 0;
+        double signalEnergy = 0;
+        double transformEnergy = 0;
+        
         for (int i = 0; i < signal.length; i++) {
             maxError = Math.max(maxError, Math.abs(signal[i] - reconstructed[i]));
+            signalEnergy += signal[i] * signal[i];
         }
-        return maxError;
-    }
-
-    private static double measureDenoisingSNR(Wavelet wavelet, double[] noisySignal) {
-        // Simple soft thresholding
-        WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
-        TransformResult result = transform.forward(noisySignal);
-
-        double[] detail = result.detailCoeffs();
-        double threshold = 0.2;
-        for (int i = 0; i < detail.length; i++) {
-            if (Math.abs(detail[i]) < threshold) {
-                detail[i] = 0;
-            }
-        }
-
-        double[] denoised = transform.inverse(TransformResult.create(
-                result.approximationCoeffs(), detail));
-
-        // Calculate SNR improvement
-        double noiseEnergy = 0;
-        double signalEnergy = 0;
-        for (int i = 0; i < noisySignal.length; i++) {
-            double clean = Math.sin(2 * Math.PI * i / 32); // Known clean signal
-            noiseEnergy += Math.pow(denoised[i] - clean, 2);
-            signalEnergy += clean * clean;
-        }
-
-        return 10 * Math.log10(signalEnergy / noiseEnergy);
-    }
-
-    private static void printDecisionFlowchart() {
-        System.out.println("\nWAVELET SELECTION DECISION FLOWCHART");
-        System.out.println("====================================");
-        System.out.println();
-        System.out.println("Is real-time processing critical?");
-        System.out.println("  YES → Use Haar or DB2");
-        System.out.println("  NO  → Continue...");
-        System.out.println();
-        System.out.println("Does signal have sharp discontinuities?");
-        System.out.println("  YES → Use Haar or low-order Daubechies");
-        System.out.println("  NO  → Continue...");
-        System.out.println();
-        System.out.println("Is symmetry important (e.g., image processing)?");
-        System.out.println("  YES → Use Biorthogonal or Symlets");
-        System.out.println("  NO  → Continue...");
-        System.out.println();
-        System.out.println("Need high vanishing moments (smooth signals)?");
-        System.out.println("  YES → Use Coiflets or high-order Daubechies");
-        System.out.println("  NO  → Use DB4 or SYM4 (good general purpose)");
-        System.out.println();
+        
+        for (double a : result.approximationCoeffs()) transformEnergy += a * a;
+        for (double d : result.detailCoeffs()) transformEnergy += d * d;
+        
+        double energyRatio = transformEnergy / signalEnergy;
+        
+        System.out.printf("%-13s | %-7s | %9.3f | %.2e | %.6f\n",
+            name.substring(0, Math.min(13, name.length())),
+            name.substring(name.indexOf('(') + 1, name.indexOf(')')),
+            avgMs, maxError, energyRatio);
     }
 }

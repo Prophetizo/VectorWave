@@ -190,6 +190,8 @@ public final class FactoryRegistry {
             }
         }
         
+        // WaveletTransformFactory temporarily disabled during DWT -> MODWT migration
+        /*
         if (!registry.isRegistered("waveletTransform")) {
             // WaveletTransformFactory is instance-based, so we create a shared instance
             try {
@@ -201,6 +203,7 @@ public final class FactoryRegistry {
                     e.getMessage(), e);
             }
         }
+        */
         
         if (!registry.isRegistered("cwtTransform")) {
             try {
@@ -213,6 +216,8 @@ public final class FactoryRegistry {
             }
         }
         
+        // Streaming factories temporarily disabled during DWT -> MODWT migration
+        /*
         if (!registry.isRegistered("streamingDenoiser")) {
             try {
                 registry.register("streamingDenoiser", 
@@ -223,5 +228,6 @@ public final class FactoryRegistry {
                     e.getMessage(), e);
             }
         }
+        */
     }
 }

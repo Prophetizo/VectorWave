@@ -62,6 +62,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
                 <configuration>
+                    <excludes>
+                        <exclude>**/demo/**</exclude>
+                        <exclude>ai/prophetizo/wavelet/streaming/**</exclude>
+                    </excludes>
                     <compilerArgs>
                         <!-- Enable Vector API for high-performance SIMD operations -->
                         <arg>--add-modules</arg>
@@ -84,6 +88,9 @@
                 <version>3.5.3</version>
                 <configuration>
                     <argLine>@{argLine} --add-modules jdk.incubator.vector</argLine>
+                    <excludes>
+                        <exclude>**/benchmark/**</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 

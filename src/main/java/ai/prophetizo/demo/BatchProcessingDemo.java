@@ -2,6 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
+import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
 import ai.prophetizo.wavelet.memory.BatchMemoryLayout;
 import jdk.incubator.vector.DoubleVector;
@@ -45,8 +46,8 @@ public class BatchProcessingDemo {
         System.out.println("1. Basic Batch Transform");
         System.out.println("------------------------");
         
-        // Create wavelet transform
-        WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+        // Create MODWT transform
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
         
         // Prepare multiple signals
         int batchSize = 8;
@@ -61,7 +62,10 @@ public class BatchProcessingDemo {
         }
         
         // Process batch
-        TransformResult[] results = transform.forwardBatch(signals);
+        MODWTResult[] results = new MODWTResult[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            results[i] = transform.forward(signals[i]);
+        }
         System.out.println("Processed " + results.length + " signals in batch");
         
         // Show first result
@@ -70,7 +74,10 @@ public class BatchProcessingDemo {
         System.out.println("  Detail coeffs: " + results[0].detailCoeffs().length);
         
         // Inverse transform
-        double[][] reconstructed = transform.inverseBatch(results);
+        double[][] reconstructed = new double[batchSize][signalLength];
+        for (int i = 0; i < batchSize; i++) {
+            reconstructed[i] = transform.inverse(results[i]);
+        }
         System.out.println("Reconstructed " + reconstructed.length + " signals");
         
         // Verify reconstruction
@@ -108,7 +115,7 @@ public class BatchProcessingDemo {
         
         for (Wavelet wavelet : wavelets) {
             long start = System.nanoTime();
-            TransformResult[] results = engine.transformBatch(signals, wavelet, BoundaryMode.PERIODIC);
+            MODWTResult[] results = engine.transformBatch(signals, wavelet, BoundaryMode.PERIODIC);
             long elapsed = System.nanoTime() - start;
             
             System.out.printf("  %s: %.2f ms for %d signals\n", 
@@ -183,17 +190,20 @@ public class BatchProcessingDemo {
         }
         
         // Process with suitable wavelet for audio
-        WaveletTransform transform = new WaveletTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
         
         long start = System.nanoTime();
-        TransformResult[] channelResults = transform.forwardBatch(audioData);
+        MODWTResult[] channelResults = new MODWTResult[channels];
+        for (int i = 0; i < channels; i++) {
+            channelResults[i] = transform.forward(audioData[i]);
+        }
         long elapsed = System.nanoTime() - start;
         
         System.out.printf("Transform time: %.3f ms\n", elapsed / 1_000_000.0);
         
         // Apply simple denoising (threshold small coefficients)
         double threshold = 0.01;
-        for (TransformResult result : channelResults) {
+        for (MODWTResult result : channelResults) {
             double[] detail = result.detailCoeffs();
             for (int i = 0; i < detail.length; i++) {
                 if (Math.abs(detail[i]) < threshold) {
@@ -204,7 +214,10 @@ public class BatchProcessingDemo {
         
         // Reconstruct
         start = System.nanoTime();
-        double[][] processedAudio = transform.inverseBatch(channelResults);
+        double[][] processedAudio = new double[channels][signalLength];
+        for (int i = 0; i < channels; i++) {
+            processedAudio[i] = transform.inverse(channelResults[i]);
+        }
         elapsed = System.nanoTime() - start;
         
         System.out.printf("Inverse transform time: %.3f ms\n", elapsed / 1_000_000.0);
@@ -238,7 +251,7 @@ public class BatchProcessingDemo {
         
         // Analyze with Daubechies wavelets (good for financial data)
         long start = System.nanoTime();
-        TransformResult[] results = engine.transformBatch(
+        MODWTResult[] results = engine.transformBatch(
             priceData, 
             Daubechies.DB4, 
             BoundaryMode.PERIODIC
@@ -271,7 +284,7 @@ public class BatchProcessingDemo {
         System.out.println("Iterations: " + iterations);
         System.out.println();
         
-        WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
         
         System.out.println("Batch Size | Sequential (ms) | Batch (ms) | Speedup");
         System.out.println("-----------|-----------------|------------|--------");
@@ -280,8 +293,9 @@ public class BatchProcessingDemo {
             double[][] signals = generateTestSignals(batchSize, signalLength);
             
             // Warmup
+            OptimizedTransformEngine warmupEngine = new OptimizedTransformEngine();
             for (int i = 0; i < 10; i++) {
-                transform.forwardBatch(signals);
+                warmupEngine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
             }
             
             // Sequential timing
@@ -293,10 +307,11 @@ public class BatchProcessingDemo {
             }
             long seqTime = System.nanoTime() - seqStart;
             
-            // Batch timing
+            // Batch timing (using OptimizedTransformEngine for batch processing)
+            OptimizedTransformEngine batchEngine = new OptimizedTransformEngine();
             long batchStart = System.nanoTime();
             for (int iter = 0; iter < iterations; iter++) {
-                transform.forwardBatch(signals);
+                batchEngine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
             }
             long batchTime = System.nanoTime() - batchStart;
             
