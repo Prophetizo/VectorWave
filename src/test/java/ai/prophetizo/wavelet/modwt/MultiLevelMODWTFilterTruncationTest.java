@@ -22,11 +22,11 @@ class MultiLevelMODWTFilterTruncationTest {
         // Access private getTruncatedFilter method via reflection
         Method getTruncatedFilter = MultiLevelMODWTTransform.class
             .getDeclaredMethod("getTruncatedFilter", double[].class, int.class, 
-                             Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterCacheKey$FilterType"));
+                             Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterType"));
         getTruncatedFilter.setAccessible(true);
         
         // Get FilterType enum
-        Class<?> filterTypeClass = Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterCacheKey$FilterType");
+        Class<?> filterTypeClass = Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterType");
         Object lowFilterType = filterTypeClass.getEnumConstants()[0]; // LOW
         
         double[] filter = {1.0, 2.0, 3.0, 4.0, 5.0};
@@ -95,10 +95,10 @@ class MultiLevelMODWTFilterTruncationTest {
         // Access private method and cache via reflection
         Method getTruncatedFilter = MultiLevelMODWTTransform.class
             .getDeclaredMethod("getTruncatedFilter", double[].class, int.class, 
-                             Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterCacheKey$FilterType"));
+                             Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterType"));
         getTruncatedFilter.setAccessible(true);
         
-        Class<?> filterTypeClass = Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterCacheKey$FilterType");
+        Class<?> filterTypeClass = Class.forName("ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform$FilterType");
         Object lowFilterType = filterTypeClass.getEnumConstants()[0]; // LOW
         
         double[] filter = {1.0, 2.0, 3.0, 4.0, 5.0};

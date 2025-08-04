@@ -127,7 +127,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         double[] details = result.detailCoeffs();
         
         // Update noise window with detail coefficients
-        // Strategy: If we have more details than window size, sample uniformly
+        // Strategy: If we have more details than window size, use stratified sampling
         // to maintain temporal diversity in noise estimation
         if (details.length <= noiseWindowSize) {
             // Case 1: Fewer details than window size - add all
@@ -136,25 +136,48 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
                 noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
             }
         } else {
-            // Case 2: More details than window size - sample uniformly
-            // This ensures we don't just keep the last noiseWindowSize values
-            int step = calculateSafeStep(details.length, noiseWindowSize);
-            int added = 0;
+            // Case 2: More details than window size - use stratified sampling
+            // Divide the signal into equal strata and sample from each
+            // This ensures we capture temporal variations across the entire signal
             
-            for (int i = 0; i < details.length && added < noiseWindowSize; i += step) {
-                noiseWindow[noiseWindowIndex] = Math.abs(details[i]);
-                noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
-                added++;
+            // Calculate number of samples per stratum
+            int strataCount = Math.min(noiseWindowSize, 10); // Use at most 10 strata
+            int samplesPerStratum = noiseWindowSize / strataCount;
+            int extraSamples = noiseWindowSize % strataCount;
+            int strataSize = details.length / strataCount;
+            
+            int sampleIndex = 0;
+            
+            // Sample from each stratum
+            for (int stratum = 0; stratum < strataCount; stratum++) {
+                int strataStart = stratum * strataSize;
+                int strataEnd = (stratum == strataCount - 1) ? details.length : (stratum + 1) * strataSize;
+                int samplesToTake = samplesPerStratum + (stratum < extraSamples ? 1 : 0);
+                
+                // Within each stratum, sample uniformly
+                if (samplesToTake > 0) {
+                    int strataLength = strataEnd - strataStart;
+                    int strataStep = Math.max(1, strataLength / samplesToTake);
+                    
+                    for (int i = 0; i < samplesToTake && sampleIndex < noiseWindowSize; i++) {
+                        int idx = strataStart + (i * strataStep) % strataLength;
+                        if (idx < details.length) {
+                            noiseWindow[noiseWindowIndex] = Math.abs(details[idx]);
+                            noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+                            sampleIndex++;
+                        }
+                    }
+                }
             }
             
-            // Add any remaining slots with the last few coefficients
-            // This handles cases where step * noiseWindowSize < details.length
-            int remaining = noiseWindowSize - added;
+            // Fill any remaining slots with samples from the end (recent data)
+            int remaining = noiseWindowSize - sampleIndex;
             if (remaining > 0) {
-                int startIdx = details.length - remaining;
-                for (int i = startIdx; i < details.length; i++) {
+                int startIdx = Math.max(0, details.length - remaining);
+                for (int i = startIdx; i < details.length && sampleIndex < noiseWindowSize; i++) {
                     noiseWindow[noiseWindowIndex] = Math.abs(details[i]);
                     noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+                    sampleIndex++;
                 }
             }
         }

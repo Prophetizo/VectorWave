@@ -173,16 +173,20 @@ public class WaveletDenoiser {
             this.type = type;
             this.denoisedDetails = new double[original.getLevels()][];
             
+            // Validate maximum level before processing to prevent overflow
+            if (original.getLevels() > MAX_SAFE_LEVEL_FOR_SCALING) {
+                throw new IllegalArgumentException(
+                    "Number of decomposition levels (" + original.getLevels() + 
+                    ") exceeds maximum safe level (" + MAX_SAFE_LEVEL_FOR_SCALING + 
+                    ") for scaling calculations");
+            }
+            
             // Pre-compute denoised details for all levels
             for (int level = 1; level <= original.getLevels(); level++) {
                 double[] levelDetails = original.getDetailCoeffsAtLevel(level);
                 
                 // Calculate threshold with level-dependent scaling
-                // Use bit shift for efficient power of 2 calculation
-                if (level > MAX_SAFE_LEVEL_FOR_SCALING) {
-                    throw new IllegalArgumentException(
-                        "Level " + level + " is too large and would cause integer overflow in scaling calculation");
-                }
+                // Use bit shift for efficient power of 2 calculation (safe after validation above)
                 double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
                 

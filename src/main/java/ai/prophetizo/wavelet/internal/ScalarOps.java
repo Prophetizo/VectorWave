@@ -660,6 +660,13 @@ public final class ScalarOps {
     public static void circularConvolveMODWTLevel(double[] signal, double[] filter, double[] output, int level) {
         int signalLen = signal.length;
         int filterLen = filter.length;
+        
+        // Check for potential overflow before bit shift
+        if (level - 1 >= 31) {
+            throw new IllegalArgumentException(
+                "Level " + level + " would cause integer overflow in shift calculation");
+        }
+        
         int shift = 1 << (level - 1); // 2^(j-1) where j = level
         
         for (int t = 0; t < signalLen; t++) {

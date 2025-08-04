@@ -111,18 +111,37 @@ public class MultiLevelMODWTTransform {
     
     /**
      * Cache for truncated filters to avoid repeated allocations.
-     * Uses FilterCacheKey for efficient lookup.
+     * Uses a long key encoding both filter type and length to minimize allocations.
+     * 
+     * Key encoding: upper 32 bits = filter type ordinal, lower 32 bits = length
+     * This avoids object allocation on every cache lookup.
      */
-    private final Map<FilterCacheKey, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
+    private final Map<Long, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
     
     /**
-     * Immutable key for filter cache lookups.
-     * More efficient than string concatenation for high-frequency access.
+     * Filter types for cache key encoding.
      */
-    private static record FilterCacheKey(FilterType type, int length) {
-        static enum FilterType {
-            LOW, HIGH, LOW_RECON, HIGH_RECON
+    private static enum FilterType {
+        LOW(0), HIGH(1), LOW_RECON(2), HIGH_RECON(3);
+        
+        final int ordinal;
+        
+        FilterType(int ordinal) {
+            this.ordinal = ordinal;
         }
+    }
+    
+    /**
+     * Creates a primitive cache key from filter type and length.
+     * Combines type and length into a single long to avoid object allocation.
+     * 
+     * @param type the filter type
+     * @param length the filter length (must be positive and fit in 32 bits)
+     * @return encoded cache key
+     */
+    private static long createCacheKey(FilterType type, int length) {
+        // Encode type in upper 32 bits, length in lower 32 bits
+        return ((long) type.ordinal << 32) | (length & 0xFFFFFFFFL);
     }
     
     /**
@@ -437,10 +456,10 @@ public class MultiLevelMODWTTransform {
         if (maxFilterLength > signalLength) {
             // Truncate filters if they exceed signal length
             if (scaledLowPassRecon.length > signalLength) {
-                scaledLowPassRecon = getTruncatedFilter(scaledLowPassRecon, signalLength, FilterCacheKey.FilterType.LOW_RECON);
+                scaledLowPassRecon = getTruncatedFilter(scaledLowPassRecon, signalLength, FilterType.LOW_RECON);
             }
             if (scaledHighPassRecon.length > signalLength) {
-                scaledHighPassRecon = getTruncatedFilter(scaledHighPassRecon, signalLength, FilterCacheKey.FilterType.HIGH_RECON);
+                scaledHighPassRecon = getTruncatedFilter(scaledHighPassRecon, signalLength, FilterType.HIGH_RECON);
             }
         }
         
@@ -555,10 +574,10 @@ public class MultiLevelMODWTTransform {
         // For very long filters (at high decomposition levels), we may need to truncate
         // to avoid issues with circular convolution
         if (scaledLowPass.length > signalLength) {
-            scaledLowPass = getTruncatedFilter(scaledLowPass, signalLength, FilterCacheKey.FilterType.LOW);
+            scaledLowPass = getTruncatedFilter(scaledLowPass, signalLength, FilterType.LOW);
         }
         if (scaledHighPass.length > signalLength) {
-            scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, FilterCacheKey.FilterType.HIGH);
+            scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, FilterType.HIGH);
         }
         
         // Use ScalarOps circular convolution for MODWT
@@ -616,7 +635,7 @@ public class MultiLevelMODWTTransform {
      * @return truncated filter of the specified length
      * @throws IllegalArgumentException if targetLength is invalid
      */
-    private double[] getTruncatedFilter(double[] filter, int targetLength, FilterCacheKey.FilterType filterType) {
+    private double[] getTruncatedFilter(double[] filter, int targetLength, FilterType filterType) {
         if (targetLength <= 0) {
             throw new IllegalArgumentException("Target length must be positive: " + targetLength);
         }
@@ -625,7 +644,8 @@ public class MultiLevelMODWTTransform {
                 "Target length (" + targetLength + ") exceeds filter length (" + filter.length + ")");
         }
         
-        FilterCacheKey cacheKey = new FilterCacheKey(filterType, targetLength);
+        // Use primitive long key to avoid object allocation
+        long cacheKey = createCacheKey(filterType, targetLength);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
             double[] truncated = new double[targetLength];

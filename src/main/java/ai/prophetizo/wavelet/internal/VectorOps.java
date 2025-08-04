@@ -603,7 +603,9 @@ public final class VectorOps {
             
             for (int l = 0; l < filterLen; l++) {
                 // Use (t - l) indexing to match MODWT time-reversed filter convention
-                int signalIndex = (t - l + signalLen) % signalLen;
+                // Optimize modulo operation: when t >= l, no wrapping needed
+                int idx = t - l;
+                int signalIndex = idx >= 0 ? idx : idx + signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             
