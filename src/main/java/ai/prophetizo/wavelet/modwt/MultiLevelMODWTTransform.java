@@ -213,17 +213,32 @@ public class MultiLevelMODWTTransform {
                 "Must be within [1, " + result.getLevels() + "] with minLevel <= maxLevel");
         }
         
-        // Start with zeros (no approximation)
+        // Start with zeros for both approximation and details
         double[] reconstruction = new double[result.getSignalLength()];
+        double[] zeroApprox = new double[result.getSignalLength()];
         
-        // Add contributions from selected levels only
-        for (int level = minLevel; level <= maxLevel; level++) {
-            double[] details = result.getDetailCoeffsAtLevel(level);
+        // Reconstruct each level within the range properly
+        for (int level = result.getLevels(); level >= 1; level--) {
+            double[] details;
             
-            // For MODWT, we can directly add scaled contributions
-            double scale = Math.pow(2, level / 2.0);
-            for (int i = 0; i < details.length; i++) {
-                reconstruction[i] += details[i] / scale;
+            if (level >= minLevel && level <= maxLevel) {
+                // Use actual detail coefficients for levels in range
+                details = result.getDetailCoeffsAtLevel(level);
+            } else {
+                // Use zeros for levels outside the range
+                details = new double[result.getSignalLength()];
+            }
+            
+            // Use proper convolution-based reconstruction
+            // If this is the highest level and we're including it, start with approximation
+            if (level == result.getLevels() && level <= maxLevel) {
+                reconstruction = reconstructSingleLevel(result.getApproximationCoeffs(), details, level);
+            } else if (level == result.getLevels()) {
+                // Start with zero approximation if highest level is excluded
+                reconstruction = reconstructSingleLevel(zeroApprox, details, level);
+            } else {
+                // Continue reconstruction with previous result
+                reconstruction = reconstructSingleLevel(reconstruction, details, level);
             }
         }
         
