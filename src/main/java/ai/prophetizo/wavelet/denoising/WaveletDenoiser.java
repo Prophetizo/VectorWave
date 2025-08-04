@@ -186,7 +186,9 @@ public class WaveletDenoiser {
                 double[] levelDetails = original.getDetailCoeffsAtLevel(level);
                 
                 // Calculate threshold with level-dependent scaling
-                // Use bit shift for efficient power of 2 calculation (safe after validation above)
+                // Use bit shift for efficient power of 2 calculation
+                // Safe because: level <= original.getLevels() <= MAX_SAFE_LEVEL_FOR_SCALING (31)
+                // So: level - 1 <= 30, making 1 << (level - 1) safe from overflow
                 double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
                 

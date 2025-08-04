@@ -271,7 +271,8 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
     private MODWTResult[] transformBatchSoA(
             double[][] signals, Wavelet wavelet, BoundaryMode mode) {
 
-        if (!(wavelet instanceof DiscreteWavelet dw) || mode != BoundaryMode.PERIODIC) {
+        // Check if we can use optimized batch processing
+        if (!(wavelet instanceof DiscreteWavelet) || mode != BoundaryMode.PERIODIC) {
             // Fall back to sequential processing
             MODWTResult[] results = new MODWTResult[signals.length];
             MODWTTransform transform = new MODWTTransform(wavelet, mode);
@@ -281,6 +282,9 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
             return results;
         }
 
+        // Safe to cast after the check above
+        DiscreteWavelet discreteWavelet = (DiscreteWavelet) wavelet;
+        
         int numSignals = signals.length;
         int signalLength = signals[0].length;
 
@@ -289,7 +293,7 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         double[][] detailBatch = new double[numSignals][signalLength];
 
         // Use SIMD batch MODWT
-        batchMODWTOptimized(signals, approxBatch, detailBatch, dw);
+        batchMODWTOptimized(signals, approxBatch, detailBatch, discreteWavelet);
 
         // Create results
         MODWTResult[] results = new MODWTResult[numSignals];
@@ -410,7 +414,7 @@ public class MODWTOptimizedTransformEngine implements AutoCloseable {
         
         // Also close the parallel engine if it exists
         if (parallelEngine != null) {
-            // ParallelWaveletEngine doesn't have a close method, but if it did, we'd call it here
+            parallelEngine.close();
         }
     }
 

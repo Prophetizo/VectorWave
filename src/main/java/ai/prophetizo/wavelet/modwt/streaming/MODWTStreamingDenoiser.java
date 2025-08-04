@@ -105,7 +105,7 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         }
         
         // Denoise using WaveletDenoiser (which internally uses MODWT)
-        double[] denoised = denoiser.denoise(samples, thresholdMethod);
+        double[] denoised = denoiser.denoise(samples, thresholdMethod, thresholdType);
         
         // Update statistics
         samplesProcessed.addAndGet(samples.length);
@@ -262,39 +262,6 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         return MathUtils.standardDeviation(values);
     }
     
-    /**
-     * Calculates a safe step size for uniform sampling that avoids integer overflow.
-     * 
-     * <p>When we have more detail coefficients than the noise window size, we need to
-     * sample uniformly across the coefficients. This method calculates the appropriate
-     * step size while protecting against integer overflow for very large arrays.</p>
-     * 
-     * @param detailsLength the number of detail coefficients
-     * @param windowSize the size of the noise estimation window
-     * @return a safe step size (always at least 1)
-     */
-    private static int calculateSafeStep(int detailsLength, int windowSize) {
-        // Basic validation
-        if (windowSize <= 0) {
-            return 1;
-        }
-        
-        // Simple case: if details length is reasonable, just do the division
-        if (detailsLength <= Integer.MAX_VALUE / 2) {
-            return Math.max(1, detailsLength / windowSize);
-        }
-        
-        // For extremely large arrays, we need to be more careful
-        // Use long arithmetic to avoid overflow, then clamp to int range
-        long longStep = ((long) detailsLength) / windowSize;
-        
-        // Clamp to reasonable int range
-        if (longStep > Integer.MAX_VALUE / 2) {
-            return Integer.MAX_VALUE / 2;
-        }
-        
-        return Math.max(1, (int) longStep);
-    }
     
     /**
      * Get the current estimated noise level.

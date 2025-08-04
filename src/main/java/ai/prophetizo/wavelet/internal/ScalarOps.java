@@ -25,6 +25,13 @@ public final class ScalarOps {
 
     private static final int SMALL_SIGNAL_THRESHOLD = 1024;
     
+    /**
+     * Maximum safe bit shift amount to prevent integer overflow.
+     * When performing bit shift operations like (1 << n), n must be <= 30
+     * to avoid overflow in 32-bit integers.
+     */
+    private static final int MAX_SAFE_SHIFT_BITS = 31;
+    
     // Vectorization threshold constants
     private static final int MIN_VECTORIZATION_LENGTH = 32;
     private static final int MEDIUM_ARRAY_THRESHOLD = 128;
@@ -662,7 +669,7 @@ public final class ScalarOps {
         int filterLen = filter.length;
         
         // Check for potential overflow before bit shift
-        if (level - 1 >= 31) {
+        if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
             throw new IllegalArgumentException(
                 "Level " + level + " would cause integer overflow in shift calculation");
         }

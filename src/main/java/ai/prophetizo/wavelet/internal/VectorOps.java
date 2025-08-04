@@ -554,27 +554,26 @@ public final class VectorOps {
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
-                    } else if (startIdx < 0) {
-                        // Indices wrap at the beginning - need to handle negative wrap
-                        for (int i = 0; i < VECTOR_LENGTH; i++) {
-                            int idx = t + i - l;
-                            indices[i] = idx < 0 ? idx + signalLen : idx;
-                        }
-                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
-                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                        result.intoArray(output, t);
                     } else {
-                        // Mixed case: some indices wrap, some don't
-                        // Use gather for all wrapping cases
-                        for (int i = 0; i < VECTOR_LENGTH; i++) {
-                            int idx = t + i - l;
-                            indices[i] = idx < 0 ? idx + signalLen : (idx >= signalLen ? idx - signalLen : idx);
-                        }
-                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                        // Complex wrapping case - fall back to scalar processing for this vector
+                        // This is more efficient than expensive gather operations
                         DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
-                        result.intoArray(output, t);
+                        
+                        for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
+                            int idx = t + i - l;
+                            int signalIndex = idx >= 0 ? idx : idx + signalLen;
+                            // Handle positive wrapping too
+                            if (signalIndex >= signalLen) {
+                                signalIndex -= signalLen;
+                            }
+                            
+                            // Accumulate into the output vector element by element
+                            double currentOut = outputVec.lane(i);
+                            double newVal = currentOut + signal[signalIndex] * filter[l];
+                            outputVec = outputVec.withLane(i, newVal);
+                        }
+                        
+                        outputVec.intoArray(output, t);
                     }
                 }
             }
