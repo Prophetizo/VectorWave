@@ -65,7 +65,30 @@ public class MultiLevelMODWTTransform {
     
     /**
      * Maximum practical limit for decomposition levels.
-     * Beyond this, numerical issues and memory requirements become prohibitive.
+     * 
+     * <p>This limit is based on several practical considerations:</p>
+     * <ul>
+     *   <li><strong>Numerical stability:</strong> At level j, filters are upsampled by 2^(j-1),
+     *       leading to very long filters at high levels (e.g., level 10 = 512x original length)</li>
+     *   <li><strong>Signal resolution:</strong> Most real-world signals lose meaningful information
+     *       beyond 8-10 decomposition levels due to finite precision</li>
+     *   <li><strong>Memory requirements:</strong> Each level stores full-length coefficient arrays,
+     *       so 10 levels require 10x the original signal memory</li>
+     *   <li><strong>Practical usage:</strong> Financial and scientific applications rarely need
+     *       more than 6-8 levels of decomposition</li>
+     * </ul>
+     * 
+     * <p>For a signal of length N with filter length L, the maximum meaningful level is
+     * approximately log2(N/L). For example:</p>
+     * <ul>
+     *   <li>Signal length 1024, Haar filter (L=2): max ≈ 9 levels</li>
+     *   <li>Signal length 4096, DB4 filter (L=8): max ≈ 9 levels</li>
+     *   <li>Signal length 65536, DB8 filter (L=16): max ≈ 12 levels</li>
+     * </ul>
+     * 
+     * <p>The limit of 10 provides a reasonable balance between flexibility and practicality.
+     * If higher levels are needed for specific applications, this constant can be increased,
+     * though performance and numerical stability should be carefully evaluated.</p>
      */
     private static final int MAX_DECOMPOSITION_LEVELS = 10;
     
@@ -75,9 +98,19 @@ public class MultiLevelMODWTTransform {
     
     /**
      * Cache for truncated filters to avoid repeated allocations.
-     * Key: "low_<length>" or "high_<length>", Value: truncated filter
+     * Uses FilterCacheKey for efficient lookup.
      */
-    private final Map<String, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
+    private final Map<FilterCacheKey, double[]> truncatedFilterCache = new ConcurrentHashMap<>();
+    
+    /**
+     * Immutable key for filter cache lookups.
+     * More efficient than string concatenation for high-frequency access.
+     */
+    private static record FilterCacheKey(FilterType type, int length) {
+        enum FilterType {
+            LOW, HIGH, LOW_RECON, HIGH_RECON
+        }
+    }
     
     /**
      * Constructs a multi-level MODWT transformer.
@@ -353,10 +386,10 @@ public class MultiLevelMODWTTransform {
         if (maxFilterLength > signalLength) {
             // Truncate filters if they exceed signal length
             if (scaledLowPassRecon.length > signalLength) {
-                scaledLowPassRecon = getTruncatedFilter(scaledLowPassRecon, signalLength, "lowRecon");
+                scaledLowPassRecon = getTruncatedFilter(scaledLowPassRecon, signalLength, FilterCacheKey.FilterType.LOW_RECON);
             }
             if (scaledHighPassRecon.length > signalLength) {
-                scaledHighPassRecon = getTruncatedFilter(scaledHighPassRecon, signalLength, "highRecon");
+                scaledHighPassRecon = getTruncatedFilter(scaledHighPassRecon, signalLength, FilterCacheKey.FilterType.HIGH_RECON);
             }
         }
         
@@ -424,6 +457,26 @@ public class MultiLevelMODWTTransform {
     }
     
     /**
+     * Calculates the theoretical maximum number of decomposition levels for a given signal length.
+     * This is based on the mathematical constraint that the scaled filter should not exceed the signal length.
+     * 
+     * @param signalLength the length of the signal
+     * @return the maximum number of decomposition levels (capped at MAX_DECOMPOSITION_LEVELS)
+     */
+    public int getMaximumLevels(int signalLength) {
+        return Math.min(calculateMaxLevels(signalLength), MAX_DECOMPOSITION_LEVELS);
+    }
+    
+    /**
+     * Gets the maximum decomposition level limit.
+     * 
+     * @return the maximum allowed decomposition levels (currently 10)
+     */
+    public static int getMaxDecompositionLevels() {
+        return MAX_DECOMPOSITION_LEVELS;
+    }
+    
+    /**
      * Applies single-level MODWT with scaled filters directly.
      * This avoids the need to create a wavelet wrapper.
      */
@@ -436,10 +489,10 @@ public class MultiLevelMODWTTransform {
         // For very long filters (at high decomposition levels), we may need to truncate
         // to avoid issues with circular convolution
         if (scaledLowPass.length > signalLength) {
-            scaledLowPass = getTruncatedFilter(scaledLowPass, signalLength, "low");
+            scaledLowPass = getTruncatedFilter(scaledLowPass, signalLength, FilterCacheKey.FilterType.LOW);
         }
         if (scaledHighPass.length > signalLength) {
-            scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, "high");
+            scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, FilterCacheKey.FilterType.HIGH);
         }
         
         // Use ScalarOps circular convolution for MODWT
@@ -493,11 +546,11 @@ public class MultiLevelMODWTTransform {
      * 
      * @param filter the original filter
      * @param targetLength the desired length
-     * @param filterType identifier for caching (e.g., "low", "high", "lowRecon", "highRecon")
+     * @param filterType the type of filter for caching
      * @return truncated filter of the specified length
      */
-    private double[] getTruncatedFilter(double[] filter, int targetLength, String filterType) {
-        String cacheKey = filterType + "_" + targetLength;
+    private double[] getTruncatedFilter(double[] filter, int targetLength, FilterCacheKey.FilterType filterType) {
+        FilterCacheKey cacheKey = new FilterCacheKey(filterType, targetLength);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
             double[] truncated = new double[targetLength];

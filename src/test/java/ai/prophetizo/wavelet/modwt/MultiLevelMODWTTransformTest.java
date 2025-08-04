@@ -233,6 +233,46 @@ class MultiLevelMODWTTransformTest {
         }
     }
     
+    @Test
+    void testMaxDecompositionLevelsConstant() {
+        // Test the new static method
+        assertEquals(10, MultiLevelMODWTTransform.getMaxDecompositionLevels());
+        
+        // Test the instance method for getting maximum levels
+        // For signal length 10000 with Haar filter (length 2), the actual max is 9
+        assertEquals(9, haarTransform.getMaximumLevels(10000));
+        
+        // For smaller signals, should return actual maximum
+        assertTrue(haarTransform.getMaximumLevels(32) < 10);
+        assertTrue(haarTransform.getMaximumLevels(64) < 10);
+        
+        // Test with very large signal
+        // For Haar filter (length 2), at level j, scaled filter length = (2-1)*2^(j-1)+1
+        // At level 10: (2-1)*2^9 + 1 = 513
+        // At level 11: (2-1)*2^10 + 1 = 1025
+        // So for signal length 100000, the actual max is still limited by the algorithm
+        
+        double[] signal = new double[100000];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.random();
+        }
+        
+        // Check what the actual maximum is
+        int actualMax = haarTransform.getMaximumLevels(100000);
+        
+        // Should be able to decompose to the actual maximum
+        MultiLevelMODWTResult result = haarTransform.decompose(signal, actualMax);
+        assertEquals(actualMax, result.getLevels());
+        
+        // Should throw exception for actualMax + 1
+        assertThrows(InvalidArgumentException.class, () -> {
+            haarTransform.decompose(signal, actualMax + 1);
+        });
+        
+        // Verify that the constant is 10
+        assertEquals(10, MultiLevelMODWTTransform.getMaxDecompositionLevels());
+    }
+    
     // Helper methods
     
     private double computeVariance(double[] data) {

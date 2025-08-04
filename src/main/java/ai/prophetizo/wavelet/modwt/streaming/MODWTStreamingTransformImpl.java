@@ -53,6 +53,9 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
     private final MODWTTransform transform;
     
     // Circular buffer for streaming
+    // Note: The circular buffer inherently maintains overlap samples by only consuming
+    // (bufferSize - overlapSize) samples per transform, leaving the overlap samples
+    // in place for the next window. No separate overlap array is needed.
     private final double[] circularBuffer;
     private int writePosition = 0;
     private int samplesInBuffer = 0;
@@ -60,7 +63,6 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
     // Overlap handling for filter continuity
     private final int filterLength;
     private final int overlapSize;
-    private double[] previousOverlap;
     
     // State management
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
@@ -96,7 +98,6 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
         // Get filter length for overlap calculation
         this.filterLength = wavelet.lowPassDecomposition().length;
         this.overlapSize = filterLength - 1;
-        this.previousOverlap = new double[overlapSize];
         
         // Initialize circular buffer with extra space for overlap
         this.circularBuffer = new double[bufferSize + overlapSize];
@@ -219,9 +220,8 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
             throw InvalidStateException.closed("Transform");
         }
         
-        // Clear buffers
+        // Clear buffer
         Arrays.fill(circularBuffer, 0.0);
-        Arrays.fill(previousOverlap, 0.0);
         writePosition = 0;
         samplesInBuffer = 0;
         
