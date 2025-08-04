@@ -143,13 +143,7 @@ public class MultiLevelMODWTTransform {
      * Filter types for cache key encoding.
      */
     private enum FilterType {
-        LOW(0), HIGH(1), LOW_RECON(2), HIGH_RECON(3);
-        
-        final int ordinal;
-        
-        FilterType(int ordinal) {
-            this.ordinal = ordinal;
-        }
+        LOW, HIGH, LOW_RECON, HIGH_RECON
     }
     
     /**
@@ -772,7 +766,7 @@ public class MultiLevelMODWTTransform {
         }
         
         // Use primitive long key to avoid object allocation - inline for performance
-        long cacheKey = (((long) filterType.ordinal) << 32) | (targetLength & 0xFFFFFFFFL);
+        long cacheKey = (((long) filterType.ordinal()) << 32) | (targetLength & 0xFFFFFFFFL);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
             double[] truncated = new double[targetLength];
