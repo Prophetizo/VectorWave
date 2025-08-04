@@ -127,9 +127,36 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         double[] details = result.detailCoeffs();
         
         // Update noise window with detail coefficients
-        for (double detail : details) {
-            noiseWindow[noiseWindowIndex] = Math.abs(detail);
-            noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+        // Strategy: If we have more details than window size, sample uniformly
+        // to maintain temporal diversity in noise estimation
+        if (details.length <= noiseWindowSize) {
+            // Case 1: Fewer details than window size - add all
+            for (double detail : details) {
+                noiseWindow[noiseWindowIndex] = Math.abs(detail);
+                noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+            }
+        } else {
+            // Case 2: More details than window size - sample uniformly
+            // This ensures we don't just keep the last noiseWindowSize values
+            int step = details.length / noiseWindowSize;
+            int added = 0;
+            
+            for (int i = 0; i < details.length && added < noiseWindowSize; i += step) {
+                noiseWindow[noiseWindowIndex] = Math.abs(details[i]);
+                noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+                added++;
+            }
+            
+            // Add any remaining slots with the last few coefficients
+            // This handles cases where step * noiseWindowSize < details.length
+            int remaining = noiseWindowSize - added;
+            if (remaining > 0) {
+                int startIdx = details.length - remaining;
+                for (int i = startIdx; i < details.length; i++) {
+                    noiseWindow[noiseWindowIndex] = Math.abs(details[i]);
+                    noiseWindowIndex = (noiseWindowIndex + 1) % noiseWindowSize;
+                }
+            }
         }
         
         // Calculate noise level based on method
@@ -151,20 +178,62 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
      * MAD is a robust measure of variability based on the median of absolute deviations.
      * 
      * @param values the array of values (must not be empty)
-     * @return the median absolute deviation
+     * @return the median absolute deviation, or 0 if all values are zero/invalid
      * @throws IllegalArgumentException if values array is empty
      */
     private double calculateMAD(double[] values) {
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException("Values array cannot be null or empty");
+        }
+        
+        // Check if we have any non-zero, finite values
+        boolean hasValidData = false;
+        int validCount = 0;
+        
+        for (double value : values) {
+            if (Double.isFinite(value)) {
+                validCount++;
+                if (value != 0.0) {
+                    hasValidData = true;
+                }
+            }
+        }
+        
+        // If no valid finite values, return 0
+        if (validCount == 0) {
+            return 0.0;
+        }
+        
+        // If all valid values are zero, MAD is 0
+        if (!hasValidData) {
+            return 0.0;
+        }
+        
         return MathUtils.medianAbsoluteDeviation(values);
     }
     
-    
+    /**
+     * Calculates the standard deviation of the given values.
+     * 
+     * @param values the array of values
+     * @return the standard deviation, or 0 if insufficient valid data
+     */
     private double calculateSTD(double[] values) {
-        if (values.length == 0) {
+        if (values == null || values.length == 0) {
             return 0.0;
         }
-        if (values.length == 1) {
-            return 0.0;  // Standard deviation undefined for single value
+        
+        // Count valid finite values
+        int validCount = 0;
+        for (double value : values) {
+            if (Double.isFinite(value)) {
+                validCount++;
+            }
+        }
+        
+        // Need at least 2 valid values for standard deviation
+        if (validCount < 2) {
+            return 0.0;
         }
         
         return MathUtils.standardDeviation(values);

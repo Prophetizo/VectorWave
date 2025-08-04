@@ -498,9 +498,14 @@ public final class VectorOps {
     /**
      * Vectorized circular convolution for MODWT.
      * 
+     * Implements the MODWT convolution formula: W_j,t = Σ_{l=0}^{L-1} h_j,l * X_{t-l mod N}
+     * This uses (t - l) indexing to implement time-reversed filter convolution, which is
+     * standard in wavelet analysis for maintaining causality and proper time-ordering.
+     * 
      * @param signal The input signal
      * @param filter The filter coefficients
      * @param output The output array
+     * @see ScalarOps#circularConvolveMODWTScalar for mathematical justification
      */
     public static void circularConvolveMODWTVectorized(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
@@ -582,6 +587,8 @@ public final class VectorOps {
     
     /**
      * Scalar fallback for circular convolution.
+     * Uses the same (t - l) indexing as the main ScalarOps implementation
+     * to ensure consistent results between vectorized and scalar paths.
      */
     private static void circularConvolveMODWTScalar(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
@@ -591,7 +598,8 @@ public final class VectorOps {
             double sum = 0.0;
             
             for (int l = 0; l < filterLen; l++) {
-                int signalIndex = (t + l) % signalLen;
+                // Use (t - l) indexing to match MODWT time-reversed filter convention
+                int signalIndex = (t - l + signalLen) % signalLen;
                 sum += signal[signalIndex] * filter[l];
             }
             

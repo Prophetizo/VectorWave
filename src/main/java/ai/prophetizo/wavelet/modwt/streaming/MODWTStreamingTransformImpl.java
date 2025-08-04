@@ -91,13 +91,49 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
             throw new InvalidArgumentException("Buffer size must be positive, got: " + bufferSize);
         }
 
-        this.wavelet = wavelet;
-        this.boundaryMode = boundaryMode;
-        this.bufferSize = bufferSize;
-        
         // Get filter length for overlap calculation
         this.filterLength = wavelet.lowPassDecomposition().length;
         this.overlapSize = filterLength - 1;
+        
+        // Validate against integer overflow and unreasonable sizes
+        if (bufferSize > Integer.MAX_VALUE - overlapSize) {
+            throw new InvalidArgumentException(
+                "Buffer size too large, would cause integer overflow: bufferSize=" + bufferSize +
+                ", overlapSize=" + overlapSize);
+        }
+        
+        // Check for reasonable memory allocation (e.g., max 100MB for doubles)
+        long totalSize = (long) bufferSize + overlapSize;
+        long memorySizeBytes = totalSize * 8; // 8 bytes per double
+        long maxReasonableSize = 100L * 1024 * 1024; // 100MB
+        
+        if (memorySizeBytes > maxReasonableSize) {
+            throw new InvalidArgumentException(
+                "Buffer size too large, would require " + (memorySizeBytes / (1024 * 1024)) + "MB. " +
+                "Maximum allowed is " + (maxReasonableSize / (1024 * 1024)) + "MB");
+        }
+        
+        // Ensure buffer size is larger than filter length for meaningful processing
+        if (bufferSize < filterLength) {
+            throw new InvalidArgumentException(
+                "Buffer size must be at least as large as filter length: bufferSize=" + bufferSize +
+                ", filterLength=" + filterLength);
+        }
+        
+        // Additional defensive check: ensure the sliding window overlap mechanism works correctly
+        // We need bufferSize > overlapSize to consume at least 1 new sample per window
+        // Note: This is technically redundant since overlapSize = filterLength - 1 and we already
+        // checked bufferSize >= filterLength, but we keep it for defensive programming and clarity
+        if (bufferSize <= overlapSize) {
+            throw new InvalidArgumentException(
+                "Buffer size must be larger than overlap size for sliding window to work: " +
+                "bufferSize=" + bufferSize + ", overlapSize=" + overlapSize + 
+                " (filterLength=" + filterLength + ")");
+        }
+
+        this.wavelet = wavelet;
+        this.boundaryMode = boundaryMode;
+        this.bufferSize = bufferSize;
         
         // Initialize circular buffer with extra space for overlap
         this.circularBuffer = new double[bufferSize + overlapSize];
@@ -178,7 +214,17 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
         // The circular buffer naturally maintains the overlap samples without copying:
         // - Read position stays at the beginning of unprocessed samples
         // - The overlap samples remain in the buffer for the next window
-        samplesInBuffer -= (bufferSize - overlapSize);
+        int samplesConsumed = bufferSize - overlapSize;
+        
+        // Defensive check - this should never happen with proper validation
+        if (samplesConsumed <= 0 || samplesConsumed > samplesInBuffer) {
+            throw new InvalidStateException(
+                "Invalid sliding window state: samplesConsumed=" + samplesConsumed +
+                ", samplesInBuffer=" + samplesInBuffer + 
+                ", bufferSize=" + bufferSize + ", overlapSize=" + overlapSize);
+        }
+        
+        samplesInBuffer -= samplesConsumed;
     }
 
     @Override
@@ -240,11 +286,28 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         // Atomically mark as closed to prevent concurrent execution
         if (isClosed.compareAndSet(false, true)) {
-            // Flush any remaining data before closing
-            flush();
+            // Process any remaining samples without checking closed state
+            if (samplesInBuffer > 0) {
+                // Process remaining samples with zero padding if needed
+                double[] finalBuffer = new double[bufferSize];
+                int readPos = (writePosition - samplesInBuffer + circularBuffer.length) % circularBuffer.length;
+                
+                for (int i = 0; i < samplesInBuffer; i++) {
+                    finalBuffer[i] = circularBuffer[(readPos + i) % circularBuffer.length];
+                }
+                
+                // Zero pad the rest
+                Arrays.fill(finalBuffer, samplesInBuffer, bufferSize, 0.0);
+                
+                // Apply final transform
+                MODWTResult result = transform.forward(finalBuffer);
+                submit(result);
+                
+                samplesInBuffer = 0;
+            }
             
             // Close the publisher
             super.close();

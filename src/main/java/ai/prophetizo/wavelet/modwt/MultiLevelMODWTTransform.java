@@ -306,11 +306,22 @@ public class MultiLevelMODWTTransform {
         
         int maxLevels = 1;
         while (maxLevels < MAX_DECOMPOSITION_LEVELS) {
-            int scaledFilterLength = (filterLength - 1) * (1 << (maxLevels - 1)) + 1;
-            if (scaledFilterLength > signalLength) {
+            try {
+                // Use Math.multiplyExact to detect overflow
+                int scaleFactor = 1 << (maxLevels - 1);
+                int scaledFilterLength = Math.addExact(
+                    Math.multiplyExact(filterLength - 1, scaleFactor), 
+                    1
+                );
+                
+                if (scaledFilterLength > signalLength) {
+                    break;
+                }
+                maxLevels++;
+            } catch (ArithmeticException e) {
+                // Overflow occurred - we've reached the practical limit
                 break;
             }
-            maxLevels++;
         }
         
         return maxLevels - 1;
@@ -361,16 +372,25 @@ public class MultiLevelMODWTTransform {
             return filter.clone();
         }
         
-        int upFactor = (int) Math.pow(2, level - 1);
-        int scaledLength = (filter.length - 1) * upFactor + 1;
-        double[] upsampled = new double[scaledLength];
-        
-        // Insert zeros between filter coefficients WITHOUT scaling
-        for (int i = 0; i < filter.length; i++) {
-            upsampled[i * upFactor] = filter[i];
+        try {
+            int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
+            int scaledLength = Math.addExact(
+                Math.multiplyExact(filter.length - 1, upFactor), 
+                1
+            );
+            double[] upsampled = new double[scaledLength];
+            
+            // Insert zeros between filter coefficients WITHOUT scaling
+            for (int i = 0; i < filter.length; i++) {
+                upsampled[i * upFactor] = filter[i];
+            }
+            
+            return upsampled;
+        } catch (ArithmeticException e) {
+            // Overflow in filter length calculation - this indicates the level is too high
+            throw new InvalidArgumentException(
+                "Level " + level + " would create filter length exceeding integer limits");
         }
-        
-        return upsampled;
     }
     
     /**
@@ -427,19 +447,28 @@ public class MultiLevelMODWTTransform {
             return scaled;
         }
         
-        int upFactor = (int) Math.pow(2, level - 1);
-        int scaledLength = (filter.length - 1) * upFactor + 1;
-        double[] scaled = new double[scaledLength];
-        
-        // MODWT always uses 1/sqrt(2) scaling, not 2^(-j/2)
-        double scale = 1.0 / Math.sqrt(2.0);
-        
-        // Insert zeros between filter coefficients and apply scaling
-        for (int i = 0; i < filter.length; i++) {
-            scaled[i * upFactor] = filter[i] * scale;
+        try {
+            int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
+            int scaledLength = Math.addExact(
+                Math.multiplyExact(filter.length - 1, upFactor), 
+                1
+            );
+            double[] scaled = new double[scaledLength];
+            
+            // MODWT always uses 1/sqrt(2) scaling, not 2^(-j/2)
+            double scale = 1.0 / Math.sqrt(2.0);
+            
+            // Insert zeros between filter coefficients and apply scaling
+            for (int i = 0; i < filter.length; i++) {
+                scaled[i * upFactor] = filter[i] * scale;
+            }
+            
+            return scaled;
+        } catch (ArithmeticException e) {
+            // Overflow in filter length calculation - this indicates the level is too high
+            throw new InvalidArgumentException(
+                "Level " + level + " would create filter length exceeding integer limits");
         }
-        
-        return scaled;
     }
     
     /**
@@ -548,8 +577,17 @@ public class MultiLevelMODWTTransform {
      * @param targetLength the desired length
      * @param filterType the type of filter for caching
      * @return truncated filter of the specified length
+     * @throws IllegalArgumentException if targetLength is invalid
      */
     private double[] getTruncatedFilter(double[] filter, int targetLength, FilterCacheKey.FilterType filterType) {
+        if (targetLength <= 0) {
+            throw new IllegalArgumentException("Target length must be positive: " + targetLength);
+        }
+        if (targetLength > filter.length) {
+            throw new IllegalArgumentException(
+                "Target length (" + targetLength + ") exceeds filter length (" + filter.length + ")");
+        }
+        
         FilterCacheKey cacheKey = new FilterCacheKey(filterType, targetLength);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
