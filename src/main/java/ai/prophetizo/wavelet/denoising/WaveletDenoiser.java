@@ -189,9 +189,10 @@ public class WaveletDenoiser {
                 // Use bit shift for efficient power of 2 calculation
                 // Safety guarantee: Constructor validation ensures original.getLevels() <= MAX_SAFE_LEVEL_FOR_SCALING (31)
                 // Therefore: level <= 31, so (level - 1) <= 30, making 1 << (level - 1) safe from overflow
-                if (level - 1 >= 31) {
+                if (level > MAX_SAFE_LEVEL_FOR_SCALING) {
                     throw new IllegalStateException(
-                        "Bit shift overflow protection: level-1 must be < 31, got " + (level - 1));
+                        "Bit shift overflow protection: level must be <= " + MAX_SAFE_LEVEL_FOR_SCALING + 
+                        ", got " + level);
                 }
                 double levelScale = Math.sqrt(1 << (level - 1));
                 double threshold = calculateThreshold(levelDetails, sigma / levelScale, method);
