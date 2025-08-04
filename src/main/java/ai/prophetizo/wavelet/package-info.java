@@ -9,7 +9,7 @@
  * <ul>
  *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTTransform} - Main MODWT transform engine</li>
  *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTResult} - Immutable container for transform coefficients</li>
- *   <li>{@link ai.prophetizo.wavelet.OptimizedTransformEngine} - High-performance batch processing</li>
+ *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTTransform#forwardBatch} - High-performance batch processing</li>
  * </ul>
  * 
  * <h2>Usage Example:</h2>

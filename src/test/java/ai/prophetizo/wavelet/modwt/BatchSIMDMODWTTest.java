@@ -180,9 +180,9 @@ public class BatchSIMDMODWTTest {
     }
     
     @Test
-    void testOptimizedEngineIntegration() {
-        // Test integration with MODWTOptimizedTransformEngine
-        MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
+    void testBatchTransformIntegration() {
+        // Test integration with MODWTTransform batch processing
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
         
         int batchSize = 8;
         int signalLength = 128;
@@ -195,8 +195,8 @@ public class BatchSIMDMODWTTest {
             }
         }
         
-        // Process batch through engine
-        MODWTResult[] results = engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+        // Process batch through transform
+        MODWTResult[] results = transform.forwardBatch(signals);
         
         assertNotNull(results);
         assertEquals(batchSize, results.length);
@@ -205,7 +205,5 @@ public class BatchSIMDMODWTTest {
             assertEquals(signalLength, results[b].approximationCoeffs().length);
             assertEquals(signalLength, results[b].detailCoeffs().length);
         }
-        
-        engine.close();
     }
 }

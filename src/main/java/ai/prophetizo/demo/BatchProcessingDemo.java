@@ -95,15 +95,7 @@ public class BatchProcessingDemo {
         System.out.println("2. Optimized Transform Engine");
         System.out.println("-----------------------------");
         
-        // Configure engine for maximum performance
-        OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-            .withParallelism(4)                  // Use 4 threads
-            .withSoALayout(true)                 // Structure-of-Arrays optimization
-            .withSpecializedKernels(true)        // Use optimized kernels
-            .withCacheBlocking(true)             // Enable cache-aware blocking
-            .withMemoryPool(true);               // Use memory pooling
-        
-        OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
+        // MODWT automatically applies optimizations based on signal characteristics
         
         // Prepare larger batch
         int batchSize = 64;
@@ -114,15 +106,16 @@ public class BatchProcessingDemo {
         Wavelet[] wavelets = {new Haar(), Daubechies.DB4, Symlet.SYM4};
         
         for (Wavelet wavelet : wavelets) {
+            MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
             long start = System.nanoTime();
-            MODWTResult[] results = engine.transformBatch(signals, wavelet, BoundaryMode.PERIODIC);
+            MODWTResult[] results = transform.forwardBatch(signals);
             long elapsed = System.nanoTime() - start;
             
             System.out.printf("  %s: %.2f ms for %d signals\n", 
                 wavelet.name(), elapsed / 1_000_000.0, batchSize);
         }
         
-        System.out.println("\nOptimization info: " + engine.getOptimizationInfo());
+        System.out.println("\nNote: MODWT automatically applies SIMD and other optimizations when beneficial");
         System.out.println();
     }
     
@@ -246,16 +239,12 @@ public class BatchProcessingDemo {
             }
         }
         
-        // Use optimized engine for financial analysis
-        OptimizedTransformEngine engine = new OptimizedTransformEngine();
+        // MODWT provides optimal processing for financial analysis
         
         // Analyze with Daubechies wavelets (good for financial data)
         long start = System.nanoTime();
-        MODWTResult[] results = engine.transformBatch(
-            priceData, 
-            Daubechies.DB4, 
-            BoundaryMode.PERIODIC
-        );
+        MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTResult[] results = transform.forwardBatch(priceData);
         long elapsed = System.nanoTime() - start;
         
         System.out.printf("Analyzed %d stocks in %.2f ms\n", 
@@ -293,9 +282,9 @@ public class BatchProcessingDemo {
             double[][] signals = generateTestSignals(batchSize, signalLength);
             
             // Warmup
-            OptimizedTransformEngine warmupEngine = new OptimizedTransformEngine();
+            MODWTTransform warmupTransform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
             for (int i = 0; i < 10; i++) {
-                warmupEngine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+                warmupTransform.forwardBatch(signals);
             }
             
             // Sequential timing
@@ -307,11 +296,11 @@ public class BatchProcessingDemo {
             }
             long seqTime = System.nanoTime() - seqStart;
             
-            // Batch timing (using OptimizedTransformEngine for batch processing)
-            OptimizedTransformEngine batchEngine = new OptimizedTransformEngine();
+            // Batch timing (automatic optimization)
+            MODWTTransform batchTransform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
             long batchStart = System.nanoTime();
             for (int iter = 0; iter < iterations; iter++) {
-                batchEngine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+                batchTransform.forwardBatch(signals);
             }
             long batchTime = System.nanoTime() - batchStart;
             

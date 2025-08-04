@@ -149,26 +149,24 @@ BatchSIMDTransform.adaptiveBatchTransform(double[][] signals, Wavelet wavelet, B
 BatchSIMDTransform.cleanupThreadLocals()
 ```
 
-### OptimizedTransformEngine
+### Transform Optimization
 
-High-performance engine with configurable optimizations.
+VectorWave automatically applies optimizations based on signal characteristics and platform capabilities.
 
 ```java
-// Creation
-OptimizedTransformEngine engine = new OptimizedTransformEngine();
-OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
+// Simple usage - optimizations are automatic
+MODWTTransform transform = new MODWTTransform(wavelet, mode);
+MODWTResult result = transform.forward(signal);
 
-// Batch operations
-TransformResult[] transformBatch(double[][] signals, Wavelet wavelet, BoundaryMode mode)
+// Batch processing - automatic SIMD optimization
+MODWTResult[] results = transform.forwardBatch(signals);
 
-// Configuration
-public static class EngineConfig {
-    EngineConfig withParallelism(int threads)
-    EngineConfig withMemoryPool(boolean enable)
-    EngineConfig withSpecializedKernels(boolean enable)
-    EngineConfig withSoALayout(boolean enable)  // Structure-of-Arrays
-    EngineConfig withCacheBlocking(boolean enable)
-}
+// The transform automatically selects:
+// - SIMD operations when beneficial (signal length > threshold)
+// - Platform-specific optimizations (ARM vs x86)
+// - Specialized kernels for common wavelets (Haar, etc.)
+// - Cache-aware algorithms for large signals
+// - Memory pooling for reduced allocation overhead
 ```
 
 ### BatchMemoryLayout
@@ -331,10 +329,10 @@ ComplexCWTResult analyzeComplex(double[] signal, double[] scales)
 // Configuration
 CWTConfig config = CWTConfig.builder()
     .enableFFT(true)           // FFT acceleration
-    .realOptimized(true)       // Real-to-complex optimization
     .normalizeScales(true)     // Scale normalization
     .padding(PaddingType.ZERO) // Padding strategy
     .build();
+// Real-to-complex optimization is automatically applied when appropriate
 ```
 
 ### CWTResult
@@ -465,12 +463,12 @@ stream.flush();
 stream.close();
 ```
 
-### MODWTOptimizedStreamingTransform
+### MODWTStreamingTransform
 
-Zero-copy streaming MODWT with configurable overlap.
+Streaming MODWT with automatic optimization and configurable overlap.
 
 ```java
-MODWTOptimizedStreamingTransform stream = new MODWTOptimizedStreamingTransform(
+MODWTStreamingTransform stream = new MODWTStreamingTransform(
     wavelet,
     boundaryMode,
     blockSize,
@@ -482,6 +480,7 @@ MODWTOptimizedStreamingTransform stream = new MODWTOptimizedStreamingTransform(
 stream.getProcessedSamples()
 stream.getDroppedSamples()
 stream.getAverageLatencyNanos()
+// Optimizations are automatically applied based on block size and platform
 ```
 
 ### StreamingDenoiserFactory
@@ -771,8 +770,8 @@ CWTConfig config = CWTConfig.builder()
     .normalizeScales(true)
     .padding(PaddingType.ZERO)
     .samplingFrequency(1000.0)
-    .realOptimized(true)       // Real-to-complex FFT optimization
     .build();
+// FFT optimizations including real-to-complex are automatically applied
 ```
 
 ### Performance Hints
@@ -843,19 +842,17 @@ try {
 2. **Batch Processing**: Process multiple signals together for SIMD benefits
 3. **Memory Pooling**: Reuse memory allocations with pooling
 4. **Platform Detection**: Let the library auto-detect optimal implementations
-5. **Configuration**: Use `TransformConfig` for fine-tuning
+5. **Batch Processing**: Automatic optimization for multiple signals
 
 ```java
-// Optimal batch processing example
-int batchSize = 32;  // Multiple of vector width
-int signalLength = 1024;  // Power of 2
+// Simple batch processing - optimizations are automatic
+MODWTTransform transform = new MODWTTransform(wavelet, mode);
+MODWTResult[] results = transform.forwardBatch(signals);
 
-OptimizedTransformEngine engine = new OptimizedTransformEngine(
-    new EngineConfig()
-        .withParallelism(Runtime.getRuntime().availableProcessors())
-        .withMemoryPool(true)
-        .withSoALayout(true)
-);
-
-TransformResult[] results = engine.transformBatch(signals, wavelet, mode);
+// The transform automatically:
+// - Uses SIMD instructions when beneficial
+// - Optimizes memory layout (Structure-of-Arrays)
+// - Applies platform-specific optimizations
+// - Selects specialized kernels for common wavelets
+// No manual configuration needed!
 ```

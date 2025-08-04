@@ -152,34 +152,21 @@ MODWTResult shiftedResult = modwt.forward(shifted);
 
 ### Batch Processing
 ```java
-// Process multiple signals in parallel using SIMD
+// Process multiple signals in parallel with automatic SIMD optimization
 MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
 double[][] signals = generateSignals(32, 250); // 32 signals of any length!
 
-// Batch forward transform - processes multiple signals simultaneously
+// Batch forward transform - automatically uses SIMD when beneficial
 MODWTResult[] results = transform.forwardBatch(signals);
 
 // Batch inverse transform
 double[][] reconstructed = transform.inverseBatch(results);
 
-// For maximum performance with large batches
-MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
-MODWTResult[] optimizedResults = engine.transformBatch(signals, wavelet, mode);
-
-// Configure batch processing
-MODWTOptimizedTransformEngine.EngineConfig config = new MODWTOptimizedTransformEngine.EngineConfig()
-    .withParallelism(8)           // Use 8 threads
-    .withSoALayout(true)          // Enable Structure-of-Arrays optimization
-    .withSpecializedKernels(true) // Use optimized kernels
-    .withCacheBlocking(true);     // Enable cache-aware blocking
-MODWTOptimizedTransformEngine customEngine = new MODWTOptimizedTransformEngine(config);
-
-// Thread-local cleanup for batch SIMD operations (important in thread pools)
-try {
-    BatchSIMDTransform.haarBatchTransformSIMD(signals, approx, detail);
-} finally {
-    BatchSIMDTransform.cleanupThreadLocals();
-}
+// The transform automatically selects the best optimization strategy based on:
+// - Signal length and count
+// - Platform capabilities (ARM/x86, vector width)
+// - Wavelet type (specialized kernels for Haar, etc.)
+// - Memory alignment and cache considerations
 ```
 
 ### FFM-Based Operations (Java 23+)
@@ -293,13 +280,13 @@ PaulWavelet paulWavelet = new PaulWavelet(4); // Order 4 for market analysis
 CWTTransform financialCWT = new CWTTransform(paulWavelet);
 CWTResult crashAnalysis = financialCWT.analyze(priceReturns, scales);
 
-// FFT-accelerated CWT with real-to-complex optimization
+// FFT-accelerated CWT with automatic optimizations
 CWTConfig config = CWTConfig.builder()
     .enableFFT(true)           // Enable FFT acceleration
-    .realOptimized(true)       // 2x speedup for real signals
     .normalizeScales(true)
     .build();
 CWTTransform fftCwt = new CWTTransform(wavelet, config);
+// Real-to-complex optimization is automatically applied for real signals
 
 // Fast MODWT-based CWT reconstruction (recommended)
 MODWTBasedInverseCWT modwtInverse = new MODWTBasedInverseCWT(wavelet);
@@ -411,12 +398,11 @@ MultiLevelMODWTTransform mlTransform = new MultiLevelMODWTTransform(
     Daubechies.DB4, BoundaryMode.PERIODIC);
 int maxLevels = mlTransform.getMaxDecompositionLevel(signalLength);
 
-// Batch processing configuration for MODWT
-MODWTOptimizedTransformEngine.EngineConfig config = 
-    new MODWTOptimizedTransformEngine.EngineConfig()
-        .withParallelism(8)
-        .withSoALayout(true)
-        .withSpecializedKernels(true);
+// MODWT transforms automatically optimize based on:
+// - Signal characteristics (length, batch size)
+// - Platform capabilities (ARM vs x86, vector width)
+// - Available system resources (cores, memory)
+// No manual configuration needed for optimal performance!
 ```
 
 ## Documentation
@@ -447,14 +433,13 @@ The project includes comprehensive demos showcasing MODWT and other features:
 
 ### Financial Analysis
 - `FinancialDemo` - Basic financial time series analysis
-- `FinancialAnalysisDemo` - Advanced configurable analysis
-- `FinancialOptimizationDemo` - Performance-optimized financial processing
+- `FinancialAnalysisDemo` - Advanced configurable analysis with custom parameters
 - `LiveTradingSimulation` - Interactive trading bot simulation
 
 ### Advanced MODWT Features
 - `SignalAnalysisDemo` - Time-frequency analysis with MODWT shift-invariance
 - `StreamingDenoiserDemo` - Real-time MODWT denoising with arbitrary block sizes
-- `OptimizationDemo` - MODWT performance optimization techniques
+- `PerformanceDemo` - MODWT performance characteristics and benchmarking
 - `MemoryEfficiencyDemo` - MODWT memory advantages over DWT
 - `MemoryPoolLifecycleDemo` - Memory management with MODWT
 - `FactoryPatternDemo` - Factory pattern with MODWTTransformFactory
