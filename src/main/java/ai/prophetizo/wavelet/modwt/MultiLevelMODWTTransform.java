@@ -493,41 +493,6 @@ public class MultiLevelMODWTTransform {
         }
     }
     
-    /**
-     * Upsamples filter for MODWT at given level WITHOUT scaling.
-     * At level j, insert 2^(j-1) - 1 zeros between coefficients.
-     * 
-     * @deprecated Use upsampleFiltersForLevel for better performance when processing both filters
-     */
-    @Deprecated
-    private double[] upsampleFilterForLevel(double[] filter, int level) {
-        if (level == 1) {
-            return filter.clone();
-        }
-        
-        // Check for potential overflow in bit shift
-        validateLevelForBitShift(level, "filter upsampling");
-        
-        try {
-            int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
-            int scaledLength = Math.addExact(
-                Math.multiplyExact(filter.length - 1, upFactor), 
-                1
-            );
-            double[] upsampled = new double[scaledLength];
-            
-            // Insert zeros between filter coefficients WITHOUT scaling
-            for (int i = 0; i < filter.length; i++) {
-                upsampled[i * upFactor] = filter[i];
-            }
-            
-            return upsampled;
-        } catch (ArithmeticException e) {
-            // Overflow in filter length calculation - this indicates the level is too high
-            throw new InvalidArgumentException(
-                "Level " + level + " would create filter length exceeding integer limits");
-        }
-    }
     
     /**
      * Applies inverse MODWT with scaled filters directly.
@@ -630,51 +595,6 @@ public class MultiLevelMODWTTransform {
         }
     }
     
-    /**
-     * Scales filter for MODWT at given level by upsampling with zeros.
-     * At level j, insert 2^(j-1) - 1 zeros between coefficients.
-     * MODWT only uses 1/sqrt(2) scaling, regardless of level.
-     * 
-     * @deprecated Use scaleFiltersForLevel for better performance when scaling both filters
-     */
-    @Deprecated
-    private double[] scaleFilterForLevel(double[] filter, int level) {
-        if (level == 1) {
-            // Level 1: no upsampling, just scale by 1/sqrt(2)
-            double[] scaled = filter.clone();
-            double scale = 1.0 / Math.sqrt(2.0);
-            for (int i = 0; i < scaled.length; i++) {
-                scaled[i] *= scale;
-            }
-            return scaled;
-        }
-        
-        // Check for potential overflow in bit shift
-        validateLevelForBitShift(level, "filter scaling");
-        
-        try {
-            int upFactor = 1 << (level - 1); // Safer than Math.pow for integer powers of 2
-            int scaledLength = Math.addExact(
-                Math.multiplyExact(filter.length - 1, upFactor), 
-                1
-            );
-            double[] scaled = new double[scaledLength];
-            
-            // MODWT always uses 1/sqrt(2) scaling, not 2^(-j/2)
-            double scale = 1.0 / Math.sqrt(2.0);
-            
-            // Insert zeros between filter coefficients and apply scaling
-            for (int i = 0; i < filter.length; i++) {
-                scaled[i * upFactor] = filter[i] * scale;
-            }
-            
-            return scaled;
-        } catch (ArithmeticException e) {
-            // Overflow in filter length calculation - this indicates the level is too high
-            throw new InvalidArgumentException(
-                "Level " + level + " would create filter length exceeding integer limits");
-        }
-    }
     
     /**
      * Gets the wavelet used by this transform.

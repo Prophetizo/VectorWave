@@ -38,56 +38,60 @@ class MultiLevelMODWTOverflowTest {
     }
     
     @Test
-    void testScaleFilterForLevelOverflowProtection() throws Exception {
+    void testScaleFiltersForLevelOverflowProtection() throws Exception {
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(
             new Haar(), BoundaryMode.PERIODIC);
         
         // Access private method via reflection
-        Method scaleFilterForLevel = MultiLevelMODWTTransform.class
-            .getDeclaredMethod("scaleFilterForLevel", double[].class, int.class);
-        scaleFilterForLevel.setAccessible(true);
+        Method scaleFiltersForLevel = MultiLevelMODWTTransform.class
+            .getDeclaredMethod("scaleFiltersForLevel", double[].class, double[].class, int.class);
+        scaleFiltersForLevel.setAccessible(true);
         
-        double[] filter = {1.0, 2.0};
+        double[] lowFilter = {1.0, 2.0};
+        double[] highFilter = {1.0, -2.0};
         
         // Test normal levels
         assertDoesNotThrow(() -> {
-            scaleFilterForLevel.invoke(transform, filter, 1);
-            scaleFilterForLevel.invoke(transform, filter, 5);
-            scaleFilterForLevel.invoke(transform, filter, 10);
+            scaleFiltersForLevel.invoke(transform, lowFilter, highFilter, 1);
+            scaleFiltersForLevel.invoke(transform, lowFilter, highFilter, 5);
+            scaleFiltersForLevel.invoke(transform, lowFilter, highFilter, 10);
         });
         
         // Test level that would cause overflow
         // At level 31, upFactor = 1 << 30 = 1073741824
         // With a longer filter, this could overflow
-        double[] longFilter = new double[1000];
+        double[] longLowFilter = new double[1000];
+        double[] longHighFilter = new double[1000];
         assertThrows(Exception.class, () -> {
-            scaleFilterForLevel.invoke(transform, longFilter, 31);
+            scaleFiltersForLevel.invoke(transform, longLowFilter, longHighFilter, 31);
         });
     }
     
     @Test
-    void testUpsampleFilterForLevelOverflowProtection() throws Exception {
+    void testUpsampleFiltersForLevelOverflowProtection() throws Exception {
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(
             new Haar(), BoundaryMode.PERIODIC);
         
         // Access private method via reflection
-        Method upsampleFilterForLevel = MultiLevelMODWTTransform.class
-            .getDeclaredMethod("upsampleFilterForLevel", double[].class, int.class);
-        upsampleFilterForLevel.setAccessible(true);
+        Method upsampleFiltersForLevel = MultiLevelMODWTTransform.class
+            .getDeclaredMethod("upsampleFiltersForLevel", double[].class, double[].class, int.class);
+        upsampleFiltersForLevel.setAccessible(true);
         
-        double[] filter = {1.0, 2.0};
+        double[] lowFilter = {1.0, 2.0};
+        double[] highFilter = {1.0, -2.0};
         
         // Test normal levels
         assertDoesNotThrow(() -> {
-            upsampleFilterForLevel.invoke(transform, filter, 1);
-            upsampleFilterForLevel.invoke(transform, filter, 5);
-            upsampleFilterForLevel.invoke(transform, filter, 10);
+            upsampleFiltersForLevel.invoke(transform, lowFilter, highFilter, 1);
+            upsampleFiltersForLevel.invoke(transform, lowFilter, highFilter, 5);
+            upsampleFiltersForLevel.invoke(transform, lowFilter, highFilter, 10);
         });
         
         // Test level that would cause overflow with a long filter
-        double[] longFilter = new double[1000];
+        double[] longLowFilter = new double[1000];
+        double[] longHighFilter = new double[1000];
         assertThrows(Exception.class, () -> {
-            upsampleFilterForLevel.invoke(transform, longFilter, 31);
+            upsampleFiltersForLevel.invoke(transform, longLowFilter, longHighFilter, 31);
         });
     }
     

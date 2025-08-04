@@ -38,44 +38,46 @@ class MultiLevelMODWTBitShiftOverflowTest {
     }
     
     @Test
-    void testUpsampleFilterForLevelWithHighLevel() throws Exception {
+    void testUpsampleFiltersForLevelWithHighLevel() throws Exception {
         Haar haar = new Haar();
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(haar, BoundaryMode.PERIODIC);
         
-        // Access private upsampleFilterForLevel method via reflection
-        Method upsampleFilterForLevel = MultiLevelMODWTTransform.class
-            .getDeclaredMethod("upsampleFilterForLevel", double[].class, int.class);
-        upsampleFilterForLevel.setAccessible(true);
+        // Access private upsampleFiltersForLevel method via reflection
+        Method upsampleFiltersForLevel = MultiLevelMODWTTransform.class
+            .getDeclaredMethod("upsampleFiltersForLevel", double[].class, double[].class, int.class);
+        upsampleFiltersForLevel.setAccessible(true);
         
-        double[] filter = {0.7071, 0.7071};
+        double[] lowFilter = {0.7071, 0.7071};
+        double[] highFilter = {0.7071, -0.7071};
         
         // Test with level that would cause overflow (32 or higher)
         assertThrows(Exception.class, () -> {
-            upsampleFilterForLevel.invoke(transform, filter, 32);
+            upsampleFiltersForLevel.invoke(transform, lowFilter, highFilter, 32);
         }, "Should throw exception for level >= 32");
         
         // Test with maximum safe level (31)
         // This should also throw because it would create massive arrays
         assertThrows(Exception.class, () -> {
-            upsampleFilterForLevel.invoke(transform, filter, 31);
+            upsampleFiltersForLevel.invoke(transform, lowFilter, highFilter, 31);
         }, "Should throw exception for level 31");
     }
     
     @Test
-    void testScaleFilterForLevelWithHighLevel() throws Exception {
+    void testScaleFiltersForLevelWithHighLevel() throws Exception {
         Haar haar = new Haar();
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(haar, BoundaryMode.PERIODIC);
         
-        // Access private scaleFilterForLevel method via reflection
-        Method scaleFilterForLevel = MultiLevelMODWTTransform.class
-            .getDeclaredMethod("scaleFilterForLevel", double[].class, int.class);
-        scaleFilterForLevel.setAccessible(true);
+        // Access private scaleFiltersForLevel method via reflection
+        Method scaleFiltersForLevel = MultiLevelMODWTTransform.class
+            .getDeclaredMethod("scaleFiltersForLevel", double[].class, double[].class, int.class);
+        scaleFiltersForLevel.setAccessible(true);
         
-        double[] filter = {0.7071, 0.7071};
+        double[] lowFilter = {0.7071, 0.7071};
+        double[] highFilter = {0.7071, -0.7071};
         
         // Test with level that would cause overflow
         assertThrows(Exception.class, () -> {
-            scaleFilterForLevel.invoke(transform, filter, 32);
+            scaleFiltersForLevel.invoke(transform, lowFilter, highFilter, 32);
         }, "Should throw exception for level >= 32");
     }
     
