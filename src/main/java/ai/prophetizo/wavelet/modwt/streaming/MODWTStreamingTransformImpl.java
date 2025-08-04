@@ -222,12 +222,10 @@ class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
 
     @Override
     public void close() {
-        if (!isClosed.get()) {
-            // Flush any remaining data before marking as closed
+        // Atomically mark as closed to prevent concurrent execution
+        if (isClosed.compareAndSet(false, true)) {
+            // Flush any remaining data before closing
             flush();
-            
-            // Now mark as closed
-            isClosed.set(true);
             
             // Close the publisher
             super.close();

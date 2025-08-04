@@ -167,10 +167,6 @@ class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
 
     @Override
     public synchronized void flush() {
-        if (isClosed.get()) {
-            throw InvalidStateException.closed("Transform");
-        }
-        
         if (levelSamplesCount[0] > 0) {
             // Process remaining samples with zero padding
             double[] finalBuffer = new double[bufferSize];

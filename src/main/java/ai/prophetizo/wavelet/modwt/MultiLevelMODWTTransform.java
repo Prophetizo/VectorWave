@@ -35,7 +35,7 @@ import java.util.Objects;
  * <pre>{@code
  * // Create multi-level MODWT transform
  * MultiLevelMODWTTransform mwt = new MultiLevelMODWTTransform(
- *     new Daubechies.DB4, BoundaryMode.PERIODIC);
+ *     Daubechies.DB4, BoundaryMode.PERIODIC);
  * 
  * // Decompose signal to maximum depth
  * double[] signal = getFinancialTimeSeries(); // Any length!
