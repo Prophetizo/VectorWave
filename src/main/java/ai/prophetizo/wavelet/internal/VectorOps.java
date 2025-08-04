@@ -556,9 +556,7 @@ public final class VectorOps {
                         result.intoArray(output, t);
                     } else {
                         // Complex wrapping case - fall back to scalar processing for this vector
-                        // This is more efficient than expensive gather operations
-                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
-                        
+                        // This is more efficient than lane-by-lane vector manipulation
                         for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
                             int idx = t + i - l;
                             int signalIndex = idx >= 0 ? idx : idx + signalLen;
@@ -567,13 +565,9 @@ public final class VectorOps {
                                 signalIndex -= signalLen;
                             }
                             
-                            // Accumulate into the output vector element by element
-                            double currentOut = outputVec.lane(i);
-                            double newVal = currentOut + signal[signalIndex] * filter[l];
-                            outputVec = outputVec.withLane(i, newVal);
+                            // Direct scalar accumulation - faster than vector lane manipulation
+                            output[t + i] += signal[signalIndex] * filter[l];
                         }
-                        
-                        outputVec.intoArray(output, t);
                     }
                 }
             }
