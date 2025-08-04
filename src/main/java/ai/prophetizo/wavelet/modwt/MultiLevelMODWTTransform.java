@@ -147,6 +147,19 @@ public class MultiLevelMODWTTransform {
     }
     
     /**
+     * Creates a cache key by encoding filter type and target length into a single long value.
+     * Upper 32 bits: filter type ordinal (0-3)
+     * Lower 32 bits: target length
+     * 
+     * @param filterType the type of filter (LOW, HIGH, LOW_RECON, HIGH_RECON)
+     * @param targetLength the target length for the truncated filter
+     * @return encoded cache key
+     */
+    private static long createFilterCacheKey(FilterType filterType, int targetLength) {
+        return (((long) filterType.ordinal()) << 32) | (targetLength & 0xFFFFFFFFL);
+    }
+    
+    /**
      * Constructs a multi-level MODWT transformer.
      * 
      * @param wavelet The wavelet to use for transformations
@@ -765,8 +778,8 @@ public class MultiLevelMODWTTransform {
                 "Target length (" + targetLength + ") exceeds filter length (" + filter.length + ")");
         }
         
-        // Use primitive long key to avoid object allocation - inline for performance
-        long cacheKey = (((long) filterType.ordinal()) << 32) | (targetLength & 0xFFFFFFFFL);
+        // Use primitive long key to avoid object allocation
+        long cacheKey = createFilterCacheKey(filterType, targetLength);
         
         return truncatedFilterCache.computeIfAbsent(cacheKey, key -> {
             double[] truncated = new double[targetLength];
