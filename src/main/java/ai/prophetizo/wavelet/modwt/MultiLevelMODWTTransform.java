@@ -477,6 +477,7 @@ public class MultiLevelMODWTTransform {
      * 
      * @deprecated Use upsampleFiltersForLevel for better performance when processing both filters
      */
+    @Deprecated
     private double[] upsampleFilterForLevel(double[] filter, int level) {
         if (level == 1) {
             return filter.clone();
@@ -614,6 +615,7 @@ public class MultiLevelMODWTTransform {
      * 
      * @deprecated Use scaleFiltersForLevel for better performance when scaling both filters
      */
+    @Deprecated
     private double[] scaleFilterForLevel(double[] filter, int level) {
         if (level == 1) {
             // Level 1: no upsampling, just scale by 1/sqrt(2)
