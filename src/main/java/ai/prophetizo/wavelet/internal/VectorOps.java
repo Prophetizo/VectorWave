@@ -555,26 +555,30 @@ public final class VectorOps {
                         DoubleVector result = outputVec.add(signalVec.mul(filterVec));
                         result.intoArray(output, t);
                     } else {
-                        // Complex wrapping case - fall back to scalar processing for this vector
-                        // This is more efficient than lane-by-lane vector manipulation
+                        // Complex wrapping case - use vector gather for wrapped indices
+                        // This is more efficient than falling back to scalar processing
+                        
+                        // Build index array for gather operation
                         for (int i = 0; i < VECTOR_LENGTH && t + i < signalLen; i++) {
                             int idx = t + i - l;
                             // Use robust modulo operation that handles all negative values correctly
-                            int signalIndex;
                             if (idx >= 0 && idx < signalLen) {
                                 // Most common case: index already in bounds
-                                signalIndex = idx;
+                                indices[i] = idx;
                             } else if (idx < 0 && idx >= -signalLen) {
                                 // Common case for negative indices: only one wrap needed
-                                signalIndex = idx + signalLen;
+                                indices[i] = idx + signalLen;
                             } else {
                                 // Rare case for very negative or very positive indices
-                                signalIndex = ((idx % signalLen) + signalLen) % signalLen;
+                                indices[i] = ((idx % signalLen) + signalLen) % signalLen;
                             }
-                            
-                            // Direct scalar accumulation - faster than vector lane manipulation
-                            output[t + i] += signal[signalIndex] * filter[l];
                         }
+                        
+                        // Use vector gather to load wrapped values
+                        DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                        DoubleVector outputVec = DoubleVector.fromArray(SPECIES, output, t);
+                        DoubleVector result = outputVec.add(signalVec.mul(filterVec));
+                        result.intoArray(output, t);
                     }
                 }
             }
