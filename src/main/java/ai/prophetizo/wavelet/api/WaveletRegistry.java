@@ -223,7 +223,7 @@ public final class WaveletRegistry {
     /**
      * Gets all continuous wavelets.
      *
-     * @return list of continuous wavelet names
+     * @return a list of continuous wavelet names constructed from a set; order is not guaranteed
      */
     public static List<String> getContinuousWavelets() {
         return new ArrayList<>(getWaveletsByType(WaveletType.CONTINUOUS));
