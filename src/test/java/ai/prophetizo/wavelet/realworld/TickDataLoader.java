@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+
 /**
  * Utility class for loading tick data from compressed archives.
  */
@@ -39,7 +43,35 @@ public class TickDataLoader {
     public static List<Tick> loadTickData() throws IOException {
         String resourcePath = "/ticks_1734964200000L.tar.xz";
         
-        // Use system command to extract tar.xz since Java doesn't have built-in XZ support
+        try (InputStream resourceStream = TickDataLoader.class.getResourceAsStream(resourcePath)) {
+            if (resourceStream == null) {
+                throw new IOException("Resource not found: " + resourcePath);
+            }
+            
+            // Create XZ decompressor
+            try (XZCompressorInputStream xzStream = new XZCompressorInputStream(resourceStream);
+                 TarArchiveInputStream tarStream = new TarArchiveInputStream(xzStream)) {
+                
+                TarArchiveEntry entry;
+                while ((entry = tarStream.getNextTarEntry()) != null) {
+                    if (!entry.isDirectory()) {
+                        // Read the CSV data from the tar entry
+                        return parseCsv(tarStream);
+                    }
+                }
+                
+                throw new IOException("No valid entries found in tar.xz file");
+            }
+        } catch (Exception e) {
+            // Fallback to system command if Commons Compress fails
+            return loadTickDataFallback(resourcePath);
+        }
+    }
+    
+    /**
+     * Fallback method using system tar command for platforms where Commons Compress might fail.
+     */
+    private static List<Tick> loadTickDataFallback(String resourcePath) throws IOException {
         try {
             Process process = new ProcessBuilder(
                 "tar", "-xOf", 
@@ -54,6 +86,8 @@ public class TickDataLoader {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while loading tick data", e);
+        } catch (Exception e) {
+            throw new IOException("Failed to load tick data using both Commons Compress and system tar command", e);
         }
     }
     
