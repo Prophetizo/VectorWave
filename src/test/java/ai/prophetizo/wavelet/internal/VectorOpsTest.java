@@ -36,8 +36,8 @@ class VectorOpsTest {
     void testIsVectorApiSupported() {
         // This should not throw and return a valid boolean
         boolean supported = VectorOps.isVectorApiSupported();
-        // We can't assert the value as it depends on the platform
-        assertTrue(supported || !supported); // Always true, just checking it doesn't throw
+        // Just verify the method doesn't throw an exception
+        assertNotNull(Boolean.valueOf(supported));
     }
     
     @Test
@@ -52,20 +52,23 @@ class VectorOpsTest {
             assertFalse(VectorOps.isVectorizedOperationBeneficial(4)); // Below threshold
         } else {
             // On Apple Silicon with 128-bit vectors, threshold may be 4, so 4 might be beneficial
-            assertTrue(VectorOps.isVectorizedOperationBeneficial(4) || !VectorOps.isVectorizedOperationBeneficial(4));
+            // Just verify it returns a boolean without throwing
+            boolean result4 = VectorOps.isVectorizedOperationBeneficial(4);
+            assertNotNull(Boolean.valueOf(result4));
         }
         
         if (8 < threshold) {
             assertFalse(VectorOps.isVectorizedOperationBeneficial(8)); // Below threshold
         } else {
             // May be beneficial on some platforms
-            assertTrue(VectorOps.isVectorizedOperationBeneficial(8) || !VectorOps.isVectorizedOperationBeneficial(8));
+            // Just verify it returns a boolean without throwing
+            boolean result8 = VectorOps.isVectorizedOperationBeneficial(8);
+            assertNotNull(Boolean.valueOf(result8));
         }
         
-        // Larger signals should benefit (depends on platform)
+        // Larger signals - just verify method works without asserting specific behavior
         boolean largeBenefit = VectorOps.isVectorizedOperationBeneficial(1024);
-        // Can't assert specific value as it's platform-dependent
-        assertTrue(largeBenefit || !largeBenefit);
+        assertNotNull(Boolean.valueOf(largeBenefit));
     }
     
     @Test
@@ -932,7 +935,7 @@ class VectorOpsTest {
         
         // Test edge cases for vector length determination
         boolean supported = VectorOps.isVectorApiSupported();
-        assertTrue(supported || !supported); // Should not throw
+        assertNotNull(Boolean.valueOf(supported)); // Just verify it doesn't throw
     }
     
     @Test
