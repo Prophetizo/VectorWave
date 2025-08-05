@@ -146,6 +146,19 @@ public final class WaveletRegistry {
     }
 
     /**
+     * Checks if a wavelet name is valid and available.
+     *
+     * @param name the wavelet name to check
+     * @return true if the wavelet exists, false otherwise
+     */
+    public static boolean isWaveletAvailable(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return false;
+        }
+        return WAVELETS.containsKey(name.toLowerCase());
+    }
+
+    /**
      * Gets all available wavelet names.
      *
      * @return unmodifiable set of wavelet names
@@ -158,12 +171,11 @@ public final class WaveletRegistry {
      * Gets wavelets by type.
      *
      * @param type the wavelet type
-     * @return list of wavelet names of the given type
+     * @return set of wavelet names of the given type
      */
-    public static List<String> getWaveletsByType(WaveletType type) {
-        return Collections.unmodifiableList(
-                WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList())
-        );
+    public static Set<String> getWaveletsByType(WaveletType type) {
+        List<String> wavelets = WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList());
+        return Collections.unmodifiableSet(new LinkedHashSet<>(wavelets));
     }
 
     /**
@@ -172,7 +184,7 @@ public final class WaveletRegistry {
      * @return list of orthogonal wavelet names
      */
     public static List<String> getOrthogonalWavelets() {
-        return getWaveletsByType(WaveletType.ORTHOGONAL);
+        return new ArrayList<>(getWaveletsByType(WaveletType.ORTHOGONAL));
     }
 
     /**
@@ -181,7 +193,7 @@ public final class WaveletRegistry {
      * @return list of biorthogonal wavelet names
      */
     public static List<String> getBiorthogonalWavelets() {
-        return getWaveletsByType(WaveletType.BIORTHOGONAL);
+        return new ArrayList<>(getWaveletsByType(WaveletType.BIORTHOGONAL));
     }
 
     /**
@@ -190,7 +202,7 @@ public final class WaveletRegistry {
      * @return list of continuous wavelet names
      */
     public static List<String> getContinuousWavelets() {
-        return getWaveletsByType(WaveletType.CONTINUOUS);
+        return new ArrayList<>(getWaveletsByType(WaveletType.CONTINUOUS));
     }
 
     /**
@@ -201,7 +213,7 @@ public final class WaveletRegistry {
         System.out.println("=================================");
 
         for (WaveletType type : WaveletType.values()) {
-            List<String> wavelets = getWaveletsByType(type);
+            Set<String> wavelets = getWaveletsByType(type);
             if (!wavelets.isEmpty()) {
                 System.out.println("\n" + type + " Wavelets:");
                 for (String name : wavelets) {
@@ -240,6 +252,44 @@ public final class WaveletRegistry {
      */
     public static void clearLoadWarnings() {
         loadWarnings.clear();
+    }
+    
+    /**
+     * Clears any warnings from previous wavelet loading operations.
+     * Alias for clearLoadWarnings() for API consistency.
+     */
+    public static void clearWarnings() {
+        clearLoadWarnings();
+    }
+    
+    /**
+     * Gets warnings from the last wavelet loading operation.
+     * Alias for getLoadWarnings() for API consistency.
+     *
+     * @return list of warning messages
+     */
+    public static List<String> getWarnings() {
+        return getLoadWarnings();
+    }
+    
+    /**
+     * Returns metadata about a specific wavelet.
+     *
+     * @param name the wavelet name
+     * @return WaveletInfo containing family, order, properties, etc.
+     * @throws InvalidArgumentException if wavelet name is unknown
+     */
+    public static WaveletInfo getWaveletInfo(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidArgumentException("Wavelet name cannot be null or empty");
+        }
+        
+        Wavelet wavelet = WAVELETS.get(name.toLowerCase());
+        if (wavelet == null) {
+            throw new InvalidArgumentException("Unknown wavelet: " + name);
+        }
+        
+        return createWaveletInfo(wavelet);
     }
     
     /**
@@ -294,5 +344,198 @@ public final class WaveletRegistry {
                 WAVELETS_BY_TYPE.putAll(newWaveletsByType);
             }
         }
+    }
+    
+    /**
+     * Creates WaveletInfo from a Wavelet instance.
+     */
+    private static WaveletInfo createWaveletInfo(Wavelet wavelet) {
+        String name = wavelet.name().toLowerCase();
+        String displayName = createDisplayName(wavelet);
+        WaveletType type = wavelet.getType();
+        String family = extractFamily(wavelet);
+        int order = extractOrder(wavelet);
+        Set<String> aliases = createAliases(wavelet);
+        String description = createDescription(wavelet);
+        
+        int vanishingMoments = 0;
+        int filterLength = 0;
+        
+        // Extract properties for discrete wavelets
+        if (wavelet instanceof DiscreteWavelet discreteWavelet) {
+            vanishingMoments = discreteWavelet.vanishingMoments();
+            filterLength = discreteWavelet.lowPassDecomposition().length;
+        }
+        
+        return new WaveletInfo.Builder(name, type)
+            .displayName(displayName)
+            .family(family)
+            .order(order)
+            .aliases(aliases)
+            .description(description)
+            .vanishingMoments(vanishingMoments)
+            .filterLength(filterLength)
+            .build();
+    }
+    
+    private static String createDisplayName(Wavelet wavelet) {
+        String name = wavelet.name();
+        
+        // Handle specific naming patterns
+        if (name.toLowerCase().startsWith("db")) {
+            String orderStr = name.substring(2);
+            try {
+                int order = Integer.parseInt(orderStr);
+                return "Daubechies " + order;
+            } catch (NumberFormatException e) {
+                return name;
+            }
+        } else if (name.toLowerCase().startsWith("sym")) {
+            String orderStr = name.substring(3);
+            try {
+                int order = Integer.parseInt(orderStr);
+                return "Symlet " + order;
+            } catch (NumberFormatException e) {
+                return name;
+            }
+        } else if (name.toLowerCase().startsWith("coif")) {
+            String orderStr = name.substring(4);
+            try {
+                int order = Integer.parseInt(orderStr);
+                return "Coiflet " + order;
+            } catch (NumberFormatException e) {
+                return name;
+            }
+        } else if (name.toLowerCase().equals("haar")) {
+            return "Haar";
+        } else if (name.toLowerCase().startsWith("bior")) {
+            return "Biorthogonal " + name.substring(4);
+        } else if (name.toLowerCase().equals("morlet")) {
+            return "Morlet";
+        } else if (name.toLowerCase().equals("morl")) {
+            return "Morlet";
+        } else {
+            // Capitalize first letter
+            return name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+        }
+    }
+    
+    private static String extractFamily(Wavelet wavelet) {
+        String name = wavelet.name().toLowerCase();
+        
+        if (name.startsWith("db") || name.startsWith("daub")) {
+            return "Daubechies";
+        } else if (name.startsWith("sym")) {
+            return "Symlet";
+        } else if (name.startsWith("coif")) {
+            return "Coiflet";
+        } else if (name.equals("haar")) {
+            return "Haar";
+        } else if (name.startsWith("bior")) {
+            return "Biorthogonal";
+        } else if (name.contains("morlet") || name.equals("morl")) {
+            return "Morlet";
+        } else if (name.contains("mexican") || name.equals("mexh")) {
+            return "Mexican Hat";
+        } else if (name.contains("gaussian") || name.startsWith("gaus")) {
+            return "Gaussian";
+        } else {
+            return "Other";
+        }
+    }
+    
+    private static int extractOrder(Wavelet wavelet) {
+        String name = wavelet.name().toLowerCase();
+        
+        // Try to extract numeric order from common patterns
+        if (name.startsWith("db") || name.startsWith("sym") || name.startsWith("coif")) {
+            String prefix = name.startsWith("db") ? "db" : 
+                           name.startsWith("sym") ? "sym" : "coif";
+            String orderStr = name.substring(prefix.length());
+            try {
+                return Integer.parseInt(orderStr);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        } else if (name.startsWith("bior")) {
+            // Handle biorthogonal naming like bior1.3, bior2.2
+            String orderStr = name.substring(4);
+            if (orderStr.contains(".")) {
+                String[] parts = orderStr.split("\\.");
+                try {
+                    return Integer.parseInt(parts[0]);
+                } catch (NumberFormatException e) {
+                    return 0;
+                }
+            }
+        }
+        
+        return 0; // No specific order
+    }
+    
+    private static Set<String> createAliases(Wavelet wavelet) {
+        Set<String> aliases = new LinkedHashSet<>();
+        String name = wavelet.name().toLowerCase();
+        
+        // Add common aliases
+        if (name.startsWith("db")) {
+            String orderStr = name.substring(2);
+            aliases.add("daubechies" + orderStr);
+            aliases.add("daub" + orderStr);
+        } else if (name.startsWith("daubechies")) {
+            String orderStr = name.substring(10);
+            aliases.add("db" + orderStr);
+            aliases.add("daub" + orderStr);
+        } else if (name.equals("morlet")) {
+            aliases.add("morl");
+        } else if (name.equals("morl")) {
+            aliases.add("morlet");
+        } else if (name.startsWith("bior")) {
+            aliases.add("biorthogonal" + name.substring(4));
+        }
+        
+        return aliases;
+    }
+    
+    private static String createDescription(Wavelet wavelet) {
+        String family = extractFamily(wavelet);
+        int order = extractOrder(wavelet);
+        WaveletType type = wavelet.getType();
+        
+        StringBuilder desc = new StringBuilder();
+        
+        switch (family) {
+            case "Haar":
+                desc.append("The Haar wavelet, the simplest wavelet with compact support.");
+                break;
+            case "Daubechies":
+                desc.append("Daubechies wavelets with ").append(order).append(" vanishing moments. ")
+                    .append("Orthogonal wavelets with compact support and maximal smoothness.");
+                break;
+            case "Symlet":
+                desc.append("Symlet ").append(order).append(" wavelet. ")
+                    .append("Nearly symmetric wavelets with compact support.");
+                break;
+            case "Coiflet":
+                desc.append("Coiflet ").append(order).append(" wavelet. ")
+                    .append("Wavelets with both scaling and wavelet functions having vanishing moments.");
+                break;
+            case "Biorthogonal":
+                desc.append("Biorthogonal wavelet with symmetric/antisymmetric properties.");
+                break;
+            case "Morlet":
+                desc.append("Morlet wavelet, a complex continuous wavelet based on a Gaussian modulated by a complex exponential.");
+                break;
+            case "Mexican Hat":
+                desc.append("Mexican Hat wavelet, the second derivative of a Gaussian function.");
+                break;
+            case "Gaussian":
+                desc.append("Gaussian derivative wavelet.");
+                break;
+            default:
+                desc.append("A ").append(type.name().toLowerCase()).append(" wavelet.");
+        }
+        
+        return desc.toString();
     }
 }

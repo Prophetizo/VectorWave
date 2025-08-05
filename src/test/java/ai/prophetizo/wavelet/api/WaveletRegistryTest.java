@@ -100,7 +100,7 @@ class WaveletRegistryTest {
     @Test
     void testGetWaveletsByType() {
         // Test orthogonal wavelets
-        List<String> orthogonal = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
+        Set<String> orthogonal = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
         assertNotNull(orthogonal);
         assertFalse(orthogonal.isEmpty());
         assertTrue(orthogonal.contains("Haar")); // Actual name is "Haar"
@@ -109,20 +109,20 @@ class WaveletRegistryTest {
         assertTrue(orthogonal.contains("coif1"));
         
         // Test biorthogonal wavelets
-        List<String> biorthogonal = WaveletRegistry.getWaveletsByType(WaveletType.BIORTHOGONAL);
+        Set<String> biorthogonal = WaveletRegistry.getWaveletsByType(WaveletType.BIORTHOGONAL);
         assertNotNull(biorthogonal);
         assertFalse(biorthogonal.isEmpty());
         assertTrue(biorthogonal.contains("bior1.3"));
         
         // Test continuous wavelets
-        List<String> continuous = WaveletRegistry.getWaveletsByType(WaveletType.CONTINUOUS);
+        Set<String> continuous = WaveletRegistry.getWaveletsByType(WaveletType.CONTINUOUS);
         assertNotNull(continuous);
         assertFalse(continuous.isEmpty());
         assertTrue(continuous.contains("morl"));
         
-        // Verify lists are unmodifiable
+        // Verify sets are unmodifiable
         assertThrows(UnsupportedOperationException.class, () -> orthogonal.add("new"));
-        assertThrows(UnsupportedOperationException.class, () -> biorthogonal.remove(0));
+        assertThrows(UnsupportedOperationException.class, () -> biorthogonal.remove("bior1.3"));
     }
 
     @Test
@@ -237,27 +237,27 @@ class WaveletRegistryTest {
     void testNoMissingTypes() {
         // Verify that registered types have at least one wavelet
         // Note: Not all types in the enum may have registered wavelets
-        List<String> orthogonal = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
+        Set<String> orthogonal = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
         assertNotNull(orthogonal);
         assertFalse(orthogonal.isEmpty());
         
-        List<String> biorthogonal = WaveletRegistry.getWaveletsByType(WaveletType.BIORTHOGONAL);
+        Set<String> biorthogonal = WaveletRegistry.getWaveletsByType(WaveletType.BIORTHOGONAL);
         assertNotNull(biorthogonal);
         assertFalse(biorthogonal.isEmpty());
         
-        List<String> continuous = WaveletRegistry.getWaveletsByType(WaveletType.CONTINUOUS);
+        Set<String> continuous = WaveletRegistry.getWaveletsByType(WaveletType.CONTINUOUS);
         assertNotNull(continuous);
         assertFalse(continuous.isEmpty());
         
         // DISCRETE, COMPLEX, and SPECIALIZED may not have registered wavelets
-        List<String> discrete = WaveletRegistry.getWaveletsByType(WaveletType.DISCRETE);
-        assertNotNull(discrete); // Should return empty list, not null
+        Set<String> discrete = WaveletRegistry.getWaveletsByType(WaveletType.DISCRETE);
+        assertNotNull(discrete); // Should return empty set, not null
         
-        List<String> complex = WaveletRegistry.getWaveletsByType(WaveletType.COMPLEX);
-        assertNotNull(complex); // Should return empty list, not null
+        Set<String> complex = WaveletRegistry.getWaveletsByType(WaveletType.COMPLEX);
+        assertNotNull(complex); // Should return empty set, not null
         
-        List<String> specialized = WaveletRegistry.getWaveletsByType(WaveletType.SPECIALIZED);
-        assertNotNull(specialized); // Should return empty list, not null
+        Set<String> specialized = WaveletRegistry.getWaveletsByType(WaveletType.SPECIALIZED);
+        assertNotNull(specialized); // Should return empty set, not null
     }
 
     @Test
