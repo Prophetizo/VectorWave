@@ -23,7 +23,7 @@ public class PerformanceModel implements Serializable {
      * Model coefficients for different size ranges.
      * Each range has the form: time = a + b*n + c*n^2
      */
-    private final Map<SizeRange, ModelCoefficients> coefficients = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<SizeRange, ModelCoefficients> coefficients = new ConcurrentHashMap<>();
     
     /**
      * Platform-specific scaling factors.
@@ -33,7 +33,7 @@ public class PerformanceModel implements Serializable {
     /**
      * Confidence intervals for predictions.
      */
-    private final Map<SizeRange, ConfidenceInterval> confidenceIntervals = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<SizeRange, ConfidenceInterval> confidenceIntervals = new ConcurrentHashMap<>();
     
     /**
      * Number of measurements used for calibration.
@@ -416,15 +416,15 @@ public class PerformanceModel implements Serializable {
     public static class ModelData implements Serializable {
         private static final long serialVersionUID = 1L;
         
-        public final Map<SizeRange, ModelCoefficients> coefficients;
-        public final Map<SizeRange, ConfidenceInterval> confidenceIntervals;
+        public final ConcurrentHashMap<SizeRange, ModelCoefficients> coefficients;
+        public final ConcurrentHashMap<SizeRange, ConfidenceInterval> confidenceIntervals;
         public final PlatformFactors platformFactors;
         public final ModelAccuracy accuracy;
         public final int measurementCount;
         public final long lastCalibrationTime;
         
-        public ModelData(Map<SizeRange, ModelCoefficients> coefficients,
-                        Map<SizeRange, ConfidenceInterval> confidenceIntervals,
+        public ModelData(ConcurrentHashMap<SizeRange, ModelCoefficients> coefficients,
+                        ConcurrentHashMap<SizeRange, ConfidenceInterval> confidenceIntervals,
                         PlatformFactors platformFactors,
                         ModelAccuracy accuracy,
                         int measurementCount,

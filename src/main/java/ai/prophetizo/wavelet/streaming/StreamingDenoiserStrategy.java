@@ -18,6 +18,16 @@ import java.util.concurrent.Flow;
 public interface StreamingDenoiserStrategy extends Flow.Publisher<double[]>, AutoCloseable {
     
     /**
+     * Closes this streaming denoiser and releases any resources.
+     * May block waiting for background threads to complete.
+     * 
+     * @throws InterruptedException if interrupted while waiting for shutdown
+     * @throws Exception if an error occurs during shutdown
+     */
+    @Override
+    void close() throws InterruptedException, Exception;
+    
+    /**
      * Processes a block of input samples.
      * 
      * @param samples input samples to denoise

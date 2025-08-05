@@ -236,7 +236,7 @@ public class MultiLevelMODWTTransform {
                     .withSignalInfo(signal.length)
                     .withWavelet(wavelet)
                     .withContext("Filter length", wavelet instanceof Wavelet ? 
-                        ((Wavelet)wavelet).lowPassDecomposition().length : "unknown")
+                        wavelet.lowPassDecomposition().length : "unknown")
                     .withSuggestion("Choose a level between 1 and " + maxLevels)
                     .withSuggestion("Maximum level is floor(log2(signalLength/filterLength)) = " + maxLevels)
                     .build()

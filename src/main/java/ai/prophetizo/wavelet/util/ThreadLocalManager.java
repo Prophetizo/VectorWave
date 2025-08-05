@@ -322,6 +322,7 @@ public class ThreadLocalManager {
      * @return The result of the operation
      * @throws Exception if the operation throws
      */
+    @SuppressWarnings("try")
     public static <T> T withCleanup(ThrowingSupplier<T> operation) throws Exception {
         try (CleanupScope scope = createScope()) {
             return operation.get();

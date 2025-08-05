@@ -242,7 +242,7 @@ final class QualityStreamingDenoiser implements StreamingDenoiserStrategy {
     }
     
     @Override
-    public void close() throws Exception {
+    public void close() throws InterruptedException, Exception {
         denoiser.close();
         publisher.close();
     }

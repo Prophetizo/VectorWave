@@ -319,6 +319,7 @@ public final class BatchSIMDMODWT {
      * @param batchSize Number of signals
      * @param signalLength Length of each signal
      */
+    @SuppressWarnings("try")
     public static void batchMODWTWithCleanup(double[] soaSignals, double[] soaApprox, 
                                            double[] soaDetail, DiscreteWavelet wavelet,
                                            int batchSize, int signalLength) {
