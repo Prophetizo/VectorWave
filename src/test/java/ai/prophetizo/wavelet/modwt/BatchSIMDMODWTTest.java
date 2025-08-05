@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for batch SIMD MODWT implementation.
  */
-public class BatchSIMDMODWTTest {
+class BatchSIMDMODWTTest {
     
     private static final double EPSILON = 1e-10;
     

@@ -9,7 +9,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -106,7 +105,7 @@ class ThreadLocalManagerTest {
     void testThreadPoolScenario() throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(4);
         CountDownLatch latch = new CountDownLatch(10);
-        AtomicInteger leakCount = new AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicInteger leakCount = new java.util.concurrent.atomic.AtomicInteger(0);
         
         ThreadLocalManager.ManagedThreadLocal<byte[]> memoryLocal = 
             ThreadLocalManager.withInitial(() -> new byte[1024]); // 1KB per thread

@@ -21,6 +21,30 @@ public class PlatformFactors implements Serializable {
     private static volatile double blackhole;
     
     /**
+     * Number of double elements in AVX-512 vector (512 bits / 64 bits per double).
+     */
+    private static final int AVX512_DOUBLES_PER_VECTOR = 8;
+    
+    /**
+     * Estimated speedup factors for different vector instruction sets.
+     */
+    private static final double NEON_SPEEDUP = 2.0;
+    private static final double AVX2_SPEEDUP = 4.0;
+    private static final double AVX512_SPEEDUP = 8.0;
+    
+    /**
+     * Reference benchmark time in nanoseconds (~100ms).
+     * This is the expected time for the benchmark on the reference platform.
+     */
+    private static final double REFERENCE_BENCHMARK_TIME_NS = 100_000_000;
+    
+    /**
+     * Benchmark parameters for CPU speed estimation.
+     */
+    private static final int BENCHMARK_ARRAY_SIZE = 1_000_000;
+    private static final int BENCHMARK_ITERATIONS = 10;
+    
+    /**
      * CPU speed factor relative to reference platform (1.0 = reference speed).
      */
     public final double cpuSpeedFactor;
@@ -104,12 +128,12 @@ public class PlatformFactors implements Serializable {
         // Detect vector capabilities
         if (arch.contains("aarch64") || arch.contains("arm")) {
             builder.hasNEON(true);
-            builder.vectorSpeedup(2.0); // Conservative estimate for ARM NEON
+            builder.vectorSpeedup(NEON_SPEEDUP);
         } else if (arch.contains("x86") || arch.contains("amd64")) {
             // Check for AVX-512 (simplified check)
             boolean hasAVX512 = checkAVX512Support();
             builder.hasAVX512(hasAVX512);
-            builder.vectorSpeedup(hasAVX512 ? 8.0 : 4.0); // AVX-512 vs AVX2
+            builder.vectorSpeedup(hasAVX512 ? AVX512_SPEEDUP : AVX2_SPEEDUP);
         }
         
         // Estimate cache sizes (platform-specific defaults)
@@ -152,19 +176,18 @@ public class PlatformFactors implements Serializable {
     
     private static double estimateCpuSpeedFactor() {
         // Simple CPU speed estimation using array operations
-        int size = 1000000;
-        double[] data = new double[size];
+        double[] data = new double[BENCHMARK_ARRAY_SIZE];
         
         // Warm up
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < BENCHMARK_ARRAY_SIZE; i++) {
             data[i] = i * 0.5;
         }
         
         // Measure time for simple operations
         long start = System.nanoTime();
         double sum = 0;
-        for (int iter = 0; iter < 10; iter++) {
-            for (int i = 0; i < size; i++) {
+        for (int iter = 0; iter < BENCHMARK_ITERATIONS; iter++) {
+            for (int i = 0; i < BENCHMARK_ARRAY_SIZE; i++) {
                 sum += data[i] * data[i];
             }
         }
@@ -173,9 +196,7 @@ public class PlatformFactors implements Serializable {
         // Prevent dead code elimination by storing result to volatile field
         blackhole = sum;
         
-        // Reference time is ~100ms on reference platform
-        double referenceTimeNs = 100_000_000;
-        return referenceTimeNs / elapsed;
+        return REFERENCE_BENCHMARK_TIME_NS / elapsed;
     }
     
     private static boolean checkAVX512Support() {
@@ -185,7 +206,7 @@ public class PlatformFactors implements Serializable {
             Class<?> vectorClass = Class.forName("jdk.incubator.vector.DoubleVector");
             Object species = vectorClass.getField("SPECIES_PREFERRED").get(null);
             int length = (int) species.getClass().getMethod("length").invoke(species);
-            return length >= 8; // 8 doubles = 512 bits
+            return length >= AVX512_DOUBLES_PER_VECTOR;
         } catch (Exception e) {
             return false;
         }

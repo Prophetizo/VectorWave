@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test to verify MODWT algorithm implementation details.
  */
-public class MODWTAlgorithmTest {
+class MODWTAlgorithmTest {
     
     @Test
     void testMODWTFilterScaling() {

@@ -12,6 +12,19 @@ class PerformanceModelTest {
     private PerformanceModel model;
     private PlatformFactors testPlatform;
     
+    /**
+     * Test data sizes for calibration measurements.
+     * Follows a doubling pattern for good coverage.
+     */
+    private static final int[] CALIBRATION_SIZES = {100, 200, 400, 800, 1600};
+    
+    /**
+     * Expected time complexity is roughly O(n log n) for wavelet transforms.
+     * These constants define the base timing pattern for test measurements.
+     */
+    private static final double TIME_COMPLEXITY_FACTOR = 0.001;
+    private static final double TIME_COMPLEXITY_EXPONENT = 1.15; // Slightly super-linear
+    
     @BeforeEach
     void setUp() {
         // Create test platform with known factors
@@ -96,14 +109,8 @@ class PerformanceModelTest {
     
     @Test
     void testCalibration() {
-        // Create test measurements
-        PerformanceModel.Measurement[] measurements = new PerformanceModel.Measurement[] {
-            new PerformanceModel.Measurement(100, 0.1, false),
-            new PerformanceModel.Measurement(200, 0.2, false),
-            new PerformanceModel.Measurement(400, 0.45, false),
-            new PerformanceModel.Measurement(800, 1.0, false),
-            new PerformanceModel.Measurement(1600, 2.5, false)
-        };
+        // Create test measurements using helper method
+        PerformanceModel.Measurement[] measurements = generateCalibrationMeasurements(false);
         
         // Calibrate model
         model.calibrate(measurements);
@@ -111,7 +118,7 @@ class PerformanceModelTest {
         // Check accuracy
         ModelAccuracy accuracy = model.getAccuracy();
         assertNotNull(accuracy);
-        assertEquals(5, accuracy.getCount());
+        assertEquals(CALIBRATION_SIZES.length, accuracy.getCount());
         
         // Predictions should be positive
         PredictionResult pred = model.predict(300, false);
@@ -198,5 +205,31 @@ class PerformanceModelTest {
         boolean needsRecalib = model.needsRecalibration();
         // May or may not need based on accuracy, so just verify it runs
         assertNotNull(model.getAccuracy());
+    }
+    
+    /**
+     * Helper method to generate calibration measurements with realistic timing patterns.
+     * The timing follows a slightly super-linear complexity model typical of wavelet transforms.
+     * 
+     * @param useVectorization whether measurements should simulate vectorized execution
+     * @return array of measurements with consistent timing patterns
+     */
+    private PerformanceModel.Measurement[] generateCalibrationMeasurements(boolean useVectorization) {
+        PerformanceModel.Measurement[] measurements = new PerformanceModel.Measurement[CALIBRATION_SIZES.length];
+        
+        for (int i = 0; i < CALIBRATION_SIZES.length; i++) {
+            int size = CALIBRATION_SIZES[i];
+            // Generate time based on O(n^1.15) complexity model
+            double baseTime = TIME_COMPLEXITY_FACTOR * Math.pow(size, TIME_COMPLEXITY_EXPONENT);
+            
+            // Apply vectorization speedup if enabled
+            if (useVectorization) {
+                baseTime /= testPlatform.vectorSpeedup;
+            }
+            
+            measurements[i] = new PerformanceModel.Measurement(size, baseTime, useVectorization);
+        }
+        
+        return measurements;
     }
 }

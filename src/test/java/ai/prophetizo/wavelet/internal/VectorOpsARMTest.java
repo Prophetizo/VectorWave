@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for ARM-specific vector operations.
  */
-public class VectorOpsARMTest {
+class VectorOpsARMTest {
     
     private static final double EPSILON = 1e-10;
     

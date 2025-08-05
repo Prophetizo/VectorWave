@@ -181,6 +181,12 @@ public class ThreadLocalManager {
         private final Supplier<T> supplier;
         private final AtomicBoolean removed = new AtomicBoolean(false);
         
+        /**
+         * ThreadLocal to track whether a value has been explicitly set.
+         * This avoids the side effects of calling get() to check existence.
+         */
+        private final ThreadLocal<Boolean> isSet = ThreadLocal.withInitial(() -> false);
+        
         private ManagedThreadLocal(Supplier<T> supplier) {
             this.supplier = supplier;
         }
@@ -190,32 +196,44 @@ public class ThreadLocalManager {
             return supplier.get();
         }
         
+        @Override
+        public void set(T value) {
+            super.set(value);
+            isSet.set(true);
+        }
+        
+        @Override
+        public T get() {
+            T value = super.get();
+            // If get() returns a value due to initialization, mark it as set
+            if (!isSet.get() && value != null) {
+                isSet.set(true);
+            }
+            return value;
+        }
+        
         /**
          * Removes the value for the current thread.
          */
         public void removeForCurrentThread() {
             super.remove();
+            isSet.remove();
         }
         
         /**
          * Checks if this ThreadLocal has a value for the current thread.
+         * This method has no side effects and doesn't trigger initialization.
          * 
-         * @return true if a value exists
+         * @return true if a value has been set or initialized for the current thread
          */
         public boolean hasValueForCurrentThread() {
-            // This is approximate - we set and remove to check
-            T value = get();
-            boolean hasValue = value != null;
-            if (!hasValue || value == initialValue()) {
-                remove();
-                hasValue = false;
-            }
-            return hasValue;
+            return isSet.get();
         }
         
         @Override
         public void remove() {
             super.remove();
+            isSet.remove();
             removed.set(true);
         }
         

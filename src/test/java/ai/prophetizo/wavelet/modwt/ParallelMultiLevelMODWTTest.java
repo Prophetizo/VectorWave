@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for parallel multi-level MODWT implementation.
  */
-public class ParallelMultiLevelMODWTTest {
+class ParallelMultiLevelMODWTTest {
     
     private static final double EPSILON = 1e-10;
     private ParallelMultiLevelMODWT parallelTransform;

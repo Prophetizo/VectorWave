@@ -198,6 +198,20 @@ public final class StreamingDenoiserConfig {
             return this;
         }
         
+        /**
+         * Sets the size of the window used for noise estimation.
+         * 
+         * <p>The noise window can be larger than the block size, which allows
+         * for more stable noise estimates across multiple blocks. Different
+         * implementations handle this differently:</p>
+         * <ul>
+         *   <li>MODWTStreamingDenoiser uses stratified sampling for large windows</li>
+         *   <li>FastStreamingDenoiser may clip the window size as needed</li>
+         * </ul>
+         * 
+         * @param windowSize the noise estimation window size (must be positive)
+         * @return this builder
+         */
         public Builder noiseWindowSize(int windowSize) {
             if (windowSize <= 0) {
                 throw new InvalidArgumentException(
@@ -227,17 +241,12 @@ public final class StreamingDenoiserConfig {
                 );
             }
             
-            if (noiseWindowSize > blockSize) {
-                throw new InvalidArgumentException(
-                    ErrorContext.builder("Noise window size exceeds block size")
-                        .withContext("field", "noiseWindowSize")
-                        .withContext("value", noiseWindowSize)
-                        .withContext("constraint", "≤ blockSize")
-                        .withContext("blockSize", blockSize)
-                        .withSuggestion("Reduce noise window size or increase block size")
-                        .build()
-                );
-            }
+            // Note: We no longer enforce noiseWindowSize <= blockSize
+            // Some algorithms benefit from larger noise estimation windows that span
+            // multiple blocks for more stable noise estimates. The MODWTStreamingDenoiser
+            // uses stratified sampling when the window is larger than the data,
+            // and FastStreamingDenoiser clips the window size as needed.
+            // Implementations should handle this gracefully based on their requirements.
             
             return new StreamingDenoiserConfig(this);
         }
