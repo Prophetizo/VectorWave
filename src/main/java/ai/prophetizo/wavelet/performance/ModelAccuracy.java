@@ -8,6 +8,9 @@ import java.io.Serializable;
  * <p>This class maintains various accuracy statistics to evaluate how well
  * the model predicts actual performance.</p>
  * 
+ * <p>Thread-safe implementation using synchronized methods for all operations
+ * that read or modify accuracy metrics.</p>
+ * 
  */
 public class ModelAccuracy implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -27,11 +30,12 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Updates accuracy metrics with a new prediction.
+     * Thread-safe update that ensures atomic modification of all metrics.
      * 
      * @param predicted The predicted execution time
      * @param actual The actual execution time
      */
-    public void updateWithPrediction(double predicted, double actual) {
+    public synchronized void updateWithPrediction(double predicted, double actual) {
         double error = actual - predicted;
         double absoluteError = Math.abs(error);
         double percentageError = absoluteError / actual;
@@ -54,10 +58,11 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Records whether a prediction fell within its confidence interval.
+     * Thread-safe recording of interval hits.
      * 
      * @param withinInterval true if the actual value was within the predicted interval
      */
-    public void recordIntervalHit(boolean withinInterval) {
+    public synchronized void recordIntervalHit(boolean withinInterval) {
         if (withinInterval) {
             withinIntervalCount++;
         }
@@ -65,37 +70,52 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Gets the mean absolute error.
+     * Thread-safe getter.
      * 
      * @return MAE in milliseconds
      */
-    public double getMeanAbsoluteError() {
+    public synchronized double getMeanAbsoluteError() {
         return count > 0 ? sumAbsoluteError / count : 0;
     }
     
     /**
      * Gets the root mean squared error.
+     * Thread-safe getter.
      * 
      * @return RMSE in milliseconds
      */
-    public double getRootMeanSquaredError() {
+    public synchronized double getRootMeanSquaredError() {
         return count > 0 ? Math.sqrt(sumSquaredError / count) : 0;
     }
     
     /**
-     * Gets the mean absolute percentage error.
+     * Calculates the mean absolute percentage error (MAPE).
+     * This is a private helper method to avoid code duplication.
+     * Must be called from a synchronized method since it accesses shared state.
      * 
      * @return MAPE as a fraction (0.1 = 10% error)
      */
-    public double getMeanAbsolutePercentageError() {
+    private double calculateMAPE() {
         return count > 0 ? sumAbsolutePercentageError / count : 0;
     }
     
     /**
+     * Gets the mean absolute percentage error.
+     * Thread-safe getter.
+     * 
+     * @return MAPE as a fraction (0.1 = 10% error)
+     */
+    public synchronized double getMeanAbsolutePercentageError() {
+        return calculateMAPE();
+    }
+    
+    /**
      * Gets the coefficient of determination (R²).
+     * Thread-safe getter.
      * 
      * @return R² value between 0 and 1
      */
-    public double getRSquared() {
+    public synchronized double getRSquared() {
         if (count < 2) return 0;
         
         double meanActual = sumActual / count;
@@ -109,11 +129,12 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Gets the confidence level of the model.
+     * Thread-safe getter.
      * 
      * @return Confidence between 0 and 1
      */
-    public double getConfidence() {
-        double mape = getMeanAbsolutePercentageError();
+    public synchronized double getConfidence() {
+        double mape = calculateMAPE();
         
         // Convert MAPE to confidence
         // 0% error = 100% confidence
@@ -124,44 +145,49 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Gets the percentage of predictions within confidence intervals.
+     * Thread-safe getter.
      * 
      * @return Hit rate as a percentage (0-100)
      */
-    public double getIntervalHitRate() {
+    public synchronized double getIntervalHitRate() {
         return count > 0 ? (100.0 * withinIntervalCount / count) : 0;
     }
     
     /**
      * Gets the worst over-prediction percentage.
+     * Thread-safe getter.
      * 
      * @return Maximum over-prediction as a fraction
      */
-    public double getMaxOverPrediction() {
+    public synchronized double getMaxOverPrediction() {
         return maxOverPrediction;
     }
     
     /**
      * Gets the worst under-prediction percentage.
+     * Thread-safe getter.
      * 
      * @return Maximum under-prediction as a fraction
      */
-    public double getMaxUnderPrediction() {
+    public synchronized double getMaxUnderPrediction() {
         return maxUnderPrediction;
     }
     
     /**
      * Gets the number of predictions tracked.
+     * Thread-safe getter.
      * 
      * @return Number of predictions
      */
-    public int getCount() {
+    public synchronized int getCount() {
         return count;
     }
     
     /**
      * Resets all accuracy metrics.
+     * Thread-safe reset operation.
      */
-    public void reset() {
+    public synchronized void reset() {
         sumAbsoluteError = 0;
         sumSquaredError = 0;
         sumAbsolutePercentageError = 0;
@@ -174,10 +200,11 @@ public class ModelAccuracy implements Serializable {
     
     /**
      * Gets a summary of the accuracy metrics.
+     * Thread-safe summary generation.
      * 
      * @return Human-readable summary
      */
-    public String getSummary() {
+    public synchronized String getSummary() {
         if (count == 0) {
             return "No predictions recorded";
         }
@@ -205,10 +232,12 @@ public class ModelAccuracy implements Serializable {
     }
     
     @Override
-    public String toString() {
+    public synchronized String toString() {
+        double mape = calculateMAPE();
+        double confidence = Math.max(0, Math.min(1, 1 - mape));
         return String.format("ModelAccuracy{MAPE=%.1f%%, confidence=%.1f%%, n=%d}",
-            getMeanAbsolutePercentageError() * 100,
-            getConfidence() * 100,
+            mape * 100,
+            confidence * 100,
             count);
     }
 }

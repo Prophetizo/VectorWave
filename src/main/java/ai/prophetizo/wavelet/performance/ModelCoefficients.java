@@ -10,6 +10,9 @@ import java.io.Serializable;
  * <p>This class supports online learning through incremental updates,
  * allowing the model to adapt as new measurements are collected.</p>
  * 
+ * <p>Thread-safe implementation using synchronized methods for all operations
+ * that read or modify the coefficients.</p>
+ * 
  */
 public class ModelCoefficients implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -44,21 +47,23 @@ public class ModelCoefficients implements Serializable {
     
     /**
      * Evaluates the polynomial for a given input size.
+     * Thread-safe evaluation that ensures consistent read of coefficients.
      * 
      * @param n Input size
      * @return Predicted time
      */
-    public double evaluate(int n) {
+    public synchronized double evaluate(int n) {
         return a + b * n + c * n * n;
     }
     
     /**
      * Updates coefficients using gradient descent.
+     * Thread-safe update that ensures atomic modification of all coefficients.
      * 
      * @param inputSize The input size
      * @param actualTime The actual execution time
      */
-    public void updateWithMeasurement(int inputSize, double actualTime) {
+    public synchronized void updateWithMeasurement(int inputSize, double actualTime) {
         double predicted = evaluate(inputSize);
         double error = actualTime - predicted;
         
@@ -85,42 +90,46 @@ public class ModelCoefficients implements Serializable {
     
     /**
      * Gets the constant term.
+     * Thread-safe getter.
      * 
      * @return Constant coefficient
      */
-    public double getA() {
+    public synchronized double getA() {
         return a;
     }
     
     /**
      * Gets the linear coefficient.
+     * Thread-safe getter.
      * 
      * @return Linear coefficient
      */
-    public double getB() {
+    public synchronized double getB() {
         return b;
     }
     
     /**
      * Gets the quadratic coefficient.
+     * Thread-safe getter.
      * 
      * @return Quadratic coefficient
      */
-    public double getC() {
+    public synchronized double getC() {
         return c;
     }
     
     /**
      * Creates a copy of these coefficients.
+     * Thread-safe copy that ensures consistent snapshot of coefficients.
      * 
      * @return New instance with same values
      */
-    public ModelCoefficients copy() {
+    public synchronized ModelCoefficients copy() {
         return new ModelCoefficients(a, b, c);
     }
     
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return String.format("%.4f + %.6f*n + %.9f*n²", a, b, c);
     }
 }

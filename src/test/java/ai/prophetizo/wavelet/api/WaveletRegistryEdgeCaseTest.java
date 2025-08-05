@@ -77,7 +77,7 @@ class WaveletRegistryEdgeCaseTest {
     @Test
     void testGetWaveletsByType_NullType() {
         // Should handle null gracefully
-        List<String> result = WaveletRegistry.getWaveletsByType(null);
+        Set<String> result = WaveletRegistry.getWaveletsByType(null);
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -214,10 +214,10 @@ class WaveletRegistryEdgeCaseTest {
     void testWaveletsByType_AllTypes() {
         // Test all enum values
         for (WaveletType type : WaveletType.values()) {
-            List<String> wavelets = WaveletRegistry.getWaveletsByType(type);
+            Set<String> wavelets = WaveletRegistry.getWaveletsByType(type);
             assertNotNull(wavelets, "Should never return null for type: " + type);
             
-            // Verify returned list is unmodifiable
+            // Verify returned set is unmodifiable
             assertThrows(UnsupportedOperationException.class, () -> {
                 wavelets.add("test");
             });
