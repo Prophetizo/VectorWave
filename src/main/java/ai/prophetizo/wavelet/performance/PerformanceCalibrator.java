@@ -20,7 +20,6 @@ import java.util.function.Supplier;
  * <p>This class performs systematic benchmarking across different input sizes
  * and configurations to build accurate performance models.</p>
  * 
- * @since 3.1.0
  */
 public class PerformanceCalibrator {
     

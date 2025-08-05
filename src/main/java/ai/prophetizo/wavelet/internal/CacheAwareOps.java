@@ -12,7 +12,6 @@ import jdk.incubator.vector.VectorSpecies;
  * in CPU cache levels, significantly improving performance for large
  * signals that exceed cache capacity.</p>
  *
- * @since 1.0.0
  */
 final class CacheAwareOps {
 

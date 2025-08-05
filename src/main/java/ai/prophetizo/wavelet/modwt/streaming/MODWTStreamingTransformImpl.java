@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.LongAdder;
  *   <li>Flexible buffer size (not limited to powers of 2)</li>
  * </ul>
  *
- * @since 3.0.0
  */
 class MODWTStreamingTransformImpl extends SubmissionPublisher<MODWTResult>
         implements MODWTStreamingTransform {

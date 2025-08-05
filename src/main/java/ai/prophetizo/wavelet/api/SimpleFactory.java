@@ -17,7 +17,6 @@ package ai.prophetizo.wavelet.api;
  * }</pre>
  *
  * @param <T> the type of object created by this factory
- * @since 1.0.0
  */
 public interface SimpleFactory<T> extends Factory<T, Void> {
     

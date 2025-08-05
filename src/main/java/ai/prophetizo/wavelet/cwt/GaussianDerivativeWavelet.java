@@ -36,7 +36,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>n=4: Fourth derivative, for higher-order feature detection</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class GaussianDerivativeWavelet implements ContinuousWavelet {
     

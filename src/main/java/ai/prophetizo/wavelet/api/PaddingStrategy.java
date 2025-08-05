@@ -17,7 +17,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li><b>Periodic</b>: Wraps signal periodically (assumes cyclic data)</li>
  * </ul>
  *
- * @since 1.0.0
  */
 public sealed interface PaddingStrategy
         permits ZeroPaddingStrategy, SymmetricPaddingStrategy,

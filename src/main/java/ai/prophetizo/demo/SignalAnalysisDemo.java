@@ -17,7 +17,6 @@ import java.util.*;
  *   <li>Pattern recognition across scales</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class SignalAnalysisDemo {
 

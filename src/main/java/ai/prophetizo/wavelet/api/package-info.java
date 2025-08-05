@@ -77,6 +77,5 @@
  * </ol>
  * 
  * @see ai.prophetizo.wavelet
- * @since 1.0.0
  */
 package ai.prophetizo.wavelet.api;

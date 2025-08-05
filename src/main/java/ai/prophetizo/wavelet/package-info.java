@@ -46,6 +46,5 @@
  * @see ai.prophetizo.wavelet.api
  * @see ai.prophetizo.wavelet.config
  * @see ai.prophetizo.wavelet.exception
- * @since 1.0.0
  */
 package ai.prophetizo.wavelet;

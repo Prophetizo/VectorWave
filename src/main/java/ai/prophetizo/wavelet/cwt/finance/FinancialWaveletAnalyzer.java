@@ -19,7 +19,6 @@ import java.util.*;
  *   <li>Risk assessment</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public class FinancialWaveletAnalyzer {
     

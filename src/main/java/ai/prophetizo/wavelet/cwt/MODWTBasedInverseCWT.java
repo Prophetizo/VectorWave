@@ -37,7 +37,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Better edge handling: No boundary artifacts</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public final class MODWTBasedInverseCWT {
     

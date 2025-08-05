@@ -16,7 +16,6 @@ import java.util.Arrays;
  * <p>Implements blocking, tiling, and prefetching strategies to maximize
  * cache utilization and minimize memory bandwidth requirements.</p>
  *
- * @since 1.0.0
  */
 public final class CacheAwareOps {
     

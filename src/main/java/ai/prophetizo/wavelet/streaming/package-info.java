@@ -65,6 +65,5 @@
  *   <li>Memory usage scales with block size and overlap factor</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 package ai.prophetizo.wavelet.streaming;

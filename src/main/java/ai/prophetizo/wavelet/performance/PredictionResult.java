@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.performance;
  * <p>This record encapsulates the predicted execution time along with
  * confidence intervals and the model's confidence level.</p>
  * 
- * @since 3.1.0
  */
 public record PredictionResult(
     double estimatedTime,

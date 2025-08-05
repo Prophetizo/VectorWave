@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * learning from actual measurements. It automatically recalibrates when
  * the model accuracy degrades.</p>
  * 
- * @since 3.1.0
  */
 public class AdaptivePerformanceEstimator {
     

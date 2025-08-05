@@ -7,7 +7,6 @@ package ai.prophetizo.wavelet.util;
  * and ensures consistent tolerance values across the codebase. Each tolerance includes
  * comprehensive documentation explaining its purpose and rationale.</p>
  * 
- * @since 1.0
  */
 public final class ToleranceConstants {
 

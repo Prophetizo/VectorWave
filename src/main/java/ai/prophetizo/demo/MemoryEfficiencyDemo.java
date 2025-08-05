@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>Large dataset handling with arbitrary lengths</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class MemoryEfficiencyDemo {
 

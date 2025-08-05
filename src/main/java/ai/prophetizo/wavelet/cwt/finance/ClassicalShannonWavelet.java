@@ -25,7 +25,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * at the cost of some frequency resolution.</p>
  * 
  * @see ShannonGaborWavelet
- * @since 1.1.0
  */
 public final class ClassicalShannonWavelet implements ContinuousWavelet {
     

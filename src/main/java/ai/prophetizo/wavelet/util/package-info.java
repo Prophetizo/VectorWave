@@ -63,6 +63,5 @@
  * </ul>
  * 
  * @see ai.prophetizo.wavelet.exception
- * @since 1.0.0
  */
 package ai.prophetizo.wavelet.util;

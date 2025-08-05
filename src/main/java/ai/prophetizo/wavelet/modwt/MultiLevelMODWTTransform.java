@@ -61,7 +61,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @see MODWTTransform
  * @see MultiLevelMODWTResult
- * @since 3.0.0
  */
 public class MultiLevelMODWTTransform {
     

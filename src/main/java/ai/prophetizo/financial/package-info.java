@@ -81,6 +81,5 @@
  * analyzer instances can be shared across threads for concurrent analysis
  * of different time series.</p>
  * 
- * @since 2.1.0
  */
 package ai.prophetizo.financial;

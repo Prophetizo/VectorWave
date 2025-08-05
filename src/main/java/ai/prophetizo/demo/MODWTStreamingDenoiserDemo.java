@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>Smoother transitions across buffers</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class MODWTStreamingDenoiserDemo {
 

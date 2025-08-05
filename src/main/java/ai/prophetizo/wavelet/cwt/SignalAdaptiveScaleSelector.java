@@ -20,7 +20,6 @@ import java.util.List;
  * <p>Scale allocation is weighted by signal energy distribution, ensuring more scales
  * are placed where the signal has significant frequency content.</p>
  *
- * @since 1.0.0
  */
 public class SignalAdaptiveScaleSelector implements AdaptiveScaleSelector {
     

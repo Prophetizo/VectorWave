@@ -7,7 +7,6 @@ package ai.prophetizo.wavelet.util;
  * across OptimizedFFT, SignalProcessor, and other classes. All methods use efficient
  * bit manipulation operations for optimal performance.</p>
  * 
- * @since 1.0.0
  */
 public final class PowerOf2Utils {
     

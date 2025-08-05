@@ -14,7 +14,6 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  *   <li>Wavelet coherence computation</li>
  * </ul>
  * 
- * @since 1.3.0
  */
 public final class ComplexCWTResult {
     

@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.util;
  * <p>Provides centralized platform detection logic to enable better testing
  * and maintainability across the wavelet transform library.</p>
  *
- * @since 1.0.0
  */
 public final class PlatformDetector {
     

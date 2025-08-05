@@ -40,7 +40,6 @@ import java.util.List;
  * @see ComplexContinuousWavelet
  * @see FinancialWaveletAnalyzer
  * @see WaveletRegistry
- * @since 1.0
  */
 public class FinancialWaveletProvider implements WaveletProvider {
     

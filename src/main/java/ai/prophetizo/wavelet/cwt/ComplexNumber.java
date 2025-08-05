@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.cwt;
  * <p>Provides basic complex arithmetic operations needed for
  * complex wavelet transforms and phase analysis.</p>
  * 
- * @since 1.3.0
  */
 public record ComplexNumber(double real, double imag) {
     

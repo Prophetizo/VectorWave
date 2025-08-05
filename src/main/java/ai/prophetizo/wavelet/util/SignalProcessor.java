@@ -13,7 +13,6 @@ import java.util.Arrays;
  * 
  * <p>Core FFT computations are performed by {@link OptimizedFFT}.</p>
  * 
- * @since 1.0.0
  */
 public final class SignalProcessor {
     

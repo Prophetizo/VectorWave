@@ -18,7 +18,6 @@ import jdk.incubator.vector.DoubleVector;
  *   <li>No padding requirements</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class MODWTBatchProcessingDemo {
     

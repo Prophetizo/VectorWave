@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>Zero-copy array reuse</li>
  * </ul>
  *
- * @since 1.0.0
  */
 public final class AlignedMemoryPool {
 

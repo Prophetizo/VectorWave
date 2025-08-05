@@ -55,7 +55,6 @@ package ai.prophetizo.wavelet.api;
  *
  * @param <T> the type of object created by this factory
  * @param <C> the configuration type used to create objects (use Void if not needed)
- * @since 1.0.0
  */
 public interface Factory<T, C> {
     

@@ -18,7 +18,6 @@ import ai.prophetizo.wavelet.exception.ErrorContext;
  * <p>The factory automatically selects the best implementation based on
  * configuration when using the {@link #create(StreamingDenoiserConfig)} method.</p>
  * 
- * @since 3.0.0
  */
 public final class StreamingDenoiserFactory implements Factory<StreamingDenoiserStrategy, StreamingDenoiserConfig> {
     

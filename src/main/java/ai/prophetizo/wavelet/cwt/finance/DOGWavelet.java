@@ -39,7 +39,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * 
  * @see MATLABMexicanHat for MATLAB-compatible Mexican Hat implementation
  * @see <a href="../../../../../../../docs/FINANCIAL_WAVELETS.md">Financial Wavelets Guide</a>
- * @since 1.0.0
  */
 public final class DOGWavelet implements ContinuousWavelet {
     

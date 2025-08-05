@@ -23,7 +23,6 @@ import java.util.logging.Level;
  *   <li>Memory leak detection and warnings</li>
  * </ul>
  * 
- * @since 3.1.0
  */
 public class ThreadLocalManager {
     

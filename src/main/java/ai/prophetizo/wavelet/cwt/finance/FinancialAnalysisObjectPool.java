@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>This pool manages reusable objects and arrays used in hot paths
  * of financial analysis, significantly reducing memory allocation overhead.</p>
  * 
- * @since 1.0.0
  */
 public final class FinancialAnalysisObjectPool {
     

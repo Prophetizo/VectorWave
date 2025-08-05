@@ -20,7 +20,6 @@ import java.util.List;
  * @see WaveletProvider
  * @see OrthogonalWavelet
  * @see WaveletRegistry
- * @since 1.0
  */
 public class OrthogonalWaveletProvider implements WaveletProvider {
     

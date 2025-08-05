@@ -49,6 +49,5 @@
  * </ul>
  * 
  * @see ai.prophetizo.wavelet.WaveletTransform
- * @since 1.0.0
  */
 package ai.prophetizo.wavelet.internal;

@@ -31,7 +31,6 @@ import java.util.List;
  * @see MorletWavelet
  * @see GaussianDerivativeWavelet
  * @see WaveletRegistry
- * @since 1.0
  */
 public class ContinuousWaveletProvider implements WaveletProvider {
     

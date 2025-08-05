@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>Multi-channel processing with MODWT</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class StreamingDenoiserDemo {
 

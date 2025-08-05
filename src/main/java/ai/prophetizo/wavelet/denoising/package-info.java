@@ -107,7 +107,6 @@
  *   <li><strong>Scientific Data:</strong> Sensor data cleaning and feature extraction</li>
  * </ul>
  * 
- * @since 1.0.0
  * @see ai.prophetizo.wavelet.api.DiscreteWavelet
  * @see ai.prophetizo.wavelet.WaveletTransform
  * @see ai.prophetizo.wavelet.concurrent

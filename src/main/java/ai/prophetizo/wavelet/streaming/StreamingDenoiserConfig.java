@@ -13,7 +13,6 @@ import ai.prophetizo.wavelet.exception.ErrorContext;
  * <p>This class provides a fluent builder API for configuring streaming denoisers
  * with support for both MODWT-based implementations.</p>
  * 
- * @since 3.0.0
  */
 public final class StreamingDenoiserConfig {
     

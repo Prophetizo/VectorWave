@@ -10,7 +10,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * making them particularly useful for analyzing oscillatory signals
  * and extracting instantaneous frequency information.</p>
  *
- * @since 1.0.0
  */
 public interface ComplexContinuousWavelet extends ContinuousWavelet {
     

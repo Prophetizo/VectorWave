@@ -5,7 +5,6 @@ import java.util.Arrays;
 /**
  * Implementation of MultiLevelMODWTResult with defensive copying and validation.
  * 
- * @since 3.0.0
  */
 class MultiLevelMODWTResultImpl implements MultiLevelMODWTResult {
     

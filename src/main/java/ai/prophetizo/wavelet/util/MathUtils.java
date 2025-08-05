@@ -7,7 +7,6 @@ package ai.prophetizo.wavelet.util;
  * that are used throughout the wavelet library but are general enough to be
  * useful in other contexts.</p>
  * 
- * @since 3.0.0
  */
 public final class MathUtils {
     

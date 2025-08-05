@@ -127,7 +127,6 @@
  *   <li><strong>Resource Limits:</strong> Configurable memory and CPU usage constraints</li>
  * </ul>
  * 
- * @since 1.0.0
  * @see ai.prophetizo.wavelet.WaveletTransform
  * @see ai.prophetizo.wavelet.api.Wavelet
  * @see ai.prophetizo.wavelet.memory

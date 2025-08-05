@@ -33,7 +33,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  *   <li>Is more suitable for analyzing transient events</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class ShannonGaborWavelet implements ContinuousWavelet {
     

@@ -19,7 +19,6 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Reduced memory bandwidth requirements</li>
  * </ul>
  *
- * @since 1.0.0
  */
 final class SoATransform {
 

@@ -18,7 +18,6 @@ import java.util.stream.IntStream;
  * indicates what the JVM can efficiently use, which we validate against
  * actual CPU instruction set support.</p>
  *
- * @since 1.0.0
  */
 public final class CWTVectorOps {
     

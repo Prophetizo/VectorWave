@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.cwt.finance;
  * <p>Contains wavelet-specific parameters for different analysis types
  * (crash detection, volatility analysis, cycle detection, signal generation).</p>
  * 
- * @since 1.0.0
  */
 public final class OptimizationParameters {
     

@@ -18,7 +18,6 @@ import java.util.List;
  * 
  * <p>Scale generation follows: s_j = s_0 * 2^j where j ranges from 0 to J-1</p>
  *
- * @since 1.0.0
  */
 public class DyadicScaleSelector implements AdaptiveScaleSelector {
     

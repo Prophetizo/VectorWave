@@ -42,7 +42,6 @@ import java.util.Objects;
  *     "modwt", new MODWTTransformFactory());
  * }</pre>
  * 
- * @since 3.0.0
  */
 public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTransformFactory.Config> {
     

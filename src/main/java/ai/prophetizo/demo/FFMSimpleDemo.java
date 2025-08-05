@@ -13,7 +13,6 @@ import java.util.Random;
  * is planned for future releases. This demo shows current memory-efficient
  * patterns available with MODWT.</p>
  * 
- * @since 3.0.0
  */
 public class FFMSimpleDemo {
     

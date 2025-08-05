@@ -11,6 +11,5 @@
  * <p>These types are designed to be immutable and efficient, supporting
  * high-performance mathematical operations required by wavelet transforms.</p>
  * 
- * @since 3.0.0
  */
 package ai.prophetizo.wavelet.math;

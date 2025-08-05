@@ -8,7 +8,6 @@ import java.util.Optional;
  * <p>This class encapsulates all parameters needed for market analysis,
  * replacing methods with many parameters and providing a fluent API.</p>
  * 
- * @since 1.0.0
  */
 public record MarketAnalysisRequest(
     double[] priceData,

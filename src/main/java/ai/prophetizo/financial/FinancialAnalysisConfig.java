@@ -26,7 +26,6 @@ package ai.prophetizo.financial;
  *       Higher for risk-averse applications.</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class FinancialAnalysisConfig {
     
