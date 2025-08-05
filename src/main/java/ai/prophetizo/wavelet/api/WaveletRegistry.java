@@ -4,8 +4,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
  * Registry for all available wavelets in the VectorWave library.
@@ -114,19 +112,16 @@ public final class WaveletRegistry {
      * @param wavelet the wavelet to register
      */
     private static void register(Wavelet wavelet) {
-        String name = wavelet.name().toLowerCase();
-        WaveletType type = wavelet.getType();
-        
-        // Always put in WAVELETS map (ConcurrentHashMap handles concurrent access)
-        WAVELETS.put(name, wavelet);
+        WAVELETS.put(wavelet.name().toLowerCase(), wavelet);
 
+        WaveletType type = wavelet.getType();
         synchronized (WAVELETS_BY_TYPE) {
-            List<String> typeList = WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>());
-            // Only add if not already present to avoid duplicates
-            if (!typeList.contains(wavelet.name())) {
-                typeList.add(wavelet.name());
-                // Only invalidate cache when we actually modify the list
-                CACHED_SETS_BY_TYPE.remove(type);
+            WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
+                    .add(wavelet.name());
+            // Fine-grained cache update: add to cached set if present
+            Set<String> cachedSet = CACHED_SETS_BY_TYPE.get(type);
+            if (cachedSet != null) {
+                cachedSet.add(wavelet.name());
             }
         }
     }
@@ -189,15 +184,20 @@ public final class WaveletRegistry {
             return Collections.emptySet();
         }
         
-        // Build and cache the set within synchronized block for thread safety
+        // Use cached set if available
+        Set<String> cachedSet = CACHED_SETS_BY_TYPE.get(type);
+        if (cachedSet != null) {
+            return cachedSet;
+        }
+        
+        // Build and cache the set
         synchronized (WAVELETS_BY_TYPE) {
-            // Check cache first
-            Set<String> cachedSet = CACHED_SETS_BY_TYPE.get(type);
+            // Double-check locking pattern
+            cachedSet = CACHED_SETS_BY_TYPE.get(type);
             if (cachedSet != null) {
                 return cachedSet;
             }
             
-            // Build new set
             List<String> wavelets = WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList());
             Set<String> unmodifiableSet = Collections.unmodifiableSet(new LinkedHashSet<>(wavelets));
             CACHED_SETS_BY_TYPE.put(type, unmodifiableSet);
@@ -480,52 +480,30 @@ public final class WaveletRegistry {
     private static int extractOrder(Wavelet wavelet) {
         String name = wavelet.name().toLowerCase();
         
-        // Try different extraction strategies
-        int order = extractSimpleOrder(name);
-        if (order > 0) return order;
-        
-        order = extractBiorthogonalOrder(name);
-        if (order > 0) return order;
-        
-        return 0; // No specific order found
-    }
-    
-    /**
-     * Extracts order from simple wavelet names like db4, sym8, coif2.
-     * Uses regex to match prefix followed by digits.
-     */
-    private static int extractSimpleOrder(String name) {
-        Pattern pattern = Pattern.compile("^(db|sym|coif)(\\d+)$");
-        Matcher matcher = pattern.matcher(name);
-        
-        if (matcher.matches()) {
+        // Try to extract numeric order from common patterns
+        if (name.startsWith("db") || name.startsWith("sym") || name.startsWith("coif")) {
+            String prefix = name.startsWith("db") ? "db" : 
+                           name.startsWith("sym") ? "sym" : "coif";
+            String orderStr = name.substring(prefix.length());
             try {
-                return Integer.parseInt(matcher.group(2));
+                return Integer.parseInt(orderStr);
             } catch (NumberFormatException e) {
                 return 0;
             }
-        }
-        
-        return 0;
-    }
-    
-    /**
-     * Extracts order from biorthogonal wavelet names like bior1.3, bior2.2.
-     * Returns the first number (decomposition order).
-     */
-    private static int extractBiorthogonalOrder(String name) {
-        Pattern pattern = Pattern.compile("^bior(\\d+)\\.(\\d+)$");
-        Matcher matcher = pattern.matcher(name);
-        
-        if (matcher.matches()) {
-            try {
-                return Integer.parseInt(matcher.group(1));
-            } catch (NumberFormatException e) {
-                return 0;
+        } else if (name.startsWith("bior")) {
+            // Handle biorthogonal naming like bior1.3, bior2.2
+            String orderStr = name.substring(4);
+            if (orderStr.contains(".")) {
+                String[] parts = orderStr.split("\\.");
+                try {
+                    return Integer.parseInt(parts[0]);
+                } catch (NumberFormatException e) {
+                    return 0;
+                }
             }
         }
         
-        return 0;
+        return 0; // No specific order
     }
     
     private static Set<String> createAliases(Wavelet wavelet) {
