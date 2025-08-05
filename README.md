@@ -1,84 +1,30 @@
 # VectorWave
 
-High-performance wavelet transform library for Java 23+ featuring the Maximal Overlap Discrete Wavelet Transform (MODWT) as the primary transform, with shift-invariance, arbitrary signal length support, and comprehensive wavelet family coverage. Also includes Continuous Wavelet Transform (CWT) with FFT acceleration.
+High-performance wavelet transform library for Java 23+ featuring MODWT (Maximal Overlap Discrete Wavelet Transform) as the primary transform. Offers shift-invariance, arbitrary signal length support, SIMD acceleration, and comprehensive wavelet families for financial analysis, signal processing, and real-time applications.
 
 ## Features
 
 ### Core Capabilities
-- **MODWT (Maximal Overlap Discrete Wavelet Transform)**: Primary transform offering:
-  - Shift-invariance (translation-invariant) - crucial for pattern detection
-  - Works with ANY signal length (no power-of-2 restriction)
-  - Non-decimated output (same length as input)
-  - Perfect reconstruction with machine precision
-  - Ideal for streaming and real-time applications
-- **Multiple Wavelet Families**: Haar, Daubechies (DB2-DB20), Symlets, Coiflets, Biorthogonal, Morlet
-- **Continuous Wavelet Transform (CWT)**: FFT-accelerated CWT with O(n log n) complexity
-- **Complex Wavelet Analysis**: Full complex coefficient support with magnitude and phase
-- **Financial Wavelets**: Specialized wavelets for market analysis
-  - Paul wavelet: Asymmetric pattern detection (crashes, recoveries)
-  - Shannon wavelet: Band-limited analysis
-  - Shannon-Gabor wavelet: Time-frequency localization with reduced artifacts
-  - DOG wavelets: Gaussian derivatives for smooth features
-  - MATLAB-compatible Mexican Hat: Legacy system integration
-- **Foreign Function & Memory API (FFM)**: Zero-copy operations with Java 23's FFM API
-  - SIMD-aligned memory allocation
-  - Reduced GC pressure through off-heap memory
-  - Thread-safe memory pooling with lifecycle management
-- **Type-Safe API**: Sealed interfaces with compile-time validation
-- **Zero Dependencies**: Pure Java implementation
-- **Flexible Boundary Handling**: Periodic, Zero-padding (Symmetric and Constant modes partially implemented)
-- **Plugin Architecture**: ServiceLoader-based wavelet discovery for extensibility
+- **MODWT**: Shift-invariant transform for ANY signal length
+- **Wavelet Families**: Haar, Daubechies, Symlets, Coiflets, Biorthogonal, Financial wavelets
+- **CWT**: FFT-accelerated continuous transforms with complex analysis
+- **SIMD Acceleration**: Automatic vectorization with scalar fallback
+- **Financial Analysis**: Specialized wavelets and configurable parameters
+- **Streaming**: Real-time processing with arbitrary block sizes
+- **Zero Dependencies**: Pure Java 23+ implementation
 
 ### Performance
-- **SIMD Optimizations**: Platform-specific Vector API support with automatic fallback
-  - x86: AVX2/AVX512 when available
-  - ARM: NEON support, optimized for Apple Silicon
-  - Graceful scalar fallback for unsupported platforms
-- **FFT Acceleration**: O(n log n) convolution for CWT
-  - Split-radix FFT for optimal performance
-  - Bluestein algorithm for arbitrary sizes
-  - Pre-computed twiddle factor caching
-  - Real-to-complex FFT optimization (2x speedup for real signals)
-- **Cache-Aware Operations**: Platform-adaptive cache configuration
-- **Adaptive Thresholds**: 8+ elements for ARM/Apple Silicon, 16+ for x86
-- **Memory Efficiency**: Object pooling, aligned allocation, streaming memory management
-- **Parallel Processing**: Fork-join framework for batch operations
-- **True SIMD Batch Processing**: Process multiple signals simultaneously
-  - Processes N signals in parallel (N = SIMD vector width)
-  - Optimized memory layouts (SoA) for coalesced vector operations
-  - Adaptive algorithm selection based on batch size and wavelet type
-  - Specialized kernels for Haar and small wavelets
-  - 2-4x speedup for typical workloads
+- **SIMD Acceleration**: Platform-adaptive Vector API (x86: AVX2/AVX512, ARM: NEON)
+- **FFT Optimization**: Real-to-complex FFT with 2x speedup for real signals
+- **Batch Processing**: SIMD parallel processing of multiple signals (2-4x speedup)
+- **Memory Efficiency**: Object pooling and aligned allocation
+- **Automatic Optimization**: No manual configuration required
 
-### Advanced Features
-- **Denoising**: Universal, SURE, and Minimax threshold methods
-- **Streaming Support**: Real-time processing with Java Flow API
-  - Fast mode: < 1 µs/sample latency
-  - Quality mode: Enhanced SNR with overlap
-  - Factory-based automatic mode selection
-- **Multi-level MODWT**: Configurable decomposition levels with MultiLevelMODWTTransform
-- **Complex Wavelet Analysis**: Full magnitude and phase information
-  - Complex coefficient computation
-  - Instantaneous frequency extraction
-  - Phase synchronization analysis
-- **Adaptive Scale Selection**: Automatic scale optimization
-  - Signal-adaptive placement based on energy distribution
-  - Multiple spacing strategies (dyadic, logarithmic, mel-scale)
-  - Real-time adaptation with sub-millisecond overhead
-- **MODWT-Based CWT Reconstruction**: Fast and stable reconstruction method
-  - Leverages orthogonal wavelet properties
-  - 10-300x faster than standard methods
-  - O(N log N) complexity
-  - Ideal for financial applications and real-time processing
-- **Factory Pattern Architecture**: Modern dependency injection
-  - Common factory interface for all components
-  - Registry-based factory management
-  - Polymorphic usage patterns
-- **Configurable Financial Analysis**: Builder-pattern configuration
-  - Custom risk-free rates for Sharpe ratio calculation
-  - Adjustable crash detection thresholds
-  - Volatility and regime change parameters
-  - Anomaly detection settings
+### Key Applications
+- **Financial Analysis**: Crash detection, volatility analysis, regime identification
+- **Signal Processing**: Denoising, time-frequency analysis, feature extraction
+- **Real-time Systems**: Streaming transforms with microsecond latency
+- **Scientific Computing**: Multi-level decomposition and reconstruction
 
 ## Requirements
 

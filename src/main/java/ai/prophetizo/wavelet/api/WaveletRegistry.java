@@ -44,6 +44,7 @@ public final class WaveletRegistry {
 
     private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
     private static final Map<WaveletType, List<String>> WAVELETS_BY_TYPE = new EnumMap<>(WaveletType.class);
+    private static final Map<WaveletType, Set<String>> CACHED_SETS_BY_TYPE = new EnumMap<>(WaveletType.class);
     private static volatile boolean initialized = false;
     private static final Object INIT_LOCK = new Object();
 
@@ -117,6 +118,8 @@ public final class WaveletRegistry {
         synchronized (WAVELETS_BY_TYPE) {
             WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
                     .add(wavelet.name());
+            // Invalidate cache for this type
+            CACHED_SETS_BY_TYPE.remove(type);
         }
     }
 
@@ -174,8 +177,29 @@ public final class WaveletRegistry {
      * @return set of wavelet names of the given type
      */
     public static Set<String> getWaveletsByType(WaveletType type) {
-        List<String> wavelets = WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList());
-        return Collections.unmodifiableSet(new LinkedHashSet<>(wavelets));
+        if (type == null) {
+            return Collections.emptySet();
+        }
+        
+        // Use cached set if available
+        Set<String> cachedSet = CACHED_SETS_BY_TYPE.get(type);
+        if (cachedSet != null) {
+            return cachedSet;
+        }
+        
+        // Build and cache the set
+        synchronized (WAVELETS_BY_TYPE) {
+            // Double-check locking pattern
+            cachedSet = CACHED_SETS_BY_TYPE.get(type);
+            if (cachedSet != null) {
+                return cachedSet;
+            }
+            
+            List<String> wavelets = WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList());
+            Set<String> unmodifiableSet = Collections.unmodifiableSet(new LinkedHashSet<>(wavelets));
+            CACHED_SETS_BY_TYPE.put(type, unmodifiableSet);
+            return unmodifiableSet;
+        }
     }
 
     /**
@@ -342,6 +366,8 @@ public final class WaveletRegistry {
             synchronized (WAVELETS_BY_TYPE) {
                 WAVELETS_BY_TYPE.clear();
                 WAVELETS_BY_TYPE.putAll(newWaveletsByType);
+                // Clear cache since data has changed
+                CACHED_SETS_BY_TYPE.clear();
             }
         }
     }
