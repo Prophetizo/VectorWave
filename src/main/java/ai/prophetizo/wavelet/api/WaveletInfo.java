@@ -10,6 +10,15 @@ import java.util.Collections;
  * 
  * <p>This class is immutable and thread-safe.</p>
  * 
+ * <p><strong>Usage:</strong> Use the Builder pattern to create instances:
+ * <pre>{@code
+ * WaveletInfo info = new WaveletInfo.Builder("db4", WaveletType.ORTHOGONAL)
+ *     .displayName("Daubechies 4")
+ *     .family("Daubechies")
+ *     .order(4)
+ *     .build();
+ * }</pre>
+ * 
  * @since 1.0
  */
 public final class WaveletInfo {
@@ -25,6 +34,7 @@ public final class WaveletInfo {
     
     /**
      * Creates a new WaveletInfo instance.
+     * Package-private constructor to enforce use of Builder pattern for public API.
      * 
      * @param name The canonical name of the wavelet (e.g., "db4")
      * @param displayName The display name (e.g., "Daubechies 4")
@@ -36,9 +46,9 @@ public final class WaveletInfo {
      * @param vanishingMoments Number of vanishing moments (for discrete wavelets)
      * @param filterLength Length of the wavelet filter (for discrete wavelets)
      */
-    public WaveletInfo(String name, String displayName, WaveletType type, 
-                      String family, int order, Set<String> aliases,
-                      String description, int vanishingMoments, int filterLength) {
+    WaveletInfo(String name, String displayName, WaveletType type, 
+                String family, int order, Set<String> aliases,
+                String description, int vanishingMoments, int filterLength) {
         this.name = name;
         this.displayName = displayName;
         this.type = type;
