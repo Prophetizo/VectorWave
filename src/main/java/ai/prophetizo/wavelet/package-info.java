@@ -7,6 +7,7 @@
  * 
  * <h2>Key Components:</h2>
  * <ul>
+ *   <li>{@link ai.prophetizo.wavelet.WaveletOperations} - Public facade for core operations with automatic optimization</li>
  *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTTransform} - Main MODWT transform engine</li>
  *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTResult} - Immutable container for transform coefficients</li>
  *   <li>{@link ai.prophetizo.wavelet.modwt.MODWTTransform#forwardBatch} - High-performance batch processing</li>

@@ -4,6 +4,10 @@ import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Adaptive performance estimator that learns from actual execution times.
@@ -28,11 +32,24 @@ public class AdaptivePerformanceEstimator {
     private final ConcurrentHashMap<String, PerformanceModel> operationModels;
     private final AtomicInteger measurementCount;
     private final AtomicLong lastCalibrationTime;
+    private final ExecutorService calibrationExecutor;
+    private final AtomicBoolean isCalibrating;
     
     private AdaptivePerformanceEstimator() {
         this.operationModels = new ConcurrentHashMap<>();
         this.measurementCount = new AtomicInteger(0);
         this.lastCalibrationTime = new AtomicLong(System.currentTimeMillis());
+        this.isCalibrating = new AtomicBoolean(false);
+        
+        // Create daemon thread executor for background calibration
+        this.calibrationExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, "PerformanceCalibration");
+                t.setDaemon(true); // Daemon thread won't prevent JVM shutdown
+                return t;
+            }
+        });
         
         // Try to load existing models
         loadModels();
@@ -148,21 +165,30 @@ public class AdaptivePerformanceEstimator {
      * Forces recalibration of all models.
      */
     public void recalibrate() {
-        System.out.println("Recalibrating performance models...");
+        // Prevent concurrent calibrations
+        if (!isCalibrating.compareAndSet(false, true)) {
+            return; // Already calibrating
+        }
         
-        PerformanceCalibrator calibrator = new PerformanceCalibrator();
-        models = calibrator.calibrate();
-        
-        // Update operation-specific models
-        operationModels.put("MODWT", models.modwtModel());
-        operationModels.put("Convolution", models.convolutionModel());
-        operationModels.put("Batch", models.batchModel());
-        
-        // Save calibrated models
-        saveModels();
-        
-        lastCalibrationTime.set(System.currentTimeMillis());
-        measurementCount.set(0);
+        try {
+            System.out.println("Recalibrating performance models...");
+            
+            PerformanceCalibrator calibrator = new PerformanceCalibrator();
+            models = calibrator.calibrate();
+            
+            // Update operation-specific models
+            operationModels.put("MODWT", models.modwtModel());
+            operationModels.put("Convolution", models.convolutionModel());
+            operationModels.put("Batch", models.batchModel());
+            
+            // Save calibrated models
+            saveModels();
+            
+            lastCalibrationTime.set(System.currentTimeMillis());
+            measurementCount.set(0);
+        } finally {
+            isCalibrating.set(false);
+        }
     }
     
     /**
@@ -187,6 +213,23 @@ public class AdaptivePerformanceEstimator {
         report.append("Total measurements: ").append(measurementCount.get()).append("\n");
         
         return report.toString();
+    }
+    
+    /**
+     * Shuts down the calibration executor service.
+     * Should be called when the application terminates.
+     */
+    public void shutdown() {
+        calibrationExecutor.shutdown();
+        try {
+            // Wait for any ongoing calibration to complete
+            if (!calibrationExecutor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                calibrationExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            calibrationExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
     
     // Private helper methods
@@ -230,7 +273,7 @@ public class AdaptivePerformanceEstimator {
         
         if (needsRecalibration) {
             // Recalibrate in background to avoid blocking
-            new Thread(this::recalibrate, "PerformanceCalibration").start();
+            calibrationExecutor.submit(this::recalibrate);
         }
     }
     

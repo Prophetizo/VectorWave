@@ -584,6 +584,51 @@ GPL-3.0 - See [LICENSE](LICENSE) file for details.
 - [Financial Analysis](docs/guides/FINANCIAL_ANALYSIS.md) - Financial market analysis
 - [Streaming](docs/guides/STREAMING.md) - Real-time streaming transforms
 
+## Quick Examples
+
+### 1. Basic Signal Processing
+```java
+// Transform with any signal length - no padding needed!
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[] signal = new double[777]; // Any length works
+MODWTResult result = transform.forward(signal);
+
+// Perfect reconstruction
+double[] reconstructed = transform.inverse(result);
+```
+
+### 2. Real-Time Denoising
+```java
+// Denoise a noisy signal
+WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+double[] clean = denoiser.denoise(noisySignal, 
+    WaveletDenoiser.ThresholdMethod.UNIVERSAL,
+    WaveletDenoiser.ThresholdType.SOFT);
+```
+
+### 3. Financial Analysis
+```java
+// Analyze market data - no defaults, explicit configuration
+FinancialConfig config = new FinancialConfig(0.045); // 4.5% risk-free rate
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
+double sharpeRatio = analyzer.calculateWaveletSharpeRatio(returns);
+```
+
+### 4. High-Performance Batch Processing
+```java
+// Process 32 signals in parallel with automatic SIMD
+double[][] signals = new double[32][1000];
+MODWTResult[] results = transform.forwardBatch(signals);
+```
+
+### 5. Platform Capabilities
+```java
+// Query what optimizations are available
+WaveletOperations.PerformanceInfo info = WaveletOperations.getPerformanceInfo();
+System.out.println(info.description());
+// Output: "Vectorized operations enabled on aarch64 with S_128_BIT"
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

@@ -14,6 +14,13 @@ public class PlatformFactors implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
+     * Volatile field to prevent dead code elimination in benchmarks.
+     * This is a standard JMH-style blackhole pattern to ensure the compiler
+     * doesn't optimize away our benchmark computations.
+     */
+    private static volatile double blackhole;
+    
+    /**
      * CPU speed factor relative to reference platform (1.0 = reference speed).
      */
     public final double cpuSpeedFactor;
@@ -163,8 +170,8 @@ public class PlatformFactors implements Serializable {
         }
         long elapsed = System.nanoTime() - start;
         
-        // Prevent optimization
-        if (sum == 0) System.out.println("Prevent optimization");
+        // Prevent dead code elimination by storing result to volatile field
+        blackhole = sum;
         
         // Reference time is ~100ms on reference platform
         double referenceTimeNs = 100_000_000;

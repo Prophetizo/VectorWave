@@ -34,7 +34,7 @@ public class ThreadLocalManager {
         ConcurrentHashMap.newKeySet();
     
     // Flag to enable memory leak detection
-    private static final boolean LEAK_DETECTION_ENABLED = 
+    private static volatile boolean LEAK_DETECTION_ENABLED = 
         Boolean.parseBoolean(System.getProperty("vectorwave.threadlocal.leak.detection", "true"));
     
     // Thread-local flag to track if cleanup has been performed
@@ -159,8 +159,17 @@ public class ThreadLocalManager {
      * @param enabled true to enable leak detection
      */
     public static void setLeakDetectionEnabled(boolean enabled) {
-        // Would need to be a mutable field for runtime changes
+        LEAK_DETECTION_ENABLED = enabled;
         LOGGER.info("Leak detection " + (enabled ? "enabled" : "disabled"));
+    }
+    
+    /**
+     * Checks if leak detection is currently enabled.
+     * 
+     * @return true if leak detection is enabled
+     */
+    public static boolean isLeakDetectionEnabled() {
+        return LEAK_DETECTION_ENABLED;
     }
     
     /**

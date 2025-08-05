@@ -217,8 +217,14 @@ public class ParallelMultiLevelMODWT {
      * This appears to be a limitation in the current implementation.
      */
     private void applyZeroPaddingMODWT(double[] input, double[] filter, double[] output) {
-        // For consistency with MultiLevelMODWTTransform, use circular convolution
-        // even in ZERO_PADDING mode. This is a known limitation.
+        // TODO: Implement proper zero-padding convolution for MODWT
+        // GitHub Issue #160: ZERO_PADDING mode currently falls back to circular convolution
+        // This is a known limitation that affects both ParallelMultiLevelMODWT 
+        // and MultiLevelMODWTTransform. Proper implementation would require:
+        // 1. Extending input signal with zeros at boundaries
+        // 2. Adjusting convolution indices to handle boundary conditions
+        // 3. Ensuring phase alignment is maintained
+        // For now, use circular convolution for consistency with existing behavior
         WaveletOperations.circularConvolveMODWT(input, filter, output);
     }
     

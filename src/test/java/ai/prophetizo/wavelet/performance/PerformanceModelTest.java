@@ -91,7 +91,7 @@ class PerformanceModelTest {
         assertNotEquals(initialPred.estimatedTime(), updatedPred.estimatedTime(), 0.001);
         
         // Model should have better accuracy
-        assertTrue(model.getAccuracy().getCount() == 10);
+        assertEquals(10, model.getAccuracy().getCount());
     }
     
     @Test
