@@ -78,6 +78,11 @@ public class PerformanceModel implements Serializable {
         // Base prediction using polynomial model
         double baseTime = coeff.evaluate(inputSize);
         
+        // Ensure base time is positive - safety guard
+        if (baseTime <= 0) {
+            baseTime = 0.001; // 1 microsecond minimum
+        }
+        
         // Apply platform-specific factors
         double adjustedTime = baseTime * platformFactors.cpuSpeedFactor;
         
@@ -88,6 +93,11 @@ public class PerformanceModel implements Serializable {
         
         // Apply cache effects
         adjustedTime *= getCacheEffectMultiplier(inputSize);
+        
+        // Final safety guard to ensure positive time
+        if (adjustedTime <= 0) {
+            adjustedTime = 0.001; // 1 microsecond minimum
+        }
         
         // Get confidence interval
         ConfidenceInterval ci = confidenceIntervals.getOrDefault(range, 

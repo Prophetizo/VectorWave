@@ -47,7 +47,8 @@ class AdaptivePerformanceEstimatorTest {
         PredictionResult result = estimator.estimateMODWT(1024, "Haar", false);
         
         assertNotNull(result);
-        assertTrue(result.estimatedTime() > 0, "Estimated time should be positive");
+        assertTrue(result.estimatedTime() > 0, 
+                   "Estimated time should be positive, but was: " + result.estimatedTime());
         assertTrue(result.confidence() >= 0 && result.confidence() <= 1, 
                    "Confidence should be between 0 and 1");
         assertTrue(result.lowerBound() <= result.estimatedTime(), 
@@ -81,7 +82,7 @@ class AdaptivePerformanceEstimatorTest {
             
             assertNotNull(result, "Result should not be null for wavelet: " + wavelet);
             assertTrue(result.estimatedTime() > 0, 
-                       "Estimated time should be positive for wavelet: " + wavelet);
+                       "Estimated time should be positive for wavelet: " + wavelet + ", but was: " + result.estimatedTime());
             assertTrue(result.confidence() >= 0 && result.confidence() <= 1, 
                        "Confidence should be valid for wavelet: " + wavelet);
         }
@@ -216,10 +217,22 @@ class AdaptivePerformanceEstimatorTest {
         assertNotNull(result1);
         assertNotNull(result2);
         
+        // Ensure both predictions are positive first
+        assertTrue(result1.estimatedTime() > 0, "First prediction should be positive: " + result1.estimatedTime());
+        assertTrue(result2.estimatedTime() > 0, "Second prediction should be positive: " + result2.estimatedTime());
+        
         // Results should be very similar (within 10% due to model uncertainty)
         double timeDiff = Math.abs(result1.estimatedTime() - result2.estimatedTime());
         double avgTime = (result1.estimatedTime() + result2.estimatedTime()) / 2;
-        assertTrue(timeDiff / avgTime < 0.1, "Consecutive predictions should be consistent");
+        
+        // Only check consistency if we have reasonable values
+        if (avgTime > 0) {
+            assertTrue(timeDiff / avgTime < 0.1, 
+                      String.format("Consecutive predictions should be consistent. " +
+                                  "Result1: %f, Result2: %f, Difference: %f, AvgTime: %f, Ratio: %f", 
+                                  result1.estimatedTime(), result2.estimatedTime(), 
+                                  timeDiff, avgTime, timeDiff / avgTime));
+        }
     }
     
     @Test
@@ -242,17 +255,20 @@ class AdaptivePerformanceEstimatorTest {
         // Test with very small signals
         PredictionResult smallResult = estimator.estimateMODWT(32, "Haar", false);
         assertNotNull(smallResult);
-        assertTrue(smallResult.estimatedTime() > 0);
+        assertTrue(smallResult.estimatedTime() > 0, 
+                   "Small signal estimated time should be positive, but was: " + smallResult.estimatedTime());
         
         // Test with large signals
         PredictionResult largeResult = estimator.estimateMODWT(100000, "Haar", false);
         assertNotNull(largeResult);
-        assertTrue(largeResult.estimatedTime() > 0);
+        assertTrue(largeResult.estimatedTime() > 0,
+                   "Large signal estimated time should be positive, but was: " + largeResult.estimatedTime());
         
         // Test with unusual filter sizes
         PredictionResult unusualResult = estimator.estimateConvolution(1024, 1, false);
         assertNotNull(unusualResult);
-        assertTrue(unusualResult.estimatedTime() > 0);
+        assertTrue(unusualResult.estimatedTime() > 0,
+                   "Unusual filter estimated time should be positive, but was: " + unusualResult.estimatedTime());
     }
     
     @Test
@@ -271,7 +287,11 @@ class AdaptivePerformanceEstimatorTest {
                     PredictionResult result = estimator.estimateMODWT(
                         1000 + threadId * 100, "Haar", threadId % 2 == 0);
                     
-                    results[threadId] = (result != null && result.estimatedTime() > 0);
+                    boolean success = (result != null && result.estimatedTime() > 0);
+                    if (!success && result != null) {
+                        System.err.println("Thread " + threadId + " got non-positive time: " + result.estimatedTime());
+                    }
+                    results[threadId] = success;
                     
                     // Also record a measurement
                     estimator.recordMeasurement(
