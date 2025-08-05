@@ -322,7 +322,7 @@ public class ThreadLocalManager {
      * @return The result of the operation
      * @throws Exception if the operation throws
      */
-    @SuppressWarnings("try")
+    @SuppressWarnings("try") // CleanupScope is used only for its close() side effect, not for any contained resource
     public static <T> T withCleanup(ThrowingSupplier<T> operation) throws Exception {
         try (CleanupScope scope = createScope()) {
             return operation.get();

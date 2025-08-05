@@ -144,7 +144,7 @@ final class FastStreamingDenoiser implements StreamingDenoiserStrategy {
     }
     
     @Override
-    public void close() throws InterruptedException, Exception {
+    public void close() {
         denoiser.close();
         publisher.close();
     }

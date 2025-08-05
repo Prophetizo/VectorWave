@@ -20,12 +20,9 @@ public interface StreamingDenoiserStrategy extends Flow.Publisher<double[]>, Aut
     /**
      * Closes this streaming denoiser and releases any resources.
      * May block waiting for background threads to complete.
-     * 
-     * @throws InterruptedException if interrupted while waiting for shutdown
-     * @throws Exception if an error occurs during shutdown
      */
     @Override
-    void close() throws InterruptedException, Exception;
+    void close();
     
     /**
      * Processes a block of input samples.
