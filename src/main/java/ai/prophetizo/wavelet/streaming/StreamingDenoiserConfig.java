@@ -25,6 +25,18 @@ public final class StreamingDenoiserConfig {
     private final ThresholdType thresholdType;
     private final boolean adaptiveThreshold;
     private final double thresholdMultiplier;
+    
+    /**
+     * Size of the window used for noise estimation.
+     * 
+     * <p>The noise window can be larger than the block size, which allows
+     * for more stable noise estimates across multiple blocks. Different
+     * implementations handle this differently:</p>
+     * <ul>
+     *   <li>MODWTStreamingDenoiser uses stratified sampling for large windows</li>
+     *   <li>FastStreamingDenoiser may clip the window size as needed</li>
+     * </ul>
+     */
     private final int noiseWindowSize;
     
     private StreamingDenoiserConfig(Builder builder) {
@@ -48,6 +60,24 @@ public final class StreamingDenoiserConfig {
     public ThresholdType getThresholdType() { return thresholdType; }
     public boolean isAdaptiveThreshold() { return adaptiveThreshold; }
     public double getThresholdMultiplier() { return thresholdMultiplier; }
+    
+    /**
+     * Gets the size of the window used for noise estimation.
+     * 
+     * <p>The noise window can be larger than the block size, which allows
+     * for more stable noise estimates across multiple blocks. Different
+     * implementations handle this differently:</p>
+     * <ul>
+     *   <li>MODWTStreamingDenoiser uses stratified sampling for large windows</li>
+     *   <li>FastStreamingDenoiser may clip the window size as needed</li>
+     * </ul>
+     * 
+     * <p>Larger windows generally provide more stable noise estimates but may
+     * increase latency. The optimal size depends on the signal characteristics
+     * and application requirements.</p>
+     * 
+     * @return the noise estimation window size in samples
+     */
     public int getNoiseWindowSize() { return noiseWindowSize; }
     
     /**
@@ -206,7 +236,16 @@ public final class StreamingDenoiserConfig {
          * implementations handle this differently:</p>
          * <ul>
          *   <li>MODWTStreamingDenoiser uses stratified sampling for large windows</li>
-         *   <li>FastStreamingDenoiser may clip the window size as needed</li>
+         *   <li>FastStreamingDenoiser clips the window size as needed for performance</li>
+         * </ul>
+         * 
+         * <p><strong>Implementation Notes:</strong></p>
+         * <ul>
+         *   <li>No upper bound validation is enforced (unlike previous versions)</li>
+         *   <li>Algorithms benefit from larger windows that span multiple blocks for stability</li>
+         *   <li>MODWTStreamingDenoiser uses stratified sampling when window exceeds data size</li>
+         *   <li>FastStreamingDenoiser automatically clips to maintain low latency</li>
+         *   <li>Each implementation handles oversized windows gracefully based on their requirements</li>
          * </ul>
          * 
          * @param windowSize the noise estimation window size (must be positive)
@@ -241,12 +280,7 @@ public final class StreamingDenoiserConfig {
                 );
             }
             
-            // Note: We no longer enforce noiseWindowSize <= blockSize
-            // Some algorithms benefit from larger noise estimation windows that span
-            // multiple blocks for more stable noise estimates. The MODWTStreamingDenoiser
-            // uses stratified sampling when the window is larger than the data,
-            // and FastStreamingDenoiser clips the window size as needed.
-            // Implementations should handle this gracefully based on their requirements.
+            // Note: No upper bound validation on noiseWindowSize (see noiseWindowSize() JavaDoc for details)
             
             return new StreamingDenoiserConfig(this);
         }

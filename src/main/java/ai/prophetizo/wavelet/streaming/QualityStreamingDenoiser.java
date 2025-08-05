@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.streaming;
 
 import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingDenoiser;
 import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingTransform;
+import ai.prophetizo.wavelet.exception.WaveletTransformException;
 import java.util.Arrays;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
@@ -179,7 +180,7 @@ final class QualityStreamingDenoiser implements StreamingDenoiserStrategy {
         try {
             denoiser.close();
         } catch (Exception e) {
-            // Log or handle error if needed
+            throw new WaveletTransformException("Failed to close denoiser during flush", e);
         }
     }
     

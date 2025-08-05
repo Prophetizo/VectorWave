@@ -25,6 +25,21 @@ final class FastStreamingDenoiser implements StreamingDenoiserStrategy {
     private final SubmissionPublisher<double[]> publisher;
     private final PerformanceProfile profile;
     
+    /**
+     * Calculates the optimal noise window size for fast streaming processing.
+     * 
+     * <p>For fast processing, we limit the noise window to at most half the block size
+     * to minimize latency while maintaining reasonable noise estimation quality.
+     * The window size is clamped between 1 and the configured maximum.</p>
+     * 
+     * @param config the streaming denoiser configuration
+     * @return the optimal noise window size in samples
+     */
+    private static int calculateOptimalNoiseWindowSize(StreamingDenoiserConfig config) {
+        int maxAllowedSize = (int) Math.round(config.getBlockSize() / 2.0);
+        return Math.max(1, Math.min(config.getNoiseWindowSize(), maxAllowedSize));
+    }
+    
     FastStreamingDenoiser(StreamingDenoiserConfig config) {
         this.config = config;
         this.publisher = new SubmissionPublisher<>();
@@ -37,7 +52,7 @@ final class FastStreamingDenoiser implements StreamingDenoiserStrategy {
             .thresholdType(config.getThresholdType())
             .thresholdMultiplier(config.getThresholdMultiplier())
             .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
-            .noiseWindowSize(Math.max(1, Math.min(config.getNoiseWindowSize(), (int)Math.round(config.getBlockSize() / 2.0))))
+            .noiseWindowSize(calculateOptimalNoiseWindowSize(config))
             .build();
         
         // Subscribe to denoiser output and forward to our subscribers
