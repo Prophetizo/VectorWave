@@ -190,7 +190,7 @@ public final class WaveletRegistry {
     /**
      * Gets all biorthogonal wavelets.
      *
-     * @return list of biorthogonal wavelet names
+     * @return a new list of unique biorthogonal wavelet names, preserving insertion order
      */
     public static List<String> getBiorthogonalWavelets() {
         return new ArrayList<>(getWaveletsByType(WaveletType.BIORTHOGONAL));
