@@ -13,7 +13,7 @@
     <url>https://github.com/prophetizo/VectorWave</url>
 
     <properties>
-        <maven.compiler.release>23</maven.compiler.release>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.1</junit.version>
         <jmh.version>1.37</jmh.version>
@@ -81,9 +81,6 @@
                         <exclude>**/demo/**</exclude>
                     </excludes>
                     <compilerArgs>
-                        <!-- Enable Vector API for high-performance SIMD operations -->
-                        <arg>--add-modules</arg>
-                        <arg>jdk.incubator.vector</arg>
                         <!-- Enable additional warnings -->
                         <arg>-Xlint:all</arg>
                     </compilerArgs>
@@ -101,7 +98,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <argLine>@{argLine} --add-modules jdk.incubator.vector</argLine>
+                    <argLine>@{argLine}</argLine>
                     <excludes>
                         <exclude>**/benchmark/**</exclude>
                     </excludes>
