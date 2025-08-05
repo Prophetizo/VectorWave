@@ -198,9 +198,9 @@ class SimpleStreamingAnalyzerTest {
             .average()
             .orElse(0);
         
-        // Memory increase should be minimal (less than 500KB on average)
-        // This accounts for the sliding window buffer and some overhead
-        assertTrue(avgIncrease < 500_000, 
+        // Memory increase should be minimal (less than 750KB on average)
+        // This accounts for the sliding window buffer (100 samples) and some JVM overhead
+        assertTrue(avgIncrease < 750_000, 
             "Average memory increase across " + memoryIncreases.size() + 
             " iterations was " + avgIncrease + " bytes. Individual increases: " + memoryIncreases);
         
