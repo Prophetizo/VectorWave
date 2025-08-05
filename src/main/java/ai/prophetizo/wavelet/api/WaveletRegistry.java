@@ -118,8 +118,11 @@ public final class WaveletRegistry {
         synchronized (WAVELETS_BY_TYPE) {
             WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
                     .add(wavelet.name());
-            // Invalidate cache for this type
-            CACHED_SETS_BY_TYPE.remove(type);
+            // Fine-grained cache update: add to cached set if present
+            Set<String> cachedSet = CACHED_SETS_BY_TYPE.get(type);
+            if (cachedSet != null) {
+                cachedSet.add(wavelet.name());
+            }
         }
     }
 
