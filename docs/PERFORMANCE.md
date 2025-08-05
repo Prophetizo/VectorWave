@@ -8,19 +8,20 @@ VectorWave achieves high performance through multiple optimization strategies ta
 
 ### Zero-Copy Streaming
 
-**OptimizedStreamingWaveletTransform:**
+**MODWTStreamingTransform:**
 - Eliminates array copying during transform operations
 - 50% reduction in memory bandwidth usage
 - Ring buffer with lock-free operations
-- Configurable overlap support (0-100%)
+- Works with arbitrary block sizes (no power-of-2 restriction)
 - Automatic backpressure handling
 
 ```java
-// Zero-copy streaming with overlap
-OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTransform(
-    wavelet, BoundaryMode.PERIODIC, blockSize, 
-    0.5,  // 50% overlap
-    8     // buffer capacity = blockSize * 8
+// Zero-copy streaming with any block size
+MODWTStreamingTransform transform = new MODWTStreamingTransform(
+    wavelet, BoundaryMode.PERIODIC, 
+    480,   // Exactly 10ms at 48kHz - no padding needed!
+    0.5,   // 50% overlap
+    8      // buffer capacity = blockSize * 8
 );
 ```
 
@@ -46,16 +47,16 @@ OptimizedStreamingWaveletTransform transform = new OptimizedStreamingWaveletTran
 
 **Usage:**
 ```java
-// Basic batch processing
-WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
-double[][] signals = new double[32][1024];
-TransformResult[] results = transform.forwardBatch(signals);
+// Basic batch processing with MODWT
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[][] signals = new double[32][777]; // Any length!
+MODWTResult[] results = transform.forwardBatch(signals);
 
-// Advanced configuration
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-    .withSoALayout(true)          // Structure-of-Arrays layout
-    .withSpecializedKernels(true) // Use optimized kernels
-    .withCacheBlocking(true);     // Cache-aware blocking
+// The transform automatically applies optimizations:
+// - Structure-of-Arrays layout for SIMD
+// - Specialized kernels for common wavelets
+// - Cache-aware blocking for large signals
+// No manual configuration needed!
 ```
 
 **Performance Characteristics:**
@@ -68,13 +69,17 @@ OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.Engi
 
 **Object Pooling:**
 ```java
-// Reuse transform instances
-WaveletTransformPool pool = new WaveletTransformPool(wavelet, mode);
-WaveletTransform transform = pool.acquire();
+// Memory pool for arrays
+MemoryPool pool = new MemoryPool();
+pool.setMaxArraysPerSize(10);
+
+// Borrow arrays for MODWT operations
+double[] signal = pool.borrowArray(1777); // Any size!
 try {
-    result = transform.forward(signal);
+    MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+    MODWTResult result = transform.forward(signal);
 } finally {
-    pool.release(transform);
+    pool.returnArray(signal);
 }
 ```
 
@@ -93,8 +98,10 @@ For signals > 64KB:
 ### 4. Parallel Processing
 
 ```java
-ParallelWaveletEngine engine = new ParallelWaveletEngine(wavelet);
-List<TransformResult> results = engine.transformBatch(signals);
+// MODWT batch processing with automatic parallelization
+MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+MODWTResult[] results = transform.forwardBatch(signals);
+// Automatically uses Fork-Join framework for large batches
 ```
 
 **Scaling:**
@@ -104,18 +111,20 @@ List<TransformResult> results = engine.transformBatch(signals);
 
 ## Configuration
 
-### Force Optimization Path
+### Automatic Optimization
 
 ```java
-// Force Vector API for testing
-TransformConfig config = TransformConfig.builder()
-    .forceVector(true)
-    .build();
+// MODWT automatically selects the best optimization path
+MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
 
-// Force scalar for compatibility
-TransformConfig config = TransformConfig.builder()
-    .forceScalar(true)
-    .build();
+// Query performance information
+MODWTTransform.PerformanceInfo perfInfo = transform.getPerformanceInfo();
+System.out.println(perfInfo.description());
+
+// No manual configuration needed - the library automatically:
+// - Detects platform capabilities
+// - Selects SIMD when beneficial
+// - Falls back to scalar for small signals
 ```
 
 ### Memory Configuration
@@ -149,7 +158,7 @@ TransformConfig config = TransformConfig.builder()
 2. **ScalarVsVectorBenchmark**: SIMD speedup measurement
 3. **WaveletTypeBenchmark**: Performance across wavelet families
 4. **StreamingBenchmark**: Real-time processing latency
-5. **StreamingTransformBenchmark**: Zero-copy streaming performance
+5. **MODWTStreamingBenchmark**: Zero-copy streaming performance with arbitrary block sizes
 
 ### Typical Results
 
@@ -163,9 +172,9 @@ TransformConfig config = TransformConfig.builder()
 ## Optimization Tips
 
 ### 1. Signal Length
-- Always use power-of-2 lengths
-- Pad signals if necessary
-- Minimum 64 elements for best performance
+- MODWT works with any signal length (no padding needed!)
+- SIMD benefits typically start at 64+ elements
+- Larger signals benefit more from automatic optimizations
 
 ### 2. Wavelet Selection
 - Haar: Fastest (2 coefficients)
@@ -183,7 +192,7 @@ TransformConfig config = TransformConfig.builder()
 - Process signals in batches
 - Reuse arrays when possible
 - Use streaming for large datasets
-- Zero-copy streaming with OptimizedStreamingWaveletTransform
+- Zero-copy streaming with MODWTStreamingTransform (any block size)
 
 ## Platform-Specific Notes
 

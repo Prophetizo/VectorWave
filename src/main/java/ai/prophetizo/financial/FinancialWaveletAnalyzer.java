@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.BoundaryMode;
-import ai.prophetizo.wavelet.util.ValidationUtils;
 
 /**
  * Financial analysis using wavelet transforms.
@@ -27,11 +26,8 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
  * 
  * <p><strong>Usage Example:</strong></p>
  * <pre>{@code
- * // For wavelet-based analysis, ensure power-of-two length
+ * // MODWT works with any signal length - no padding needed
  * double[] returns = calculateReturns(prices);
- * if (!isPowerOfTwo(returns.length)) {
- *     returns = padToPowerOfTwo(returns); // You need to implement padding
- * }
  * 
  * FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer();
  * double waveletSharpe = analyzer.calculateWaveletSharpeRatio(returns);
@@ -141,16 +137,16 @@ public class FinancialWaveletAnalyzer {
      * <br><strong>Not suitable for:</strong> Risk management (may hide volatility), high-frequency
      * trading, or any application requiring preservation of short-term market dynamics.</p>
      * 
-     * <p><strong>Power-of-Two Requirement:</strong> The input array must have a length
-     * that is a power of two (2, 4, 8, 16, 32, 64, 128, 256, etc.). This is a fundamental
-     * requirement of the Fast Wavelet Transform algorithm used internally.</p>
+     * <p><strong>Signal Length:</strong> MODWT works with signals of any length,
+     * not just powers of two. This makes it more flexible than traditional DWT
+     * for financial time series analysis.</p>
      * 
      * <p>For more sophisticated denoising with configurable thresholds, consider using
      * the {@link ai.prophetizo.wavelet.denoising.WaveletDenoiser} class instead.</p>
      * 
-     * @param returns the array of returns (must be power of 2 length for wavelet transform)
+     * @param returns the array of returns (any length)
      * @return the Sharpe ratio calculated from denoised returns
-     * @throws IllegalArgumentException if returns is null, empty, or not power of 2 length
+     * @throws IllegalArgumentException if returns is null or empty
      */
     public double calculateWaveletSharpeRatio(double[] returns) {
         return calculateWaveletSharpeRatio(returns, config.getRiskFreeRate());
@@ -162,10 +158,10 @@ public class FinancialWaveletAnalyzer {
      * <p><strong>WARNING:</strong> Uses aggressive denoising that zeros all detail coefficients.
      * See {@link #calculateWaveletSharpeRatio(double[])} for important limitations and warnings.</p>
      * 
-     * @param returns the array of returns (must be power of 2 length for wavelet transform)
+     * @param returns the array of returns (any length)
      * @param riskFreeRate the risk-free rate to use
      * @return the Sharpe ratio calculated from denoised returns
-     * @throws IllegalArgumentException if returns is null, empty, or not power of 2 length
+     * @throws IllegalArgumentException if returns is null or empty
      */
     public double calculateWaveletSharpeRatio(double[] returns, double riskFreeRate) {
         if (returns == null) {
@@ -174,9 +170,7 @@ public class FinancialWaveletAnalyzer {
         if (returns.length == 0) {
             throw new IllegalArgumentException("Returns array cannot be empty");
         }
-        if (!ValidationUtils.isPowerOfTwo(returns.length)) {
-            throw new IllegalArgumentException("Returns array length must be a power of 2 for wavelet transform: " + returns.length);
-        }
+        // MODWT works with any signal length - no power-of-two restriction
         
         // Apply wavelet transform for denoising
         MODWTResult result = transform.forward(returns);

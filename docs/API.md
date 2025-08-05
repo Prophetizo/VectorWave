@@ -2,18 +2,82 @@
 
 ## Table of Contents
 
-1. [MODWT (Maximal Overlap DWT) API](#modwt-maximal-overlap-dwt-api) - **Primary Transform**
-2. [Wavelet Families](#wavelet-families)
-3. [Denoising API](#denoising-api)
-4. [Streaming API](#streaming-api)
-5. [Batch Processing API](#batch-processing-api)
-6. [Continuous Wavelet Transform (CWT)](#continuous-wavelet-transform-cwt)
-7. [Financial Analysis API](#financial-analysis-api)
-8. [Factory Pattern API](#factory-pattern-api)
-9. [Plugin Architecture](#plugin-architecture)
-10. [Memory Management API](#memory-management-api)
-11. [Configuration API](#configuration-api)
-12. [Exception Hierarchy](#exception-hierarchy)
+1. [Simplified Public API](#simplified-public-api) - **Start Here**
+2. [MODWT (Maximal Overlap DWT) API](#modwt-maximal-overlap-dwt-api) - **Primary Transform**
+3. [Wavelet Families](#wavelet-families)
+4. [Denoising API](#denoising-api)
+5. [Streaming API](#streaming-api)
+6. [Batch Processing API](#batch-processing-api)
+7. [Continuous Wavelet Transform (CWT)](#continuous-wavelet-transform-cwt)
+8. [Financial Analysis API](#financial-analysis-api)
+9. [Factory Pattern API](#factory-pattern-api)
+10. [Plugin Architecture](#plugin-architecture)
+11. [Memory Management API](#memory-management-api)
+12. [Configuration API](#configuration-api)
+13. [Exception Hierarchy](#exception-hierarchy)
+
+## Simplified Public API
+
+VectorWave 4.0+ provides a simplified public API that hides internal implementation details while providing automatic optimizations.
+
+### WaveletOperations Facade
+
+The main entry point for wavelet operations with automatic SIMD optimization.
+
+```java
+// Query platform capabilities
+WaveletOperations.PerformanceInfo perfInfo = WaveletOperations.getPerformanceInfo();
+System.out.println(perfInfo.description()); // Shows SIMD availability
+
+// MODWT operations with automatic optimization
+double[] signal = new double[1000];
+double[] filter = {0.7071, 0.7071}; // Haar low-pass
+double[] output = new double[signal.length];
+
+// Circular convolution for MODWT (periodic boundary)
+WaveletOperations.circularConvolveMODWT(signal, filter, output);
+
+// Zero-padding convolution for MODWT
+WaveletOperations.zeroPaddingConvolveMODWT(signal, filter, output);
+
+// Denoising operations with automatic SIMD
+double[] coefficients = getWaveletCoefficients();
+double threshold = 0.5;
+double[] softThresholded = WaveletOperations.softThreshold(coefficients, threshold);
+double[] hardThresholded = WaveletOperations.hardThreshold(coefficients, threshold);
+```
+
+### Key Benefits of the Simplified API
+
+1. **No Internal Classes**: All internal implementation classes are package-private
+2. **Automatic Optimization**: The library automatically selects the best implementation (scalar/SIMD)
+3. **Clean Factory Methods**: Use `MODWTResult.create()` instead of implementation classes
+4. **No Power-of-2 Restrictions**: MODWT works with signals of any length
+5. **Unified Interface**: Single entry point for operations through WaveletOperations
+
+### Migration from Previous Versions
+
+```java
+// Old: Direct implementation class usage
+MODWTResult result = new MODWTResultImpl(approx, detail);
+
+// New: Factory method
+MODWTResult result = MODWTResult.create(approx, detail);
+
+// Old: Manual optimization selection
+VectorOps.Denoising.softThreshold(coefficients, threshold);
+
+// New: Automatic optimization through facade
+WaveletOperations.softThreshold(coefficients, threshold);
+
+// Old: Power-of-2 validation
+if (!ValidationUtils.isPowerOfTwo(signal.length)) {
+    throw new IllegalArgumentException("Signal must be power of 2");
+}
+
+// New: No validation needed - MODWT works with any length
+// Just use the signal directly
+```
 
 ## MODWT (Maximal Overlap DWT) API
 
@@ -133,23 +197,25 @@ MODWTResult result2 = modwt.forward(signal2);
 
 ### Batch Transform Methods
 
-Process multiple signals simultaneously using SIMD instructions.
+Process multiple signals simultaneously using automatic SIMD optimization.
 
 ```java
-// In WaveletTransform class
-TransformResult[] forwardBatch(double[][] signals)
-double[][] inverseBatch(TransformResult[] results)
+// MODWT batch processing with automatic optimization
+MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
 
-// Direct batch SIMD methods
-BatchSIMDTransform.haarBatchTransformSIMD(double[][] signals, double[][] approx, double[][] detail)
-BatchSIMDTransform.blockedBatchTransformSIMD(double[][] signals, double[][] approx, double[][] detail, double[] filter)
-BatchSIMDTransform.adaptiveBatchTransform(double[][] signals, Wavelet wavelet, BoundaryMode mode)
+// Forward batch transform - automatically uses SIMD when beneficial
+MODWTResult[] forwardBatch(double[][] signals)
 
-// Thread-local cleanup (important for server applications)
-BatchSIMDTransform.cleanupThreadLocals()
+// Inverse batch transform
+double[][] inverseBatch(MODWTResult[] results)
+
+// Example usage
+double[][] signals = new double[32][1000]; // 32 signals of any length
+MODWTResult[] results = transform.forwardBatch(signals);
+double[][] reconstructed = transform.inverseBatch(results);
 ```
 
-### Transform Optimization
+### Automatic Transform Optimization
 
 VectorWave automatically applies optimizations based on signal characteristics and platform capabilities.
 
@@ -167,6 +233,8 @@ MODWTResult[] results = transform.forwardBatch(signals);
 // - Specialized kernels for common wavelets (Haar, etc.)
 // - Cache-aware algorithms for large signals
 // - Memory pooling for reduced allocation overhead
+
+// No manual optimization configuration needed!
 ```
 
 ### BatchMemoryLayout
@@ -416,7 +484,7 @@ FinancialAnalysisConfig config = FinancialAnalysisConfig.builder()
     .volatilityHighThreshold(2.0)      // Required, > low threshold
     .regimeTrendThreshold(0.02)        // Required, > 0
     .anomalyDetectionThreshold(3.0)    // Required, > 0 (std devs)
-    .windowSize(256)                   // Required, power of 2
+    .windowSize(256)                   // Required, >= 2 (any size with MODWT)
     .confidenceLevel(0.95)             // Required, 0 < level < 1
     .build();
 ```
@@ -624,15 +692,15 @@ MODWTTransformFactory modwtFactory = new MODWTTransformFactory();
 MODWTTransform modwt = modwtFactory.create(wavelet);
 MODWTTransform modwtWithBoundary = modwtFactory.create(wavelet, BoundaryMode.PERIODIC);
 
-// WaveletOpsFactory
-Factory<WaveletOps, TransformConfig> opsFactory = WaveletOpsFactory.getInstance();
-
 // CWTFactory
 Factory<CWTTransform, CWTConfig> cwtFactory = CWTFactory.getInstance();
 
 // StreamingDenoiserFactory
 Factory<StreamingDenoiser, StreamingDenoiserConfig> denoiserFactory = 
     StreamingDenoiserFactory.getInstance();
+
+// Note: Wavelet operations are now accessed through the WaveletOperations facade
+// which provides automatic optimization without manual factory configuration
 ```
 
 ## Plugin Architecture
@@ -795,7 +863,6 @@ WaveletException (base)
 ├── InvalidSignalException
 │   ├── nullSignal()
 │   ├── emptySignal()
-│   ├── notPowerOfTwo()
 │   ├── nanValue()
 │   └── infinityValue()
 ├── InvalidConfigurationException

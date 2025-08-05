@@ -24,15 +24,16 @@ ai.prophetizo.wavelet.api/
 
 ### 2. Transform Engine
 
-**WaveletTransform**: Core transform implementation
-- Forward/inverse DWT operations
-- Boundary mode handling (periodic, zero, symmetric, reflect)
+**MODWTTransform**: Primary transform implementation
+- Forward/inverse MODWT operations (shift-invariant)
+- Works with signals of any length (no power-of-2 restriction)
+- Boundary mode handling (periodic, zero padding)
 - Automatic optimization path selection
 
-**TransformConfig**: Performance configuration
-- Force scalar/SIMD execution
-- Enable prefetching and cache optimization
-- Memory pool configuration
+**WaveletOperations**: Public facade for operations
+- Automatic SIMD optimization
+- Unified interface for denoising operations
+- Platform capability detection
 
 ### 3. Optimization Layers
 
@@ -59,13 +60,15 @@ ai.prophetizo.wavelet.internal/
 - Zero-copy ring buffer implementation
 
 **Streaming Implementations:**
-- **OptimizedStreamingWaveletTransform**: Zero-copy processing with ring buffer
-  - True zero-copy using WaveletTransform.forward(double[], int, int)
+- **MODWTStreamingTransform**: Shift-invariant streaming with arbitrary block sizes
+  - No power-of-2 restrictions on block size
+  - True zero-copy using MODWTTransform.forward(double[], int, int)
   - Lock-free SPSC (Single Producer, Single Consumer) design
   - Configurable overlap support (0-100%)
-  - Exponential backoff for buffer full conditions
-- **FastStreamingDenoiser**: < 1 µs/sample latency
-- **QualityStreamingDenoiser**: Better SNR with overlap
+- **MODWTStreamingDenoiser**: Real-time denoising with shift-invariance
+  - Works with any buffer size
+  - Adaptive noise estimation
+  - < 1 µs/sample latency in fast mode
 
 **Ring Buffer Design:**
 - Lock-free atomic operations for thread safety
@@ -76,9 +79,10 @@ ai.prophetizo.wavelet.internal/
 ### 5. Memory Management
 
 **Object Pooling:**
-- WaveletTransformPool: Reusable transform instances
+- MODWTTransformPool: Reusable transform instances
 - AlignedMemoryPool: SIMD-aligned allocations
-- Generational pools for different object lifetimes
+- MemoryPool: General-purpose array pooling
+- No padding required for MODWT (works with exact sizes)
 
 ## Design Principles
 
@@ -90,22 +94,22 @@ ai.prophetizo.wavelet.internal/
 ## Data Flow
 
 ```
-Signal Input
+Signal Input (any length)
     ↓
-Validation (power-of-2 check)
+Validation (null, NaN checks)
     ↓
 Optimization Path Selection
     ├── Scalar (small signals)
     ├── SIMD (medium signals)
     └── Cache-aware (large signals)
     ↓
-Boundary Padding
+Boundary Handling
     ↓
-Convolution & Downsampling
+Circular Convolution (MODWT)
     ↓
 Multi-level Decomposition (optional)
     ↓
-TransformResult
+MODWTResult (same length as input)
 ```
 
 ## Thread Safety

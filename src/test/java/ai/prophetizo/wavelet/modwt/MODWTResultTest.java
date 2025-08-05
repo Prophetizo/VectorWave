@@ -6,16 +6,16 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for MODWTResult interface and its implementation.
+ * Unit tests for MODWTResult interface using the public API.
  */
 class MODWTResultTest {
 
     @Test
-    void testMODWTResultImplConstruction() {
+    void testMODWTResultCreation() {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.5, 1.5, 2.5, 3.5};
         
-        MODWTResult result = new MODWTResultImpl(approx, detail);
+        MODWTResult result = MODWTResult.create(approx, detail);
         
         assertEquals(4, result.getSignalLength());
         assertArrayEquals(approx, result.approximationCoeffs());
@@ -24,11 +24,11 @@ class MODWTResultTest {
     }
 
     @Test
-    void testMODWTResultImplDefensiveCopies() {
+    void testMODWTResultDefensiveCopies() {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.5, 1.5, 2.5, 3.5};
         
-        MODWTResult result = new MODWTResultImpl(approx, detail);
+        MODWTResult result = MODWTResult.create(approx, detail);
         
         // Modify original arrays
         approx[0] = 999.0;
@@ -50,39 +50,39 @@ class MODWTResultTest {
     }
 
     @Test
-    void testMODWTResultImplValidation() {
+    void testMODWTResultValidation() {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.5, 1.5, 2.5, 3.5};
         
         // Valid construction
-        assertDoesNotThrow(() -> new MODWTResultImpl(approx, detail));
+        assertDoesNotThrow(() -> MODWTResult.create(approx, detail));
         
         // Null approximation
         assertThrows(NullPointerException.class, 
-            () -> new MODWTResultImpl(null, detail));
+            () -> MODWTResult.create(null, detail));
         
         // Null detail
         assertThrows(NullPointerException.class, 
-            () -> new MODWTResultImpl(approx, null));
+            () -> MODWTResult.create(approx, null));
         
         // Mismatched lengths
         double[] shortDetail = {0.5, 1.5};
         assertThrows(IllegalArgumentException.class, 
-            () -> new MODWTResultImpl(approx, shortDetail));
+            () -> MODWTResult.create(approx, shortDetail));
         
         // Empty arrays
         assertThrows(IllegalArgumentException.class, 
-            () -> new MODWTResultImpl(new double[0], new double[0]));
+            () -> MODWTResult.create(new double[0], new double[0]));
         
         // NaN values
         double[] nanApprox = {1.0, Double.NaN, 3.0, 4.0};
         assertThrows(InvalidSignalException.class, 
-            () -> new MODWTResultImpl(nanApprox, detail));
+            () -> MODWTResult.create(nanApprox, detail));
         
         // Infinite values
         double[] infDetail = {0.5, Double.POSITIVE_INFINITY, 2.5, 3.5};
         assertThrows(InvalidSignalException.class, 
-            () -> new MODWTResultImpl(approx, infDetail));
+            () -> MODWTResult.create(approx, infDetail));
     }
 
     @Test
@@ -93,9 +93,9 @@ class MODWTResultTest {
         double[] detail2 = {0.5, 1.5, 2.5, 3.5};
         double[] approx3 = {1.0, 2.0, 3.0, 5.0}; // Different value
         
-        MODWTResult result1 = new MODWTResultImpl(approx1, detail1);
-        MODWTResult result2 = new MODWTResultImpl(approx2, detail2);
-        MODWTResult result3 = new MODWTResultImpl(approx3, detail1);
+        MODWTResult result1 = MODWTResult.create(approx1, detail1);
+        MODWTResult result2 = MODWTResult.create(approx2, detail2);
+        MODWTResult result3 = MODWTResult.create(approx3, detail1);
         
         // Test equality
         assertEquals(result1, result2);
@@ -115,7 +115,7 @@ class MODWTResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
         double[] detail = {0.5, 1.5, 2.5, 3.5, 4.5, 5.5};
         
-        MODWTResult result = new MODWTResultImpl(approx, detail);
+        MODWTResult result = MODWTResult.create(approx, detail);
         String str = result.toString();
         
         assertNotNull(str);
@@ -130,12 +130,12 @@ class MODWTResultTest {
         double[] approx = {1.0, 2.0, 3.0, 4.0};
         double[] detail = {0.5, 1.5, 2.5, 3.5};
         
-        MODWTResult validResult = new MODWTResultImpl(approx, detail);
+        MODWTResult validResult = MODWTResult.create(approx, detail);
         assertTrue(validResult.isValid());
         
-        // Create a mock invalid result (this would require creating an invalid implementation)
+        // The factory method ensures all created results are valid
         // For now, just verify that the valid result passes the validation
-        MODWTResult result = new MODWTResultImpl(approx, detail);
+        MODWTResult result = MODWTResult.create(approx, detail);
         assertTrue(result.isValid());
     }
 }
