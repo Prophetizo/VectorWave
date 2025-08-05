@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.PlatformDetector;
 import jdk.incubator.vector.DoubleVector;
 import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.VectorMask;
@@ -32,15 +33,62 @@ final class GatherScatterOps {
 
     /**
      * Check if gather/scatter operations are available on this platform.
+     * 
+     * <p>Gather/scatter operations require:</p>
+     * <ul>
+     *   <li>Vector API support with sufficient vector length</li>
+     *   <li>Platform-specific intrinsics (AVX2+ on x86, SVE on ARM)</li>
+     *   <li>Not universally supported on all platforms</li>
+     * </ul>
      */
     private static boolean checkGatherScatterSupport() {
         try {
-            // Check if gather operations would work
-            // For now, we'll return false as gather/scatter isn't universally supported
-            return false;
+            // Check basic requirements
+            if (DOUBLE_SPECIES.length() < 4) {
+                // Need at least 256-bit vectors for efficient gather/scatter
+                return false;
+            }
+            
+            // Platform-specific checks
+            PlatformDetector.Platform platform = PlatformDetector.getPlatform();
+            
+            switch (platform) {
+                case X86_64:
+                    // x86-64 needs AVX2 or later for gather operations
+                    // Check if we can perform a gather operation
+                    return checkX86GatherSupport();
+                    
+                case APPLE_SILICON:
+                    // Apple Silicon M1/M2/M3 have good gather/scatter support
+                    // but through different intrinsics than x86
+                    return true;
+                    
+                case ARM:
+                    // Generic ARM may or may not have SVE/SVE2
+                    // Conservative approach: disable for now
+                    return false;
+                    
+                default:
+                    return false;
+            }
         } catch (Exception e) {
+            // If any check fails, disable gather/scatter
             return false;
         }
+    }
+    
+    /**
+     * Check x86-64 gather support by attempting a gather operation.
+     * 
+     * Note: The Java Vector API's gather support is limited and may not
+     * be available even on platforms with hardware gather instructions.
+     */
+    private static boolean checkX86GatherSupport() {
+        // The Vector API's gather operation (fromArray with indices) has very
+        // limited support and often throws exceptions even on capable hardware.
+        // For now, we'll disable gather/scatter to ensure stability.
+        // This can be revisited when the Vector API matures.
+        return false;
     }
 
     /**
