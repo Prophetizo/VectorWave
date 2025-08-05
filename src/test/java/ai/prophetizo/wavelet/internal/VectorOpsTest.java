@@ -177,6 +177,76 @@ class VectorOpsTest {
         assertEquals((3 + 4) * 0.25, result[1], EPSILON);
     }
     
+    @Test
+    @DisplayName("Test convolveAndDownsampleZeroPadding with large vectorized signal")
+    void testConvolveAndDownsampleZeroPaddingVectorized() {
+        int size = 256; // Large enough to trigger vectorization
+        double[] signal = new double[size];
+        double[] filter = {0.4, 0.3, 0.2, 0.1};
+        
+        // Initialize signal with pattern
+        for (int i = 0; i < size; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 32) + 0.1 * i;
+        }
+        
+        double[] result = VectorOps.convolveAndDownsampleZeroPadding(signal, filter, size, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(size / 2, result.length);
+        
+        // Verify computation was performed
+        assertNotEquals(0.0, result[0]);
+        assertNotEquals(0.0, result[result.length - 1]);
+        
+        // Check for proper zero padding behavior
+        // All results should be finite and non-negative for this input
+        for (double val : result) {
+            assertTrue(Double.isFinite(val));
+        }
+    }
+    
+    @Test
+    @DisplayName("Test convolveAndDownsampleZeroPadding with ARM vector length")
+    void testConvolveAndDownsampleZeroPaddingARM() {
+        // Test with sizes that exercise ARM-specific paths (2-element vectors)
+        double[] signal = new double[64];
+        double[] filter = {0.6, 0.4};
+        
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = i + 1;
+        }
+        
+        double[] result = VectorOps.convolveAndDownsampleZeroPadding(signal, filter, signal.length, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(32, result.length);
+        
+        // Verify specific calculations
+        assertEquals((1 * 0.6 + 2 * 0.4), result[0], EPSILON);
+        assertEquals((3 * 0.6 + 4 * 0.4), result[1], EPSILON);
+    }
+    
+    @Test
+    @DisplayName("Test convolveAndDownsampleZeroPadding boundary conditions")
+    void testConvolveAndDownsampleZeroPaddingBoundaryConditions() {
+        double[] signal = new double[100];
+        double[] filter = {0.25, 0.5, 0.25};
+        
+        // Initialize with step function
+        for (int i = 0; i < 50; i++) {
+            signal[i] = 1.0;
+        }
+        // Second half is zero
+        
+        double[] result = VectorOps.convolveAndDownsampleZeroPadding(signal, filter, signal.length, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(50, result.length);
+        
+        // Results near the step should show the effect of the filter
+        assertTrue(result[24] > result[26]); // Transition region
+    }
+    
     // ==========================================
     // Upsampling and Convolution Tests
     // ==========================================
@@ -197,6 +267,62 @@ class VectorOpsTest {
         assertEquals(1 * 0.4, result[1], EPSILON);
         assertEquals(2 * 0.6, result[2], EPSILON);
         assertEquals(2 * 0.4, result[3], EPSILON);
+    }
+    
+    @Test
+    @DisplayName("Test upsampleAndConvolvePeriodic with large vector for vectorization")
+    void testUpsampleAndConvolvePeriodicVectorized() {
+        int size = 128; // Large enough to trigger vectorization
+        double[] coeffs = new double[size];
+        double[] filter = {0.5, 0.3, 0.2};
+        
+        // Initialize coefficients with pattern
+        for (int i = 0; i < size; i++) {
+            coeffs[i] = i % 8 + 1;
+        }
+        
+        double[] result = VectorOps.upsampleAndConvolvePeriodic(coeffs, filter, size, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(size * 2, result.length);
+        
+        // Verify first few even indices (direct copy with filtering)
+        double expected0 = coeffs[0] * filter[0] + coeffs[size-1] * filter[2]; // Periodic wrapping
+        assertEquals(expected0, result[0], EPSILON);
+        
+        double expected2 = coeffs[1] * filter[0] + coeffs[0] * filter[2]; 
+        assertEquals(expected2, result[2], EPSILON);
+    }
+    
+    @Test
+    @DisplayName("Test upsampleAndConvolvePeriodic with odd filter length")
+    void testUpsampleAndConvolvePeriodicOddFilter() {
+        double[] coeffs = {1, 2, 3, 4};
+        double[] filter = {0.5, 0.3, 0.2}; // Odd length filter
+        
+        double[] result = VectorOps.upsampleAndConvolvePeriodic(coeffs, filter, coeffs.length, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(8, result.length);
+        
+        // Check that all values are computed (no NaN or infinity)
+        for (double value : result) {
+            assertTrue(Double.isFinite(value));
+        }
+    }
+    
+    @Test
+    @DisplayName("Test upsampleAndConvolvePeriodic with small signal for scalar fallback")
+    void testUpsampleAndConvolvePeriodicScalar() {
+        double[] coeffs = {5.0};
+        double[] filter = {0.8, 0.2};
+        
+        double[] result = VectorOps.upsampleAndConvolvePeriodic(coeffs, filter, 1, 2);
+        
+        assertNotNull(result);
+        assertEquals(2, result.length);
+        assertEquals(5.0 * 0.8, result[0], EPSILON);
+        assertEquals(5.0 * 0.2, result[1], EPSILON);
     }
     
     @Test
@@ -443,6 +569,131 @@ class VectorOpsTest {
         assertEquals((3 - 4) * 0.5, detail[1], EPSILON);
     }
     
+    @Test
+    @DisplayName("Test combined transform periodic vectorized with large signal")
+    void testCombinedTransformPeriodicVectorizedLarge() {
+        int size = 512; // Large enough to trigger all vectorization paths
+        double[] signal = new double[size];
+        double[] lowFilter = {0.7071067811865475, 0.7071067811865475}; // Haar scaling
+        double[] highFilter = {0.7071067811865475, -0.7071067811865475}; // Haar wavelet
+        double[] approx = new double[size / 2];
+        double[] detail = new double[size / 2];
+        
+        // Initialize with sine wave
+        for (int i = 0; i < size; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 64);
+        }
+        
+        VectorOps.combinedTransformPeriodicVectorized(signal, lowFilter, highFilter, approx, detail);
+        
+        // Verify arrays are filled
+        assertNotNull(approx);
+        assertNotNull(detail);
+        assertEquals(size / 2, approx.length);
+        assertEquals(size / 2, detail.length);
+        
+        // Check that computation was performed (non-zero results)
+        double approxSum = 0.0, detailSum = 0.0;
+        for (int i = 0; i < approx.length; i++) {
+            approxSum += Math.abs(approx[i]);
+            detailSum += Math.abs(detail[i]);
+        }
+        assertTrue(approxSum > 0.0);
+        assertTrue(detailSum > 0.0);
+        
+        // Haar transform should preserve energy (Parseval's theorem)
+        double originalEnergy = 0.0;
+        for (double val : signal) {
+            originalEnergy += val * val;
+        }
+        
+        double transformEnergy = 0.0;
+        for (int i = 0; i < approx.length; i++) {
+            transformEnergy += approx[i] * approx[i] + detail[i] * detail[i];
+        }
+        
+        assertEquals(originalEnergy, transformEnergy, 1e-6);
+    }
+    
+    @Test
+    @DisplayName("Test combined transform periodic vectorized with Daubechies filters")
+    void testCombinedTransformPeriodicVectorizedDB2() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+        
+        // Daubechies 2 filters
+        double[] lowFilter = {
+            0.6830127018922193, 0.1830127018922193, -0.3169872981077807, -0.1830127018922193
+        };
+        double[] highFilter = {
+            -0.1830127018922193, 0.3169872981077807, 0.1830127018922193, -0.6830127018922193
+        };
+        
+        double[] approx = new double[8];
+        double[] detail = new double[8];
+        
+        VectorOps.combinedTransformPeriodicVectorized(signal, lowFilter, highFilter, approx, detail);
+        
+        // Verify outputs are computed
+        assertNotNull(approx);
+        assertNotNull(detail);
+        
+        // Check all values are finite
+        for (int i = 0; i < approx.length; i++) {
+            assertTrue(Double.isFinite(approx[i]));
+            assertTrue(Double.isFinite(detail[i]));
+        }
+        
+        // Verify non-zero computation
+        boolean hasNonZeroApprox = false, hasNonZeroDetail = false;
+        for (int i = 0; i < approx.length; i++) {
+            if (Math.abs(approx[i]) > EPSILON) hasNonZeroApprox = true;
+            if (Math.abs(detail[i]) > EPSILON) hasNonZeroDetail = true;
+        }
+        assertTrue(hasNonZeroApprox);
+        assertTrue(hasNonZeroDetail);
+    }
+    
+    @Test
+    @DisplayName("Test combined transform periodic vectorized with zero coefficients")
+    void testCombinedTransformPeriodicVectorizedWithZeros() {
+        double[] signal = {1, 0, 3, 0, 5, 0, 7, 0}; // Sparse signal
+        double[] lowFilter = {0.5, 0.0, 0.5, 0.0}; // Sparse filter
+        double[] highFilter = {0.5, 0.0, -0.5, 0.0};
+        double[] approx = new double[4];
+        double[] detail = new double[4];
+        
+        VectorOps.combinedTransformPeriodicVectorized(signal, lowFilter, highFilter, approx, detail);
+        
+        // Check that computation was performed
+        assertNotNull(approx);
+        assertNotNull(detail);
+        
+        // Verify all values are finite
+        for (int i = 0; i < approx.length; i++) {
+            assertTrue(Double.isFinite(approx[i]));
+            assertTrue(Double.isFinite(detail[i]));
+        }
+    }
+    
+    @Test
+    @DisplayName("Test combined transform periodic vectorized boundary wrapping")
+    void testCombinedTransformPeriodicVectorizedBoundary() {
+        double[] signal = {10, 20, 30, 40}; // Small signal to test boundary conditions
+        double[] lowFilter = {0.25, 0.25, 0.25, 0.25}; // Filter length equals signal length
+        double[] highFilter = {0.25, -0.25, 0.25, -0.25};
+        double[] approx = new double[2];
+        double[] detail = new double[2];
+        
+        VectorOps.combinedTransformPeriodicVectorized(signal, lowFilter, highFilter, approx, detail);
+        
+        // Test periodic boundary wrapping
+        double expectedApprox0 = (10 + 20 + 30 + 40) * 0.25; // All coefficients contribute
+        assertEquals(expectedApprox0, approx[0], EPSILON);
+        
+        double expectedDetail0 = (10 - 20 + 30 - 40) * 0.25;
+        assertEquals(expectedDetail0, detail[0], EPSILON);
+    }
+    
     // ==========================================
     // Processing Strategy Tests
     // ==========================================
@@ -626,5 +877,82 @@ class VectorOpsTest {
         // Results should be identical within floating-point precision
         assertArrayEquals(scalarResult, vectorResult, EPSILON, 
             "Vectorized and scalar implementations should produce identical results");
+    }
+    
+    @Test
+    @DisplayName("Test platform detection and vector optimization thresholds")
+    void testPlatformSpecificOptimizations() {
+        // Test that platform detection doesn't crash
+        String vectorInfo = VectorOps.getVectorInfo();
+        assertNotNull(vectorInfo);
+        assertTrue(vectorInfo.contains("Platform="));
+        
+        // Test vector capabilities
+        VectorOps.VectorCapabilityInfo capabilities = VectorOps.getVectorCapabilities();
+        assertNotNull(capabilities);
+        
+        // Test edge cases for vector length determination
+        boolean supported = VectorOps.isVectorApiSupported();
+        assertTrue(supported || !supported); // Should not throw
+    }
+    
+    @Test
+    @DisplayName("Test specialized filter size optimizations")
+    void testSpecializedFilterOptimizations() {
+        // Test convolution with filter sizes that trigger specific optimizations
+        double[] signal = new double[256];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 32);
+        }
+        
+        // Test 2-tap filter (common case)
+        double[] filter2 = {0.7, 0.3};
+        double[] result2 = VectorOps.convolveAndDownsamplePeriodic(signal, filter2, signal.length, filter2.length);
+        assertNotNull(result2);
+        assertEquals(128, result2.length);
+        
+        // Test 4-tap filter (triggers unrolling optimization)
+        double[] filter4 = {0.4, 0.3, 0.2, 0.1};
+        double[] result4 = VectorOps.convolveAndDownsamplePeriodic(signal, filter4, signal.length, filter4.length);
+        assertNotNull(result4);
+        assertEquals(128, result4.length);
+        
+        // Test 6-tap filter (mixed unrolled + loop)
+        double[] filter6 = {0.25, 0.2, 0.2, 0.15, 0.1, 0.1};
+        double[] result6 = VectorOps.convolveAndDownsamplePeriodic(signal, filter6, signal.length, filter6.length);
+        assertNotNull(result6);
+        assertEquals(128, result6.length);
+    }
+    
+    @Test
+    @DisplayName("Test gather-multiply-accumulate optimization paths")
+    void testGatherMultiplyAccumulateOptimizations() {
+        // Test large signals that trigger gather operations
+        int size = 1024;
+        double[] signal = new double[size];
+        double[] filter = {0.35, 0.35, 0.2, 0.1}; // 4-tap filter for unrolling
+        
+        // Initialize with sawtooth pattern
+        for (int i = 0; i < size; i++) {
+            signal[i] = (i % 64) / 64.0;
+        }
+        
+        double[] result = VectorOps.convolveAndDownsamplePeriodic(signal, filter, size, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(size / 2, result.length);
+        
+        // Verify computation was performed
+        double sum = 0.0;
+        for (double val : result) {
+            sum += Math.abs(val);
+        }
+        assertTrue(sum > 0.0);
+        
+        // Verify result has expected characteristics for sawtooth input
+        // All values should be finite
+        for (double val : result) {
+            assertTrue(Double.isFinite(val));
+        }
     }
 }

@@ -438,9 +438,23 @@ class ScalarOpsTest {
         assertNotNull(info.description());
         assertTrue(info.availableProcessors() > 0);
         
-        // Test speedup estimation
-        double speedup = info.estimateSpeedup(1024);
-        assertTrue(speedup >= 1.0); // Should be at least 1x (no slowdown)
+        // Test speedup estimation for different array sizes
+        double speedup1 = info.estimateSpeedup(1024);
+        double speedup2 = info.estimateSpeedup(32);
+        double speedup3 = info.estimateSpeedup(8192);
+        
+        assertTrue(speedup1 >= 1.0); // Should be at least 1x (no slowdown)
+        assertTrue(speedup2 >= 1.0);
+        assertTrue(speedup3 >= 1.0);
+        
+        // Test description contains useful information
+        String desc = info.description();
+        assertTrue(desc.contains("CPU cores") || desc.contains("core"));
+        
+        // Test that performance info is consistent across calls
+        ScalarOps.PerformanceInfo info2 = ScalarOps.getPerformanceInfo();
+        assertEquals(info.vectorizationEnabled(), info2.vectorizationEnabled());
+        assertEquals(info.availableProcessors(), info2.availableProcessors());
     }
     
     @ParameterizedTest
@@ -600,6 +614,172 @@ class ScalarOpsTest {
         double expectedAvg = (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) / 8.0;
         for (double val : output) {
             assertEquals(expectedAvg, val, EPSILON);
+        }
+    }
+    
+    @Test
+    @DisplayName("Test MODWT circular convolution with extreme levels")
+    void testMODWTCircularConvolutionExtremeLevels() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        double[] filter = {0.5, 0.3, 0.2};
+        double[] output = new double[8];
+        
+        // Test very high level (should work but use fallback)
+        assertDoesNotThrow(() -> 
+            ScalarOps.circularConvolveMODWTLevel(signal, filter, output, 20)
+        );
+        
+        // Verify output is valid
+        for (double val : output) {
+            assertTrue(Double.isFinite(val), "Output should be finite");
+        }
+    }
+    
+    @Test
+    @DisplayName("Test MODWT filter scaling for multiple levels")
+    void testMODWTFilterScalingMultipleLevels() {
+        double[] originalFilter = {0.7071067811865475, 0.7071067811865475}; // Haar
+        
+        // Test scaling for levels 1-5
+        for (int level = 1; level <= 5; level++) {
+            double[] scaledFilter = ScalarOps.scaleFilterForMODWT(originalFilter, level);
+            
+            assertNotNull(scaledFilter, "Scaled filter should not be null for level " + level);
+            assertEquals(originalFilter.length, scaledFilter.length, 
+                        "Scaled filter should have same length as original");
+            
+            // Check that scaling factor is applied correctly
+            double expectedScale = 1.0 / Math.sqrt(Math.pow(2, level));
+            for (int i = 0; i < originalFilter.length; i++) {
+                assertEquals(originalFilter[i] * expectedScale, scaledFilter[i], EPSILON,
+                           "Filter coefficient " + i + " at level " + level + " should be scaled correctly");
+            }
+        }
+    }
+    
+    @Test
+    @DisplayName("Test zero padding convolution edge cases")
+    void testZeroPaddingConvolutionEdgeCases() {
+        // Test with signal shorter than filter
+        double[] shortSignal = {1, 2};
+        double[] longFilter = {0.25, 0.25, 0.25, 0.25};
+        double[] output = new double[2];
+        
+        assertDoesNotThrow(() -> 
+            ScalarOps.zeroPaddingConvolveMODWT(shortSignal, longFilter, output)
+        );
+        
+        // Test with single element signal
+        double[] singleSignal = {5.0};
+        double[] filterForSingle = {0.5, 0.5};
+        double[] singleOutput = new double[1];
+        
+        assertDoesNotThrow(() -> 
+            ScalarOps.zeroPaddingConvolveMODWT(singleSignal, filterForSingle, singleOutput)
+        );
+    }
+    
+    @Test
+    @DisplayName("Test combinedTransformPeriodic with different filter lengths")
+    void testCombinedTransformPeriodicFilterLengths() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        
+        // Test with different low-pass and high-pass filter lengths
+        double[] shortLowFilter = {0.7071067811865475, 0.7071067811865475};
+        double[] longHighFilter = {0.3536, -0.3536, 0.3536, -0.3536};
+        
+        double[] approx = new double[4];
+        double[] detail = new double[4];
+        
+        assertDoesNotThrow(() -> 
+            ScalarOps.combinedTransformPeriodic(signal, shortLowFilter, longHighFilter, approx, detail)
+        );
+        
+        // Verify outputs are valid
+        for (int i = 0; i < 4; i++) {
+            assertTrue(Double.isFinite(approx[i]), "Approximation coefficient should be finite");
+            assertTrue(Double.isFinite(detail[i]), "Detail coefficient should be finite");
+        }
+    }
+    
+    @Test
+    @DisplayName("Test performance estimation with extreme array sizes")
+    void testPerformanceEstimationExtremeArraySizes() {
+        ScalarOps.PerformanceInfo info = ScalarOps.getPerformanceInfo();
+        
+        // Test with very small arrays
+        double speedup1 = info.estimateSpeedup(1);
+        double speedup2 = info.estimateSpeedup(2);
+        assertTrue(speedup1 >= 1.0);
+        assertTrue(speedup2 >= 1.0);
+        
+        // Test with very large arrays
+        double speedup3 = info.estimateSpeedup(100000);
+        double speedup4 = info.estimateSpeedup(1000000);
+        assertTrue(speedup3 >= 1.0);
+        assertTrue(speedup4 >= 1.0);
+        
+        // Test with zero and negative sizes (should handle gracefully)
+        double speedup5 = info.estimateSpeedup(0);
+        double speedup6 = info.estimateSpeedup(-1);
+        assertTrue(speedup5 >= 0.0); // May return 0 or positive
+        assertTrue(speedup6 >= 0.0); // May return 0 or positive
+    }
+    
+    @Test
+    @DisplayName("Test wrapper method consistency")
+    void testWrapperMethodConsistency() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        double[] filter = {0.5, 0.5};
+        
+        // Test that wrapper methods return same results as direct methods
+        double[] result1 = ScalarOps.convolveAndDownsamplePeriodic(signal, filter, signal.length, filter.length);
+        double[] output = new double[4];
+        ScalarOps.convolveAndDownsamplePeriodic(signal, filter, output);
+        
+        assertArrayEquals(result1, output, EPSILON, 
+                         "Wrapper method should produce same result as direct method");
+        
+        // Test zero-padding wrapper
+        double[] result2 = ScalarOps.convolveAndDownsampleZeroPadding(signal, filter, signal.length, filter.length);
+        assertNotNull(result2);
+        assertEquals(4, result2.length); // Should be signal.length / 2
+        
+        // Test upsample wrappers
+        double[] coeffs = {1, 2, 3, 4};
+        double[] result3 = ScalarOps.upsampleAndConvolvePeriodic(coeffs, filter, coeffs.length, filter.length);
+        double[] result4 = ScalarOps.upsampleAndConvolveZeroPadding(coeffs, filter, coeffs.length, filter.length);
+        
+        assertNotNull(result3);
+        assertNotNull(result4);
+        assertEquals(8, result3.length); // Should be coeffs.length * 2
+        assertEquals(8, result4.length); // Should be coeffs.length * 2
+    }
+    
+    @Test
+    @DisplayName("Test boundary condition handling in slice operations")
+    void testSliceOperationBoundaryConditions() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        double[] filter = {0.5, 0.5};
+        double[] output = new double[3];
+        
+        // Test operation on slice at the end of array
+        assertDoesNotThrow(() -> 
+            ScalarOps.convolveAndDownsamplePeriodic(signal, 4, 6, filter, output)
+        );
+        
+        // Test slice that exactly fits
+        double[] output2 = new double[2];
+        assertDoesNotThrow(() -> 
+            ScalarOps.convolveAndDownsamplePeriodic(signal, 6, 4, filter, output2)
+        );
+        
+        // Verify results are valid
+        for (double val : output) {
+            assertTrue(Double.isFinite(val));
+        }
+        for (double val : output2) {
+            assertTrue(Double.isFinite(val));
         }
     }
 }
