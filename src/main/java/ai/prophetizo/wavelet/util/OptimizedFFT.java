@@ -38,7 +38,6 @@ import jdk.incubator.vector.VectorSpecies;
  *       of discrete Fourier transform." IEEE Transactions on Audio and Electroacoustics.</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class OptimizedFFT {
     

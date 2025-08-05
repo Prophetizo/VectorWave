@@ -20,7 +20,6 @@ package ai.prophetizo.wavelet.modwt;
  *   <li>Redundant representation (more memory required)</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public interface MultiLevelMODWTResult {
     

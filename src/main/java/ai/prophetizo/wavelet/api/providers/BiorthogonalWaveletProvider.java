@@ -23,7 +23,6 @@ import java.util.List;
  * @see WaveletProvider
  * @see BiorthogonalWavelet
  * @see WaveletRegistry
- * @since 1.0
  */
 public class BiorthogonalWaveletProvider implements WaveletProvider {
     

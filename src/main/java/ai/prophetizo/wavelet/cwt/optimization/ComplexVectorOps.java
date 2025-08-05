@@ -27,7 +27,6 @@ import ai.prophetizo.wavelet.cwt.ComplexMatrix;
  *       Better for operations that need both parts together.</li>
  * </ul>
  *
- * @since 1.0.0
  */
 public final class ComplexVectorOps {
     

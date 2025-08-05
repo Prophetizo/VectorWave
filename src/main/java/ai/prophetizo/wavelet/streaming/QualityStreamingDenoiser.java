@@ -20,7 +20,6 @@ import java.util.concurrent.SubmissionPublisher;
  *   <li>Scientific data analysis</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 final class QualityStreamingDenoiser implements StreamingDenoiserStrategy {
     

@@ -91,6 +91,5 @@
  * </ul>
  * 
  * @see ai.prophetizo.demo.cwt CWT-specific demonstrations
- * @since 1.0.0
  */
 package ai.prophetizo.demo;

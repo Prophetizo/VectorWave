@@ -17,7 +17,6 @@ package ai.prophetizo.wavelet.cwt;
  *       Higher values = more scales. Typical: 1.0 (sparse), 1.5 (standard), 2.0 (dense).</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class SignalAnalysisConfig {
     

@@ -16,7 +16,6 @@ import java.util.concurrent.SubmissionPublisher;
  *   <li>Low-latency financial data processing</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 final class FastStreamingDenoiser implements StreamingDenoiserStrategy {
     

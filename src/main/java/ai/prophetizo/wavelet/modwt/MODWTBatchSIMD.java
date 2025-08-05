@@ -10,7 +10,6 @@ import jdk.incubator.vector.VectorSpecies;
  * specifically for MODWT batch processing. Unlike DWT operations, MODWT preserves
  * signal length and does not perform downsampling.</p>
  * 
- * @since 4.0.0
  */
 public final class MODWTBatchSIMD {
     

@@ -12,7 +12,6 @@ package ai.prophetizo.wavelet.util;
  * <p>The {@link OldPatterns} class shows BAD CODE that should NEVER be copied.</p>
  * <p>Always use the patterns shown in {@link NewPatterns} instead.</p>
  *
- * @since 1.0.0
  */
 public final class PlatformDetectionExample {
     

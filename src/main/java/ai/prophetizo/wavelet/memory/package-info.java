@@ -147,7 +147,6 @@
  *   <li><strong>High-Performance Computing:</strong> Maximizing throughput through memory optimization</li>
  * </ul>
  * 
- * @since 1.0.0
  * @see ai.prophetizo.wavelet.modwt.MODWTTransform
  * @see ai.prophetizo.wavelet.concurrent
  * @see ai.prophetizo.wavelet.internal.ScalarOps

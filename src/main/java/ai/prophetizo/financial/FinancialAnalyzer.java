@@ -16,7 +16,6 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
  * {@link FinancialAnalysisConfig} rather than hardcoded values, allowing
  * customization for different markets and instruments.</p>
  * 
- * @since 1.0.0
  */
 public final class FinancialAnalyzer {
     

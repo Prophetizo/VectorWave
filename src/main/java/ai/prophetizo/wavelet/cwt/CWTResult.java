@@ -8,7 +8,6 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  * <p>Contains the time-scale representation of the signal, providing access to
  * coefficients, magnitude, phase (for complex wavelets), and various analysis methods.</p>
  *
- * @since 1.0.0
  */
 public final class CWTResult {
     

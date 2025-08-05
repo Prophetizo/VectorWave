@@ -47,7 +47,6 @@ import ai.prophetizo.wavelet.util.NullChecks;
  *
  * @param <T> the type of object created by this factory
  * @param <C> the configuration type used to create objects
- * @since 1.0.0
  */
 public abstract class AbstractStaticFactory<T, C> implements Factory<T, C> {
     

@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>Circular buffer reuse for memory efficiency</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public class IncrementalFinancialAnalyzer {
     

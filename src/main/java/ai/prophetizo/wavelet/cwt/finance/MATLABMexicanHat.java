@@ -51,7 +51,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * {@link DOGWavelet} with n=2 for the standard mathematical form.</p>
  * 
  * @see DOGWavelet for the standard mathematical Mexican Hat implementation
- * @since 1.1.0
  */
 public final class MATLABMexicanHat implements ContinuousWavelet {
     

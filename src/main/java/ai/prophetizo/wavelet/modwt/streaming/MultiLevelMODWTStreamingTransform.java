@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <li>Flexible buffer management per level</li>
  * </ul>
  *
- * @since 3.0.0
  */
 class MultiLevelMODWTStreamingTransform extends SubmissionPublisher<MODWTResult>
         implements MODWTStreamingTransform {

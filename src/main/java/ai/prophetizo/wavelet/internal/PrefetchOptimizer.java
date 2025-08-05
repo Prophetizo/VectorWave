@@ -18,7 +18,6 @@ import ai.prophetizo.wavelet.util.PlatformDetector;
  * or hardware if not beneficial. The implementation gracefully degrades on
  * platforms without prefetch support.</p>
  *
- * @since 1.0.0
  */
 final class PrefetchOptimizer {
 

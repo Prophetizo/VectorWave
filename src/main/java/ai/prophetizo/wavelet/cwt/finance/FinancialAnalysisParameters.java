@@ -19,7 +19,6 @@ package ai.prophetizo.wavelet.cwt.finance;
  * FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(params);
  * }</pre>
  * 
- * @since 1.0.0
  */
 public final class FinancialAnalysisParameters {
     

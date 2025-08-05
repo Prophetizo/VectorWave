@@ -26,7 +26,6 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  * CWTTransform cwt2 = factory.create(new MorletWavelet());
  * }</pre>
  *
- * @since 1.0.0
  */
 public final class CWTFactory {
     

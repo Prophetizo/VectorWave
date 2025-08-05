@@ -96,7 +96,6 @@ import java.util.Arrays;
  * 
  * @see CWTConfig for configuration options
  * @see AdaptiveScaleSelector for automatic scale selection
- * @since 1.0.0
  */
 public final class ScaleSpace {
     

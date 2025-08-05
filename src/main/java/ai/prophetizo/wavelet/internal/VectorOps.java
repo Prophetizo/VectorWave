@@ -27,7 +27,6 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Automatic selection of optimal vector species</li>
  * </ul>
  *
- * @since 1.0.0
  */
 public final class VectorOps {
 
@@ -888,8 +887,7 @@ public final class VectorOps {
         
         if (!isVectorizedOperationBeneficial(signalLength)) {
             // Fallback to scalar operations
-            ScalarOps.convolveAndDownsamplePeriodic(signal, lowFilter, signalLength, filterLength);
-            ScalarOps.convolveAndDownsamplePeriodic(signal, highFilter, signalLength, filterLength);
+            ScalarOps.combinedTransformPeriodic(signal, lowFilter, highFilter, approxCoeffs, detailCoeffs);
             return;
         }
         

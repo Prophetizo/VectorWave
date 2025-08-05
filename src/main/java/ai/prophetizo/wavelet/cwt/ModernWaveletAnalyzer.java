@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
  *   <li>Sealed interfaces for type safety</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public class ModernWaveletAnalyzer {
     

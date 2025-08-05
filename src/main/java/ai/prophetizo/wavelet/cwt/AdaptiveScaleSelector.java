@@ -13,7 +13,6 @@ import ai.prophetizo.wavelet.api.ContinuousWavelet;
  * </ul>
  * </p>
  *
- * @since 1.0.0
  */
 public interface AdaptiveScaleSelector {
     

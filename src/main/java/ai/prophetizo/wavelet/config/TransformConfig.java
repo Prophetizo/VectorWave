@@ -51,7 +51,6 @@ import ai.prophetizo.wavelet.util.NullChecks;
  *   <li>Force vector when you know your data size benefits from vectorization</li>
  * </ul>
  * 
- * @since 1.0.0
  */
 public final class TransformConfig {
 

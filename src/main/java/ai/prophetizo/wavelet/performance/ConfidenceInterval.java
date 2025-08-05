@@ -9,7 +9,6 @@ import java.io.Serializable;
  * on the base prediction. For example, a 95% confidence interval of [0.9, 1.1]
  * means the actual time is expected to be between 90% and 110% of the predicted time.</p>
  * 
- * @since 3.1.0
  */
 public class ConfidenceInterval implements Serializable {
     private static final long serialVersionUID = 1L;

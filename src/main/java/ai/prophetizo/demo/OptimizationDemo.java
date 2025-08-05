@@ -10,7 +10,6 @@ import java.util.Arrays;
  * Shows performance comparisons, memory usage optimization,
  * and algorithm selection strategies.
  * 
- * @since 3.0.0
  */
 public class OptimizationDemo {
     

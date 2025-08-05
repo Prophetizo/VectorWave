@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>The denoiser processes data in blocks and can optionally publish results
  * to subscribers for further processing.</p>
  * 
- * @since 3.0.0
  */
 public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoCloseable {
     

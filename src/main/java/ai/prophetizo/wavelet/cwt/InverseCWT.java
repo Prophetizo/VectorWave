@@ -43,7 +43,6 @@ import java.util.Arrays;
  *       reconstruction</li>
  * </ul>
  * 
- * @since 1.1.0
  */
 public final class InverseCWT {
     

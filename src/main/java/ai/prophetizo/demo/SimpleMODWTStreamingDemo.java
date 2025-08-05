@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>This demo shows basic usage of the MODWT streaming transform and denoiser
  * for real-time signal processing applications.</p>
  * 
- * @since 3.0.0
  */
 public class SimpleMODWTStreamingDemo {
     

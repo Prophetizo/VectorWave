@@ -20,7 +20,6 @@ import jdk.incubator.vector.VectorSpecies;
  *   <li>Specialized kernels for common filter sizes</li>
  * </ul>
  *
- * @since 1.0.0
  */
 final class VectorOpsARM {
 

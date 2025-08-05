@@ -8,7 +8,6 @@ import java.io.Serializable;
  * <p>This class maintains various accuracy statistics to evaluate how well
  * the model predicts actual performance.</p>
  * 
- * @since 3.1.0
  */
 public class ModelAccuracy implements Serializable {
     private static final long serialVersionUID = 1L;

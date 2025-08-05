@@ -58,6 +58,5 @@
  * </ul>
  * 
  * @see ai.prophetizo.wavelet.cwt CWT implementation classes
- * @since 1.0.0
  */
 package ai.prophetizo.demo.cwt;

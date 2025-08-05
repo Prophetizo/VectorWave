@@ -15,7 +15,6 @@ import java.util.function.IntFunction;
  * <p>Provides efficient array allocation and reuse for repeated CWT
  * computations, particularly beneficial for real-time processing.</p>
  *
- * @since 1.0.0
  */
 public final class CWTMemoryPool {
     

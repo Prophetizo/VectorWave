@@ -15,7 +15,6 @@ import java.util.stream.IntStream;
  * <p>Provides methods to analyze signals using continuous wavelets,
  * supporting both direct convolution and FFT-accelerated computation.</p>
  *
- * @since 1.0.0
  */
 public final class CWTTransform {
     

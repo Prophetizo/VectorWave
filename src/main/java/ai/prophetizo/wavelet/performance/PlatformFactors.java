@@ -8,7 +8,6 @@ import java.io.Serializable;
  * <p>These factors are used to adjust the base performance model to match
  * the characteristics of the specific hardware platform.</p>
  * 
- * @since 3.1.0
  */
 public class PlatformFactors implements Serializable {
     private static final long serialVersionUID = 1L;

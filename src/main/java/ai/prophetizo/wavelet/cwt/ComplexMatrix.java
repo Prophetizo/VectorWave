@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.cwt;
  * <p>Stores complex numbers in separate real and imaginary arrays
  * for better cache locality and SIMD optimization.</p>
  *
- * @since 1.0.0
  */
 public final class ComplexMatrix {
     

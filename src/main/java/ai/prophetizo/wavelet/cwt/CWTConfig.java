@@ -10,7 +10,6 @@ import ai.prophetizo.wavelet.util.ValidationUtils;
  * <p>Provides configuration options for CWT computation including boundary handling,
  * FFT acceleration, normalization, and Java 23 optimization features.</p>
  *
- * @since 1.0.0
  */
 public final class CWTConfig {
     

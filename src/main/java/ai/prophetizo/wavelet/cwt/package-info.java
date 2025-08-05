@@ -82,7 +82,6 @@
  *   <li>Utilizes shared mathematical operations from {@link ai.prophetizo.wavelet.internal}</li>
  * </ul>
  * 
- * @since 1.0.0
  * @see ai.prophetizo.wavelet.api.ContinuousWavelet
  * @see ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT
  * @see ai.prophetizo.wavelet.WaveletTransform

@@ -23,7 +23,6 @@ import java.util.concurrent.ForkJoinPool;
  *   <li>Properly handles filter upsampling at each level</li>
  * </ul>
  * 
- * @since 3.1.0
  */
 public class ParallelMultiLevelMODWT {
     

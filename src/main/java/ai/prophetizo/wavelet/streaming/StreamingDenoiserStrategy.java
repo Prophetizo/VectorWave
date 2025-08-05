@@ -13,7 +13,6 @@ import java.util.concurrent.Flow;
  * <p>All implementations are based on MODWT for better streaming performance
  * and shift-invariance.</p>
  * 
- * @since 3.0.0
  */
 public interface StreamingDenoiserStrategy extends Flow.Publisher<double[]>, AutoCloseable {
     

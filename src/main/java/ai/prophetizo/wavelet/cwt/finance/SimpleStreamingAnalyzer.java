@@ -12,7 +12,6 @@ import java.util.function.Consumer;
  * <p>This analyzer processes financial data in a streaming fashion using
  * fixed-size sliding windows and incremental calculations.</p>
  * 
- * @since 1.0.0
  */
 public class SimpleStreamingAnalyzer {
     

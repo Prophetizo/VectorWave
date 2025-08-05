@@ -10,7 +10,6 @@ import java.io.Serializable;
  * <p>This class supports online learning through incremental updates,
  * allowing the model to adapt as new measurements are collected.</p>
  * 
- * @since 3.1.0
  */
 public class ModelCoefficients implements Serializable {
     private static final long serialVersionUID = 1L;

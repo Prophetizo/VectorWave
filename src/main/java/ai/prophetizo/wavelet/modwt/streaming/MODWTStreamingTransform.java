@@ -46,7 +46,6 @@ import java.util.concurrent.Flow;
  * transform.process(dataChunk);
  * }</pre>
  *
- * @since 3.0.0
  */
 public interface MODWTStreamingTransform extends Flow.Publisher<MODWTResult>, AutoCloseable {
     

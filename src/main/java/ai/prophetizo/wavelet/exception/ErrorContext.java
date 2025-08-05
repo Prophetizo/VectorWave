@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * );
  * }</pre>
  * 
- * @since 3.1.0
  */
 public class ErrorContext {
     

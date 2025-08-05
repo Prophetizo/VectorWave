@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>The model uses a piecewise polynomial approach where different size ranges have
  * different coefficients, allowing accurate predictions across a wide range of input sizes.</p>
  * 
- * @since 3.1.0
  */
 public class PerformanceModel implements Serializable {
     private static final long serialVersionUID = 1L;

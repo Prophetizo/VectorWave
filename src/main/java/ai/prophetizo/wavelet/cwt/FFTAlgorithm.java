@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.cwt;
  * <p>Allows choosing between different FFT implementations based on
  * performance requirements and signal characteristics.</p>
  * 
- * @since 1.0.0
  */
 public enum FFTAlgorithm {
     /**

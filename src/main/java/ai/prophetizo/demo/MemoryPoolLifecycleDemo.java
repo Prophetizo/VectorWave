@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>Common pitfalls and how to avoid them</li>
  * </ul>
  * 
- * @since 3.0.0
  */
 public class MemoryPoolLifecycleDemo {
     

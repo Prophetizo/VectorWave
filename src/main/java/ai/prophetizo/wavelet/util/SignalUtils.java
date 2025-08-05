@@ -6,7 +6,6 @@ package ai.prophetizo.wavelet.util;
  * <p>This class provides static methods for signal manipulation operations
  * that are used across different wavelet transform implementations.</p>
  * 
- * @since 1.0
  */
 public final class SignalUtils {
     

@@ -8,7 +8,6 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
  * This shows how other parts of the codebase can leverage the helper method
  * to avoid duplicating instanceof checks for complex wavelets.
  * 
- * @since 1.0.0
  */
 public class WaveletEvaluationHelper {
     

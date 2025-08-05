@@ -32,7 +32,6 @@ import java.util.Set;
  * <p>This registry is thread-safe and can be safely accessed from multiple
  * threads concurrently.</p>
  *
- * @since 1.0.0
  */
 public final class FactoryRegistry {
     

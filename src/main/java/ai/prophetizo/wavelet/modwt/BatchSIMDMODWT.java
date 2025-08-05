@@ -28,7 +28,6 @@ import jdk.incubator.vector.VectorMask;
  * 
  * <p>This layout allows loading all signals' values at position t into a single vector.</p>
  * 
- * @since 3.1.0
  */
 public final class BatchSIMDMODWT {
     

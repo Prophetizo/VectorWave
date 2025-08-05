@@ -23,7 +23,6 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * 
  * where m is the order parameter (typically 4-6 for financial applications).
  * 
- * @since 1.0.0
  */
 public final class PaulWavelet implements ComplexContinuousWavelet {
     

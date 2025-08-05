@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  * </p>
  *
- * @since 1.0.0
  */
 public class OptimalScaleSelector implements AdaptiveScaleSelector {
     

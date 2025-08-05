@@ -8,7 +8,6 @@ import ai.prophetizo.wavelet.internal.ScalarOps;
  * <p>This class provides access to the core wavelet operations needed by
  * transform implementations while hiding internal implementation details.</p>
  * 
- * @since 4.0.0
  */
 public final class WaveletOperations {
     

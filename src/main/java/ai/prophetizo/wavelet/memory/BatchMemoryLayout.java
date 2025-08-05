@@ -16,7 +16,6 @@ import java.util.Arrays;
  *   <li>Automatic padding for SIMD alignment</li>
  * </ul>
  * 
- * @since 2.0.0
  */
 public class BatchMemoryLayout implements AutoCloseable {
     
