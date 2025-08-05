@@ -148,35 +148,73 @@ class SimpleStreamingAnalyzerTest {
     @Test
     @DisplayName("Memory usage should remain constant")
     void testMemoryEfficiency() {
-        // Force GC before measuring initial memory
-        System.gc();
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // Ignore
+        // Run multiple iterations to get stable measurements
+        List<Long> memoryIncreases = new ArrayList<>();
+        
+        for (int iteration = 0; iteration < 5; iteration++) {
+            // Force GC and wait for it to complete
+            System.gc();
+            System.runFinalization();
+            System.gc();
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            long beforeMemory = getUsedMemory();
+            
+            // Process data in controlled batches
+            for (int batch = 0; batch < 10; batch++) {
+                for (int i = 0; i < 10_000; i++) {
+                    analyzer.processSample(100 + Math.random());
+                }
+                // Allow minor GC between batches
+                Thread.yield();
+            }
+            
+            // Force GC to reclaim any temporary objects
+            System.gc();
+            System.runFinalization();
+            System.gc();
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            long afterMemory = getUsedMemory();
+            long memoryIncrease = afterMemory - beforeMemory;
+            memoryIncreases.add(memoryIncrease);
+            
+            // Reset analyzer for next iteration
+            analyzer = new SimpleStreamingAnalyzer(100, 10);
+            analyzer.onResult(results::add);
         }
         
-        long beforeMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        // Calculate average memory increase
+        long avgIncrease = (long) memoryIncreases.stream()
+            .mapToLong(Long::longValue)
+            .average()
+            .orElse(0);
         
-        // Process large amount of data
-        for (int i = 0; i < 100_000; i++) {
-            analyzer.processSample(100 + Math.random());
-        }
+        // Memory increase should be minimal (less than 500KB on average)
+        // This accounts for the sliding window buffer and some overhead
+        assertTrue(avgIncrease < 500_000, 
+            "Average memory increase across " + memoryIncreases.size() + 
+            " iterations was " + avgIncrease + " bytes. Individual increases: " + memoryIncreases);
         
-        // Force GC to get accurate memory reading
-        System.gc();
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            // Ignore
-        }
-        
-        long afterMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long memoryIncrease = afterMemory - beforeMemory;
-        
-        // Memory increase should be reasonable (less than 5MB)
-        // Note: JVM memory management can cause variations, so we use a reasonable threshold
-        assertTrue(memoryIncrease < 5_000_000, 
-            "Memory usage should remain relatively constant, increased by: " + memoryIncrease + " bytes");
+        // Also check that no single iteration had excessive memory growth
+        long maxIncrease = memoryIncreases.stream()
+            .mapToLong(Long::longValue)
+            .max()
+            .orElse(0);
+        assertTrue(maxIncrease < 1_000_000,
+            "Maximum memory increase in any iteration was " + maxIncrease + " bytes");
+    }
+    
+    private long getUsedMemory() {
+        Runtime runtime = Runtime.getRuntime();
+        return runtime.totalMemory() - runtime.freeMemory();
     }
 }
