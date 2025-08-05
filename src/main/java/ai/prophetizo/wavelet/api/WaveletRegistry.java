@@ -376,6 +376,10 @@ public final class WaveletRegistry {
      * Creates WaveletInfo from a Wavelet instance.
      */
     private static WaveletInfo createWaveletInfo(Wavelet wavelet) {
+        if (wavelet == null) {
+            throw new IllegalArgumentException("Wavelet cannot be null");
+        }
+        
         String name = wavelet.name().toLowerCase();
         String displayName = createDisplayName(wavelet);
         WaveletType type = wavelet.getType();

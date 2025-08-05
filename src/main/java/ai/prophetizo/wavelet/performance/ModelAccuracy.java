@@ -89,13 +89,24 @@ public class ModelAccuracy implements Serializable {
     }
     
     /**
+     * Calculates the mean absolute percentage error (MAPE).
+     * This is a private helper method to avoid code duplication.
+     * Must be called from a synchronized method since it accesses shared state.
+     * 
+     * @return MAPE as a fraction (0.1 = 10% error)
+     */
+    private double calculateMAPE() {
+        return count > 0 ? sumAbsolutePercentageError / count : 0;
+    }
+    
+    /**
      * Gets the mean absolute percentage error.
      * Thread-safe getter.
      * 
      * @return MAPE as a fraction (0.1 = 10% error)
      */
     public synchronized double getMeanAbsolutePercentageError() {
-        return count > 0 ? sumAbsolutePercentageError / count : 0;
+        return calculateMAPE();
     }
     
     /**
@@ -123,7 +134,7 @@ public class ModelAccuracy implements Serializable {
      * @return Confidence between 0 and 1
      */
     public synchronized double getConfidence() {
-        double mape = count > 0 ? sumAbsolutePercentageError / count : 0;
+        double mape = calculateMAPE();
         
         // Convert MAPE to confidence
         // 0% error = 100% confidence
@@ -222,7 +233,7 @@ public class ModelAccuracy implements Serializable {
     
     @Override
     public synchronized String toString() {
-        double mape = count > 0 ? sumAbsolutePercentageError / count : 0;
+        double mape = calculateMAPE();
         double confidence = Math.max(0, Math.min(1, 1 - mape));
         return String.format("ModelAccuracy{MAPE=%.1f%%, confidence=%.1f%%, n=%d}",
             mape * 100,
