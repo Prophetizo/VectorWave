@@ -322,14 +322,27 @@ public class ThreadLocalManager {
      * @return The result of the operation
      * @throws Exception if the operation throws
      */
-    // Suppression rationale: CleanupScope is used solely for its side effect of performing cleanup
-    // when closed in the try-with-resources block. The resource itself does not need to be referenced
-    // or used beyond its close() method, as its purpose is to ensure proper cleanup of ThreadLocal state.
-    // SuppressWarnings("try") is applied to avoid false positives about unused resources.
-    @SuppressWarnings("try")
     public static <T> T withCleanup(ThrowingSupplier<T> operation) throws Exception {
-        try (CleanupScope scope = createScope()) {
+        CleanupScope scope = createScope();
+        try {
             return operation.get();
+        } finally {
+            scope.close();
+        }
+    }
+    
+    /**
+     * Utility method to wrap void operations with automatic cleanup.
+     * 
+     * @param operation The operation to perform
+     * @throws Exception if the operation throws
+     */
+    public static void withCleanup(ThrowingRunnable operation) throws Exception {
+        CleanupScope scope = createScope();
+        try {
+            operation.run();
+        } finally {
+            scope.close();
         }
     }
     
@@ -341,5 +354,13 @@ public class ThreadLocalManager {
     @FunctionalInterface
     public interface ThrowingSupplier<T> {
         T get() throws Exception;
+    }
+    
+    /**
+     * Functional interface for void operations that may throw exceptions.
+     */
+    @FunctionalInterface
+    public interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }
