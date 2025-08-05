@@ -17,6 +17,16 @@ public class ParallelMultiLevelMODWTBenchmark {
     private static final int WARMUP_ITERATIONS = 100;
     private static final int MEASURE_ITERATIONS = 1000;
     
+    /**
+     * Safety margin for maximum decomposition levels.
+     * For MODWT, the theoretical maximum is approximately log2(N/(L-1)) where N is signal length
+     * and L is filter length. We subtract 2 as a safety margin to ensure:
+     * 1. We don't approach the theoretical limit where numerical issues may arise
+     * 2. We leave room for filters longer than Haar (L=2)
+     * 3. We avoid edge cases where the scaled filter might exceed signal boundaries
+     */
+    private static final int MAX_LEVEL_SAFETY_MARGIN = 2;
+    
     public static void main(String[] args) {
         System.out.println("Parallel Multi-Level MODWT Benchmark");
         System.out.println("====================================");
@@ -36,7 +46,8 @@ public class ParallelMultiLevelMODWTBenchmark {
             
             for (int levels : levelCounts) {
                 // Skip if too many levels for signal size
-                if (levels > Math.log(signalSize) / Math.log(2) - 2) {
+                int maxSafeLevels = (int)(Math.log(signalSize) / Math.log(2)) - MAX_LEVEL_SAFETY_MARGIN;
+                if (levels > maxSafeLevels) {
                     continue;
                 }
                 
