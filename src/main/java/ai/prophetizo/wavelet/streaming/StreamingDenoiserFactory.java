@@ -124,7 +124,22 @@ public final class StreamingDenoiserFactory implements Factory<StreamingDenoiser
     }
     
     /**
-     * Determines whether to use fast implementation based on config.
+     * Determines whether to use the FAST implementation for streaming denoising based on the provided configuration.
+     * <p>
+     * The selection logic prioritizes low-latency, real-time processing when any of the following conditions are met:
+     * <ul>
+     *   <li><b>Small block size (≤ 256 samples):</b> Indicates a requirement for low latency, as smaller blocks reduce processing delay.</li>
+     *   <li><b>High overlap factor (≥ 0.5) <i>and</i> adaptive threshold enabled:</b> Suggests the need for real-time adaptation, where frequent updates and overlapping windows benefit from the FAST implementation's efficiency.</li>
+     * </ul>
+     * <p>
+     * The method returns {@code true} if either the block size is small, or both the overlap factor is high and adaptive thresholding is enabled.
+     * This ensures that the FAST implementation is chosen for scenarios where latency and adaptation are critical, while the QUALITY implementation
+     * is used otherwise for improved denoising performance at the cost of higher latency.
+     * <p>
+     * <b>Rationale:</b> These thresholds are empirically chosen to balance latency and denoising quality. Adjust them as needed for different application requirements.
+     *
+     * @param config the streaming denoiser configuration
+     * @return {@code true} if the FAST implementation should be used; {@code false} for QUALITY implementation
      */
     private boolean shouldUseFastImplementation(StreamingDenoiserConfig config) {
         // Use fast implementation for:
