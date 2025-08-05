@@ -15,8 +15,9 @@ public final class WaveletRegistry {
     private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
     
     static {
-        // Just register all wavelets directly
-        register(new Haar());
+        // Register all wavelets using consistent pattern
+        // Orthogonal wavelets
+        register(Haar.INSTANCE);
         register(Daubechies.DB2);
         register(Daubechies.DB4);
         register(Symlet.SYM2);
@@ -24,7 +25,9 @@ public final class WaveletRegistry {
         register(Coiflet.COIF1);
         register(Coiflet.COIF2);
         register(Coiflet.COIF3);
-        register(new MorletWavelet());
+        
+        // Continuous wavelets
+        register(new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
     }
     
     private static void register(Wavelet w) {

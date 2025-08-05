@@ -42,6 +42,9 @@ public record Haar() implements OrthogonalWavelet {
     // Pre-computed filter coefficients to avoid allocations
     private static final double[] LOW_PASS_COEFFS = {SQRT2_INV, SQRT2_INV};
     private static final double[] HIGH_PASS_COEFFS = {SQRT2_INV, -SQRT2_INV};
+    
+    // Static instance for consistency with other wavelets
+    public static final Haar INSTANCE = new Haar();
 
     @Override
     public String name() {
