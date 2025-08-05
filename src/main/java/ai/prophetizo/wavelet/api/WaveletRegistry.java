@@ -181,7 +181,7 @@ public final class WaveletRegistry {
     /**
      * Gets all orthogonal wavelets.
      *
-     * @return list of orthogonal wavelet names
+     * @return list of unique orthogonal wavelet names (in insertion order)
      */
     public static List<String> getOrthogonalWavelets() {
         return new ArrayList<>(getWaveletsByType(WaveletType.ORTHOGONAL));
