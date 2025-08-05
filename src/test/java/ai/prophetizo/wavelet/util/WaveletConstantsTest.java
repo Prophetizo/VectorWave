@@ -67,7 +67,7 @@ class WaveletConstantsTest {
     void testCalculateNextPowerOfTwoOverflow() {
         int tooLarge = 1073741825; // 2^30 + 1
         
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        InvalidArgumentException exception = assertThrows(InvalidArgumentException.class,
             () -> WaveletConstants.calculateNextPowerOfTwo(tooLarge));
         
         assertTrue(exception.getMessage().contains("exceeds maximum"));
