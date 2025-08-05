@@ -37,7 +37,7 @@ final class FastStreamingDenoiser implements StreamingDenoiserStrategy {
             .thresholdType(config.getThresholdType())
             .thresholdMultiplier(config.getThresholdMultiplier())
             .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
-            .noiseWindowSize(Math.min(config.getNoiseWindowSize(), config.getBlockSize() / 2))
+            .noiseWindowSize(Math.max(1, Math.min(config.getNoiseWindowSize(), (int)Math.round(config.getBlockSize() / 2.0))))
             .build();
         
         // Subscribe to denoiser output and forward to our subscribers
