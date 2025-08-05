@@ -27,8 +27,13 @@ Both approaches use wavelet decomposition to separate signal from noise, but dif
 The traditional denoiser (`WaveletDenoiser`) processes entire signals in a single operation:
 
 ```java
-WaveletDenoiser denoiser = new WaveletDenoiser(wavelet, boundaryMode);
-double[] denoised = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL, ThresholdType.SOFT);
+WaveletDenoiser denoiser = new WaveletDenoiser.Builder()
+    .withWavelet(wavelet)
+    .withThresholdMethod(WaveletDenoiser.ThresholdMethod.UNIVERSAL)
+    .withSoftThresholding(true)
+    .build();
+
+double[] denoised = denoiser.denoise(noisySignal);
 ```
 
 ### Key Features
@@ -59,29 +64,31 @@ double[] denoised = denoiser.denoise(noisySignal, ThresholdMethod.UNIVERSAL, Thr
 The streaming denoiser (`StreamingDenoiser`) processes signals in blocks, enabling real-time applications:
 
 ```java
-StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+// MODWT-based streaming denoiser - works with any block size!
+MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
     .wavelet(wavelet)
-    .blockSize(128)
-    .overlapFactor(0.5)
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .bufferSize(333)  // Any size - no power-of-2 restriction!
     .thresholdMethod(ThresholdMethod.UNIVERSAL)
-    .adaptiveThreshold(true)
+    .thresholdType(ThresholdType.SOFT)
+    .noiseEstimation(MODWTStreamingDenoiser.NoiseEstimation.MAD)
     .build();
 
-// Subscribe to denoised output
+// Process blocks
+double[] denoisedBlock = denoiser.denoise(noisyBlock);
+
+// Or subscribe for continuous processing
 denoiser.subscribe(new Flow.Subscriber<double[]>() {
     @Override
     public void onNext(double[] denoisedBlock) {
         // Process denoised block
     }
 });
-
-// Feed samples
-denoiser.process(samples);
 ```
 
 ### Key Features
 
-- **Block Processing**: Configurable block size (must be power of 2)
+- **Block Processing**: Configurable block size (any size with MODWT!)
 - **Memory Usage**: O(1) - constant regardless of stream length
 - **Overlap-Add**: Smooth transitions between blocks
 - **Window Functions**: Hann, Hamming, Tukey, Rectangular
@@ -175,28 +182,26 @@ For streaming multi-level denoising:
 // Load noisy signal
 double[] noisySignal = loadSignal("noisy_data.csv");
 
-// Create denoiser
-WaveletDenoiser denoiser = new WaveletDenoiser(
-    Daubechies.DB4, 
-    BoundaryMode.PERIODIC
-);
+// Create denoiser using builder pattern
+WaveletDenoiser denoiser = new WaveletDenoiser.Builder()
+    .withWavelet(Daubechies.DB4)
+    .withThresholdMethod(WaveletDenoiser.ThresholdMethod.UNIVERSAL)
+    .withSoftThresholding(true)
+    .build();
 
-// Denoise with universal threshold
-double[] clean = denoiser.denoise(
-    noisySignal, 
-    ThresholdMethod.UNIVERSAL,
-    ThresholdType.SOFT
-);
+// Denoise - the denoiser automatically uses WaveletOperations for SIMD
+double[] clean = denoiser.denoise(noisySignal);
 ```
 
 ### Example 2: Real-time Audio Denoising
 
 ```java
-// Configure streaming denoiser for audio
-StreamingDenoiser denoiser = new StreamingDenoiser.Builder()
+// Configure MODWT streaming denoiser for audio
+MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
     .wavelet(Daubechies.DB4)
-    .blockSize(512)              // ~11.6ms at 44.1kHz
-    .overlapFactor(0.5)          // 50% overlap
+    .boundaryMode(BoundaryMode.PERIODIC)
+    .bufferSize(480)             // Exactly 10ms at 48kHz - no padding!
+    .thresholdMethod(ThresholdMethod.UNIVERSAL)
     .windowFunction(WindowFunction.HANN)
     .thresholdMethod(ThresholdMethod.UNIVERSAL)
     .thresholdType(ThresholdType.SOFT)

@@ -1,6 +1,6 @@
 package ai.prophetizo.wavelet.util;
 
-import ai.prophetizo.wavelet.util.Complex;
+import ai.prophetizo.wavelet.math.Complex;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.junit.jupiter.api.DisplayName;

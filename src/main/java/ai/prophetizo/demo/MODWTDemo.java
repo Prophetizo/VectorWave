@@ -4,7 +4,6 @@ import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 // DWT imports removed - using only MODWT
-import ai.prophetizo.wavelet.internal.ScalarOps;
 
 import java.util.Arrays;
 

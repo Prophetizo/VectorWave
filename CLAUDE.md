@@ -150,16 +150,17 @@ Development guide for Claude Code when working with the VectorWave repository.
 
 ## Package Refactoring Tasks
 
-### Complex.java Location Refactoring
-- Problem: `Complex.java` is currently located in root wavelet package
-- Suggested new locations:
-  - `ai.prophetizo.wavelet.util`
-  - `ai.prophetizo.wavelet.cwt.util`
-  - `ai.prophetizo.wavelet.math`
-- Considerations:
-  - Used by multiple packages
-  - Part of public API
-  - Do not maintain backward compatibility
+### Complex.java Location Refactoring - COMPLETE
+- **COMPLETED**: `Complex.java` has been moved to `ai.prophetizo.wavelet.math` package
+- **New Location**: `ai.prophetizo.wavelet.math.Complex`
+- **Changes Made**:
+  - Created new `ai.prophetizo.wavelet.math` package with proper documentation
+  - Moved Complex.java from `ai.prophetizo.wavelet.util` to `ai.prophetizo.wavelet.math`
+  - Updated all import statements across the codebase
+  - Removed old Complex.java from util package
+  - Added package-info.java for the math package
+- **Rationale**: Math package is more semantically appropriate for fundamental mathematical types
+- **Impact**: All tests pass, compilation successful, no breaking changes to public API functionality
 
 ## Batch Processing Implementation
 

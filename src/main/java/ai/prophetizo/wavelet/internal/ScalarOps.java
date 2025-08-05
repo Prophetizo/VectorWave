@@ -1,6 +1,9 @@
 package ai.prophetizo.wavelet.internal;
 
 import ai.prophetizo.wavelet.util.ValidationUtils;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.exception.ErrorCode;
+import ai.prophetizo.wavelet.exception.ErrorContext;
 import static java.util.Arrays.fill;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -111,21 +114,51 @@ public final class ScalarOps {
                                                      double[] filter, double[] output) {
         // Validate parameters
         if (signal == null) {
-            throw new IllegalArgumentException("Signal cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Signal array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "signal")
+                    .withSuggestion("Ensure signal array is initialized before calling this method")
+                    .build()
+            );
         }
         if (filter == null) {
-            throw new IllegalArgumentException("Filter cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Filter array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "filter")
+                    .withSuggestion("Ensure wavelet filter is properly initialized")
+                    .build()
+            );
         }
         if (output == null) {
-            throw new IllegalArgumentException("Output cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Output array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "output")
+                    .withSuggestion("Pre-allocate output array with length = signal.length / 2")
+                    .build()
+            );
         }
         if (offset < 0 || length < 0 || offset + length > signal.length) {
             throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
                 ", length=" + length + ", array length=" + signal.length);
         }
         if (output.length != length / 2) {
-            throw new IllegalArgumentException("Output array must have length " + (length / 2) + 
-                ", but has length " + output.length);
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_LENGTH_MISMATCH,
+                ErrorContext.builder("Output array has incorrect length for downsampling operation")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withArrayDimensions("length / 2 = " + (length / 2), "output.length = " + output.length)
+                    .withContext("Signal length", length)
+                    .withContext("Filter length", filter.length)
+                    .withSuggestion("Allocate output array with exactly " + (length / 2) + " elements")
+                    .withSuggestion("For MODWT (no downsampling), use circularConvolveMODWT instead")
+                    .build()
+            );
         }
         
         int filterLen = filter.length;
@@ -185,21 +218,51 @@ public final class ScalarOps {
                                                    double[] filter, double[] output) {
         // Validate parameters
         if (signal == null) {
-            throw new IllegalArgumentException("Signal cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Signal array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "signal")
+                    .withSuggestion("Ensure signal array is initialized before calling this method")
+                    .build()
+            );
         }
         if (filter == null) {
-            throw new IllegalArgumentException("Filter cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Filter array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "filter")
+                    .withSuggestion("Ensure wavelet filter is properly initialized")
+                    .build()
+            );
         }
         if (output == null) {
-            throw new IllegalArgumentException("Output cannot be null");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_NULL_ARGUMENT,
+                ErrorContext.builder("Output array cannot be null")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withContext("Parameter", "output")
+                    .withSuggestion("Pre-allocate output array with length = signal.length / 2")
+                    .build()
+            );
         }
         if (offset < 0 || length < 0 || offset + length > signal.length) {
             throw new IndexOutOfBoundsException("Invalid offset or length: offset=" + offset + 
                 ", length=" + length + ", array length=" + signal.length);
         }
         if (output.length != length / 2) {
-            throw new IllegalArgumentException("Output array must have length " + (length / 2) + 
-                ", but has length " + output.length);
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_LENGTH_MISMATCH,
+                ErrorContext.builder("Output array has incorrect length for downsampling operation")
+                    .withContext("Operation", "convolveAndDownsamplePeriodic")
+                    .withArrayDimensions("length / 2 = " + (length / 2), "output.length = " + output.length)
+                    .withContext("Signal length", length)
+                    .withContext("Filter length", filter.length)
+                    .withSuggestion("Allocate output array with exactly " + (length / 2) + " elements")
+                    .withSuggestion("For MODWT (no downsampling), use circularConvolveMODWT instead")
+                    .build()
+            );
         }
         
         int filterLen = filter.length;
@@ -682,8 +745,16 @@ public final class ScalarOps {
         
         // Check for potential overflow before bit shift
         if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
-            throw new IllegalArgumentException(
-                "Level " + level + " would cause integer overflow in shift calculation");
+            throw new InvalidArgumentException(
+                ErrorCode.VAL_TOO_LARGE,
+                ErrorContext.builder("Decomposition level would cause integer overflow")
+                    .withContext("Operation", "circularConvolveMODWTLevel")
+                    .withLevelInfo(level, MAX_SAFE_SHIFT_BITS)
+                    .withContext("Shift calculation", "2^(" + (level-1) + ")")
+                    .withSuggestion("Maximum safe level is " + MAX_SAFE_SHIFT_BITS)
+                    .withSuggestion("For extreme decomposition levels, consider using alternative algorithms")
+                    .build()
+            );
         }
         
         int shift = 1 << (level - 1); // 2^(j-1) where j = level
@@ -857,5 +928,29 @@ public final class ScalarOps {
                 return 1.0;  // No speedup in scalar mode
             }
         }
+    }
+    
+    /**
+     * Applies soft thresholding to wavelet coefficients.
+     * Uses VectorOps for SIMD optimization when beneficial.
+     * 
+     * @param coefficients the wavelet coefficients to threshold
+     * @param threshold the threshold value
+     * @return new array with thresholded coefficients
+     */
+    public static double[] softThreshold(double[] coefficients, double threshold) {
+        return VectorOps.Denoising.softThreshold(coefficients, threshold);
+    }
+    
+    /**
+     * Applies hard thresholding to wavelet coefficients.
+     * Uses VectorOps for SIMD optimization when beneficial.
+     * 
+     * @param coefficients the wavelet coefficients to threshold
+     * @param threshold the threshold value
+     * @return new array with thresholded coefficients
+     */
+    public static double[] hardThreshold(double[] coefficients, double threshold) {
+        return VectorOps.Denoising.hardThreshold(coefficients, threshold);
     }
 }

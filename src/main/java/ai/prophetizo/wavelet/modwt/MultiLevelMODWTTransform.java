@@ -5,6 +5,8 @@ import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletType;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.ErrorCode;
+import ai.prophetizo.wavelet.exception.ErrorContext;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Map;
@@ -141,7 +143,15 @@ public class MultiLevelMODWTTransform {
     private static void validateLevelForBitShift(int level, String operationName) {
         if (level - 1 >= MAX_SAFE_SHIFT_BITS) {
             throw new InvalidArgumentException(
-                "Level " + level + " would cause integer overflow in " + operationName);
+                ErrorCode.VAL_TOO_LARGE,
+                ErrorContext.builder("Decomposition level would cause integer overflow")
+                    .withContext("Operation", operationName)
+                    .withLevelInfo(level, MAX_SAFE_SHIFT_BITS)
+                    .withContext("Calculation", "2^(" + (level-1) + ") filter upsampling")
+                    .withSuggestion("Maximum safe decomposition level is " + MAX_SAFE_SHIFT_BITS)
+                    .withSuggestion("For signals requiring extreme decomposition, consider alternative approaches")
+                    .build()
+            );
         }
     }
     
@@ -205,14 +215,32 @@ public class MultiLevelMODWTTransform {
         // Validate inputs
         ValidationUtils.validateFiniteValues(signal, "signal");
         if (signal.length == 0) {
-            throw new InvalidSignalException("Signal cannot be empty");
+            throw new InvalidSignalException(
+                ErrorCode.VAL_EMPTY,
+                ErrorContext.builder("Signal cannot be empty for multi-level MODWT")
+                    .withContext("Transform type", "Multi-level MODWT")
+                    .withWavelet(wavelet)
+                    .withBoundaryMode(boundaryMode)
+                    .withContext("Requested levels", levels)
+                    .withSuggestion("Provide a signal with at least one sample")
+                    .build()
+            );
         }
         
         int maxLevels = calculateMaxLevels(signal.length);
         if (levels < 1 || levels > maxLevels) {
             throw new InvalidArgumentException(
-                "Invalid number of levels: " + levels + 
-                ". Must be between 1 and " + maxLevels);
+                ErrorCode.CFG_INVALID_DECOMPOSITION_LEVEL,
+                ErrorContext.builder("Invalid number of decomposition levels")
+                    .withLevelInfo(levels, maxLevels)
+                    .withSignalInfo(signal.length)
+                    .withWavelet(wavelet)
+                    .withContext("Filter length", wavelet instanceof Wavelet ? 
+                        wavelet.lowPassDecomposition().length : "unknown")
+                    .withSuggestion("Choose a level between 1 and " + maxLevels)
+                    .withSuggestion("Maximum level is floor(log2(signalLength/filterLength)) = " + maxLevels)
+                    .build()
+            );
         }
         
         // Perform multi-level decomposition
@@ -309,8 +337,16 @@ public class MultiLevelMODWTTransform {
         
         if (minLevel < 1 || maxLevel > result.getLevels() || minLevel > maxLevel) {
             throw new InvalidArgumentException(
-                "Invalid level range [" + minLevel + ", " + maxLevel + "]. " +
-                "Must be within [1, " + result.getLevels() + "] with minLevel <= maxLevel");
+                ErrorCode.CFG_INVALID_DECOMPOSITION_LEVEL,
+                ErrorContext.builder("Invalid level range for partial reconstruction")
+                    .withContext("Requested range", "[" + minLevel + ", " + maxLevel + "]")
+                    .withContext("Available levels", result.getLevels())
+                    .withContext("Transform type", "Multi-level MODWT reconstruction")
+                    .withSuggestion("Ensure minLevel >= 1")
+                    .withSuggestion("Ensure maxLevel <= " + result.getLevels())
+                    .withSuggestion("Ensure minLevel <= maxLevel")
+                    .build()
+            );
         }
         
         // Start with zeros for both approximation and details
@@ -662,7 +698,7 @@ public class MultiLevelMODWTTransform {
                 signal, scaledHighPass, detailCoeffs);
         }
         
-        return new MODWTResultImpl(approximationCoeffs, detailCoeffs);
+        return MODWTResult.create(approximationCoeffs, detailCoeffs);
     }
     
     /**

@@ -77,6 +77,10 @@ public final class VectorOps {
 
     /**
      * Vectorized convolution with downsampling for periodic boundary mode.
+     * 
+     * <p>This method automatically selects the most optimized implementation
+     * based on signal and filter characteristics, including gather operations
+     * and loop unrolling for better performance.</p>
      *
      * @param signal       input signal
      * @param filter       wavelet filter coefficients
@@ -95,47 +99,88 @@ public final class VectorOps {
             return ScalarOps.convolveAndDownsamplePeriodic(signal, filter, signalLength, filterLength);
         }
 
+        // Use optimized gather-based implementation for better performance
+        return convolveAndDownsamplePeriodicOptimized(signal, filter, signalLength, filterLength, output);
+    }
+    
+    /**
+     * Optimized convolution with downsampling using gather operations and loop unrolling.
+     * 
+     * <p>This implementation uses advanced Vector API features including:</p>
+     * <ul>
+     *   <li>Efficient memory gather operations</li>
+     *   <li>Loop unrolling for common filter sizes</li>
+     *   <li>Stack-allocated index arrays to avoid ThreadLocal overhead</li>
+     * </ul>
+     */
+    private static double[] convolveAndDownsamplePeriodicOptimized(
+            double[] signal, double[] filter, int signalLength, int filterLength, double[] output) {
+        
+        int outputLength = signalLength / 2;
+        int signalMask = signalLength - 1; // For periodic boundary
+
         // Process main body with vectorization
         int i = 0;
-        int vectorLoopBound = outputLength - (outputLength % VECTOR_LENGTH);
+        int vectorBound = outputLength - VECTOR_LENGTH;
 
-        for (; i < vectorLoopBound; i += VECTOR_LENGTH) {
-            // Initialize result vector
-            DoubleVector result = DoubleVector.zero(SPECIES);
+        // Allocate indices array on stack for small size - avoids ThreadLocal overhead
+        int[] indices = new int[VECTOR_LENGTH];
 
-            // Compute convolution for each output element in the vector
-            for (int k = 0; k < filterLength; k++) {
-                // Broadcast filter coefficient
-                DoubleVector filterVec = DoubleVector.broadcast(SPECIES, filter[k]);
+        for (; i <= vectorBound; i += VECTOR_LENGTH) {
+            DoubleVector accumulator = DoubleVector.zero(SPECIES);
 
-                // Load signal values directly using gather for better performance
-                // Create index array for gather operation
-                int[] indices = new int[VECTOR_LENGTH];
-                for (int v = 0; v < VECTOR_LENGTH; v++) {
-                    indices[v] = (2 * (i + v) + k) & (signalLength - 1); // Periodic boundary
+            // Unroll first few filter taps for common sizes (performance optimization)
+            if (filterLength >= 4) {
+                // Unroll first 4 taps to reduce loop overhead
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[0], indices, signalMask, i, 0));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[1], indices, signalMask, i, 1));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[2], indices, signalMask, i, 2));
+                accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[3], indices, signalMask, i, 3));
+
+                // Process remaining filter taps
+                for (int k = 4; k < filterLength; k++) {
+                    accumulator = accumulator.add(gatherMultiplyAccumulate(signal, filter[k], indices, signalMask, i, k));
                 }
-
-                // Use fromArray with computed indices - more efficient than temporary array
-                DoubleVector signalVec = DoubleVector.fromArray(SPECIES, signal, 0,
-                        indices, 0);
-                result = result.add(filterVec.mul(signalVec));
+            } else {
+                // General case for small filters
+                for (int k = 0; k < filterLength; k++) {
+                    for (int v = 0; v < VECTOR_LENGTH; v++) {
+                        indices[v] = (2 * (i + v) + k) & signalMask;
+                    }
+                    DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                    accumulator = accumulator.add(sigVec.mul(filter[k]));
+                }
             }
 
-            // Store results
-            result.intoArray(output, i);
+            accumulator.intoArray(output, i);
         }
 
         // Handle remaining elements with scalar operations
         for (; i < outputLength; i++) {
             double sum = 0.0;
             for (int k = 0; k < filterLength; k++) {
-                int idx = (2 * i + k) & (signalLength - 1);
+                int idx = (2 * i + k) & signalMask;
                 sum += filter[k] * signal[idx];
             }
             output[i] = sum;
         }
 
         return output;
+    }
+    
+    /**
+     * Helper method for efficient gather-multiply-accumulate operations.
+     */
+    private static DoubleVector gatherMultiplyAccumulate(double[] signal, double filterCoeff, 
+            int[] indices, int signalMask, int baseIndex, int filterIndex) {
+        // Compute indices for gather operation
+        for (int v = 0; v < VECTOR_LENGTH; v++) {
+            indices[v] = (2 * (baseIndex + v) + filterIndex) & signalMask;
+        }
+        
+        // Gather signal values and multiply by filter coefficient
+        DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+        return sigVec.mul(filterCoeff);
     }
 
     /**
@@ -758,6 +803,139 @@ public final class VectorOps {
             } else {
                 return Math.min(8.0, 6.0 + (arraySize - threshold * 16) * 0.0001);  // Cap at 8x
             }
+        }
+    }
+    
+    // ========== Specialized Optimized Methods (consolidated from VectorOpsOptimized) ==========
+    
+    /**
+     * Specialized Haar wavelet transform exploiting its simple structure for maximum performance.
+     * 
+     * <p>The Haar transform is computed as:</p>
+     * <ul>
+     *   <li>Approximation: (s[2i] + s[2i+1]) / √2</li>
+     *   <li>Detail: (s[2i] - s[2i+1]) / √2</li>
+     * </ul>
+     * 
+     * <p>This avoids generic convolution overhead by directly computing additions/subtractions.</p>
+     */
+    public static void haarTransformVectorized(double[] signal, double[] approxCoeffs, double[] detailCoeffs) {
+        int length = signal.length;
+        int outputLength = length / 2;
+        
+        if (!isVectorizedOperationBeneficial(length)) {
+            // Scalar fallback for small signals
+            double sqrt2 = Math.sqrt(2.0);
+            for (int i = 0; i < outputLength; i++) {
+                double even = signal[2 * i];
+                double odd = signal[2 * i + 1];
+                approxCoeffs[i] = (even + odd) / sqrt2;
+                detailCoeffs[i] = (even - odd) / sqrt2;
+            }
+            return;
+        }
+        
+        // Vectorized implementation
+        DoubleVector sqrt2Vec = DoubleVector.broadcast(SPECIES, Math.sqrt(2.0));
+        int i = 0;
+        int vectorBound = outputLength - VECTOR_LENGTH;
+        
+        for (; i <= vectorBound; i += VECTOR_LENGTH) {
+            // Load even and odd samples
+            int[] evenIndices = new int[VECTOR_LENGTH];
+            int[] oddIndices = new int[VECTOR_LENGTH];
+            
+            for (int v = 0; v < VECTOR_LENGTH; v++) {
+                evenIndices[v] = 2 * (i + v);
+                oddIndices[v] = 2 * (i + v) + 1;
+            }
+            
+            DoubleVector evenVec = DoubleVector.fromArray(SPECIES, signal, 0, evenIndices, 0);
+            DoubleVector oddVec = DoubleVector.fromArray(SPECIES, signal, 0, oddIndices, 0);
+            
+            // Compute approximation and detail coefficients
+            DoubleVector approxVec = evenVec.add(oddVec).div(sqrt2Vec);
+            DoubleVector detailVec = evenVec.sub(oddVec).div(sqrt2Vec);
+            
+            // Store results
+            approxVec.intoArray(approxCoeffs, i);
+            detailVec.intoArray(detailCoeffs, i);
+        }
+        
+        // Handle remaining elements with scalar operations
+        double sqrt2 = Math.sqrt(2.0);
+        for (; i < outputLength; i++) {
+            double even = signal[2 * i];
+            double odd = signal[2 * i + 1];
+            approxCoeffs[i] = (even + odd) / sqrt2;
+            detailCoeffs[i] = (even - odd) / sqrt2;
+        }
+    }
+    
+    /**
+     * Combined transform processing that computes both approximation and detail coefficients
+     * in a single pass for better cache efficiency.
+     * 
+     * <p>This method processes both low-pass and high-pass filters simultaneously,
+     * reducing memory bandwidth by reusing loaded signal values.</p>
+     */
+    public static void combinedTransformPeriodicVectorized(double[] signal, double[] lowFilter, 
+            double[] highFilter, double[] approxCoeffs, double[] detailCoeffs) {
+        
+        int signalLength = signal.length;
+        int outputLength = signalLength / 2;
+        int filterLength = lowFilter.length;
+        
+        if (!isVectorizedOperationBeneficial(signalLength)) {
+            // Fallback to scalar operations
+            ScalarOps.convolveAndDownsamplePeriodic(signal, lowFilter, signalLength, filterLength);
+            ScalarOps.convolveAndDownsamplePeriodic(signal, highFilter, signalLength, filterLength);
+            return;
+        }
+        
+        int signalMask = signalLength - 1;
+        int i = 0;
+        int vectorBound = outputLength - VECTOR_LENGTH;
+        int[] indices = new int[VECTOR_LENGTH];
+        
+        for (; i <= vectorBound; i += VECTOR_LENGTH) {
+            DoubleVector approxAccum = DoubleVector.zero(SPECIES);
+            DoubleVector detailAccum = DoubleVector.zero(SPECIES);
+            
+            // Process both filters simultaneously
+            for (int k = 0; k < filterLength; k++) {
+                // Compute gather indices once for both filters
+                for (int v = 0; v < VECTOR_LENGTH; v++) {
+                    indices[v] = (2 * (i + v) + k) & signalMask;
+                }
+                
+                // Load signal values once
+                DoubleVector sigVec = DoubleVector.fromArray(SPECIES, signal, 0, indices, 0);
+                
+                // Accumulate for both filters
+                approxAccum = approxAccum.add(sigVec.mul(lowFilter[k]));
+                detailAccum = detailAccum.add(sigVec.mul(highFilter[k]));
+            }
+            
+            // Store results
+            approxAccum.intoArray(approxCoeffs, i);
+            detailAccum.intoArray(detailCoeffs, i);
+        }
+        
+        // Handle remaining elements with scalar operations
+        for (; i < outputLength; i++) {
+            double approxSum = 0.0;
+            double detailSum = 0.0;
+            
+            for (int k = 0; k < filterLength; k++) {
+                int idx = (2 * i + k) & signalMask;
+                double sigVal = signal[idx];
+                approxSum += lowFilter[k] * sigVal;
+                detailSum += highFilter[k] * sigVal;
+            }
+            
+            approxCoeffs[i] = approxSum;
+            detailCoeffs[i] = detailSum;
         }
     }
 }

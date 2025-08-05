@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.modwt;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,7 @@ class MODWTTransformTest {
             () -> new MODWTTransform(new Haar(), null));
         
         // Test unsupported boundary mode - SYMMETRIC is not supported
-        assertThrows(IllegalArgumentException.class, 
+        assertThrows(InvalidArgumentException.class, 
             () -> new MODWTTransform(new Haar(), BoundaryMode.SYMMETRIC));
         
         // Test that supported boundary modes work

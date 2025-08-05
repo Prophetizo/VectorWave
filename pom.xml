@@ -53,6 +53,21 @@
             <version>${jmh.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Apache Commons Compress for handling tar.xz files -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- XZ for Java - required by Commons Compress for XZ support -->
+        <dependency>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -64,7 +79,6 @@
                 <configuration>
                     <excludes>
                         <exclude>**/demo/**</exclude>
-                        <exclude>ai/prophetizo/wavelet/streaming/**</exclude>
                     </excludes>
                     <compilerArgs>
                         <!-- Enable Vector API for high-performance SIMD operations -->

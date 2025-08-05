@@ -2,8 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
-import ai.prophetizo.wavelet.internal.ScalarOps;
-import ai.prophetizo.wavelet.internal.VectorOps;
+import ai.prophetizo.wavelet.WaveletOperations;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +51,11 @@ public class Java23PerformanceDemo {
     private static void displaySystemCapabilities() {
         System.out.println("📊 System Capabilities:");
         
-        var perfInfo = ScalarOps.getPerformanceInfo();
+        var perfInfo = WaveletOperations.getPerformanceInfo();
         System.out.println("  • " + perfInfo.description());
         
         if (perfInfo.vectorizationEnabled()) {
-            var vectorInfo = perfInfo.vectorCapabilities();
-            System.out.println("  • Vector Shape: " + vectorInfo.shape());
+            System.out.println("  • Vector Species: " + perfInfo.vectorSpecies());
             System.out.println("  • Elements per Vector: " + vectorInfo.length());
             System.out.println("  • Vectorization Threshold: " + vectorInfo.threshold());
         }

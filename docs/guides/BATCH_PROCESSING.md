@@ -16,18 +16,18 @@ Batch processing in VectorWave provides true parallel processing of multiple sig
 ### Simple Batch Transform
 
 ```java
-import ai.prophetizo.wavelet.*;
+import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.api.*;
 
-// Create a wavelet transform
-WaveletTransform transform = new WaveletTransform(new Haar(), BoundaryMode.PERIODIC);
+// Create a MODWT transform
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
 
-// Prepare multiple signals
-double[][] signals = new double[32][1024]; // 32 signals of length 1024
+// Prepare multiple signals of any length
+double[][] signals = new double[32][777]; // 32 signals of length 777 (any length!)
 // ... populate signals ...
 
-// Process all signals in parallel
-TransformResult[] results = transform.forwardBatch(signals);
+// Process all signals in parallel with automatic SIMD optimization
+MODWTResult[] results = transform.forwardBatch(signals);
 
 // Inverse transform
 double[][] reconstructed = transform.inverseBatch(results);
@@ -37,33 +37,30 @@ double[][] reconstructed = transform.inverseBatch(results);
 
 ```java
 // Daubechies wavelets
-WaveletTransform db4Transform = new WaveletTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
-TransformResult[] db4Results = db4Transform.forwardBatch(signals);
+MODWTTransform db4Transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+MODWTResult[] db4Results = db4Transform.forwardBatch(signals);
 
 // Symlet wavelets
-WaveletTransform sym4Transform = new WaveletTransform(Symlet.SYM4, BoundaryMode.PERIODIC);
-TransformResult[] sym4Results = sym4Transform.forwardBatch(signals);
+MODWTTransform sym4Transform = new MODWTTransform(Symlet.SYM4, BoundaryMode.PERIODIC);
+MODWTResult[] sym4Results = sym4Transform.forwardBatch(signals);
 ```
 
 ## Advanced Configuration
 
-### Optimized Transform Engine
+### Automatic Batch Optimization
 
-For maximum performance, use the `OptimizedTransformEngine`:
+MODWT automatically applies optimizations based on signal characteristics:
 
 ```java
-// Create engine with custom configuration
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-    .withParallelism(8)           // Number of threads (use 1 for pure SIMD)
-    .withSoALayout(true)          // Enable Structure-of-Arrays optimization
-    .withSpecializedKernels(true) // Use optimized kernels for common wavelets
-    .withCacheBlocking(true)      // Enable cache-aware blocking
-    .withMemoryPool(true);        // Use memory pooling
+// Create MODWT transform - optimizations are automatic
+MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
 
-OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
-
-// Process batch
-TransformResult[] results = engine.transformBatch(signals, wavelet, boundaryMode);
+// Process batch - automatically uses:
+// - SIMD vectorization when beneficial
+// - Optimized memory layout for cache efficiency  
+// - Platform-specific optimizations (ARM vs x86)
+// - Specialized kernels for common wavelets
+MODWTResult[] results = transform.forwardBatch(signals);
 ```
 
 ### Memory-Aligned Batch Processing
@@ -98,9 +95,9 @@ try (BatchMemoryLayout layout = new BatchMemoryLayout(batchSize, signalLength)) 
 
 ### 2. Signal Length Considerations
 
-- Powers of 2 are most efficient
+- MODWT works with any signal length (no padding needed!)
 - Longer signals benefit more from batch processing
-- Consider padding non-power-of-2 signals
+- SIMD optimizations automatically applied for signals > 64 elements
 
 ### 3. Memory Layout
 
@@ -121,8 +118,10 @@ Sample 1: [s0_1, s1_1, s2_1, ...]
 ### 4. Platform-Specific Optimization
 
 ```java
-// Get information about the current platform's SIMD capabilities
-System.out.println(BatchSIMDTransform.getBatchSIMDInfo());
+// Get information about the current platform's capabilities
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+MODWTTransform.PerformanceInfo perfInfo = transform.getPerformanceInfo();
+System.out.println(perfInfo.description());
 ```
 
 ## Real-World Examples
@@ -134,12 +133,17 @@ System.out.println(BatchSIMDTransform.getBatchSIMDInfo());
 double[][] stereoSignal = new double[2][44100]; // 1 second at 44.1kHz
 // ... load audio data ...
 
-WaveletTransform transform = new WaveletTransform(Daubechies.DB8, BoundaryMode.PERIODIC);
-TransformResult[] channelResults = transform.forwardBatch(stereoSignal);
+MODWTTransform transform = new MODWTTransform(Daubechies.DB8, BoundaryMode.PERIODIC);
+MODWTResult[] channelResults = transform.forwardBatch(stereoSignal);
 
 // Apply processing to each channel
 for (int ch = 0; ch < 2; ch++) {
-    // ... process channelResults[ch] ...
+    // Process using factory methods
+    double[] modifiedDetail = processDetails(channelResults[ch].detailCoeffs());
+    channelResults[ch] = MODWTResult.create(
+        channelResults[ch].approximationCoeffs(), 
+        modifiedDetail
+    );
 }
 
 // Reconstruct
@@ -154,13 +158,9 @@ String[] symbols = {"AAPL", "GOOGL", "MSFT", "AMZN"};
 double[][] priceData = new double[symbols.length][252]; // 1 year of daily data
 // ... load price data ...
 
-// Use optimized engine for financial analysis
-OptimizedTransformEngine engine = new OptimizedTransformEngine();
-TransformResult[] results = engine.transformBatch(
-    priceData, 
-    Daubechies.DB4, 
-    BoundaryMode.PERIODIC
-);
+// MODWT provides optimal processing for financial analysis
+MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+MODWTResult[] results = transform.forwardBatch(priceData);
 
 // Analyze each stock's wavelet coefficients
 for (int i = 0; i < symbols.length; i++) {
@@ -178,20 +178,14 @@ int samplesPerSecond = 1000;
 double[][] sensorData = new double[numSensors][samplesPerSecond];
 // ... collect sensor data ...
 
-// Configure for real-time processing
-OptimizedTransformEngine.EngineConfig config = new OptimizedTransformEngine.EngineConfig()
-    .withParallelism(1)      // Single thread for low latency
-    .withSoALayout(true)     // Optimize for SIMD
-    .withMemoryPool(true);   // Reduce allocation overhead
+// MODWT automatically optimizes for real-time processing
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
 
-OptimizedTransformEngine engine = new OptimizedTransformEngine(config);
-
-// Process in real-time
-TransformResult[] sensorResults = engine.transformBatch(
-    sensorData,
-    new Haar(),  // Fast wavelet for real-time
-    BoundaryMode.PERIODIC
-);
+// Process in real-time - MODWT automatically:
+// - Uses SIMD for low-latency processing
+// - Optimizes memory access patterns
+// - Minimizes allocation overhead
+MODWTResult[] sensorResults = transform.forwardBatch(sensorData);
 ```
 
 ## Performance Benchmarking
@@ -252,9 +246,10 @@ System.out.printf("Batch processing speedup: %.2fx%n", speedup);
 ### Debug Information
 
 ```java
-// Get detailed optimization information
-OptimizedTransformEngine engine = new OptimizedTransformEngine();
-System.out.println(engine.getOptimizationInfo());
+// Get performance information
+MODWTTransform transform = new MODWTTransform(wavelet, boundaryMode);
+ScalarOps.PerformanceInfo perfInfo = transform.getPerformanceInfo();
+System.out.println(perfInfo.description());
 
 // Check SIMD capabilities
 System.out.println("Vector species: " + DoubleVector.SPECIES_PREFERRED);

@@ -2,7 +2,6 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
-import ai.prophetizo.wavelet.modwt.MODWTResultImpl;
 import ai.prophetizo.wavelet.api.*;
 
 import java.util.Arrays;
@@ -199,20 +198,25 @@ public class BasicUsageDemo {
         System.out.println("\nThresholding example:");
         double threshold = 0.1;
         int zeroedCount = 0;
-        double[] detailCoeffs = result.detailCoeffs();
-        for (int i = 0; i < detailCoeffs.length; i++) {
-            if (Math.abs(detailCoeffs[i]) < threshold) {
-                detailCoeffs[i] = 0;
+        double[] originalDetail = result.detailCoeffs();
+        double[] modifiedDetail = new double[originalDetail.length];
+        
+        // Create a modified copy of detail coefficients
+        for (int i = 0; i < originalDetail.length; i++) {
+            if (Math.abs(originalDetail[i]) < threshold) {
+                modifiedDetail[i] = 0;
                 zeroedCount++;
+            } else {
+                modifiedDetail[i] = originalDetail[i];
             }
         }
         System.out.printf("  Zeroed %d of %d detail coefficients (%.1f%%)\n",
-                zeroedCount, detailCoeffs.length,
-                100.0 * zeroedCount / detailCoeffs.length);
+                zeroedCount, originalDetail.length,
+                100.0 * zeroedCount / originalDetail.length);
 
-        // Reconstruct with modified coefficients
-        MODWTResult modifiedResult = new MODWTResultImpl(
-                result.approximationCoeffs(), detailCoeffs);
+        // Reconstruct with modified coefficients using factory method
+        MODWTResult modifiedResult = MODWTResult.create(
+                result.approximationCoeffs(), modifiedDetail);
         double[] reconstructed = transform.inverse(modifiedResult);
 
         double compressionError = calculateMaxError(signal, reconstructed);

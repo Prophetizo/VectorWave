@@ -20,8 +20,8 @@ package ai.prophetizo.financial;
  *       higher for volatile ones.</li>
  *   <li><strong>Anomaly Detection Threshold:</strong> Usually 2-4 standard deviations. 
  *       3.0 catches ~0.3% outliers, 2.0 catches ~5%.</li>
- *   <li><strong>Window Size:</strong> Must be power of 2. Common: 64 (quarterly), 128 (semi-annual), 
- *       256 (annual), 512 (2-year). Depends on data frequency.</li>
+ *   <li><strong>Window Size:</strong> Can be any size with MODWT. Common: 60 (quarterly), 120 (semi-annual), 
+ *       252 (annual trading days), 504 (2-year). Depends on data frequency.</li>
  *   <li><strong>Confidence Level:</strong> Typically 0.95 (95%) or 0.99 (99%). 
  *       Higher for risk-averse applications.</li>
  * </ul>
@@ -142,7 +142,7 @@ public final class FinancialAnalysisConfig {
     
     /**
      * Gets the window size for analysis operations.
-     * Must be a power of 2 for efficient wavelet transforms.
+     * Can be any size with MODWT transforms.
      * 
      * @return the analysis window size
      */
@@ -250,13 +250,13 @@ public final class FinancialAnalysisConfig {
         /**
          * Sets the window size for analysis.
          * 
-         * @param size the window size (must be a power of 2 and at least 2)
+         * @param size the window size (must be at least 2)
          * @return this builder
-         * @throws IllegalArgumentException if size is not a power of 2 or less than 2
+         * @throws IllegalArgumentException if size is less than 2
          */
         public Builder windowSize(int size) {
-            if (size < 2 || (size & (size - 1)) != 0) {
-                throw new IllegalArgumentException("Window size must be a power of 2 and at least 2");
+            if (size < 2) {
+                throw new IllegalArgumentException("Window size must be at least 2");
             }
             this.windowSize = size;
             return this;

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
@@ -10,15 +11,15 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * wavelet transforms. Arrays are borrowed and returned to avoid
  * frequent allocations during batch processing.</p>
  */
-public final class ArrayPool {
+final class ArrayPool {
 
     // Common signal sizes for financial time series
     private static final int[] POOL_SIZES = {32, 64, 128, 256, 512, 1024};
     private static final int MAX_ARRAYS_PER_SIZE = 4; // Per thread
 
-    // Thread-local pools to avoid contention
-    private static final ThreadLocal<Pool> THREAD_LOCAL_POOL =
-            ThreadLocal.withInitial(Pool::new);
+    // Thread-local pools to avoid contention - managed by ThreadLocalManager
+    private static final ThreadLocalManager.ManagedThreadLocal<Pool> THREAD_LOCAL_POOL =
+            ThreadLocalManager.withInitial(Pool::new);
 
     private ArrayPool() {
         // Prevent instantiation

@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.memory;
 
+import ai.prophetizo.wavelet.util.ThreadLocalManager;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,9 +33,9 @@ public final class AlignedMemoryPool {
             64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768
     };
 
-    // Thread-local pools for zero contention on common sizes
-    private static final ThreadLocal<Pool[]> THREAD_LOCAL_POOLS =
-            ThreadLocal.withInitial(AlignedMemoryPool::createThreadLocalPools);
+    // Thread-local pools for zero contention on common sizes - managed by ThreadLocalManager
+    private static final ThreadLocalManager.ManagedThreadLocal<Pool[]> THREAD_LOCAL_POOLS =
+            ThreadLocalManager.withInitial(AlignedMemoryPool::createThreadLocalPools);
 
     // Global pools for less common sizes
     @SuppressWarnings("unchecked")

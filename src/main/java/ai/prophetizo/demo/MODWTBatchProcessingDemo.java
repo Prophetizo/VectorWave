@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.*;
 import ai.prophetizo.wavelet.modwt.*;
-import ai.prophetizo.wavelet.internal.BatchSIMDTransform;
+import ai.prophetizo.wavelet.modwt.MODWTBatchSIMD;
 import ai.prophetizo.wavelet.memory.BatchMemoryLayout;
 import jdk.incubator.vector.DoubleVector;
 
@@ -29,7 +29,7 @@ public class MODWTBatchProcessingDemo {
         // Check SIMD capabilities
         System.out.println("Platform Information:");
         System.out.println("SIMD vector length: " + DoubleVector.SPECIES_PREFERRED.length());
-        System.out.println(BatchSIMDTransform.getBatchSIMDInfo());
+        System.out.println(MODWTBatchSIMD.getBatchSIMDInfo());
         System.out.println();
         
         // Demo 1: Basic MODWT batch transform
@@ -105,16 +105,8 @@ public class MODWTBatchProcessingDemo {
         System.out.println("2. Optimized MODWT Transform Engine");
         System.out.println("-----------------------------------");
         
-        // Configure engine for maximum performance
-        MODWTOptimizedTransformEngine.EngineConfig config = 
-            new MODWTOptimizedTransformEngine.EngineConfig()
-                .withParallelism(4)              // Use 4 threads
-                .withSoALayout(true)             // Structure-of-Arrays optimization
-                .withSpecializedKernels(true)    // Use optimized kernels
-                .withCacheBlocking(true)         // Enable cache-aware blocking
-                .withMemoryPool(true);           // Use memory pooling
-        
-        MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine(config);
+        // Create MODWT transform - optimizations are automatic
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
         
         // Prepare batch of signals with same length for optimal processing
         int batchSize = 32;
@@ -131,7 +123,7 @@ public class MODWTBatchProcessingDemo {
         
         // Process batch with optimized engine
         long startTime = System.nanoTime();
-        MODWTResult[] results = engine.transformBatch(signals, Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTResult[] results = transform.forwardBatch(signals);
         long elapsedTime = System.nanoTime() - startTime;
         
         System.out.println("Processed " + batchSize + " signals of length " + signalLength);
@@ -145,7 +137,7 @@ public class MODWTBatchProcessingDemo {
         System.out.println("3. Multi-Level MODWT Batch Processing");
         System.out.println("-------------------------------------");
         
-        MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
+        MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
         
         // Create signals
         int batchSize = 8;
@@ -247,8 +239,8 @@ public class MODWTBatchProcessingDemo {
         }
         
         // Process with MODWT for multi-scale analysis
-        MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
-        MODWTResult[] results = engine.transformBatch(returns, Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+        MODWTResult[] results = transform.forwardBatch(returns);
         
         System.out.println("Analyzed " + numAssets + " asset return series");
         
@@ -294,9 +286,9 @@ public class MODWTBatchProcessingDemo {
             long seqTime = System.nanoTime() - seqStart;
             
             // Optimized batch processing
-            MODWTOptimizedTransformEngine engine = new MODWTOptimizedTransformEngine();
+            MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
             long optStart = System.nanoTime();
-            engine.transformBatch(signals, new Haar(), BoundaryMode.PERIODIC);
+            transform.forwardBatch(signals);
             long optTime = System.nanoTime() - optStart;
             
             double speedup = (double) seqTime / optTime;

@@ -25,7 +25,7 @@
  * <ul>
  *   <li>{@link ai.prophetizo.demo.BatchProcessingDemo} - SIMD batch processing features</li>
  *   <li>{@link ai.prophetizo.demo.ScalarVsVectorDemo} - Vector API performance comparison</li>
- *   <li>{@link ai.prophetizo.demo.PerformanceOptimizationDemo} - Optimization techniques</li>
+ *   <li>{@link ai.prophetizo.demo.PerformanceDemo} - Performance optimization techniques</li>
  *   <li>{@link ai.prophetizo.demo.MemoryEfficiencyDemo} - Memory management strategies</li>
  *   <li>{@link ai.prophetizo.demo.FFMDemo} - Foreign Function & Memory API features</li>
  *   <li>{@link ai.prophetizo.demo.FFMSimpleDemo} - Basic FFM usage</li>
@@ -35,7 +35,7 @@
  * <ul>
  *   <li>{@link ai.prophetizo.demo.FinancialAnalysisDemo} - Financial metrics and analysis</li>
  *   <li>{@link ai.prophetizo.demo.FinancialDemo} - Wavelet-based financial analysis</li>
- *   <li>{@link ai.prophetizo.demo.FinancialOptimizationDemo} - Optimized financial processing</li>
+ *   <li>{@link ai.prophetizo.demo.PerformanceDemo} - Performance characteristics and benchmarking</li>
  *   <li>{@link ai.prophetizo.demo.StreamingFinancialDemo} - Real-time financial analysis</li>
  *   <li>{@link ai.prophetizo.demo.LiveTradingSimulation} - Simulated trading with wavelets</li>
  * </ul>

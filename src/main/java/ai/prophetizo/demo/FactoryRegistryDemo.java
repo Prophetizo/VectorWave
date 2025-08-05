@@ -95,14 +95,7 @@ public class FactoryRegistryDemo {
         // Use each default factory
         System.out.println("\nUsing default factories:");
         
-        // WaveletOps factory
-        registry.getFactory("waveletOps", 
-                WaveletOpsFactory.WaveletOps.class, 
-                TransformConfig.class)
-            .ifPresent(factory -> {
-                var ops = factory.create();
-                System.out.println("  WaveletOps: " + ops.getImplementationType());
-            });
+        // WaveletOps factory was removed in favor of WaveletOperations facade
         
         // MODWT Transform factory
         registry.getFactory("modwtTransform", 

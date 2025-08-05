@@ -47,7 +47,7 @@ public final class FinancialAnalyzer {
      * market crashes. The analysis compares positive and negative movements
      * in the detail coefficients.</p>
      * 
-     * @param prices the price time series (must not be null and length must be power of 2)
+     * @param prices the price time series (must not be null)
      * @return the asymmetry score; values above the configured threshold indicate potential crashes
      * @throws IllegalArgumentException if prices is null or invalid length
      */
@@ -98,7 +98,7 @@ public final class FinancialAnalyzer {
      * <p>Uses wavelet analysis to measure volatility by analyzing the energy
      * in the detail coefficients, which capture high-frequency fluctuations.</p>
      * 
-     * @param prices the price time series (must not be null and length must be power of 2)
+     * @param prices the price time series (must not be null)
      * @return the volatility measure; compare against configured thresholds for classification
      * @throws IllegalArgumentException if prices is null or invalid length
      */
@@ -127,7 +127,7 @@ public final class FinancialAnalyzer {
      * <p>Uses wavelet analysis to detect potential regime changes by analyzing
      * the trend in approximation coefficients over time.</p>
      * 
-     * @param prices the price time series (must not be null and length must be power of 2)
+     * @param prices the price time series (must not be null)
      * @return the trend change measure; values above the configured threshold indicate regime shifts
      * @throws IllegalArgumentException if prices is null or invalid length
      */
@@ -161,7 +161,7 @@ public final class FinancialAnalyzer {
      * <p>Uses statistical analysis of wavelet coefficients to identify
      * outliers that deviate significantly from normal behavior.</p>
      * 
-     * @param prices the price time series (must not be null and length must be power of 2)
+     * @param prices the price time series (must not be null)
      * @return true if anomalies are detected above the configured threshold
      * @throws IllegalArgumentException if prices is null or invalid length
      */
@@ -262,15 +262,7 @@ public final class FinancialAnalyzer {
             }
         }
         
-        // Pad to power of 2 if necessary
-        int targetLength = nextPowerOfTwo(returns.length);
-        if (targetLength != returns.length) {
-            double[] padded = new double[targetLength];
-            System.arraycopy(returns, 0, padded, 0, returns.length);
-            // Remaining elements are already 0.0
-            return padded;
-        }
-        
+        // MODWT works with any signal length - no padding needed
         return returns;
     }
     
@@ -293,19 +285,7 @@ public final class FinancialAnalyzer {
         }
     }
     
-    /**
-     * Finds the next power of 2 greater than or equal to n.
-     */
-    private int nextPowerOfTwo(int n) {
-        if (n <= 1) return 2;
-        if ((n & (n - 1)) == 0) return n; // Already a power of 2
-        
-        int power = 1;
-        while (power < n) {
-            power <<= 1;
-        }
-        return power;
-    }
+    // nextPowerOfTwo method removed - MODWT doesn't need power-of-2 lengths
     
     /**
      * Enumeration for volatility classification.

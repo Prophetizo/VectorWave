@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Simple tests to debug MODWT implementation issues.
  */
-public class SimpleMODWTTest {
+class SimpleMODWTTest {
     
     @Test
     void testSingleLevelMODWT() {
