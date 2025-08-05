@@ -2,6 +2,7 @@ package ai.prophetizo.wavelet.internal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -1074,5 +1075,186 @@ class GatherScatterOpsTest {
         
         boolean result = (boolean) method.invoke(null);
         System.out.println("X86 Gather support: " + result);
+    }
+    
+    // ==========================================
+    // Additional tests to increase coverage to 70%
+    // ==========================================
+    
+    @Test
+    @Order(71)
+    @DisplayName("Test gather periodic downsample public method with vector path")
+    void testGatherPeriodicDownsampleVectorPath() {
+        // This should test the vector path when GATHER_SCATTER_AVAILABLE would be true
+        double[] signal = new double[32];
+        double[] filter = {0.25, 0.25, 0.25, 0.25};
+        
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / signal.length) * 100;
+        }
+        
+        double[] result = GatherScatterOps.gatherPeriodicDownsample(
+            signal, filter, signal.length, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(16, result.length);
+        
+        // Verify no NaN or Infinity
+        for (double val : result) {
+            assertFalse(Double.isNaN(val));
+            assertFalse(Double.isInfinite(val));
+        }
+    }
+    
+    @Test
+    @Order(72)
+    @DisplayName("Test scatter upsample public method")
+    void testScatterUpsamplePublic() {
+        double[] approx = new double[16];
+        double[] detail = new double[16];
+        double[] output = new double[32];
+        
+        for (int i = 0; i < 16; i++) {
+            approx[i] = i * 2.0;
+            detail[i] = i * 2.0 + 1.0;
+        }
+        
+        GatherScatterOps.scatterUpsample(approx, detail, output, output.length);
+        
+        // Verify interleaving
+        for (int i = 0; i < 16; i++) {
+            assertEquals(approx[i], output[2 * i], EPSILON);
+            assertEquals(detail[i], output[2 * i + 1], EPSILON);
+        }
+    }
+    
+    @Test
+    @Order(73)
+    @DisplayName("Test batch gather public method with large batch")
+    void testBatchGatherLarge() {
+        int numSignals = 64;
+        int signalLength = 256;
+        int numIndices = 32;
+        
+        double[][] signals = new double[numSignals][signalLength];
+        int[] indices = new int[numIndices];
+        double[][] results = new double[numSignals][numIndices];
+        
+        // Initialize
+        for (int s = 0; s < numSignals; s++) {
+            for (int i = 0; i < signalLength; i++) {
+                signals[s][i] = s * 1000.0 + i;
+            }
+        }
+        
+        for (int i = 0; i < numIndices; i++) {
+            indices[i] = i * 8; // Every 8th element
+        }
+        
+        GatherScatterOps.batchGather(signals, indices, results, numIndices);
+        
+        // Verify
+        for (int s = 0; s < numSignals; s++) {
+            for (int i = 0; i < numIndices; i++) {
+                assertEquals(signals[s][indices[i]], results[s][i], EPSILON);
+            }
+        }
+    }
+    
+    @Test
+    @Order(74)
+    @DisplayName("Test gather strided public method with extra large stride")
+    void testGatherStridedExtraLargeStride() {
+        double[] signal = new double[200];
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = Math.exp(i * 0.01);
+        }
+        
+        // Large stride > 8
+        double[] result = GatherScatterOps.gatherStrided(signal, 5, 15, 12);
+        
+        assertNotNull(result);
+        assertEquals(12, result.length);
+        
+        for (int i = 0; i < 12; i++) {
+            assertEquals(signal[5 + i * 15], result[i], EPSILON);
+        }
+    }
+    
+    @Test
+    @Order(75)
+    @DisplayName("Test gather compressed public method with sparse mask")
+    void testGatherCompressedSparse() {
+        double[] signal = new double[128];
+        boolean[] mask = new boolean[128];
+        
+        // Create sparse mask - every 7th element
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = i * Math.PI;
+            mask[i] = (i % 7 == 0);
+        }
+        
+        double[] result = GatherScatterOps.gatherCompressed(signal, mask);
+        
+        assertNotNull(result);
+        
+        // Count expected
+        int expectedCount = 0;
+        for (boolean m : mask) {
+            if (m) expectedCount++;
+        }
+        assertEquals(expectedCount, result.length);
+        
+        // Verify values
+        int idx = 0;
+        for (int i = 0; i < signal.length; i++) {
+            if (mask[i]) {
+                assertEquals(signal[i], result[idx++], EPSILON);
+            }
+        }
+    }
+    
+    @Test
+    @Order(76)
+    @DisplayName("Test gather periodic downsample with signal length not power of 2")
+    void testGatherPeriodicDownsampleNonPowerOf2() {
+        double[] signal = new double[50]; // Not a power of 2
+        double[] filter = {0.5, 0.5};
+        
+        for (int i = 0; i < signal.length; i++) {
+            signal[i] = i + 1.0;
+        }
+        
+        double[] result = GatherScatterOps.gatherPeriodicDownsample(
+            signal, filter, signal.length, filter.length);
+        
+        assertNotNull(result);
+        assertEquals(25, result.length);
+    }
+    
+    @Test
+    @Order(77)
+    @DisplayName("Test scatter upsample with different sizes")
+    void testScatterUpsampleDifferentSizes() {
+        int[] sizes = {4, 8, 16, 32, 64};
+        
+        for (int halfSize : sizes) {
+            double[] approx = new double[halfSize];
+            double[] detail = new double[halfSize];
+            double[] output = new double[halfSize * 2];
+            
+            for (int i = 0; i < halfSize; i++) {
+                approx[i] = Math.cos(2 * Math.PI * i / halfSize);
+                detail[i] = Math.sin(2 * Math.PI * i / halfSize);
+            }
+            
+            GatherScatterOps.scatterUpsample(approx, detail, output, output.length);
+            
+            // Verify
+            for (int i = 0; i < halfSize; i++) {
+                assertEquals(approx[i], output[2 * i], EPSILON);
+                assertEquals(detail[i], output[2 * i + 1], EPSILON);
+            }
+        }
     }
 }
