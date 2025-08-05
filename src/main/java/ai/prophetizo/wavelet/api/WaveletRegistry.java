@@ -394,7 +394,7 @@ public final class WaveletRegistry {
         int filterLength = 0;
         
         // Extract properties for discrete wavelets
-        if (wavelet instanceof DiscreteWavelet discreteWavelet) {
+        if (wavelet != null && wavelet instanceof DiscreteWavelet discreteWavelet) {
             vanishingMoments = discreteWavelet.vanishingMoments();
             filterLength = discreteWavelet.lowPassDecomposition().length;
         }
