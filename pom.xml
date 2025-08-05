@@ -79,6 +79,17 @@
                 <configuration>
                     <excludes>
                         <exclude>**/demo/**</exclude>
+                        <!-- Temporarily exclude files with Java 23+ features -->
+                        <exclude>**/ModernWaveletAnalyzer.java</exclude>
+                        <exclude>**/AdaptivePerformanceEstimator.java</exclude>
+                        <exclude>**/OptimalScaleSelector.java</exclude>
+                        <exclude>**/GaussianDerivativeWavelet.java</exclude>
+                        <exclude>**/PaulWavelet.java</exclude>
+                        <exclude>**/FinancialWaveletAnalyzer.java</exclude>
+                        <exclude>**/CWTTransform.java</exclude>
+                        <exclude>**/SignalProcessor.java</exclude>
+                        <exclude>**/PlatformDetector.java</exclude>
+                        <exclude>**/StreamingDenoiserFactory.java</exclude>
                     </excludes>
                     <compilerArgs>
                         <!-- Enable additional warnings -->

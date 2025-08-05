@@ -244,4 +244,166 @@ class ThreadLocalManagerTest {
         assertTrue(summary.contains("active"));
         assertTrue(summary.contains("cleanup"));
     }
+    
+    @Test
+    void testRegisterManagedThreadLocal() {
+        ThreadLocalManager.ManagedThreadLocal<String> managed = 
+            ThreadLocalManager.withInitial(() -> "managed");
+        
+        // Register an already managed ThreadLocal
+        ThreadLocalManager.register(managed);
+        
+        managed.set("test value");
+        
+        ThreadLocalManager.ThreadLocalStats stats = ThreadLocalManager.getStats();
+        assertTrue(stats.activeCount() > 0);
+        
+        ThreadLocalManager.cleanupCurrentThread();
+        assertEquals("managed", managed.get()); // Should be back to initial value
+    }
+    
+    @Test
+    void testRegisterLegacyThreadLocal() {
+        ThreadLocal<String> legacy = ThreadLocal.withInitial(() -> "legacy");
+        
+        // Register a legacy ThreadLocal
+        ThreadLocalManager.register(legacy);
+        
+        legacy.set("legacy value");
+        assertEquals("legacy value", legacy.get());
+        
+        // Cleanup should affect the wrapped legacy ThreadLocal
+        ThreadLocalManager.cleanupCurrentThread();
+        
+        // After cleanup, legacy ThreadLocal should be reset to initial value
+        assertEquals("legacy", legacy.get());
+    }
+    
+    @Test
+    void testSetLeakDetectionEnabled() {
+        boolean originalState = ThreadLocalManager.isLeakDetectionEnabled();
+        
+        try {
+            // Test enabling
+            ThreadLocalManager.setLeakDetectionEnabled(true);
+            assertTrue(ThreadLocalManager.isLeakDetectionEnabled());
+            
+            // Test disabling
+            ThreadLocalManager.setLeakDetectionEnabled(false);
+            assertFalse(ThreadLocalManager.isLeakDetectionEnabled());
+            
+            // Test enabling again
+            ThreadLocalManager.setLeakDetectionEnabled(true);
+            assertTrue(ThreadLocalManager.isLeakDetectionEnabled());
+        } finally {
+            // Restore original state
+            ThreadLocalManager.setLeakDetectionEnabled(originalState);
+        }
+    }
+    
+    @Test
+    void testIsRemoved() {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> "initial");
+        
+        assertFalse(local.isRemoved());
+        
+        local.set("value");
+        assertFalse(local.isRemoved());
+        
+        local.remove();
+        assertTrue(local.isRemoved());
+    }
+    
+    @Test
+    void testManagedThreadLocalWithNullInitialValue() {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> null);
+        
+        // Initially no value set (null initial doesn't count as "set")
+        assertFalse(local.hasValueForCurrentThread());
+        
+        // Getting null value should not mark as set
+        assertNull(local.get());
+        assertFalse(local.hasValueForCurrentThread());
+        
+        // Setting a non-null value should mark as set
+        local.set("value");
+        assertTrue(local.hasValueForCurrentThread());
+        
+        // Setting null should still mark as set
+        local.set(null);
+        assertTrue(local.hasValueForCurrentThread());
+    }
+    
+    @Test
+    void testManagedThreadLocalWithNonNullInitialValue() {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> "initial");
+        
+        // Initially no value set
+        assertFalse(local.hasValueForCurrentThread());
+        
+        // Getting initial value should mark as set
+        assertEquals("initial", local.get());
+        assertTrue(local.hasValueForCurrentThread());
+    }
+    
+    @Test
+    void testWithCleanupRunnableVersion() throws Exception {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> "default");
+        
+        local.set("before");
+        assertEquals("before", local.get());
+        
+        ThreadLocalManager.withCleanup(() -> {
+            local.set("during");
+            assertEquals("during", local.get());
+        });
+        
+        // After withCleanup, ThreadLocal should be cleaned
+        assertEquals("default", local.get());
+    }
+    
+    @Test
+    void testWithCleanupExceptionHandling() {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> "default");
+        
+        local.set("before");
+        
+        // Test that cleanup happens even when exception is thrown
+        assertThrows(RuntimeException.class, () -> {
+            ThreadLocalManager.withCleanup(() -> {
+                local.set("during");
+                throw new RuntimeException("Test exception");
+            });
+        });
+        
+        // Cleanup should still have happened
+        assertEquals("default", local.get());
+    }
+    
+    @Test
+    void testThreadLocalStatsHasPotentialLeak() {
+        ThreadLocalManager.ManagedThreadLocal<String> local = 
+            ThreadLocalManager.withInitial(() -> "test");
+        
+        // Initially no leak (no active ThreadLocals)
+        ThreadLocalManager.ThreadLocalStats stats = ThreadLocalManager.getStats();
+        assertFalse(stats.hasPotentialLeak());
+        
+        // Set a value to create active ThreadLocal
+        local.set("value");
+        stats = ThreadLocalManager.getStats();
+        
+        // Should have potential leak (active ThreadLocals without cleanup)
+        assertTrue(stats.hasPotentialLeak());
+        
+        // After cleanup, no leak
+        ThreadLocalManager.cleanupCurrentThread();
+        stats = ThreadLocalManager.getStats();
+        assertFalse(stats.hasPotentialLeak());
+    }
 }
