@@ -322,7 +322,10 @@ public class ThreadLocalManager {
      * @return The result of the operation
      * @throws Exception if the operation throws
      */
-    // CleanupScope is used only for its close() side effect, not for any contained resource
+    // Suppression rationale: CleanupScope is used solely for its side effect of performing cleanup
+    // when closed in the try-with-resources block. The resource itself does not need to be referenced
+    // or used beyond its close() method, as its purpose is to ensure proper cleanup of ThreadLocal state.
+    // SuppressWarnings("try") is applied to avoid false positives about unused resources.
     @SuppressWarnings("try")
     public static <T> T withCleanup(ThrowingSupplier<T> operation) throws Exception {
         try (CleanupScope scope = createScope()) {
