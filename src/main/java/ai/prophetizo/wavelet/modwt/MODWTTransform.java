@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.ErrorContext;
 import ai.prophetizo.wavelet.WaveletOperations;
+import ai.prophetizo.wavelet.util.MathUtils;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import ai.prophetizo.wavelet.performance.AdaptivePerformanceEstimator;
 import ai.prophetizo.wavelet.performance.PredictionResult;
@@ -74,7 +75,7 @@ public class MODWTTransform {
      * Automatically configures performance optimizations based on system capabilities.
      * 
      * @param wavelet      The wavelet to use for the transformations
-     * @param boundaryMode The boundary handling mode (PERIODIC or ZERO_PADDING)
+     * @param boundaryMode The boundary handling mode (PERIODIC, ZERO_PADDING, or SYMMETRIC)
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if boundary mode is not supported
      */
@@ -82,15 +83,18 @@ public class MODWTTransform {
         this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null");
         this.boundaryMode = Objects.requireNonNull(boundaryMode, "boundaryMode cannot be null");
         
-        // MODWT supports PERIODIC and ZERO_PADDING boundary modes
-        if (boundaryMode != BoundaryMode.PERIODIC && boundaryMode != BoundaryMode.ZERO_PADDING) {
+        // MODWT supports PERIODIC, ZERO_PADDING, and SYMMETRIC boundary modes
+        if (boundaryMode != BoundaryMode.PERIODIC &&
+            boundaryMode != BoundaryMode.ZERO_PADDING &&
+            boundaryMode != BoundaryMode.SYMMETRIC) {
             throw new InvalidArgumentException(
                 ErrorCode.CFG_UNSUPPORTED_BOUNDARY_MODE,
-                ErrorContext.builder("MODWT only supports PERIODIC and ZERO_PADDING boundary modes")
+                ErrorContext.builder("MODWT only supports PERIODIC, ZERO_PADDING, and SYMMETRIC boundary modes")
                     .withBoundaryMode(boundaryMode)
                     .withWavelet(wavelet)
                     .withSuggestion("Use BoundaryMode.PERIODIC for circular convolution")
                     .withSuggestion("Use BoundaryMode.ZERO_PADDING for zero-padding at edges")
+                    .withSuggestion("Use BoundaryMode.SYMMETRIC to mirror signal at boundaries")
                     .withContext("Transform type", "MODWT")
                     .build()
             );
@@ -146,9 +150,12 @@ public class MODWTTransform {
             // implementation when beneficial, falling back to scalar otherwise
             WaveletOperations.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
             WaveletOperations.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
-        } else { // ZERO_PADDING
+        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
             WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
             WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        } else { // SYMMETRIC
+            WaveletOperations.symmetricConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+            WaveletOperations.symmetricConvolveMODWT(signal, scaledHighPass, detailCoeffs);
         }
         
         long endTime = System.nanoTime();
@@ -221,31 +228,54 @@ public class MODWTTransform {
             // X_t = Σ(l=0 to L-1) [h_l * s_(t-l mod N) + g_l * d_(t-l mod N)]
             for (int t = 0; t < signalLength; t++) {
                 double sum = 0.0;
-                
+
                 // Sum over filter coefficients
                 // For MODWT reconstruction, we use (t + l) indexing since we used (t - l) in forward
                 for (int l = 0; l < scaledLowPassRecon.length; l++) {
                     int coeffIndex = (t + l) % signalLength;
-                    sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                    sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
                            scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
                 }
-                
+
                 reconstructed[t] = sum; // No additional normalization needed with scaled filters
             }
-        } else { // ZERO_PADDING
+        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
             // X_t = Σ(l=0 to L-1) [h_l * s_(t+l) + g_l * d_(t+l)] with zero padding
             for (int t = 0; t < signalLength; t++) {
                 double sum = 0.0;
-                
+
                 for (int l = 0; l < scaledLowPassRecon.length; l++) {
                     int coeffIndex = t + l;
                     if (coeffIndex < signalLength) {
-                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
                                scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
                     }
                     // else: treat as zero (no contribution to sum)
                 }
-                
+
+                reconstructed[t] = sum;
+            }
+        } else { // SYMMETRIC
+            // Use symmetric extension for reconstruction
+            // For MODWT reconstruction with symmetric boundaries, we need to apply
+            // the convolution with reconstruction filters using the same boundary extension
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+
+                // Apply convolution with reconstruction filters
+                // The reconstruction filters are applied in reverse time
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    // For reconstruction, we use (t - l) with time-reversed filters
+                    int idx = t - l;
+                    
+                    // Apply symmetric boundary extension using utility method
+                    idx = MathUtils.symmetricBoundaryExtension(idx, signalLength);
+                    
+                    // The reconstruction filters are time-reversed, so we use them directly
+                    sum += scaledLowPassRecon[l] * approxCoeffs[idx] +
+                           scaledHighPassRecon[l] * detailCoeffs[idx];
+                }
+
                 reconstructed[t] = sum;
             }
         }
@@ -528,10 +558,15 @@ public class MODWTTransform {
                 WaveletOperations.circularConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
                 WaveletOperations.circularConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
             }
-        } else { // ZERO_PADDING
+        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
             for (int b = 0; b < batchSize; b++) {
                 WaveletOperations.zeroPaddingConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
                 WaveletOperations.zeroPaddingConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
+            }
+        } else {
+            for (int b = 0; b < batchSize; b++) {
+                WaveletOperations.symmetricConvolveMODWT(signals[b], scaledLowPass, approxCoeffs[b]);
+                WaveletOperations.symmetricConvolveMODWT(signals[b], scaledHighPass, detailCoeffs[b]);
             }
         }
         
@@ -581,21 +616,35 @@ public class MODWTTransform {
                     double sum = 0.0;
                     for (int l = 0; l < scaledLowPassRecon.length; l++) {
                         int coeffIndex = (t + l) % signalLength;
-                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
                                scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
                     }
                     reconstructed[b][t] = sum;
                 }
-            } else { // ZERO_PADDING
+            } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
                 // Zero-padding reconstruction
                 for (int t = 0; t < signalLength; t++) {
                     double sum = 0.0;
                     for (int l = 0; l < scaledLowPassRecon.length; l++) {
                         int coeffIndex = t + l;
                         if (coeffIndex < signalLength) {
-                            sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] + 
+                            sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
                                    scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
                         }
+                    }
+                    reconstructed[b][t] = sum;
+                }
+            } else {
+                // Symmetric reconstruction using adjoint operation
+                int period = signalLength << 1;
+                for (int t = 0; t < signalLength; t++) {
+                    double sum = 0.0;
+                    for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                        int idx = t + l;
+                        int mod = idx % period;
+                        int coeffIndex = mod < signalLength ? mod : period - mod - 1;
+                        sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
+                               scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
                     }
                     reconstructed[b][t] = sum;
                 }

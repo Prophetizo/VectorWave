@@ -11,7 +11,7 @@ package ai.prophetizo.wavelet.api;
  * <ul>
  *   <li>PERIODIC - ✓ Fully implemented</li>
  *   <li>ZERO_PADDING - ✓ Fully implemented</li>
- *   <li>SYMMETRIC - ✗ Not yet implemented</li>
+ *   <li>SYMMETRIC - ✓ Fully implemented</li>
  *   <li>CONSTANT - ✗ Not yet implemented</li>
  * </ul>
  */
@@ -27,9 +27,6 @@ public enum BoundaryMode {
      * Symmetric extension - the signal is mirrored at boundaries.
      * Good for smooth signals, preserves continuity.
      * Example: [a b c d] → [b a | a b c d | d c]
-     *
-     * @apiNote Not yet implemented. Using this mode will throw
-     * {@link UnsupportedOperationException} at runtime.
      */
     SYMMETRIC,
 

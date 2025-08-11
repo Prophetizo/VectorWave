@@ -66,7 +66,7 @@ public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTrans
          * Creates a configuration with specified wavelet and boundary mode.
          * 
          * @param wavelet The wavelet to use
-         * @param boundaryMode The boundary mode (currently only PERIODIC supported)
+         * @param boundaryMode The boundary mode
          */
         public Config(Wavelet wavelet, BoundaryMode boundaryMode) {
             this.wavelet = Objects.requireNonNull(wavelet, "wavelet cannot be null");
