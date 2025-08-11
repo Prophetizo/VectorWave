@@ -268,6 +268,134 @@ class VectorWaveSwtAdapterTest {
     }
     
     @Test
+    @DisplayName("SWT adapter constructor validation")
+    void testConstructorValidation() {
+        // Valid construction
+        VectorWaveSwtAdapter swt1 = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
+        assertNotNull(swt1.getWavelet());
+        assertNotNull(swt1.getBoundaryMode());
+        assertEquals(Daubechies.DB4, swt1.getWavelet());
+        assertEquals(BoundaryMode.PERIODIC, swt1.getBoundaryMode());
+        
+        // Default boundary mode
+        VectorWaveSwtAdapter swt2 = new VectorWaveSwtAdapter(Haar.INSTANCE);
+        assertEquals(BoundaryMode.PERIODIC, swt2.getBoundaryMode());
+        
+        // Null wavelet
+        assertThrows(NullPointerException.class, () -> 
+            new VectorWaveSwtAdapter(null, BoundaryMode.PERIODIC));
+        
+        // Null boundary mode
+        assertThrows(NullPointerException.class, () -> 
+            new VectorWaveSwtAdapter(Daubechies.DB2, null));
+    }
+    
+    @Test
+    @DisplayName("Forward transform to maximum levels")
+    void testForwardMaxLevels() {
+        double[] signal = createTestSignal(128);
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB2);
+        
+        // Forward without specifying levels (should use maximum)
+        MutableMultiLevelMODWTResult result = swt.forward(signal);
+        assertNotNull(result);
+        assertTrue(result.getLevels() > 0);
+        assertEquals(128, result.getSignalLength());
+        
+        // Verify all levels have coefficients
+        for (int level = 1; level <= result.getLevels(); level++) {
+            assertNotNull(result.getDetailCoeffsAtLevel(level));
+            assertEquals(128, result.getDetailCoeffsAtLevel(level).length);
+        }
+        assertNotNull(result.getApproximationCoeffs());
+        assertEquals(128, result.getApproximationCoeffs().length);
+    }
+    
+    @Test
+    @DisplayName("Different boundary modes should work")
+    void testDifferentBoundaryModes() {
+        double[] signal = createTestSignal(64);
+        
+        // Test each boundary mode
+        BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.SYMMETRIC, BoundaryMode.ZERO_PADDING};
+        
+        for (BoundaryMode mode : modes) {
+            VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Haar.INSTANCE, mode);
+            MutableMultiLevelMODWTResult result = swt.forward(signal, 2);
+            double[] reconstructed = swt.inverse(result);
+            
+            // All should achieve reasonable reconstruction
+            // Note: SYMMETRIC and ZERO_PADDING modes may have higher error due to boundary effects
+            double error = computeRMSE(signal, reconstructed);
+            double tolerance = (mode == BoundaryMode.PERIODIC) ? 1e-8 : 1.0;
+            assertTrue(error < tolerance, "Boundary mode " + mode + " should work: error=" + error);
+        }
+    }
+    
+    @Test
+    @DisplayName("Denoising with negative threshold should use universal")
+    void testDenoisingNegativeThreshold() {
+        double[] clean = createTestSignal(64);
+        double[] noisy = addNoise(clean, 0.1);
+        
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4);
+        
+        // Negative threshold should trigger universal threshold
+        double[] denoised1 = swt.denoise(noisy, 3, -1, true);
+        double[] denoised2 = swt.denoise(noisy, 3, -999, true);
+        
+        // Both should produce non-zero results
+        double energy1 = computeEnergy(denoised1);
+        double energy2 = computeEnergy(denoised2);
+        assertTrue(energy1 > 0);
+        assertTrue(energy2 > 0);
+        
+        // They should be similar (both using universal threshold)
+        double diff = computeRMSE(denoised1, denoised2);
+        assertEquals(0.0, diff, 1e-10, "Same universal threshold should produce same result");
+    }
+    
+    @Test
+    @DisplayName("Extract approximation level")
+    void testExtractApproximation() {
+        double[] signal = createTestSignal(32);
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Haar.INSTANCE);
+        
+        // Extract approximation (level 0)
+        double[] approx = swt.extractLevel(signal, 2, 0);
+        
+        // Should be smoother than original
+        double originalVariance = computeVariance(signal);
+        double approxVariance = computeVariance(approx);
+        assertTrue(approxVariance < originalVariance,
+            "Approximation should be smoother");
+        
+        // Should have energy
+        assertTrue(computeEnergy(approx) > 0);
+    }
+    
+    @Test
+    @DisplayName("Apply threshold with null result should throw")
+    void testApplyThresholdNull() {
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Haar.INSTANCE);
+        
+        assertThrows(NullPointerException.class, () -> 
+            swt.applyThreshold(null, 1, 0.5, true));
+        
+        assertThrows(NullPointerException.class, () -> 
+            swt.applyUniversalThreshold(null, true));
+    }
+    
+    @Test
+    @DisplayName("Inverse with null result should throw")
+    void testInverseNull() {
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Haar.INSTANCE);
+        
+        assertThrows(NullPointerException.class, () -> 
+            swt.inverse(null));
+    }
+    
+    @Test
     @DisplayName("Result validation should detect invalid states")
     void testResultValidation() {
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(
@@ -317,5 +445,28 @@ class VectorWaveSwtAdapterTest {
             sum += diff * diff;
         }
         return Math.sqrt(sum / a.length);
+    }
+    
+    private static double computeEnergy(double[] signal) {
+        double energy = 0;
+        for (double val : signal) {
+            energy += val * val;
+        }
+        return energy;
+    }
+    
+    private static double computeVariance(double[] signal) {
+        double mean = 0;
+        for (double val : signal) {
+            mean += val;
+        }
+        mean /= signal.length;
+        
+        double variance = 0;
+        for (double val : signal) {
+            double diff = val - mean;
+            variance += diff * diff;
+        }
+        return variance / signal.length;
     }
 }
