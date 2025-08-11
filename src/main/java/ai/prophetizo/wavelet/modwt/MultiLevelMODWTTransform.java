@@ -585,18 +585,15 @@ public class MultiLevelMODWTTransform {
                     int idx = t - l;
                     
                     // Apply symmetric boundary extension (same as forward)
-                    if (idx < 0) {
-                        idx = -idx - 1;  // Reflect around -0.5
-                    } else if (idx >= signalLength) {
-                        idx = 2 * signalLength - idx - 1;  // Reflect around N-0.5
-                    }
-                    
-                    // Continue reflecting if still out of bounds
-                    while (idx < 0 || idx >= signalLength) {
-                        if (idx < 0) {
-                            idx = -idx - 1;
-                        } else if (idx >= signalLength) {
-                            idx = 2 * signalLength - idx - 1;
+                    // Efficient calculation using modular arithmetic
+                    if (idx < 0 || idx >= signalLength) {
+                        // Map to positive index in the extended symmetric domain [0, 2*signalLength)
+                        int period = 2 * signalLength;
+                        idx = ((idx % period) + period) % period;
+                        
+                        // Map back to signal range with reflection
+                        if (idx >= signalLength) {
+                            idx = period - idx - 1;
                         }
                     }
                     
