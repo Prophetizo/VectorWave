@@ -388,6 +388,10 @@ public class WaveletDenoiser {
                 // Minimax threshold
                 return calculateMinimaxThreshold(n, sigma);
 
+            case BAYES:
+                // BayesShrink threshold
+                return calculateBayesThreshold(coeffs, sigma);
+
             case FIXED:
                 // Should not reach here for automatic threshold selection
                 throw new InvalidArgumentException(
@@ -396,7 +400,7 @@ public class WaveletDenoiser {
                         .withContext("Operation", "denoise")
                         .withContext("Threshold method", "FIXED")
                         .withSuggestion("Use denoiseFixed() method with explicit threshold value")
-                        .withSuggestion("Or select an automatic threshold method: VISU_SHRINK, SURE_SHRINK, or BAYES_SHRINK")
+                        .withSuggestion("Or select an automatic threshold method: UNIVERSAL, SURE, MINIMAX, or BAYES")
                         .build()
                 );
 
@@ -406,7 +410,7 @@ public class WaveletDenoiser {
                     ErrorContext.builder("Unknown threshold selection method")
                         .withContext("Operation", "selectThreshold")
                         .withContext("Unknown method", method.toString())
-                        .withSuggestion("Supported methods: VISU_SHRINK, SURE_SHRINK, BAYES_SHRINK, FIXED")
+                        .withSuggestion("Supported methods: UNIVERSAL, SURE, MINIMAX, BAYES, FIXED")
                         .build()
                 );
         }
@@ -485,6 +489,47 @@ public class WaveletDenoiser {
     }
 
     /**
+     * Calculates the BayesShrink threshold.
+     * 
+     * <p>BayesShrink threshold is computed as: T = sigma^2 / sigma_x
+     * where sigma_x = sqrt(max(0, sigma_y^2 - sigma^2))
+     * and sigma_y^2 is the variance of the wavelet coefficients.</p>
+     * 
+     * @param coeffs the wavelet coefficients
+     * @param sigma the noise standard deviation
+     * @return the BayesShrink threshold
+     */
+    private double calculateBayesThreshold(double[] coeffs, double sigma) {
+        int n = coeffs.length;
+        double sigma2 = sigma * sigma;
+        
+        // Calculate variance of coefficients (sigma_y^2)
+        double mean = 0.0;
+        for (double c : coeffs) {
+            mean += c;
+        }
+        mean /= n;
+        
+        double variance = 0.0;
+        for (double c : coeffs) {
+            double diff = c - mean;
+            variance += diff * diff;
+        }
+        variance /= n;
+        
+        // Calculate signal standard deviation (sigma_x)
+        // sigma_x^2 = max(0, sigma_y^2 - sigma^2)
+        double sigmaX2 = Math.max(0.0, variance - sigma2);
+        
+        // Avoid division by zero
+        double epsilon = 1e-10;
+        double sigmaX = Math.sqrt(sigmaX2 + epsilon);
+        
+        // BayesShrink threshold: T = sigma^2 / sigma_x
+        return sigma2 / sigmaX;
+    }
+
+    /**
      * Applies thresholding to coefficients.
      */
     private double[] applyThreshold(double[] coeffs, double threshold, ThresholdType type) {
@@ -549,6 +594,12 @@ public class WaveletDenoiser {
          * Good compromise between smoothing and feature preservation.
          */
         MINIMAX,
+
+        /**
+         * BayesShrink threshold: sigma^2 / sqrt(max(var(X) - sigma^2, 0))
+         * Adaptive method that minimizes Bayesian risk, good for signals with varying SNR.
+         */
+        BAYES,
 
         /**
          * Fixed threshold: user-specified value.
