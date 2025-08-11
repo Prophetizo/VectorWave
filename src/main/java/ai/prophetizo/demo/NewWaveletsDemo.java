@@ -16,6 +16,8 @@ import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 public class NewWaveletsDemo {
     
     public static void main(String[] args) {
+        // Note: For reproducible noise generation, use default seed (42) or set custom seed with:
+        // java -Ddemo.random.seed=12345 ai.prophetizo.demo.NewWaveletsDemo
         System.out.println("==============================================");
         System.out.println("   VectorWave: New Wavelets Demonstration");
         System.out.println("==============================================\n");
@@ -243,7 +245,10 @@ public class NewWaveletsDemo {
     
     private static double[] addNoise(double[] signal, double noiseLevel) {
         double[] noisy = new double[signal.length];
-        java.util.Random rng = new java.util.Random(42);
+        // Use configurable seed for reproducibility, defaulting to 42 for consistent demo results
+        // Can be overridden with -Ddemo.random.seed=<value> system property
+        long seed = Long.getLong("demo.random.seed", 42L);
+        java.util.Random rng = new java.util.Random(seed);
         for (int i = 0; i < signal.length; i++) {
             noisy[i] = signal[i] + noiseLevel * rng.nextGaussian();
         }

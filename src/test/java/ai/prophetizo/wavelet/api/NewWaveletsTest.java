@@ -129,7 +129,7 @@ class NewWaveletsTest {
         // Coiflet filter length is 6 * order (not vanishing moments)
         // COIF4 has order 4, so 24 coefficients
         // COIF5 has order 5, so 30 coefficients
-        int order = Integer.parseInt(wavelet.name().substring(4));
+        int order = wavelet.getOrder();
         int expectedLength = 6 * order;
         assertEquals(expectedLength, wavelet.lowPassDecomposition().length,
             "Filter length should be 6 * order for " + wavelet.name());

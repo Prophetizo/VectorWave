@@ -217,6 +217,16 @@ public final class Coiflet implements OrthogonalWavelet {
     public int vanishingMoments() {
         return 2 * order;
     }
+    
+    /**
+     * Returns the order of this Coiflet wavelet.
+     * The filter length is 6 times the order.
+     * 
+     * @return the order (e.g., 1 for COIF1, 4 for COIF4)
+     */
+    public int getOrder() {
+        return order;
+    }
 
     /**
      * Verifies that the coefficients satisfy the orthogonality conditions.
