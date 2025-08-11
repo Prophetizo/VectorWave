@@ -7,6 +7,7 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.ErrorContext;
+import ai.prophetizo.wavelet.util.MathUtils;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 
 import java.util.Map;
@@ -584,18 +585,8 @@ public class MultiLevelMODWTTransform {
                     // For reconstruction, we use (t - l) with time-reversed filters
                     int idx = t - l;
                     
-                    // Apply symmetric boundary extension (same as forward)
-                    // Efficient calculation using modular arithmetic
-                    if (idx < 0 || idx >= signalLength) {
-                        // Map to positive index in the extended symmetric domain [0, 2*signalLength)
-                        int period = 2 * signalLength;
-                        idx = ((idx % period) + period) % period;
-                        
-                        // Map back to signal range with reflection
-                        if (idx >= signalLength) {
-                            idx = period - idx - 1;
-                        }
-                    }
+                    // Apply symmetric boundary extension using utility method
+                    idx = MathUtils.symmetricBoundaryExtension(idx, signalLength);
                     
                     // Add contributions from both filters
                     if (l < scaledLowPassRecon.length) {

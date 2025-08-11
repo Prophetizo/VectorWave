@@ -16,6 +16,42 @@ public final class MathUtils {
     }
     
     /**
+     * Applies symmetric boundary extension for a given index.
+     * 
+     * <p>This method implements whole-sample symmetry reflection used in wavelet transforms.
+     * For a signal [a, b, c, d], the extension is: ... b a | a b c d | d c b a | a b c d | d c ...</p>
+     * 
+     * <p>The algorithm efficiently handles any index using modular arithmetic, avoiding
+     * inefficient while loops for long filter supports.</p>
+     * 
+     * @param idx the index to reflect
+     * @param signalLength the length of the signal
+     * @return the reflected index within [0, signalLength)
+     */
+    public static int symmetricBoundaryExtension(int idx, int signalLength) {
+        if (signalLength <= 0) {
+            throw new IllegalArgumentException("Signal length must be positive");
+        }
+        
+        // If index is already within bounds, return it
+        if (idx >= 0 && idx < signalLength) {
+            return idx;
+        }
+        
+        // Efficient calculation using modular arithmetic
+        // Map to positive index in the extended symmetric domain [0, 2*signalLength)
+        int period = 2 * signalLength;
+        idx = ((idx % period) + period) % period;
+        
+        // Map back to signal range with reflection
+        if (idx >= signalLength) {
+            idx = period - idx - 1;
+        }
+        
+        return idx;
+    }
+    
+    /**
      * Finds the kth smallest element in an array using the QuickSelect algorithm.
      * This is more efficient than full sorting when only a specific order statistic is needed.
      * 

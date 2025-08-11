@@ -8,6 +8,61 @@ class MathUtilsTest {
     private static final double DELTA = 1e-10;
     
     @Test
+    void testSymmetricBoundaryExtension() {
+        int signalLength = 4;
+        
+        // Test within bounds - should return unchanged
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(0, signalLength));
+        assertEquals(1, MathUtils.symmetricBoundaryExtension(1, signalLength));
+        assertEquals(2, MathUtils.symmetricBoundaryExtension(2, signalLength));
+        assertEquals(3, MathUtils.symmetricBoundaryExtension(3, signalLength));
+        
+        // Test negative indices - should reflect
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(-1, signalLength));
+        assertEquals(1, MathUtils.symmetricBoundaryExtension(-2, signalLength));
+        assertEquals(2, MathUtils.symmetricBoundaryExtension(-3, signalLength));
+        assertEquals(3, MathUtils.symmetricBoundaryExtension(-4, signalLength));
+        
+        // Test indices >= signalLength - should reflect
+        assertEquals(3, MathUtils.symmetricBoundaryExtension(4, signalLength));
+        assertEquals(2, MathUtils.symmetricBoundaryExtension(5, signalLength));
+        assertEquals(1, MathUtils.symmetricBoundaryExtension(6, signalLength));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(7, signalLength));
+        
+        // Test large negative indices (multiple reflections)
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(-8, signalLength));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(-9, signalLength));
+        
+        // Test large positive indices (multiple reflections)
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(8, signalLength));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(15, signalLength));
+    }
+    
+    @Test
+    void testSymmetricBoundaryExtensionEdgeCases() {
+        // Test with signal length 1
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(0, 1));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(-1, 1));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(1, 1));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(5, 1));
+        
+        // Test with signal length 2
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(0, 2));
+        assertEquals(1, MathUtils.symmetricBoundaryExtension(1, 2));
+        assertEquals(1, MathUtils.symmetricBoundaryExtension(2, 2));
+        assertEquals(0, MathUtils.symmetricBoundaryExtension(3, 2));
+    }
+    
+    @Test
+    void testSymmetricBoundaryExtensionErrors() {
+        // Test with invalid signal length
+        assertThrows(IllegalArgumentException.class, 
+            () -> MathUtils.symmetricBoundaryExtension(0, 0));
+        assertThrows(IllegalArgumentException.class, 
+            () -> MathUtils.symmetricBoundaryExtension(0, -1));
+    }
+    
+    @Test
     void testQuickSelectBasic() {
         double[] arr = {3.0, 1.0, 4.0, 1.0, 5.0, 9.0, 2.0, 6.0};
         

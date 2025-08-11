@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.internal;
 
+import ai.prophetizo.wavelet.util.MathUtils;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
@@ -833,20 +834,8 @@ public final class ScalarOps {
             for (int l = 0; l < filterLen; l++) {
                 int idx = t - l;
                 
-                // Apply symmetric boundary extension (whole-sample symmetry)
-                // For a signal [a, b, c, d], the extension is:
-                // ... b a | a b c d | d c b a | a b c d | d c ...
-                // Efficient calculation using modular arithmetic
-                if (idx < 0 || idx >= signalLen) {
-                    // Map to positive index in the extended symmetric domain [0, 2*signalLen)
-                    int period = 2 * signalLen;
-                    idx = ((idx % period) + period) % period;
-                    
-                    // Map back to signal range with reflection
-                    if (idx >= signalLen) {
-                        idx = period - idx - 1;
-                    }
-                }
+                // Apply symmetric boundary extension using utility method
+                idx = MathUtils.symmetricBoundaryExtension(idx, signalLen);
                 
                 sum += signal[idx] * filter[l];
             }
