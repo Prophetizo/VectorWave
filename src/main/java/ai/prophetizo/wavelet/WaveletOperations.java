@@ -76,6 +76,9 @@ public final class WaveletOperations {
      * @throws IllegalArgumentException if threshold is negative
      */
     public static double[] softThreshold(double[] coefficients, double threshold) {
+        if (coefficients == null) {
+            throw new IllegalArgumentException("Coefficients array cannot be null");
+        }
         if (threshold < 0) {
             throw new IllegalArgumentException("Threshold must be non-negative");
         }
@@ -98,6 +101,9 @@ public final class WaveletOperations {
      * @throws IllegalArgumentException if threshold is negative
      */
     public static double[] hardThreshold(double[] coefficients, double threshold) {
+        if (coefficients == null) {
+            throw new IllegalArgumentException("Coefficients array cannot be null");
+        }
         if (threshold < 0) {
             throw new IllegalArgumentException("Threshold must be non-negative");
         }
@@ -133,6 +139,9 @@ public final class WaveletOperations {
          * @return estimated speedup factor
          */
         public double estimateSpeedup(int signalLength) {
+            if (signalLength < 0) {
+                throw new IllegalArgumentException("Signal length cannot be negative");
+            }
             if (!vectorizationEnabled || signalLength < 64) {
                 return 1.0;
             }
