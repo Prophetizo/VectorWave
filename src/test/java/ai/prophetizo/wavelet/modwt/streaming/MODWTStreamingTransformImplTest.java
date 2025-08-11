@@ -5,6 +5,7 @@ import ai.prophetizo.wavelet.api.Haar;
 import ai.prophetizo.wavelet.api.Daubechies;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
+import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -34,9 +35,13 @@ class MODWTStreamingTransformImplTest {
         assertDoesNotThrow(() -> {
             new MODWTStreamingTransformImpl(haar, BoundaryMode.PERIODIC, 1024);
         });
-        
+
         assertDoesNotThrow(() -> {
             new MODWTStreamingTransformImpl(db4, BoundaryMode.ZERO_PADDING, 4096);
+        });
+
+        assertDoesNotThrow(() -> {
+            new MODWTStreamingTransformImpl(haar, BoundaryMode.SYMMETRIC, 256);
         });
     }
     
@@ -129,6 +134,23 @@ class MODWTStreamingTransformImplTest {
         assertEquals(8, result.approximationCoeffs().length);
         assertEquals(8, result.detailCoeffs().length);
         
+        transform.close();
+    }
+
+    @Test
+    void testSymmetricStreamingReconstruction() throws InterruptedException {
+        MODWTStreamingTransform transform = new MODWTStreamingTransformImpl(
+            haar, BoundaryMode.SYMMETRIC, 8);
+        TestSubscriber subscriber = new TestSubscriber();
+        transform.subscribe(subscriber);
+        double[] data = {1,2,3,4,5,6,7,8};
+        transform.process(data);
+        Thread.sleep(50);
+        assertEquals(1, subscriber.results.size());
+        MODWTResult result = subscriber.results.get(0);
+        MODWTTransform inverse = new MODWTTransform(haar, BoundaryMode.SYMMETRIC);
+        double[] reconstructed = inverse.inverse(result);
+        assertArrayEquals(data, reconstructed, 1e-12);
         transform.close();
     }
     

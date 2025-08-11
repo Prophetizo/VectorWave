@@ -35,13 +35,10 @@ class MODWTTransformTest {
         assertThrows(NullPointerException.class, 
             () -> new MODWTTransform(new Haar(), null));
         
-        // Test unsupported boundary mode - SYMMETRIC is not supported
-        assertThrows(InvalidArgumentException.class, 
-            () -> new MODWTTransform(new Haar(), BoundaryMode.SYMMETRIC));
-        
         // Test that supported boundary modes work
         assertDoesNotThrow(() -> new MODWTTransform(new Haar(), BoundaryMode.PERIODIC));
         assertDoesNotThrow(() -> new MODWTTransform(new Haar(), BoundaryMode.ZERO_PADDING));
+        assertDoesNotThrow(() -> new MODWTTransform(new Haar(), BoundaryMode.SYMMETRIC));
     }
 
     @Test
@@ -79,9 +76,18 @@ class MODWTTransformTest {
         assertEquals(signal.length, reconstructed.length);
         
         for (int i = 0; i < signal.length; i++) {
-            assertEquals(signal[i], reconstructed[i], TOLERANCE, 
+            assertEquals(signal[i], reconstructed[i], TOLERANCE,
                 "Reconstruction error at index " + i);
         }
+    }
+
+    @Test
+    void testPerfectReconstructionSymmetric() {
+        MODWTTransform symmetric = new MODWTTransform(new Haar(), BoundaryMode.SYMMETRIC);
+        double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+        MODWTResult result = symmetric.forward(signal);
+        double[] reconstructed = symmetric.inverse(result);
+        assertArrayEquals(signal, reconstructed, TOLERANCE);
     }
 
     @Test

@@ -36,6 +36,17 @@ public final class WaveletOperations {
     public static void zeroPaddingConvolveMODWT(double[] signal, double[] filter, double[] output) {
         ScalarOps.zeroPaddingConvolveMODWT(signal, filter, output);
     }
+
+    /**
+     * Performs symmetric-extension convolution for MODWT without downsampling.
+     *
+     * @param signal input signal
+     * @param filter wavelet filter coefficients
+     * @param output pre-allocated output array (same length as signal)
+     */
+    public static void symmetricConvolveMODWT(double[] signal, double[] filter, double[] output) {
+        ScalarOps.symmetricConvolveMODWT(signal, filter, output);
+    }
     
     /**
      * Gets performance information about the current platform's capabilities.

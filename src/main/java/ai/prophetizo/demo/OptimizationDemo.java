@@ -116,7 +116,6 @@ public class OptimizationDemo {
             }
         }
         
-        System.out.println("   Note: SYMMETRIC boundary mode not supported by MODWT");
     }
     
     /**

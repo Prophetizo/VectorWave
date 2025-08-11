@@ -17,7 +17,7 @@ import java.util.Arrays;
  *   <li>Reconstruction accuracy</li>
  *   <li>Artifacts and edge effects</li>
  *   <li>Choosing the right mode for your application</li>
- *   <li>MODWT supports PERIODIC and ZERO_PADDING modes</li>
+ *   <li>MODWT supports PERIODIC, ZERO_PADDING, and SYMMETRIC modes</li>
  * </ul>
  */
 public class BoundaryModesDemo {
@@ -53,7 +53,8 @@ public class BoundaryModesDemo {
         // Test each boundary mode
         BoundaryMode[] modes = {
                 BoundaryMode.PERIODIC,
-                BoundaryMode.ZERO_PADDING
+                BoundaryMode.ZERO_PADDING,
+                BoundaryMode.SYMMETRIC
         };
 
         for (BoundaryMode mode : modes) {
@@ -90,7 +91,7 @@ public class BoundaryModesDemo {
 
         System.out.println("Testing with smooth sine wave...\n");
 
-        BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING};
+        BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING, BoundaryMode.SYMMETRIC};
 
         for (BoundaryMode mode : modes) {
             MODWTTransform transform = new MODWTTransform(Daubechies.DB4, mode);
@@ -143,13 +144,13 @@ public class BoundaryModesDemo {
         String[] signalNames = {"Constant", "Linear", "Step", "Random"};
 
         System.out.println("Maximum reconstruction error for different signals:\n");
-        System.out.println("Signal Type  | PERIODIC    | ZERO_PADDING");
-        System.out.println("-------------|-------------|-------------");
+        System.out.println("Signal Type  | PERIODIC    | ZERO_PADDING | SYMMETRIC");
+        System.out.println("-------------|-------------|--------------|-----------");
 
         for (int s = 0; s < testSignals.length; s++) {
             System.out.printf("%-12s |", signalNames[s]);
 
-            for (BoundaryMode mode : new BoundaryMode[]{BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING}) {
+            for (BoundaryMode mode : new BoundaryMode[]{BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING, BoundaryMode.SYMMETRIC}) {
                 MODWTTransform transform = new MODWTTransform(new Haar(), mode);
 
                 MODWTResult result = transform.forward(testSignals[s]);
@@ -186,6 +187,12 @@ public class BoundaryModesDemo {
         System.out.println("  ✓ Suitable for transient analysis");
         System.out.println("  ✗ Can reduce energy near boundaries");
         System.out.println("  Example: Analyzing financial time series\n");
+
+        System.out.println("SYMMETRIC Boundary Mode:");
+        System.out.println("  ✓ Best for: Smooth signals requiring minimal edge artifacts");
+        System.out.println("  ✓ Mirrors signal at boundaries");
+        System.out.println("  ✗ Slightly higher computational cost than PERIODIC");
+        System.out.println("  Example: Image processing and smooth time series\n");
 
         // Demonstrate with examples
         demonstrateModeExamples();
@@ -236,8 +243,8 @@ public class BoundaryModesDemo {
         for (int i = 20; i < 44; i++) imageRow[i] = 200;  // Bright region
         for (int i = 44; i < 64; i++) imageRow[i] = 100;  // Medium region
 
-        System.out.println("Recommendation: Use ZERO_PADDING mode");
-        System.out.println("Reason: Image boundaries are meaningful, not periodic\n");
+        System.out.println("Recommendation: Use SYMMETRIC mode");
+        System.out.println("Reason: Mirroring preserves edge continuity\n");
 
         // Scenario 3: Sensor data
         System.out.println("Scenario 3: IoT Sensor Data");
@@ -255,6 +262,7 @@ public class BoundaryModesDemo {
         System.out.println("Recommendation: Depends on analysis goal");
         System.out.println("- For daily pattern analysis: PERIODIC");
         System.out.println("- For anomaly detection: ZERO_PADDING");
+        System.out.println("- For smoothing and edge preservation: SYMMETRIC");
     }
 
     // Helper methods
@@ -323,7 +331,7 @@ public class BoundaryModesDemo {
     }
 
     private static void compareModesForSignal(double[] signal, String name) {
-        BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING};
+        BoundaryMode[] modes = {BoundaryMode.PERIODIC, BoundaryMode.ZERO_PADDING, BoundaryMode.SYMMETRIC};
 
         System.out.printf("\n%s signal analysis:\n", name);
         for (BoundaryMode mode : modes) {
