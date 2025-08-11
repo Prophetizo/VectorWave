@@ -573,15 +573,40 @@ public class MultiLevelMODWTTransform {
                 reconstructed[t] = sum;
             }
         } else {
-            int period = signalLength << 1;
+            // Use symmetric extension for reconstruction
+            // For MODWT reconstruction with symmetric boundaries
             for (int t = 0; t < signalLength; t++) {
                 double sum = 0.0;
-                for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                    int idx = t + l;
-                    int mod = idx % period;
-                    int coeffIndex = mod < signalLength ? mod : period - mod - 1;
-                    sum += scaledLowPassRecon[l] * approx[coeffIndex] +
-                           scaledHighPassRecon[l] * details[coeffIndex];
+                
+                // Apply convolution with reconstruction filters
+                int maxLen = Math.max(scaledLowPassRecon.length, scaledHighPassRecon.length);
+                for (int l = 0; l < maxLen; l++) {
+                    // For reconstruction, we use (t - l) with time-reversed filters
+                    int idx = t - l;
+                    
+                    // Apply symmetric boundary extension (same as forward)
+                    if (idx < 0) {
+                        idx = -idx - 1;  // Reflect around -0.5
+                    } else if (idx >= signalLength) {
+                        idx = 2 * signalLength - idx - 1;  // Reflect around N-0.5
+                    }
+                    
+                    // Continue reflecting if still out of bounds
+                    while (idx < 0 || idx >= signalLength) {
+                        if (idx < 0) {
+                            idx = -idx - 1;
+                        } else if (idx >= signalLength) {
+                            idx = 2 * signalLength - idx - 1;
+                        }
+                    }
+                    
+                    // Add contributions from both filters
+                    if (l < scaledLowPassRecon.length) {
+                        sum += scaledLowPassRecon[l] * approx[idx];
+                    }
+                    if (l < scaledHighPassRecon.length) {
+                        sum += scaledHighPassRecon[l] * details[idx];
+                    }
                 }
                 reconstructed[t] = sum;
             }

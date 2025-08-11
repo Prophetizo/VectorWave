@@ -255,16 +255,37 @@ public class MODWTTransform {
                 reconstructed[t] = sum;
             }
         } else { // SYMMETRIC
-            int period = signalLength << 1;
+            // Use symmetric extension for reconstruction
+            // For MODWT reconstruction with symmetric boundaries, we need to apply
+            // the convolution with reconstruction filters using the same boundary extension
             for (int t = 0; t < signalLength; t++) {
                 double sum = 0.0;
 
+                // Apply convolution with reconstruction filters
+                // The reconstruction filters are applied in reverse time
                 for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                    int idx = t + l;
-                    int mod = idx % period;
-                    int coeffIndex = mod < signalLength ? mod : period - mod - 1;
-                    sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
-                           scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
+                    // For reconstruction, we use (t - l) with time-reversed filters
+                    int idx = t - l;
+                    
+                    // Apply symmetric boundary extension (same as forward)
+                    if (idx < 0) {
+                        idx = -idx - 1;  // Reflect around -0.5
+                    } else if (idx >= signalLength) {
+                        idx = 2 * signalLength - idx - 1;  // Reflect around N-0.5
+                    }
+                    
+                    // Continue reflecting if still out of bounds
+                    while (idx < 0 || idx >= signalLength) {
+                        if (idx < 0) {
+                            idx = -idx - 1;
+                        } else if (idx >= signalLength) {
+                            idx = 2 * signalLength - idx - 1;
+                        }
+                    }
+                    
+                    // The reconstruction filters are time-reversed, so we use them directly
+                    sum += scaledLowPassRecon[l] * approxCoeffs[idx] +
+                           scaledHighPassRecon[l] * detailCoeffs[idx];
                 }
 
                 reconstructed[t] = sum;
@@ -626,6 +647,7 @@ public class MODWTTransform {
                     reconstructed[b][t] = sum;
                 }
             } else {
+                // Symmetric reconstruction using adjoint operation
                 int period = signalLength << 1;
                 for (int t = 0; t < signalLength; t++) {
                     double sum = 0.0;

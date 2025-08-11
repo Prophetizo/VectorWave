@@ -826,19 +826,33 @@ public final class ScalarOps {
     public static void symmetricConvolveMODWT(double[] signal, double[] filter, double[] output) {
         int signalLen = signal.length;
         int filterLen = filter.length;
-        int period = signalLen << 1; // 2N for symmetric mirroring
 
         for (int t = 0; t < signalLen; t++) {
             double sum = 0.0;
 
             for (int l = 0; l < filterLen; l++) {
                 int idx = t - l;
-                int mod = idx % period;
-                if (mod < 0) {
-                    mod += period;
+                
+                // Apply symmetric boundary extension (whole-sample symmetry)
+                // For a signal [a, b, c, d], the extension is:
+                // ... b a | a b c d | d c b a | a b c d | d c ...
+                // This means: reflect at -0.5 and N-0.5
+                if (idx < 0) {
+                    idx = -idx - 1;  // Reflect around -0.5
+                } else if (idx >= signalLen) {
+                    idx = 2 * signalLen - idx - 1;  // Reflect around N-0.5
                 }
-                int signalIndex = mod < signalLen ? mod : period - mod - 1;
-                sum += signal[signalIndex] * filter[l];
+                
+                // Continue reflecting if still out of bounds (for long filters)
+                while (idx < 0 || idx >= signalLen) {
+                    if (idx < 0) {
+                        idx = -idx - 1;
+                    } else if (idx >= signalLen) {
+                        idx = 2 * signalLen - idx - 1;
+                    }
+                }
+                
+                sum += signal[idx] * filter[l];
             }
 
             output[t] = sum;
