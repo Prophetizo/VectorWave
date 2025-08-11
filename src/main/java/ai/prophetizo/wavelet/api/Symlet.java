@@ -175,7 +175,7 @@ public final class Symlet implements OrthogonalWavelet {
      * to be due to precision limitations in the reference implementation. The wavelet
      * is still functional for practical applications with this small error.</p>
      * <p><strong>Guidance:</strong> For most practical and production applications, this small error is negligible and does not noticeably affect results. However, in applications where extremely high numerical precision is required (such as scientific computing with strict error bounds or cumulative transforms over very large datasets), users should be aware that this limitation may introduce a minor bias. If absolute precision is critical, consider recomputing the coefficients with higher-precision arithmetic or verifying the sum matches the theoretical value within your application's tolerance.</p>
-     * <p>Source: PyWavelets pywt.wavelet('sym10').dec_lo</p>
+     * <p><strong>Guidance:</strong> For most practical and production applications, this small error is negligible and does not noticeably affect results.</p>
      */
     public static final Symlet SYM10 = new Symlet(10, new double[]{
             0.0007701598091030, 0.0000956388665879, -0.0086412992770191, -0.0014653825833081,
