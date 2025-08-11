@@ -255,13 +255,14 @@ public class MODWTTransform {
                 reconstructed[t] = sum;
             }
         } else { // SYMMETRIC
-            int period = signalLength << 1;
+            int period = signalLength << 1; // 2N for symmetric extension
             for (int t = 0; t < signalLength; t++) {
                 double sum = 0.0;
 
                 for (int l = 0; l < scaledLowPassRecon.length; l++) {
                     int idx = t + l;
                     int mod = idx % period;
+                    // Symmetric extension: [0..N-1] then [N-1..0] repeating
                     int coeffIndex = mod < signalLength ? mod : period - mod - 1;
                     sum += scaledLowPassRecon[l] * approxCoeffs[coeffIndex] +
                            scaledHighPassRecon[l] * detailCoeffs[coeffIndex];
