@@ -69,6 +69,15 @@ class MultiLevelMODWTTransformTest {
             assertEquals(signal[i], reconstructed[i], 1e-10);
         }
     }
+
+    @Test
+    void testSymmetricReconstruction() {
+        double[] signal = {1, 2, 3, 4, 5, 6, 7, 8};
+        MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(new Haar(), BoundaryMode.SYMMETRIC);
+        MultiLevelMODWTResult result = transform.decompose(signal, 2);
+        double[] reconstructed = transform.reconstruct(result);
+        assertArrayEquals(signal, reconstructed, 1e-10);
+    }
     
     @Test
     void testEnergyPreservation() {

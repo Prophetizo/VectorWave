@@ -809,8 +809,38 @@ public final class ScalarOps {
                     sum += signal[signalIndex] * filter[l];
                 }
                 // else: signal value is zero, no contribution to sum
+        }
+
+        output[t] = sum;
+    }
+}
+
+    /**
+     * Performs symmetric-extension convolution for MODWT (without downsampling).
+     * This mirrors the signal at the boundaries to reduce edge artifacts.
+     *
+     * @param signal The input signal of length N.
+     * @param filter The filter coefficients of length L.
+     * @param output The output array of length N (same as input).
+     */
+    public static void symmetricConvolveMODWT(double[] signal, double[] filter, double[] output) {
+        int signalLen = signal.length;
+        int filterLen = filter.length;
+        int period = signalLen << 1; // 2N for symmetric mirroring
+
+        for (int t = 0; t < signalLen; t++) {
+            double sum = 0.0;
+
+            for (int l = 0; l < filterLen; l++) {
+                int idx = t - l;
+                int mod = idx % period;
+                if (mod < 0) {
+                    mod += period;
+                }
+                int signalIndex = mod < signalLen ? mod : period - mod - 1;
+                sum += signal[signalIndex] * filter[l];
             }
-            
+
             output[t] = sum;
         }
     }
@@ -818,7 +848,7 @@ public final class ScalarOps {
     /**
      * Scales wavelet filter coefficients for MODWT at a specific level.
      * MODWT uses scaled filters: h_j,l = h_l / 2^(j/2) for level j.
-     * 
+     *
      * @param originalFilter The original filter coefficients.
      * @param level The decomposition level (1-based).
      * @return The scaled filter coefficients.

@@ -222,7 +222,7 @@ TransformResult result = transform.forwardSegment(nativeData, elementCount);
 
 ## Current Limitations
 
-1. **Boundary Modes**: SYMMETRIC and CONSTANT modes not implemented for upsampling operations
+1. **Boundary Modes**: CONSTANT mode not implemented for upsampling operations
 2. **Java Version**: Requires Java 23+
 3. **JVM Flags**: Must run with `--enable-native-access=ALL-UNNAMED`
 4. **Biorthogonal Wavelets**: Fixed in recent update - now includes automatic phase compensation for proper reconstruction
@@ -305,7 +305,7 @@ public class FFMWaveletProcessor {
 ## Troubleshooting
 
 ### UnsupportedOperationException
-- Check if using SYMMETRIC or CONSTANT boundary modes with upsampling
+- Check if using CONSTANT boundary mode with upsampling
 - Verify Java version is 23+
 
 ### IllegalStateException

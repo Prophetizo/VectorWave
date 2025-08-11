@@ -178,7 +178,7 @@ public class MultiLevelMODWTTransform {
      * Constructs a multi-level MODWT transformer.
      * 
      * @param wavelet The wavelet to use for transformations
-     * @param boundaryMode The boundary handling mode (PERIODIC or ZERO_PADDING)
+     * @param boundaryMode The boundary handling mode (PERIODIC, ZERO_PADDING, or SYMMETRIC)
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if boundary mode is not supported
      */
@@ -549,19 +549,42 @@ public class MultiLevelMODWTTransform {
             }
         }
         
-        // MODWT reconstruction using same indexing as single-level
-        for (int t = 0; t < signalLength; t++) {
-            double sum = 0.0;
-            
-            // Use (t + l) indexing to match single-level MODWT reconstruction
-            for (int l = 0; l < scaledLowPassRecon.length; l++) {
-                int idx = (t + l) % signalLength;
-                sum += scaledLowPassRecon[l] * approx[idx] + 
-                       scaledHighPassRecon[l] * details[idx];
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // MODWT reconstruction using circular indexing
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int idx = (t + l) % signalLength;
+                    sum += scaledLowPassRecon[l] * approx[idx] +
+                           scaledHighPassRecon[l] * details[idx];
+                }
+                reconstructed[t] = sum;
             }
-            
-            // No additional normalization needed with scaled filters
-            reconstructed[t] = sum;
+        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int idx = t + l;
+                    if (idx < signalLength) {
+                        sum += scaledLowPassRecon[l] * approx[idx] +
+                               scaledHighPassRecon[l] * details[idx];
+                    }
+                }
+                reconstructed[t] = sum;
+            }
+        } else {
+            int period = signalLength << 1;
+            for (int t = 0; t < signalLength; t++) {
+                double sum = 0.0;
+                for (int l = 0; l < scaledLowPassRecon.length; l++) {
+                    int idx = t + l;
+                    int mod = idx % period;
+                    int coeffIndex = mod < signalLength ? mod : period - mod - 1;
+                    sum += scaledLowPassRecon[l] * approx[coeffIndex] +
+                           scaledHighPassRecon[l] * details[coeffIndex];
+                }
+                reconstructed[t] = sum;
+            }
         }
         
         return reconstructed;
@@ -684,16 +707,28 @@ public class MultiLevelMODWTTransform {
             scaledHighPass = getTruncatedFilter(scaledHighPass, signalLength, FilterType.HIGH);
         }
         
-        // Use ScalarOps circular convolution for MODWT
-        // For very short signals or long filters, use scalar implementation directly
-        if (signal.length < 64 || scaledLowPass.length > signal.length / 2) {
-            // Use scalar implementation directly
-            circularConvolveMODWTDirect(signal, scaledLowPass, approximationCoeffs);
-            circularConvolveMODWTDirect(signal, scaledHighPass, detailCoeffs);
-        } else {
-            ai.prophetizo.wavelet.internal.ScalarOps.circularConvolveMODWT(
+        if (boundaryMode == BoundaryMode.PERIODIC) {
+            // Use ScalarOps circular convolution for MODWT
+            // For very short signals or long filters, use scalar implementation directly
+            if (signal.length < 64 || scaledLowPass.length > signal.length / 2) {
+                // Use scalar implementation directly
+                circularConvolveMODWTDirect(signal, scaledLowPass, approximationCoeffs);
+                circularConvolveMODWTDirect(signal, scaledHighPass, detailCoeffs);
+            } else {
+                ai.prophetizo.wavelet.internal.ScalarOps.circularConvolveMODWT(
+                    signal, scaledLowPass, approximationCoeffs);
+                ai.prophetizo.wavelet.internal.ScalarOps.circularConvolveMODWT(
+                    signal, scaledHighPass, detailCoeffs);
+            }
+        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
+            ai.prophetizo.wavelet.internal.ScalarOps.zeroPaddingConvolveMODWT(
                 signal, scaledLowPass, approximationCoeffs);
-            ai.prophetizo.wavelet.internal.ScalarOps.circularConvolveMODWT(
+            ai.prophetizo.wavelet.internal.ScalarOps.zeroPaddingConvolveMODWT(
+                signal, scaledHighPass, detailCoeffs);
+        } else {
+            ai.prophetizo.wavelet.internal.ScalarOps.symmetricConvolveMODWT(
+                signal, scaledLowPass, approximationCoeffs);
+            ai.prophetizo.wavelet.internal.ScalarOps.symmetricConvolveMODWT(
                 signal, scaledHighPass, detailCoeffs);
         }
         
