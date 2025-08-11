@@ -110,6 +110,73 @@ public final class Coiflet implements OrthogonalWavelet {
             0.0077825964273254,
             -0.0037935128644910
     });
+
+    /**
+     * Coiflet 4 coefficients (24 coefficients).
+     *
+     * <p>Properties:</p>
+     * <ul>
+     *   <li>8 vanishing moments for both wavelet and scaling functions</li>
+     *   <li>Filter length: 24</li>
+     *   <li>Better approximation properties than COIF3</li>
+     *   <li>Increased computational cost</li>
+     * </ul>
+     *
+     * <p>Source: Table 8.3 in "Ten Lectures on Wavelets" by I. Daubechies (1992)</p>
+     * <p>Verified against MATLAB Wavelet Toolbox and PyWavelets</p>
+     */
+    public static final Coiflet COIF4 = new Coiflet(4, new double[]{
+            -0.0000017849850031,
+            -0.0000032596802369,
+            0.0000312298758654,
+            0.0000623390344610,
+            -0.0002599745524878,
+            -0.0005890207562444,
+            0.0012665619292991,
+            0.0037514361572790,
+            -0.0056582866866115,
+            -0.0152117315279485,
+            0.0250822618448678,
+            0.0393344271233433,
+            -0.0962204420340021,
+            -0.0666274742634348,
+            0.4343860564915321,
+            0.7822389309206135,
+            0.4153084070304910,
+            -0.0560773133167630,
+            -0.0812666996808907,
+            0.0266823001560570,
+            0.0160689439647787,
+            -0.0073461663276432,
+            -0.0016294920126020,
+            0.0008923136685824
+    });
+
+    /**
+     * Coiflet 5 coefficients (30 coefficients).
+     *
+     * <p>Properties:</p>
+     * <ul>
+     *   <li>10 vanishing moments for both wavelet and scaling functions</li>
+     *   <li>Filter length: 30</li>
+     *   <li>Excellent approximation properties</li>
+     *   <li>Near-linear phase response</li>
+     *   <li>High computational cost</li>
+     * </ul>
+     *
+     * <p>Source: PyWavelets pywt.wavelet('coif5').dec_lo - verified correct</p>
+     */
+    public static final Coiflet COIF5 = new Coiflet(5, new double[]{
+            -0.0000000960401011, -0.0000001623799517, 0.0000020612203986, 0.0000037007277113,
+            -0.0000212702216725, -0.0000412198619243, 0.0001403563281237, 0.0003018579416682,
+            -0.0006375589261259, -0.0016616273039299, 0.0024315754425383, 0.0067615202206204,
+            -0.0091595073386762, -0.0197583916009655, 0.0326747994670574, 0.0412875304721178,
+            -0.1055631513073372, -0.0620377515749820, 0.4379823066591634, 0.7742936228603274,
+            0.4215712667307543, -0.0520466702535548, -0.0919215880600861, 0.0281697442705324,
+            0.0234083221189278, -0.0101315848469003, -0.0041593126275786, 0.0021782943778457,
+            0.0003585777411618, -0.0002120818620675
+    });
+
     private final int order;
     private final String name;
     private final double[] lowPassCoeffs;
@@ -149,6 +216,16 @@ public final class Coiflet implements OrthogonalWavelet {
     @Override
     public int vanishingMoments() {
         return 2 * order;
+    }
+    
+    /**
+     * Returns the order of this Coiflet wavelet.
+     * The filter length is 6 times the order.
+     * 
+     * @return the order (e.g., 1 for COIF1, 4 for COIF4)
+     */
+    public int getOrder() {
+        return order;
     }
 
     /**

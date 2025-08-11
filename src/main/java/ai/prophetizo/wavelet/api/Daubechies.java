@@ -83,6 +83,82 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
             4
     );
 
+    /**
+     * Daubechies 6 (DB6) coefficients.
+     *
+     * <p>Properties:</p>
+     * <ul>
+     *   <li>6 vanishing moments</li>
+     *   <li>Filter length: 12</li>
+     *   <li>Support width: 11</li>
+     *   <li>Smoother than DB4, better for continuous signals</li>
+     * </ul>
+     *
+     * <p>Source: Table 6.1 in "Ten Lectures on Wavelets" by I. Daubechies (1992)</p>
+     * <p>Verified against MATLAB Wavelet Toolbox and PyWavelets</p>
+     */
+    public static final Daubechies DB6 = new Daubechies(
+            "db6",
+            new double[]{
+                    0.1115407433501094, 0.4946238903984530, 0.7511339080210954, 0.3152503517091980,
+                    -0.2262646939654399, -0.1297668675672624, 0.0975016055873224, 0.0275228655303053,
+                    -0.0315820393174862, 0.0005538422011614, 0.0047772575109455, -0.0010773010853085
+            },
+            6
+    );
+
+    /**
+     * Daubechies 8 (DB8) coefficients.
+     *
+     * <p>Properties:</p>
+     * <ul>
+     *   <li>8 vanishing moments</li>
+     *   <li>Filter length: 16</li>
+     *   <li>Support width: 15</li>
+     *   <li>Good balance between smoothness and computational efficiency</li>
+     * </ul>
+     *
+     * <p>Source: Table 6.1 in "Ten Lectures on Wavelets" by I. Daubechies (1992)</p>
+     * <p>Verified against MATLAB Wavelet Toolbox and PyWavelets</p>
+     */
+    public static final Daubechies DB8 = new Daubechies(
+            "db8",
+            new double[]{
+                    0.0544158422431049, 0.3128715909143031, 0.6756307362972904, 0.5853546836541907,
+                    -0.0158291052563816, -0.2840155429615702, 0.0004724845739124, 0.1287474266204837,
+                    -0.0173693010018083, -0.0440882539307952, 0.0139810279173995, 0.0087460940474061,
+                    -0.0048703529934518, -0.0003917403733770, 0.0006754494064506, -0.0001174767841248
+            },
+            8
+    );
+
+    /**
+     * Daubechies 10 (DB10) coefficients.
+     *
+     * <p>Properties:</p>
+     * <ul>
+     *   <li>10 vanishing moments</li>
+     *   <li>Filter length: 20</li>
+     *   <li>Support width: 19</li>
+     *   <li>Very smooth, suitable for highly regular signals</li>
+     *   <li>Higher computational cost due to longer filter</li>
+     * </ul>
+     *
+     * <p>Source: Table 6.1 in "Ten Lectures on Wavelets" by I. Daubechies (1992)</p>
+     * <p>Verified against MATLAB Wavelet Toolbox and PyWavelets</p>
+     */
+    public static final Daubechies DB10 = new Daubechies(
+            "db10",
+            new double[]{
+                    0.0266700579005546, 0.1881768000776347, 0.5272011889317202, 0.6884590394536250,
+                    0.2811723436605715, -0.2498464243271598, -0.1959462743772862, 0.1273693403357932,
+                    0.0930573646035547, -0.0713941471663501, -0.0294575368218399, 0.0332126740593612,
+                    0.0036065535669870, -0.0107331754833007, 0.0013953517470688, 0.0019924052951925,
+                    -0.0006858566949564, -0.0001164668551285, 0.0000935886703202, -0.0000132642028945
+            },
+            10
+    );
+
     @Override
     public String description() {
         return "Daubechies wavelet of order " + order;

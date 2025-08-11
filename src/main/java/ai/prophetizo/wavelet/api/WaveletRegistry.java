@@ -18,13 +18,33 @@ public final class WaveletRegistry {
         // Register all wavelets using consistent pattern
         // Orthogonal wavelets
         register(Haar.INSTANCE);
+        
+        // Daubechies wavelets
         register(Daubechies.DB2);
         register(Daubechies.DB4);
+        register(Daubechies.DB6);
+        register(Daubechies.DB8);
+        register(Daubechies.DB10);
+        
+        // Symlet wavelets
         register(Symlet.SYM2);
+        register(Symlet.SYM3);
         register(Symlet.SYM4);
+        register(Symlet.SYM5);
+        register(Symlet.SYM6);
+        register(Symlet.SYM7);
+        register(Symlet.SYM8);
+        register(Symlet.SYM10);
+        register(Symlet.SYM12);
+        register(Symlet.SYM15);
+        register(Symlet.SYM20);
+        
+        // Coiflet wavelets
         register(Coiflet.COIF1);
         register(Coiflet.COIF2);
         register(Coiflet.COIF3);
+        register(Coiflet.COIF4);
+        register(Coiflet.COIF5);
         
         // Continuous wavelets
         register(new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
