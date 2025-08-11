@@ -268,6 +268,91 @@ public class MultiLevelMODWTTransform {
     }
     
     /**
+     * Performs multi-level MODWT decomposition producing a mutable result.
+     * 
+     * <p>This method is designed for applications that need to modify wavelet coefficients
+     * directly, such as thresholding for denoising or implementing custom processing algorithms.</p>
+     * 
+     * @param signal The input signal of any length
+     * @return Mutable multi-level decomposition result
+     * @throws InvalidSignalException if signal is invalid
+     * @since 1.0
+     */
+    public MutableMultiLevelMODWTResult decomposeMutable(double[] signal) {
+        int maxLevels = calculateMaxLevels(signal.length);
+        return decomposeMutable(signal, maxLevels);
+    }
+    
+    /**
+     * Performs multi-level MODWT decomposition to specified levels, producing a mutable result.
+     * 
+     * <p>This method creates a result that allows direct modification of wavelet coefficients,
+     * useful for applications like SWT (Stationary Wavelet Transform) adaptation.</p>
+     * 
+     * @param signal The input signal of any length
+     * @param levels Number of decomposition levels
+     * @return Mutable multi-level decomposition result
+     * @throws InvalidSignalException if signal is invalid
+     * @throws InvalidArgumentException if levels is invalid
+     * @since 1.0
+     */
+    public MutableMultiLevelMODWTResult decomposeMutable(double[] signal, int levels) {
+        // Validate inputs
+        ValidationUtils.validateFiniteValues(signal, "signal");
+        if (signal.length == 0) {
+            throw new InvalidSignalException(
+                ErrorCode.VAL_EMPTY,
+                ErrorContext.builder("Signal cannot be empty for multi-level MODWT")
+                    .withContext("Transform type", "Multi-level MODWT (mutable)")
+                    .withWavelet(wavelet)
+                    .withBoundaryMode(boundaryMode)
+                    .withContext("Requested levels", levels)
+                    .withSuggestion("Provide a signal with at least one sample")
+                    .build()
+            );
+        }
+        
+        int maxLevels = calculateMaxLevels(signal.length);
+        if (levels < 1 || levels > maxLevels) {
+            throw new InvalidArgumentException(
+                ErrorCode.CFG_INVALID_DECOMPOSITION_LEVEL,
+                ErrorContext.builder("Invalid number of decomposition levels")
+                    .withLevelInfo(levels, maxLevels)
+                    .withSignalInfo(signal.length)
+                    .withWavelet(wavelet)
+                    .withContext("Filter length", wavelet instanceof Wavelet ? 
+                        wavelet.lowPassDecomposition().length : "unknown")
+                    .withSuggestion("Choose a level between 1 and " + maxLevels)
+                    .withSuggestion("Maximum level is floor(log2(signalLength/filterLength)) = " + maxLevels)
+                    .build()
+            );
+        }
+        
+        // Perform multi-level decomposition with mutable result
+        MutableMultiLevelMODWTResultImpl result = new MutableMultiLevelMODWTResultImpl(signal.length, levels);
+        
+        double[] currentApprox = signal.clone(); // Start with original signal
+        
+        for (int level = 1; level <= levels; level++) {
+            // Apply single-level MODWT with scaled filters
+            MODWTResult levelResult = transformAtLevel(currentApprox, level);
+            
+            // Store detail coefficients directly (avoiding unnecessary cloning)
+            result.setDetailCoeffsAtLevelDirect(level, levelResult.detailCoeffs().clone());
+            
+            // Update approximation for next level
+            currentApprox = levelResult.approximationCoeffs();
+            
+            // Store final approximation if at last level
+            if (level == levels) {
+                result.setApproximationCoeffsDirect(currentApprox.clone());
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
      * Reconstructs the original signal from multi-level MODWT result.
      * 
      * @param result The multi-level MODWT result
