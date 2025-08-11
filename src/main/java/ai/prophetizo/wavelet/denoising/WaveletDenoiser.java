@@ -54,6 +54,16 @@ public class WaveletDenoiser {
      * a large safety margin.</p>
      */
     private static final int MAX_SAFE_LEVEL_FOR_SCALING = 31;
+    
+    /**
+     * Small positive value added to prevent division by zero in BayesShrink calculation.
+     * 
+     * <p>When the signal standard deviation (sigma_x) is zero or very small,
+     * this epsilon prevents numerical instability in the threshold calculation
+     * T = sigma^2 / sigma_x. The value is chosen to be negligible compared to
+     * typical signal magnitudes while ensuring numerical stability.</p>
+     */
+    private static final double BAYES_EPSILON = 1e-10;
 
     private final Wavelet wavelet;
     private final BoundaryMode boundaryMode;
@@ -521,9 +531,8 @@ public class WaveletDenoiser {
         // sigma_x^2 = max(0, sigma_y^2 - sigma^2)
         double sigmaX2 = Math.max(0.0, variance - sigma2);
         
-        // Avoid division by zero
-        double epsilon = 1e-10;
-        double sigmaX = Math.sqrt(sigmaX2 + epsilon);
+        // Avoid division by zero using epsilon constant
+        double sigmaX = Math.sqrt(sigmaX2 + BAYES_EPSILON);
         
         // BayesShrink threshold: T = sigma^2 / sigma_x
         return sigma2 / sigmaX;
