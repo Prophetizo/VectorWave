@@ -45,6 +45,7 @@ double[] denoised = denoiser.denoise(noisySignal);
   - UNIVERSAL: Universal threshold (VisuShrink)
   - SURE: Stein's Unbiased Risk Estimate
   - MINIMAX: Minimax threshold
+  - BAYES: BayesShrink adaptive threshold
 - **Threshold Types**:
   - SOFT: Smooth threshold function
   - HARD: Discontinuous threshold function
@@ -166,6 +167,10 @@ denoiser.subscribe(new Flow.Subscriber<double[]>() {
 - **Universal**: `threshold = sigma * sqrt(2 * log(n))`
 - **SURE**: Minimizes Stein's Unbiased Risk Estimate
 - **Minimax**: Optimal minimax threshold
+- **BAYES**: `threshold = sigma^2 / sigma_x` where `sigma_x = sqrt(max(0, var(coeffs) - sigma^2))`
+  - Adaptive to signal characteristics
+  - Minimizes Bayesian risk
+  - Good for signals with varying SNR
 
 ### Multi-level Denoising
 
@@ -220,7 +225,26 @@ while (audioStream.read(buffer) > 0) {
 }
 ```
 
-### Example 3: Financial Data Cleaning
+### Example 3: Adaptive Denoising with BayesShrink
+
+```java
+// BayesShrink adapts to signal characteristics
+WaveletDenoiser bayesDenoiser = new WaveletDenoiser.Builder()
+    .withWavelet(Daubechies.DB4)
+    .withThresholdMethod(WaveletDenoiser.ThresholdMethod.BAYES)
+    .withSoftThresholding(true)
+    .build();
+
+// Process signal with varying SNR
+double[] complexSignal = loadComplexSignal();
+double[] denoised = bayesDenoiser.denoise(complexSignal);
+
+// BayesShrink automatically adapts threshold based on
+// signal variance, providing better results for signals
+// with non-uniform noise characteristics
+```
+
+### Example 4: Financial Data Cleaning
 
 ```java
 // Streaming denoiser for tick data
@@ -288,6 +312,7 @@ marketDataFeed.subscribe(price -> {
    - Universal: Conservative, preserves signal features
    - SURE: Adaptive, good for varying noise levels
    - Minimax: Optimal worst-case performance
+   - BAYES: Bayesian risk minimization, adaptive to signal characteristics
 
 5. **Adaptive Parameters**:
    - Attack time: 5-20ms for responsive adaptation
