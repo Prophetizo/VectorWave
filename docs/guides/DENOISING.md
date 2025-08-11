@@ -45,6 +45,7 @@ double[] denoised = denoiser.denoise(noisySignal);
   - UNIVERSAL: Universal threshold (VisuShrink)
   - SURE: Stein's Unbiased Risk Estimate
   - MINIMAX: Minimax threshold
+  - BAYES: Variance-based adaptive threshold (BayesShrink)
 - **Threshold Types**:
   - SOFT: Smooth threshold function
   - HARD: Discontinuous threshold function
@@ -245,6 +246,27 @@ priceDenoiser.subscribe(new Flow.Subscriber<double[]>() {
 marketDataFeed.subscribe(price -> {
     priceDenoiser.process(price);
 });
+```
+
+### Example 4: BAYES Threshold Method
+
+```java
+// BAYES threshold adapts to signal characteristics
+WaveletDenoiser denoiser = new WaveletDenoiser(Daubechies.DB4, BoundaryMode.PERIODIC);
+
+// BAYES works well for signals with varying noise levels
+double[] adaptiveDenoised = denoiser.denoise(noisySignal, 
+    WaveletDenoiser.ThresholdMethod.BAYES);
+
+// Multi-level BAYES denoising for better feature preservation
+double[] multiLevelBayes = denoiser.denoiseMultiLevel(noisySignal, 3,
+    WaveletDenoiser.ThresholdMethod.BAYES,
+    WaveletDenoiser.ThresholdType.SOFT);
+
+// Compare different threshold methods
+double[] universalResult = denoiser.denoise(noisySignal, WaveletDenoiser.ThresholdMethod.UNIVERSAL);
+double[] sureResult = denoiser.denoise(noisySignal, WaveletDenoiser.ThresholdMethod.SURE);
+double[] bayesResult = denoiser.denoise(noisySignal, WaveletDenoiser.ThresholdMethod.BAYES);
 ```
 
 ## Best Practices
