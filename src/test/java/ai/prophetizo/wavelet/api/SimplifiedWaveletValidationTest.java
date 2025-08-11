@@ -82,28 +82,16 @@ class SimplifiedWaveletValidationTest {
     }
     
     private void testBasicOrthogonality(String name, double[] coeffs) {
-        // Determine tolerance based on wavelet type and order
-        double tolerance = 0.1; // Default tolerance
-        
-        // Higher-order wavelets need more relaxed tolerances due to numerical precision
-        if (name.startsWith("sym")) {
-            int order = Integer.parseInt(name.substring(3));
-            if (order <= 8) {
-                tolerance = 0.01;
-            } else if (order <= 12) {
-                tolerance = 0.2;
-            } else {
-                tolerance = 0.7; // Very relaxed for SYM15, SYM20
-            }
-        } else if (name.equals("coif5")) {
-            tolerance = 0.7; // COIF5 has known numerical precision issues
-        }
-        
         // Sum should be approximately √2
         double sum = 0;
         for (double c : coeffs) {
             sum += c;
         }
+        // Most wavelets satisfy orthogonality with tight tolerance
+        // SYM8, SYM10 have tiny numerical errors
+        double tolerance = 1e-10;
+        if (name.equals("sym8")) tolerance = 1e-6;
+        else if (name.equals("sym10")) tolerance = 1e-4;  // SYM10 has 1e-4 error
         assertEquals(Math.sqrt(2), sum, tolerance, 
             name + " coefficients sum should be approximately √2");
         
@@ -112,11 +100,7 @@ class SimplifiedWaveletValidationTest {
         for (double c : coeffs) {
             sumSquares += c * c;
         }
-        
-        // Use slightly more relaxed tolerance for sum of squares
-        double sqTolerance = name.equals("coif5") ? 1.0 : 
-                            (name.equals("sym20") ? 1.1 : tolerance * 1.2);
-        assertEquals(1.0, sumSquares, sqTolerance,
+        assertEquals(1.0, sumSquares, 1e-10,
             name + " sum of squared coefficients should be approximately 1");
     }
     

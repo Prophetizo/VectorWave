@@ -86,15 +86,6 @@ class NewWaveletsTest {
     @MethodSource("newSymletWavelets")
     @DisplayName("Symlet wavelets should satisfy orthogonality conditions")
     void testSymletOrthogonality(Symlet wavelet) {
-        // SYM15 and SYM20 have known numerical precision issues due to coefficient accumulation
-        // These wavelets are still functional but don't pass strict orthogonality tests
-        if ("sym15".equals(wavelet.name()) || "sym20".equals(wavelet.name())) {
-            // For these wavelets, just verify they exist and have correct length
-            assertNotNull(wavelet.lowPassDecomposition());
-            assertEquals(wavelet.vanishingMoments() * 2, wavelet.lowPassDecomposition().length);
-            return;
-        }
-        
         assertTrue(wavelet.verifyCoefficients(), 
             "Symlet " + wavelet.name() + " should satisfy orthogonality conditions");
     }
@@ -172,9 +163,7 @@ class NewWaveletsTest {
         for (double coeff : h) {
             sum += coeff;
         }
-        // Use more relaxed tolerance for COIF5 due to numerical precision of coefficients
-        double tolerance = wavelet.name().equals("coif5") ? 0.7 : 1e-6;
-        assertEquals(Math.sqrt(2), sum, tolerance,
+        assertEquals(Math.sqrt(2), sum, 1e-10,
             "Sum of coefficients should equal √2 for " + wavelet.name());
         
         // Check sum of squares = 1
@@ -182,9 +171,7 @@ class NewWaveletsTest {
         for (double coeff : h) {
             sumSquares += coeff * coeff;
         }
-        // COIF5 has known numerical precision issues with sum of squares
-        double sqTolerance = wavelet.name().equals("coif5") ? 0.85 : 1e-6;
-        assertEquals(1.0, sumSquares, sqTolerance,
+        assertEquals(1.0, sumSquares, 1e-10,
             "Sum of squared coefficients should equal 1 for " + wavelet.name());
     }
     
@@ -293,9 +280,9 @@ class NewWaveletsTest {
         
         assertEquals(30, coeffs.length, "COIF5 should have 30 coefficients");
         
-        // Verify a few key coefficients with relaxed tolerance due to numerical precision
-        assertEquals(-0.0000892313668914, coeffs[0], 1e-10);
-        assertEquals(0.7742896038276514, coeffs[19], 1e-10);
-        assertEquals(-0.0002120808397894, coeffs[29], 1e-10);
+        // Verify a few key coefficients (updated with correct PyWavelets values)
+        assertEquals(-0.0000000960401011, coeffs[0], 1e-15);
+        assertEquals(0.7742936228603274, coeffs[19], 1e-10);
+        assertEquals(-0.0002120818620675, coeffs[29], 1e-10);
     }
 }
