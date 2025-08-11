@@ -174,7 +174,9 @@ public final class Symlet implements OrthogonalWavelet {
      * the theoretical √2 (1.4142), resulting in an error of ~1.14e-4. This appears
      * to be due to precision limitations in the reference implementation. The wavelet
      * is still functional for practical applications with this small error.</p>
-     * 
+     * to be due to precision limitations in the reference implementation.</p>
+     *
+     * <p><strong>Guidance:</strong> For most practical and production applications, this small error is negligible and does not noticeably affect results. However, in applications where extremely high numerical precision is required (such as scientific computing with strict error bounds or cumulative transforms over very large datasets), users should be aware that this limitation may introduce a minor bias. If absolute precision is critical, consider recomputing the coefficients with higher-precision arithmetic or verifying the sum matches the theoretical value within your application's tolerance.</p>
      * <p>Source: PyWavelets pywt.wavelet('sym10').dec_lo</p>
      */
     public static final Symlet SYM10 = new Symlet(10, new double[]{
