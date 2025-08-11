@@ -140,7 +140,7 @@ public final class WaveletOperations {
          */
         public double estimateSpeedup(int signalLength) {
             if (signalLength < 0) {
-                throw new IllegalArgumentException("Signal length must be non-negative");
+                throw new IllegalArgumentException("Signal length cannot be negative");
             }
             if (!vectorizationEnabled || signalLength < 64) {
                 return 1.0;
