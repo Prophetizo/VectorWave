@@ -20,6 +20,25 @@ MultiLevelMODWTResult mlResult = mlTransform.decompose(signal, levels);
 double[] reconstructed = mlTransform.reconstruct(mlResult);
 ```
 
+### SWT (Stationary Wavelet Transform)
+```java
+// SWT adapter with familiar interface
+VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
+
+// Forward transform with mutable results
+MutableMultiLevelMODWTResult result = swt.forward(signal, 4);
+
+// Apply thresholding for denoising
+swt.applyUniversalThreshold(result, true); // soft thresholding
+double[] denoised = swt.inverse(result);
+
+// Convenience denoising method
+double[] clean = swt.denoise(noisySignal, 4, -1, true);
+
+// Extract specific frequency bands
+double[] highFreq = swt.extractLevel(signal, 4, 1);
+```
+
 ### CWT Transform
 ```java
 // Basic CWT analysis
@@ -96,9 +115,30 @@ Wavelet morlet = WaveletRegistry.getWavelet("morlet");
 #### MultiLevelMODWTTransform
 - `decompose(double[] signal)` - Automatic max levels
 - `decompose(double[] signal, int levels)` - Specify levels
+- `decomposeMutable(double[] signal, int levels)` - Returns mutable result
 - `reconstruct(MultiLevelMODWTResult result)` - Full reconstruction
 - `reconstructFromLevel(result, int level)` - Partial reconstruction
 - `getMaximumLevels(int signalLength)` - Calculate max levels
+
+#### MutableMultiLevelMODWTResult
+- `getMutableDetailCoeffs(int level)` - Direct coefficient access
+- `getMutableApproximationCoeffs()` - Mutable approximation
+- `applyThreshold(int level, double threshold, boolean soft)` - Thresholding
+- `clearCaches()` - Clear cached computations after modification
+- `toImmutable()` - Create immutable copy
+- `isValid()` - Check for NaN/Inf
+
+### SWT Package (`ai.prophetizo.wavelet.swt`)
+
+#### VectorWaveSwtAdapter
+- `forward(double[] signal)` - Max levels decomposition
+- `forward(double[] signal, int levels)` - Specified levels
+- `inverse(MutableMultiLevelMODWTResult result)` - Reconstruction
+- `applyThreshold(result, level, threshold, soft)` - Level thresholding
+- `applyUniversalThreshold(result, soft)` - Auto threshold
+- `denoise(signal, levels)` - Universal threshold denoising
+- `denoise(signal, levels, threshold, soft)` - Custom threshold
+- `extractLevel(signal, levels, targetLevel)` - Band extraction
 
 ### CWT Package (`ai.prophetizo.wavelet.cwt`)
 

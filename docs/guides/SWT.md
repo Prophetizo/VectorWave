@@ -249,12 +249,12 @@ public class SWTDenoisingPipeline {
    - Use mutable results for in-place modifications
    - Convert to immutable for thread-safe operations
 
-## Integration with Issue #170
+## Implementation Details
 
-This SWT implementation addresses the requirements in issue #170 by providing:
+The SWT adapter provides:
 
 1. **Mutable multi-level results** for coefficient manipulation
-2. **SWT-style interface** familiar to users of other wavelet libraries
+2. **SWT-style interface** familiar to users of other wavelet libraries  
 3. **Efficient implementation** leveraging VectorWave's optimized MODWT
 4. **Comprehensive denoising capabilities** with various thresholding options
 5. **Feature extraction methods** for multi-resolution analysis

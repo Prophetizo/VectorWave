@@ -2,7 +2,7 @@
 
 Development guide for working with the VectorWave repository.
 
-## Current State (December 2024)
+## Current State (January 2025)
 
 ### MODWT as Primary Transform
 - **PRIMARY**: MODWT (Maximal Overlap Discrete Wavelet Transform) is the main discrete transform
@@ -17,8 +17,13 @@ Development guide for working with the VectorWave repository.
   - `MODWTTransform`: Main transform with automatic SIMD optimization
   - `MODWTResult`: Interface with factory method `MODWTResult.create()`
   - `MultiLevelMODWTTransform`: Multi-level decomposition and reconstruction
+  - `MutableMultiLevelMODWTResult`: Mutable coefficients for in-place processing
+- **SWT Package**: `ai.prophetizo.wavelet.swt`
+  - `VectorWaveSwtAdapter`: SWT interface leveraging MODWT backend
+  - Provides familiar SWT API for users migrating from other libraries
+  - Full denoising and feature extraction capabilities
 - **Performance**: Automatic vectorization using Vector API with scalar fallback
-- **Use Cases**: Financial analysis, real-time processing, pattern detection
+- **Use Cases**: Financial analysis, real-time processing, pattern detection, denoising
 
 ### Financial Analysis
 - **Configuration-Based**: All financial parameters must be explicitly configured
@@ -52,6 +57,20 @@ MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIO
 double[] signal = new double[777]; // Any length!
 MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
+```
+
+### SWT (Stationary Wavelet Transform)
+```java
+// SWT adapter for familiar API
+VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
+MutableMultiLevelMODWTResult result = swt.forward(signal, 4);
+
+// Direct coefficient manipulation
+swt.applyThreshold(result, 1, 0.5, true); // soft threshold level 1
+double[] denoised = swt.inverse(result);
+
+// Convenience denoising
+double[] cleanSignal = swt.denoise(noisySignal, 4, -1, true); // universal threshold
 ```
 
 ### Financial Analysis
@@ -89,12 +108,14 @@ mvn test
 
 # Run specific test pattern
 mvn test -Dtest=*MODWT*
+mvn test -Dtest=*SWT*
 
 # Run with Vector API
 mvn test -Dtest.args="--add-modules jdk.incubator.vector"
 
 # Run demos
 mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
+mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.SWTDemo"
 ```
 
 ## Important Notes

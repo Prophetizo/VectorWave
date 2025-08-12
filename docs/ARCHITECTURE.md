@@ -27,8 +27,21 @@ ai.prophetizo.wavelet.api/
 **MODWTTransform**: Primary transform implementation
 - Forward/inverse MODWT operations (shift-invariant)
 - Works with signals of any length (no power-of-2 restriction)
-- Boundary mode handling (periodic, zero padding)
+- Boundary mode handling (periodic, symmetric, zero padding)
 - Automatic optimization path selection
+- Batch processing with SIMD acceleration
+
+**MultiLevelMODWTTransform**: Multi-level decomposition
+- Automatic maximum level calculation
+- Mutable results for coefficient manipulation
+- Energy distribution analysis
+- Perfect reconstruction guarantee
+
+**VectorWaveSwtAdapter**: SWT interface
+- Familiar SWT API leveraging MODWT backend
+- Mutable coefficient access for denoising
+- Universal and custom thresholding
+- Feature extraction and band isolation
 
 **WaveletOperations**: Public facade for operations
 - Automatic SIMD optimization

@@ -6,6 +6,7 @@ High-performance wavelet transform library for Java 23+ featuring MODWT (Maximal
 
 ### Core Capabilities
 - **MODWT**: Shift-invariant transform for ANY signal length
+- **SWT Adapter**: Stationary Wavelet Transform interface with mutable coefficients
 - **Wavelet Families**: Haar, Daubechies, Symlets, Coiflets, Biorthogonal, Financial wavelets
 - **CWT**: FFT-accelerated continuous transforms with complex analysis
 - **SIMD Acceleration**: Automatic vectorization with scalar fallback
@@ -98,7 +99,25 @@ for (double[] chunk : audioStream) {
 }
 ```
 
-### 5. Performance Monitoring
+### 5. SWT (Stationary Wavelet Transform)
+```java
+// SWT adapter for shift-invariant denoising and analysis
+VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
+
+// Decompose with mutable coefficients for custom processing
+MutableMultiLevelMODWTResult result = swt.forward(signal, 4);
+
+// Apply universal threshold for denoising
+swt.applyUniversalThreshold(result, true); // soft thresholding
+
+// Or use convenience denoising method
+double[] denoised = swt.denoise(noisySignal, 4, -1, true); // auto threshold
+
+// Extract specific frequency bands
+double[] highFreq = swt.extractLevel(signal, 4, 1); // finest details
+```
+
+### 6. Performance Monitoring
 ```java
 // Check platform capabilities
 WaveletOperations.PerformanceInfo info = WaveletOperations.getPerformanceInfo();
@@ -129,6 +148,8 @@ System.out.println(estimate.description());
 - [Wavelet Selection Guide](docs/WAVELET_SELECTION.md) - Choosing wavelets
 - [Financial Analysis Guide](docs/guides/FINANCIAL_ANALYSIS.md) - Market analysis
 - [Batch Processing Guide](docs/guides/BATCH_PROCESSING.md) - SIMD optimization
+- [SWT Guide](docs/guides/SWT.md) - Stationary Wavelet Transform usage
+- [Denoising Guide](docs/guides/DENOISING.md) - Signal denoising techniques
 
 ## Demos
 
@@ -141,7 +162,7 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
 ```
 
-**Core demos**: `MODWTDemo`, `FinancialDemo`, `StreamingDenoiserDemo`, `BatchProcessingDemo`
+**Core demos**: `MODWTDemo`, `FinancialDemo`, `StreamingDenoiserDemo`, `BatchProcessingDemo`, `SWTDemo`
 
 ## License
 
