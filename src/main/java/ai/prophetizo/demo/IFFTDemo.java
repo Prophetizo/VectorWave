@@ -1,41 +1,45 @@
 package ai.prophetizo.demo;
 
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT;
-import ai.prophetizo.wavelet.cwt.optimization.FFTAcceleratedCWT.Complex;
+import ai.prophetizo.wavelet.util.SignalProcessor;
+import ai.prophetizo.wavelet.cwt.ComplexNumber;
 
 import java.util.Arrays;
 
 /**
- * Demonstrates the IFFT method with parameter validation.
+ * Demonstrates FFT and IFFT operations using the consolidated FFT utilities.
  */
 public class IFFTDemo {
     
     public static void main(String[] args) {
-        System.out.println("IFFT Parameter Validation Demo");
-        System.out.println("==============================\n");
-        
-        FFTAcceleratedCWT fft = new FFTAcceleratedCWT();
+        System.out.println("FFT/IFFT Demo using Consolidated Implementation");
+        System.out.println("==============================================\n");
         
         // Valid usage examples
-        demonstrateValidUsage(fft);
+        demonstrateValidUsage();
         
         // Validation examples
-        demonstrateParameterValidation(fft);
+        demonstrateParameterValidation();
     }
     
-    private static void demonstrateValidUsage(FFTAcceleratedCWT fft) {
-        System.out.println("1. Valid IFFT usage:");
+    private static void demonstrateValidUsage() {
+        System.out.println("1. Valid FFT/IFFT usage:");
         
         // Test with simple impulse signal
         double[] originalSignal = {1.0, 0.0, 0.0, 0.0};
         System.out.println("   Original signal: " + Arrays.toString(originalSignal));
         
         // Forward FFT
-        Complex[] spectrum = fft.fft(originalSignal);
+        ComplexNumber[] spectrum = SignalProcessor.fftReal(originalSignal);
         System.out.println("   FFT spectrum length: " + spectrum.length);
         
-        // Inverse FFT (this is where the validation happens)
-        double[] reconstructed = fft.ifft(spectrum);
+        // Inverse FFT
+        SignalProcessor.ifft(spectrum);
+        
+        // Extract real part
+        double[] reconstructed = new double[originalSignal.length];
+        for (int i = 0; i < originalSignal.length; i++) {
+            reconstructed[i] = spectrum[i].real();
+        }
         System.out.println("   Reconstructed: " + Arrays.toString(reconstructed));
         
         // Check accuracy
@@ -47,61 +51,61 @@ public class IFFTDemo {
         System.out.println();
     }
     
-    private static void demonstrateParameterValidation(FFTAcceleratedCWT fft) {
+    private static void demonstrateParameterValidation() {
         System.out.println("2. Parameter validation demonstrations:");
         
         // Test null input
         try {
-            fft.ifft(null);
+            SignalProcessor.ifft(null);
         } catch (NullPointerException e) {
             System.out.println("   ✓ Null input validation: " + e.getMessage());
         }
         
         // Test non-power-of-2 length
         try {
-            Complex[] invalidLength = new Complex[3]; // Not power of 2
+            ComplexNumber[] invalidLength = new ComplexNumber[3]; // Not power of 2
             for (int i = 0; i < 3; i++) {
-                invalidLength[i] = new Complex(1.0, 0.0);
+                invalidLength[i] = new ComplexNumber(1.0, 0.0);
             }
-            fft.ifft(invalidLength);
+            SignalProcessor.ifft(invalidLength);
         } catch (IllegalArgumentException e) {
             System.out.println("   ✓ Non-power-of-2 validation: " + e.getMessage());
         }
         
         // Test null complex coefficient
         try {
-            Complex[] withNull = new Complex[4];
-            withNull[0] = new Complex(1.0, 0.0);
+            ComplexNumber[] withNull = new ComplexNumber[4];
+            withNull[0] = new ComplexNumber(1.0, 0.0);
             withNull[1] = null; // Null coefficient
-            withNull[2] = new Complex(2.0, 0.0);
-            withNull[3] = new Complex(3.0, 0.0);
-            fft.ifft(withNull);
+            withNull[2] = new ComplexNumber(2.0, 0.0);
+            withNull[3] = new ComplexNumber(3.0, 0.0);
+            SignalProcessor.ifft(withNull);
         } catch (IllegalArgumentException e) {
             System.out.println("   ✓ Null coefficient validation: " + e.getMessage());
         }
         
         // Test NaN values
         try {
-            Complex[] withNaN = {
-                new Complex(1.0, 0.0),
-                new Complex(Double.NaN, 1.0), // NaN value
-                new Complex(2.0, 0.0),
-                new Complex(3.0, 0.0)
+            ComplexNumber[] withNaN = {
+                new ComplexNumber(1.0, 0.0),
+                new ComplexNumber(Double.NaN, 1.0), // NaN value
+                new ComplexNumber(2.0, 0.0),
+                new ComplexNumber(3.0, 0.0)
             };
-            fft.ifft(withNaN);
+            SignalProcessor.ifft(withNaN);
         } catch (IllegalArgumentException e) {
             System.out.println("   ✓ NaN value validation: " + e.getMessage());
         }
         
         // Test infinity values
         try {
-            Complex[] withInf = {
-                new Complex(1.0, 0.0),
-                new Complex(2.0, Double.POSITIVE_INFINITY), // Infinity value
-                new Complex(2.0, 0.0),
-                new Complex(3.0, 0.0)
+            ComplexNumber[] withInf = {
+                new ComplexNumber(1.0, 0.0),
+                new ComplexNumber(2.0, Double.POSITIVE_INFINITY), // Infinity value
+                new ComplexNumber(2.0, 0.0),
+                new ComplexNumber(3.0, 0.0)
             };
-            fft.ifft(withInf);
+            SignalProcessor.ifft(withInf);
         } catch (IllegalArgumentException e) {
             System.out.println("   ✓ Infinity value validation: " + e.getMessage());
         }

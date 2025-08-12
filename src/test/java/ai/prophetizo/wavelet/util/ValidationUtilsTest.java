@@ -325,8 +325,7 @@ class ValidationUtilsTest {
         InvalidArgumentException exception = assertThrows(InvalidArgumentException.class,
             () -> ValidationUtils.nextPowerOfTwo(tooLarge));
         
-        assertTrue(exception.getMessage().contains("too large"));
-        assertTrue(exception.getMessage().contains("2^31"));
+        assertTrue(exception.getMessage().contains("exceeds maximum safe power"));
     }
     
     @Test

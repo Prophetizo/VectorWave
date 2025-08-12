@@ -1,209 +1,169 @@
 # VectorWave
 
-A comprehensive Fast Wavelet Transform (FWT) library for Java with support for multiple wavelet families and a clean, extensible architecture.
+High-performance wavelet transform library for Java 23+ featuring MODWT (Maximal Overlap Discrete Wavelet Transform) as the primary transform. Offers shift-invariance, arbitrary signal length support, SIMD acceleration, and comprehensive wavelet families for financial analysis, signal processing, and real-time applications.
 
 ## Features
 
-- **Multiple Wavelet Families**: 
-  - Orthogonal: Haar, Daubechies (DB2, DB4), Symlets, Coiflets
-  - Biorthogonal: Biorthogonal Spline wavelets
-  - Continuous: Morlet wavelet (with discretization support)
-- **Type-Safe API**: Sealed interface hierarchy ensures compile-time wavelet validation
-- **Extensible Architecture**: Easy to add new wavelet types through well-defined interfaces
-- **Zero Dependencies**: Pure Java implementation with no external dependencies
-- **Boundary Modes**: Supports periodic and zero-padding boundary handling
-- **Performance**: Optimized scalar implementation with comprehensive benchmarking
+### Core Capabilities
+- **MODWT**: Shift-invariant transform for ANY signal length
+- **SWT Adapter**: Stationary Wavelet Transform interface with mutable coefficients
+- **Wavelet Families**: Haar, Daubechies, Symlets, Coiflets, Biorthogonal, Financial wavelets
+- **CWT**: FFT-accelerated continuous transforms with complex analysis
+- **SIMD Acceleration**: Automatic vectorization with scalar fallback
+- **Financial Analysis**: Specialized wavelets and configurable parameters
+- **Streaming**: Real-time processing with arbitrary block sizes
+- **Zero Dependencies**: Pure Java 23+ implementation
+
+### Performance
+- **SIMD Acceleration**: Platform-adaptive Vector API (x86: AVX2/AVX512, ARM: NEON)
+- **FFT Optimization**: Real-to-complex FFT with 2x speedup for real signals
+- **Batch Processing**: SIMD parallel processing of multiple signals (2-4x speedup)
+- **Memory Efficiency**: Object pooling and aligned allocation
+- **Automatic Optimization**: No manual configuration required
+
+### Key Applications
+- **Financial Analysis**: Crash detection, volatility analysis, regime identification
+- **Signal Processing**: Denoising, time-frequency analysis, feature extraction
+- **Real-time Systems**: Streaming transforms with microsecond latency
+- **Scientific Computing**: Multi-level decomposition and reconstruction
 
 ## Requirements
 
-- Java 21 or higher
+- Java 23+
 - Maven 3.6+
+- Compilation: `--add-modules jdk.incubator.vector`
+- Runtime: Vector API optional (automatic scalar fallback)
 
 ## Quick Start
 
-### Building the Project
-
 ```bash
-mvn clean compile
-```
+# Build and test
+mvn clean test
 
-### Running the Demo
+# Run interactive demos
+mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
 
-```bash
-java -cp target/classes ai.prophetizo.Main
-```
-
-### Basic Usage
-
-```java
-import ai.prophetizo.wavelet.*;
-import ai.prophetizo.wavelet.api.*;
-
-// Using Haar wavelet
-WaveletTransform transform = WaveletTransformFactory.createDefault(new Haar());
-double[] signal = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-TransformResult result = transform.forward(signal);
+# Basic MODWT usage
+MODWTTransform transform = new MODWTTransform(new Haar(), BoundaryMode.PERIODIC);
+double[] signal = {1, 2, 3, 4, 5, 6, 7}; // Any length!
+MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);
-
-// Using Daubechies DB4
-transform = new WaveletTransformFactory()
-    .withBoundaryMode(BoundaryMode.PERIODIC)
-    .create(Daubechies.DB4);
-    
-// Using Biorthogonal wavelet
-transform = new WaveletTransformFactory()
-    .create(BiorthogonalSpline.BIOR1_3);
-    
-// Using Morlet wavelet (continuous)
-transform = new WaveletTransformFactory()
-    .create(new MorletWavelet(6.0, 1.0));
 ```
 
-### Wavelet Registry
+## Key Examples
 
+### 1. Basic MODWT Transform
 ```java
-// Discover available wavelets
-Set<String> allWavelets = WaveletRegistry.getAvailableWavelets();
-List<String> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
-
-// Get wavelet by name
-Wavelet db4 = WaveletRegistry.getWavelet("db4");
-Wavelet haar = WaveletRegistry.getWavelet("haar");
-
-// Print all available wavelets
-WaveletRegistry.printAvailableWavelets();
+// Works with ANY signal length - no power-of-2 restriction!
+MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+double[] signal = new double[777]; // Any length
+MODWTResult result = transform.forward(signal);
+double[] reconstructed = transform.inverse(result); // Perfect reconstruction
 ```
 
-## Performance Benchmarking
-
-VectorWave includes comprehensive JMH benchmarks to measure performance across different configurations.
-
-### Available Benchmarks
-
-1. **Signal Size Scaling**: Tests performance with different signal sizes (256-16384)
-2. **Wavelet Type Comparison**: Compares performance of Haar, DB2, and DB4
-3. **Validation Performance**: Measures overhead of input validation
-
-### Running Benchmarks
-
-```bash
-# Run all benchmarks
-./jmh-runner.sh
-
-# Run specific benchmark
-./jmh-runner.sh ValidationBenchmark
-
-# Run with custom parameters
-./jmh-runner.sh SignalSizeBenchmark -wi 5 -i 10 -p signalSize=1024
+### 2. High-Performance Batch Processing
+```java
+// Process multiple signals with automatic SIMD optimization
+double[][] signals = new double[32][1000]; // 32 signals of any length
+MODWTResult[] results = transform.forwardBatch(signals); // 2-4x speedup
+double[][] reconstructed = transform.inverseBatch(results);
 ```
 
-### Benchmark Parameters
+### 3. Financial Analysis
+```java
+// Configure financial analysis parameters
+FinancialConfig config = new FinancialConfig(0.045); // 4.5% risk-free rate
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
 
-- `-wi N`: Warmup iterations (default: 5)
-- `-i N`: Measurement iterations (default: 10)
-- `-f N`: Fork count (default: 2)
-- `-t N`: Thread count (default: 1)
-- `-p param=value`: Override @Param values
+// Wavelet-based Sharpe ratio calculation
+double sharpeRatio = analyzer.calculateWaveletSharpeRatio(returns);
 
-## Architecture
-
-### Wavelet Type Hierarchy
-
-```
-Wavelet (sealed interface)
-├── DiscreteWavelet
-│   ├── OrthogonalWavelet
-│   │   ├── Haar
-│   │   ├── Daubechies (DB2, DB4, ...)
-│   │   ├── Symlet (sym2, sym3, ...)
-│   │   └── Coiflet (coif1, coif2, ...)
-│   └── BiorthogonalWavelet
-│       └── BiorthogonalSpline (bior1.3, bior2.2, ...)
-└── ContinuousWavelet
-    └── MorletWavelet
+// Crash asymmetry detection using Paul wavelet
+PaulWavelet paulWavelet = new PaulWavelet(4);
+CWTTransform cwt = new CWTTransform(paulWavelet);
+CWTResult crashAnalysis = cwt.analyze(priceReturns, scales);
 ```
 
-### Core Components
+### 4. Real-time Streaming
+```java
+// Streaming denoiser with arbitrary block sizes
+MODWTStreamingDenoiser denoiser = new MODWTStreamingDenoiser.Builder()
+    .wavelet(Daubechies.DB4)
+    .bufferSize(480) // 10ms at 48kHz - no padding needed!
+    .thresholdMethod(ThresholdMethod.UNIVERSAL)
+    .build();
 
-- **WaveletTransform**: Main entry point for transforms
-- **WaveletTransformFactory**: Factory for creating configured transforms
-- **Wavelet Interfaces**: Type-safe hierarchy for different wavelet families
-- **WaveletRegistry**: Central registry for wavelet discovery and creation
-- **TransformResult**: Immutable container for transform coefficients
-- **ScalarOps**: Core mathematical operations
-
-### Package Structure
-
-```
-ai.prophetizo.wavelet/
-├── api/                    # Public API interfaces
-│   ├── Wavelet            # Base wavelet interface
-│   ├── DiscreteWavelet    # Discrete wavelets base
-│   ├── OrthogonalWavelet  # Orthogonal wavelets
-│   ├── BiorthogonalWavelet# Biorthogonal wavelets
-│   ├── ContinuousWavelet  # Continuous wavelets
-│   ├── WaveletType        # Wavelet categorization
-│   ├── WaveletRegistry    # Wavelet discovery
-│   ├── BoundaryMode       # Boundary handling
-│   └── [Wavelet implementations]
-├── internal/               # Internal implementation
-│   └── ScalarOps          # Core operations
-├── util/                   # Utilities
-│   ├── ValidationUtils    # Input validation
-│   └── BatchValidation    # Batch validation
-└── exception/             # Custom exceptions
+// Process continuous stream
+for (double[] chunk : audioStream) {
+    double[] denoised = denoiser.denoise(chunk);
+}
 ```
 
-## Testing
+### 5. SWT (Stationary Wavelet Transform)
+```java
+// SWT adapter for shift-invariant denoising and analysis
+VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
 
-### Running Tests
+// Decompose with mutable coefficients for custom processing
+MutableMultiLevelMODWTResult result = swt.forward(signal, 4);
 
-```bash
-# Run all tests
-mvn test
+// Apply universal threshold for denoising
+swt.applyUniversalThreshold(result, true); // soft thresholding
 
-# Run specific test
-mvn test -Dtest=WaveletTransformTest
+// Or use convenience denoising method
+double[] denoised = swt.denoise(noisySignal, 4, -1, true); // auto threshold
 
-# Run with coverage
-mvn clean test jacoco:report
+// Extract specific frequency bands
+double[] highFreq = swt.extractLevel(signal, 4, 1); // finest details
 ```
 
-### Test Coverage
+### 6. Performance Monitoring
+```java
+// Check platform capabilities
+WaveletOperations.PerformanceInfo info = WaveletOperations.getPerformanceInfo();
+System.out.println(info.description());
+// Output: "Vectorized operations enabled on aarch64 with S_128_BIT"
 
-The project maintains >80% code coverage with comprehensive tests for:
-- Transform correctness
-- Boundary conditions
-- Error handling
-- Edge cases
+// Estimate processing time
+MODWTTransform.ProcessingEstimate estimate = transform.estimateProcessingTime(signalLength);
+System.out.println(estimate.description());
+```
 
-## Continuous Integration
+## Wavelet Selection Guide
 
-The project includes GitHub Actions workflows for:
-- Automated testing on push/PR
-- Code coverage reporting
-- Build verification
+| Wavelet | Best For | Key Properties |
+|---------|----------|----------------|
+| **Haar** | Fast processing, edge detection | Simplest, compact support |
+| **Daubechies** | General purpose, compression | Orthogonal, good frequency localization |
+| **Paul** | Financial crash detection | Asymmetric, captures sharp rises/falls |
+| **Morlet** | Time-frequency analysis | Complex, good time-frequency balance |
+| **Mexican Hat** | Edge detection, volatility | Second derivative of Gaussian |
+| **Shannon-Gabor** | Spectral analysis | Reduced artifacts vs classical Shannon |
 
 ## Documentation
 
-- [BENCHMARKING.md](BENCHMARKING.md) - Detailed benchmarking guide
-- [ADDING_WAVELETS.md](ADDING_WAVELETS.md) - Guide for adding new wavelet types
-- [CLAUDE.md](CLAUDE.md) - Development guidelines for AI assistants
-- JavaDoc - Run `mvn javadoc:javadoc` to generate API documentation
+- [API Reference](docs/API.md) - Complete API documentation  
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design
+- [Performance Guide](docs/PERFORMANCE.md) - Performance characteristics
+- [Wavelet Selection Guide](docs/WAVELET_SELECTION.md) - Choosing wavelets
+- [Financial Analysis Guide](docs/guides/FINANCIAL_ANALYSIS.md) - Market analysis
+- [Batch Processing Guide](docs/guides/BATCH_PROCESSING.md) - SIMD optimization
+- [SWT Guide](docs/guides/SWT.md) - Stationary Wavelet Transform usage
+- [Denoising Guide](docs/guides/DENOISING.md) - Signal denoising techniques
 
-## Contributing
+## Demos
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass and coverage remains >80%
-5. Submit a pull request
+Run interactive demos:
+```bash
+# All demos via menu
+mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
+
+# Specific demo
+mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.LiveTradingSimulation"
+```
+
+**Core demos**: `MODWTDemo`, `FinancialDemo`, `StreamingDenoiserDemo`, `BatchProcessingDemo`, `SWTDemo`
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Wavelet coefficients based on standard mathematical definitions
-- Benchmarking powered by JMH (Java Microbenchmark Harness)
+GPL-3.0 - See [LICENSE](LICENSE) file for details.

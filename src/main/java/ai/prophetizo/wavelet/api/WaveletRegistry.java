@@ -1,145 +1,146 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.cwt.*;
+import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Registry for all available wavelets in the VectorWave library.
- * Provides a centralized location to discover and create wavelet instances.
- * 
- * <p>This registry supports:
- * <ul>
- *   <li>Listing available wavelets by type</li>
- *   <li>Creating wavelets by name</li>
- *   <li>Querying wavelet properties</li>
- * </ul>
- * </p>
+ * Simple WaveletRegistry that just works everywhere.
+ * No ServiceLoader, no complexity, just wavelets.
  */
 public final class WaveletRegistry {
     
-    private static final Map<String, Wavelet> WAVELETS = new HashMap<>();
-    private static final Map<WaveletType, List<String>> WAVELETS_BY_TYPE = new EnumMap<>(WaveletType.class);
+    private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
     
     static {
-        // Register orthogonal wavelets
-        register(new Haar());
+        // Register all wavelets using consistent pattern
+        // Orthogonal wavelets
+        register(Haar.INSTANCE);
+        
+        // Daubechies wavelets
         register(Daubechies.DB2);
         register(Daubechies.DB4);
+        register(Daubechies.DB6);
+        register(Daubechies.DB8);
+        register(Daubechies.DB10);
+        
+        // Symlet wavelets
         register(Symlet.SYM2);
+        register(Symlet.SYM3);
+        register(Symlet.SYM4);
+        register(Symlet.SYM5);
+        register(Symlet.SYM6);
+        register(Symlet.SYM7);
+        register(Symlet.SYM8);
+        register(Symlet.SYM10);
+        register(Symlet.SYM12);
+        register(Symlet.SYM15);
+        register(Symlet.SYM20);
+        
+        // Coiflet wavelets
         register(Coiflet.COIF1);
+        register(Coiflet.COIF2);
+        register(Coiflet.COIF3);
+        register(Coiflet.COIF4);
+        register(Coiflet.COIF5);
         
-        // Register biorthogonal wavelets
-        register(BiorthogonalSpline.BIOR1_3);
-        
-        // Register continuous wavelets
-        register(new MorletWavelet());
+        // Continuous wavelets
+        register(new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
     }
     
-    private WaveletRegistry() {
-        // Private constructor to prevent instantiation
-    }
-    
-    /**
-     * Registers a wavelet in the registry.
-     * 
-     * @param wavelet the wavelet to register
-     */
-    private static void register(Wavelet wavelet) {
-        WAVELETS.put(wavelet.name().toLowerCase(), wavelet);
+    private static void register(Wavelet w) {
+        String name = w.name().toLowerCase();
+        WAVELETS.put(name, w);
         
-        WaveletType type = wavelet.getType();
-        WAVELETS_BY_TYPE.computeIfAbsent(type, k -> new ArrayList<>())
-                        .add(wavelet.name());
-    }
-    
-    /**
-     * Gets a wavelet by name.
-     * 
-     * @param name the wavelet name (case-insensitive)
-     * @return the wavelet instance
-     * @throws IllegalArgumentException if wavelet not found
-     */
-    public static Wavelet getWavelet(String name) {
-        Wavelet wavelet = WAVELETS.get(name.toLowerCase());
-        if (wavelet == null) {
-            throw new IllegalArgumentException("Unknown wavelet: " + name);
+        // Add common aliases
+        if (name.startsWith("db")) {
+            WAVELETS.put("daubechies" + name.substring(2), w);
+        } else if (name.equals("morl")) {
+            WAVELETS.put("morlet", w);
         }
-        return wavelet;
     }
     
-    /**
-     * Checks if a wavelet exists in the registry.
-     * 
-     * @param name the wavelet name
-     * @return true if the wavelet exists
-     */
-    public static boolean hasWavelet(String name) {
-        return WAVELETS.containsKey(name.toLowerCase());
-    }
-    
-    /**
-     * Gets all available wavelet names.
-     * 
-     * @return unmodifiable set of wavelet names
-     */
-    public static Set<String> getAvailableWavelets() {
-        return Collections.unmodifiableSet(WAVELETS.keySet());
-    }
-    
-    /**
-     * Gets wavelets by type.
-     * 
-     * @param type the wavelet type
-     * @return list of wavelet names of the given type
-     */
-    public static List<String> getWaveletsByType(WaveletType type) {
-        return Collections.unmodifiableList(
-            WAVELETS_BY_TYPE.getOrDefault(type, Collections.emptyList())
-        );
-    }
-    
-    /**
-     * Gets all orthogonal wavelets.
-     * 
-     * @return list of orthogonal wavelet names
-     */
-    public static List<String> getOrthogonalWavelets() {
-        return getWaveletsByType(WaveletType.ORTHOGONAL);
-    }
-    
-    /**
-     * Gets all biorthogonal wavelets.
-     * 
-     * @return list of biorthogonal wavelet names
-     */
-    public static List<String> getBiorthogonalWavelets() {
-        return getWaveletsByType(WaveletType.BIORTHOGONAL);
-    }
-    
-    /**
-     * Gets all continuous wavelets.
-     * 
-     * @return list of continuous wavelet names
-     */
-    public static List<String> getContinuousWavelets() {
-        return getWaveletsByType(WaveletType.CONTINUOUS);
-    }
-    
-    /**
-     * Prints a summary of all available wavelets to stdout.
-     */
-    public static void printAvailableWavelets() {
-        System.out.println("Available Wavelets in VectorWave:");
-        System.out.println("=================================");
+    public static Wavelet getWavelet(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidArgumentException("Wavelet name cannot be null or empty");
+        }
         
-        for (WaveletType type : WaveletType.values()) {
-            List<String> wavelets = getWaveletsByType(type);
-            if (!wavelets.isEmpty()) {
-                System.out.println("\n" + type + " Wavelets:");
-                for (String name : wavelets) {
-                    Wavelet w = getWavelet(name);
-                    System.out.println("  - " + name + ": " + w.description());
-                }
+        Wavelet w = WAVELETS.get(name.toLowerCase());
+        if (w == null) {
+            throw new InvalidArgumentException("Unknown wavelet: " + name);
+        }
+        return w;
+    }
+    
+    public static boolean hasWavelet(String name) {
+        return name != null && WAVELETS.containsKey(name.toLowerCase());
+    }
+    
+    public static Set<String> getAvailableWavelets() {
+        return new TreeSet<>(WAVELETS.keySet());
+    }
+    
+    public static List<String> getOrthogonalWavelets() {
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
+            if (entry.getValue().getType() == WaveletType.ORTHOGONAL) {
+                result.add(entry.getKey());
             }
         }
+        Collections.sort(result);
+        return result;
     }
+    
+    public static List<String> getContinuousWavelets() {
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
+            if (entry.getValue().getType() == WaveletType.CONTINUOUS) {
+                result.add(entry.getKey());
+            }
+        }
+        Collections.sort(result);
+        return result;
+    }
+    
+    // Compatibility methods for existing code
+    public static boolean isWaveletAvailable(String name) {
+        return hasWavelet(name);
+    }
+    
+    public static Set<String> getWaveletsByType(WaveletType type) {
+        if (type == null) {
+            return Collections.emptySet();
+        }
+        
+        Set<String> result = new TreeSet<>();
+        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
+            if (entry.getValue().getType() == type) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+    
+    public static List<String> getBiorthogonalWavelets() {
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
+            if (entry.getValue().getType() == WaveletType.BIORTHOGONAL) {
+                result.add(entry.getKey());
+            }
+        }
+        Collections.sort(result);
+        return result;
+    }
+    
+    public static void printAvailableWavelets() {
+        System.out.println("Available Wavelets:");
+        for (String name : getAvailableWavelets()) {
+            Wavelet w = getWavelet(name);
+            System.out.println("  " + name + " - " + w.description());
+        }
+    }
+    
+    private WaveletRegistry() {}
 }

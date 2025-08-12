@@ -8,6 +8,7 @@ import static ai.prophetizo.wavelet.util.WaveletConstants.calculateNextPowerOfTw
  * This includes signals with invalid lengths, NaN/Infinity values, or null signals.
  */
 public class InvalidSignalException extends WaveletTransformException {
+    private static final long serialVersionUID = 202501150002L; // Invalid signal exception v1.0
 
     /**
      * Constructs a new invalid signal exception with the specified detail message.
@@ -19,13 +20,24 @@ public class InvalidSignalException extends WaveletTransformException {
     }
 
     /**
+     * Constructs a new invalid signal exception with the specified error code and detail message.
+     *
+     * @param errorCode the error code
+     * @param message   the detail message
+     */
+    public InvalidSignalException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
+    }
+
+    /**
      * Creates an exception for null signal input.
      *
      * @param parameterName the name of the parameter that was null
      * @return a new InvalidSignalException
      */
     public static InvalidSignalException nullSignal(String parameterName) {
-        return new InvalidSignalException(String.format("%s cannot be null.", parameterName));
+        return new InvalidSignalException(ErrorCode.VAL_NULL_ARGUMENT,
+                String.format("%s cannot be null.", parameterName));
     }
 
     /**
@@ -35,7 +47,8 @@ public class InvalidSignalException extends WaveletTransformException {
      * @return a new InvalidSignalException
      */
     public static InvalidSignalException emptySignal(String parameterName) {
-        return new InvalidSignalException(String.format("%s cannot be empty.", parameterName));
+        return new InvalidSignalException(ErrorCode.VAL_EMPTY,
+                String.format("%s cannot be empty.", parameterName));
     }
 
     /**
@@ -50,7 +63,7 @@ public class InvalidSignalException extends WaveletTransformException {
 
         if (actualLength <= 0) {
             // No suggestion for non-positive lengths
-            return new InvalidSignalException(message);
+            return new InvalidSignalException(ErrorCode.VAL_NOT_POWER_OF_TWO, message);
         }
 
         // Calculate next power of two suggestion
@@ -61,7 +74,7 @@ public class InvalidSignalException extends WaveletTransformException {
             message = String.format("%s The signal is too large to pad to the next power of two.", message);
         }
 
-        return new InvalidSignalException(message);
+        return new InvalidSignalException(ErrorCode.VAL_NOT_POWER_OF_TWO, message);
     }
 
     /**
@@ -72,7 +85,7 @@ public class InvalidSignalException extends WaveletTransformException {
      * @return a new InvalidSignalException
      */
     public static InvalidSignalException nanValue(String parameterName, int index) {
-        return new InvalidSignalException(
+        return new InvalidSignalException(ErrorCode.VAL_NON_FINITE_VALUES,
                 String.format("%s contains NaN at index %d. All values must be finite numbers.", parameterName, index));
     }
 
@@ -86,7 +99,7 @@ public class InvalidSignalException extends WaveletTransformException {
      */
     public static InvalidSignalException infinityValue(String parameterName, int index, double value) {
         String sign = value > 0 ? "positive" : "negative";
-        return new InvalidSignalException(
+        return new InvalidSignalException(ErrorCode.VAL_NON_FINITE_VALUES,
                 String.format("%s contains %s infinity at index %d. All values must be finite numbers.",
                         parameterName, sign, index));
     }
@@ -99,7 +112,7 @@ public class InvalidSignalException extends WaveletTransformException {
      * @return a new InvalidSignalException
      */
     public static InvalidSignalException mismatchedCoefficients(int approxLength, int detailLength) {
-        return new InvalidSignalException(
+        return new InvalidSignalException(ErrorCode.VAL_LENGTH_MISMATCH,
                 String.format("Approximation and detail coefficient arrays must have the same length. " +
                         "Found approximation length: %d, detail length: %d.", approxLength, detailLength));
     }

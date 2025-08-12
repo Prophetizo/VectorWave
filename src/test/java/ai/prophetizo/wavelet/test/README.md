@@ -2,6 +2,13 @@
 
 This package provides a comprehensive testing framework for the VectorWave wavelet transform library.
 
+## Recent Updates
+
+- **Thread Safety**: Fixed thread indexing collision issues using AtomicInteger
+- **Streaming Tests**: Resolved infinite loop in StreamingWaveletTransformTest
+- **Performance**: Latest benchmarks show 107-294 ns latency for 64-sample signals
+- **SIMD Testing**: Support for testing both scalar and vector implementations
+
 ## Overview
 
 The testing framework consists of three main components:
