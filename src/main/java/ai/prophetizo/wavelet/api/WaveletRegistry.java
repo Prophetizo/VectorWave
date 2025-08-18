@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class WaveletRegistry {
     
     private static final Map<String, Wavelet> WAVELETS = new ConcurrentHashMap<>();
+    private static final Map<String, String> ALIASES = new ConcurrentHashMap<>();
+    private static final Set<String> CANONICAL_NAMES = ConcurrentHashMap.newKeySet();
     
     static {
         // Register all wavelets using consistent pattern
@@ -53,11 +55,15 @@ public final class WaveletRegistry {
     private static void register(Wavelet w) {
         String name = w.name().toLowerCase();
         WAVELETS.put(name, w);
+        CANONICAL_NAMES.add(name);
         
-        // Add common aliases
+        // Add common aliases (map alias to canonical name)
         if (name.startsWith("db")) {
-            WAVELETS.put("daubechies" + name.substring(2), w);
+            String alias = "daubechies" + name.substring(2);
+            ALIASES.put(alias, name);
+            WAVELETS.put(alias, w);
         } else if (name.equals("morl")) {
+            ALIASES.put("morlet", name);
             WAVELETS.put("morlet", w);
         }
     }
@@ -84,9 +90,10 @@ public final class WaveletRegistry {
     
     public static List<String> getOrthogonalWavelets() {
         List<String> result = new ArrayList<>();
-        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
-            if (entry.getValue().getType() == WaveletType.ORTHOGONAL) {
-                result.add(entry.getKey());
+        for (String name : CANONICAL_NAMES) {
+            Wavelet wavelet = WAVELETS.get(name);
+            if (wavelet != null && wavelet.getType() == WaveletType.ORTHOGONAL) {
+                result.add(name);
             }
         }
         Collections.sort(result);
@@ -95,9 +102,10 @@ public final class WaveletRegistry {
     
     public static List<String> getContinuousWavelets() {
         List<String> result = new ArrayList<>();
-        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
-            if (entry.getValue().getType() == WaveletType.CONTINUOUS) {
-                result.add(entry.getKey());
+        for (String name : CANONICAL_NAMES) {
+            Wavelet wavelet = WAVELETS.get(name);
+            if (wavelet != null && wavelet.getType() == WaveletType.CONTINUOUS) {
+                result.add(name);
             }
         }
         Collections.sort(result);
@@ -115,9 +123,10 @@ public final class WaveletRegistry {
         }
         
         Set<String> result = new TreeSet<>();
-        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
-            if (entry.getValue().getType() == type) {
-                result.add(entry.getKey());
+        for (String name : CANONICAL_NAMES) {
+            Wavelet wavelet = WAVELETS.get(name);
+            if (wavelet != null && wavelet.getType() == type) {
+                result.add(name);
             }
         }
         return result;
@@ -125,9 +134,10 @@ public final class WaveletRegistry {
     
     public static List<String> getBiorthogonalWavelets() {
         List<String> result = new ArrayList<>();
-        for (Map.Entry<String, Wavelet> entry : WAVELETS.entrySet()) {
-            if (entry.getValue().getType() == WaveletType.BIORTHOGONAL) {
-                result.add(entry.getKey());
+        for (String name : CANONICAL_NAMES) {
+            Wavelet wavelet = WAVELETS.get(name);
+            if (wavelet != null && wavelet.getType() == WaveletType.BIORTHOGONAL) {
+                result.add(name);
             }
         }
         Collections.sort(result);
