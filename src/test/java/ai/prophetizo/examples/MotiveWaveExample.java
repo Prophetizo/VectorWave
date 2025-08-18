@@ -1,7 +1,7 @@
 package ai.prophetizo.examples;
 
 import ai.prophetizo.wavelet.api.WaveletRegistry;
-import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.api.WaveletName;import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.modwt.*;
 import java.util.*;
@@ -15,11 +15,11 @@ public class MotiveWaveExample {
         // That's it. No initialization needed. Just use it.
         
         // Get available wavelets for dropdown menu
-        List<String> wavelets = WaveletRegistry.getOrthogonalWavelets();
+        List<WaveletName> wavelets = WaveletRegistry.getOrthogonalWavelets();
         System.out.println("Available wavelets for dropdown: " + wavelets);
         
         // User selects "db4" from dropdown
-        String selected = "db4";
+        WaveletName selected = WaveletName.DB4;
         
         // Get the wavelet and use it
         if (WaveletRegistry.hasWavelet(selected)) {
@@ -46,7 +46,7 @@ public class MotiveWaveExample {
             return WaveletRegistry.getOrthogonalWavelets().toArray(new String[0]);
         }
         
-        public void calculate(String waveletName, double[] data) {
+        public void calculate(WaveletName waveletName, double[] data) {
             // Get selected wavelet
             Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
             

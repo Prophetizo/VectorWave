@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
-
+import ai.prophetizo.wavelet.api.WaveletName;
 import java.util.List;
 
 /**
@@ -14,25 +14,28 @@ public class CanonicalWaveletDemo {
         System.out.println("=== Canonical Wavelet Names Demo ===\n");
         
         // Get orthogonal wavelets - should have no duplicates
-        List<String> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
+        List<WaveletName> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
         System.out.println("Orthogonal wavelets (count: " + orthogonalWavelets.size() + "):");
-        for (String name : orthogonalWavelets) {
+        for (WaveletName name : orthogonalWavelets) {
             System.out.println("  - " + name);
         }
         
         // Demonstrate that aliases still work
         System.out.println("\n=== Alias Compatibility ===");
-        testAlias("db4", "daubechies4");
-        testAlias("db2", "daubechies2");
-        testAlias("db6", "daubechies6");
-        testAlias("db8", "daubechies8");
-        testAlias("db10", "daubechies10");
+        testAlias(WaveletName.DB4, "daubechies4");
+        testAlias(WaveletName.DB2, "daubechies2");
+        testAlias(WaveletName.DB6, "daubechies6");
+        testAlias(WaveletName.DB8, "daubechies8");
+        testAlias(WaveletName.DB10, "daubechies10");
         
         // Verify no duplicates
         System.out.println("\n=== Duplicate Check ===");
         boolean hasDuplicates = false;
-        for (String waveletName : orthogonalWavelets) {
-            if (waveletName.startsWith("daubechies") && waveletName.length() > 10) {
+        for (WaveletName waveletName : orthogonalWavelets) {
+            // With enum, duplicates are impossible!
+            // Check that we don't have both DB4 and a hypothetical DAUBECHIES4
+            String nameStr = waveletName.name();
+            if (nameStr.startsWith("DAUBECHIES") && !nameStr.startsWith("DB")) {
                 System.out.println("ERROR: Found long-form name in results: " + waveletName);
                 hasDuplicates = true;
             }
@@ -44,12 +47,12 @@ public class CanonicalWaveletDemo {
         }
     }
     
-    private static void testAlias(String canonical, String alias) {
+    private static void testAlias(WaveletName canonical, String alias) {
         try {
             Wavelet w1 = WaveletRegistry.getWavelet(canonical);
-            Wavelet w2 = WaveletRegistry.getWavelet(alias);
+            Wavelet w2 = WaveletRegistry.getWavelet(WaveletName.fromCode(alias));
             if (w1.equals(w2)) {
-                System.out.println("  ✓ " + alias + " correctly maps to " + canonical);
+                System.out.println("  ✓ " + alias + " correctly maps to " + canonical.getCode());
             } else {
                 System.out.println("  ✗ " + alias + " does not map to " + canonical);
             }

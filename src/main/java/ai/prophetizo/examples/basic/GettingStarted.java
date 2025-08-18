@@ -12,7 +12,7 @@ public class GettingStarted {
     
     public static void main(String[] args) {
         // 1. Get a wavelet
-        Wavelet wavelet = WaveletRegistry.getWavelet("db4");
+        Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.DB4);
         System.out.println("Using: " + wavelet.name());
         
         // 2. Create some data

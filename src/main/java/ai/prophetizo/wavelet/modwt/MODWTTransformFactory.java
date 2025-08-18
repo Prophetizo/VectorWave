@@ -31,7 +31,7 @@ import java.util.Objects;
  *     Daubechies.DB4, BoundaryMode.PERIODIC);
  * 
  * // Create from wavelet name
- * MODWTTransform modwt = MODWTTransformFactory.create("db4");
+ * MODWTTransform modwt = MODWTTransformFactory.create(WaveletName.DB4);
  * 
  * // Create multi-level MODWT
  * MultiLevelMODWTTransform mlModwt = MODWTTransformFactory.createMultiLevel(
@@ -132,11 +132,11 @@ public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTrans
     /**
      * Creates a MODWT transform using a wavelet name from the registry.
      * 
-     * @param waveletName The name of the wavelet (e.g., "haar", "db4")
+     * @param waveletName The wavelet name enum
      * @return A new MODWT transform instance
      * @throws InvalidArgumentException if wavelet name is not found
      */
-    public static MODWTTransform create(String waveletName) {
+    public static MODWTTransform create(WaveletName waveletName) {
         Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
         return create(wavelet);
     }
@@ -144,13 +144,13 @@ public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTrans
     /**
      * Creates a MODWT transform using a wavelet name and boundary mode.
      * 
-     * @param waveletName The name of the wavelet
+     * @param waveletName The wavelet name enum
      * @param boundaryMode The boundary mode
      * @return A new MODWT transform instance
      * @throws InvalidArgumentException if wavelet name is not found
      * @throws IllegalArgumentException if boundary mode is not supported
      */
-    public static MODWTTransform create(String waveletName, BoundaryMode boundaryMode) {
+    public static MODWTTransform create(WaveletName waveletName, BoundaryMode boundaryMode) {
         Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
         return create(wavelet, boundaryMode);
     }
@@ -182,11 +182,11 @@ public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTrans
     /**
      * Creates a multi-level MODWT transform using a wavelet name.
      * 
-     * @param waveletName The name of the wavelet
+     * @param waveletName The wavelet name enum
      * @return A new multi-level MODWT transform instance
      * @throws InvalidArgumentException if wavelet name is not found
      */
-    public static MultiLevelMODWTTransform createMultiLevel(String waveletName) {
+    public static MultiLevelMODWTTransform createMultiLevel(WaveletName waveletName) {
         Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
         return createMultiLevel(wavelet);
     }
@@ -194,13 +194,13 @@ public class MODWTTransformFactory implements Factory<MODWTTransform, MODWTTrans
     /**
      * Creates a multi-level MODWT transform using a wavelet name and boundary mode.
      * 
-     * @param waveletName The name of the wavelet
+     * @param waveletName The wavelet name enum
      * @param boundaryMode The boundary mode
      * @return A new multi-level MODWT transform instance
      * @throws InvalidArgumentException if wavelet name is not found
      * @throws IllegalArgumentException if boundary mode is not supported
      */
-    public static MultiLevelMODWTTransform createMultiLevel(String waveletName, BoundaryMode boundaryMode) {
+    public static MultiLevelMODWTTransform createMultiLevel(WaveletName waveletName, BoundaryMode boundaryMode) {
         Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
         return createMultiLevel(wavelet, boundaryMode);
     }

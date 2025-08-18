@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.api.WaveletName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -60,8 +61,8 @@ class SimplifiedWaveletValidationTest {
         testWaveletBasics("sym12", Symlet.SYM12, 24, 12);
         
         // SYM15 and SYM20 may have different lengths due to optimization
-        assertTrue(WaveletRegistry.hasWavelet("sym15"), "SYM15 should be registered");
-        assertTrue(WaveletRegistry.hasWavelet("sym20"), "SYM20 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.SYM15), "SYM15 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.SYM20), "SYM20 should be registered");
     }
     
     @Test
@@ -77,11 +78,12 @@ class SimplifiedWaveletValidationTest {
     private void testWaveletBasics(String name, OrthogonalWavelet wavelet, 
                                    int expectedLength, int expectedVanishingMoments) {
         // Test registration
-        assertTrue(WaveletRegistry.hasWavelet(name), 
+        WaveletName waveletName = WaveletName.fromCode(name);
+        assertTrue(WaveletRegistry.hasWavelet(waveletName), 
             name + " should be registered in WaveletRegistry");
         
         // Test retrieval
-        Wavelet retrieved = WaveletRegistry.getWavelet(name);
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved, name + " should be retrievable");
         assertEquals(name, retrieved.name(), "Retrieved wavelet should have correct name");
         
@@ -173,7 +175,7 @@ class SimplifiedWaveletValidationTest {
         
         for (String waveletName : waveletsToTest) {
             try {
-                Wavelet w = WaveletRegistry.getWavelet(waveletName);
+                Wavelet w = WaveletRegistry.getWavelet(WaveletName.fromCode(waveletName));
                 
                 // Create a transform
                 var transform = new ai.prophetizo.wavelet.modwt.MODWTTransform(
@@ -205,17 +207,17 @@ class SimplifiedWaveletValidationTest {
     @Test
     @DisplayName("Test wavelet aliases in registry")
     void testWaveletAliases() {
-        // Daubechies aliases
-        assertTrue(WaveletRegistry.hasWavelet("daubechies6"), 
+        // Daubechies aliases - using fromCode to check if aliases are recognized
+        assertTrue(WaveletName.hasWavelet("daubechies6"), 
             "Should have alias daubechies6 for db6");
-        assertTrue(WaveletRegistry.hasWavelet("daubechies8"),
+        assertTrue(WaveletName.hasWavelet("daubechies8"),
             "Should have alias daubechies8 for db8");
-        assertTrue(WaveletRegistry.hasWavelet("daubechies10"),
+        assertTrue(WaveletName.hasWavelet("daubechies10"),
             "Should have alias daubechies10 for db10");
         
         // Verify aliases point to same wavelet
-        assertSame(WaveletRegistry.getWavelet("db6"), 
-                  WaveletRegistry.getWavelet("daubechies6"),
+        assertSame(WaveletRegistry.getWavelet(WaveletName.DB6), 
+                  WaveletRegistry.getWavelet(WaveletName.fromCode("daubechies6")),
                   "Aliases should return same wavelet instance");
     }
 }

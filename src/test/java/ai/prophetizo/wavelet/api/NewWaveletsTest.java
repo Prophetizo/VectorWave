@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.api.WaveletName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,10 +72,11 @@ class NewWaveletsTest {
     @MethodSource("newDaubechiesWavelets")
     @DisplayName("Daubechies wavelets should be registered in WaveletRegistry")
     void testDaubechiesRegistration(Daubechies wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -111,10 +113,11 @@ class NewWaveletsTest {
     @MethodSource("newSymletWavelets")
     @DisplayName("Symlet wavelets should be registered in WaveletRegistry")
     void testSymletRegistration(Symlet wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -141,10 +144,11 @@ class NewWaveletsTest {
     @MethodSource("newCoifletWavelets")
     @DisplayName("Coiflet wavelets should be registered in WaveletRegistry")
     void testCoifletRegistration(Coiflet wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -181,23 +185,23 @@ class NewWaveletsTest {
         var orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
         
         // Check new Daubechies wavelets
-        assertTrue(orthogonalWavelets.contains("db6"));
-        assertTrue(orthogonalWavelets.contains("db8"));
-        assertTrue(orthogonalWavelets.contains("db10"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB6));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB8));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB10));
         
         // Check new Symlet wavelets
-        assertTrue(orthogonalWavelets.contains("sym5"));
-        assertTrue(orthogonalWavelets.contains("sym6"));
-        assertTrue(orthogonalWavelets.contains("sym7"));
-        assertTrue(orthogonalWavelets.contains("sym8"));
-        assertTrue(orthogonalWavelets.contains("sym10"));
-        assertTrue(orthogonalWavelets.contains("sym12"));
-        assertTrue(orthogonalWavelets.contains("sym15"));
-        assertTrue(orthogonalWavelets.contains("sym20"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM5));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM6));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM7));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM8));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM10));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM12));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM15));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM20));
         
         // Check new Coiflet wavelets
-        assertTrue(orthogonalWavelets.contains("coif4"));
-        assertTrue(orthogonalWavelets.contains("coif5"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.COIF4));
+        assertTrue(orthogonalWavelets.contains(WaveletName.COIF5));
     }
     
     @Test
@@ -205,23 +209,23 @@ class NewWaveletsTest {
     void testWaveletDescriptions() {
         // Test Daubechies descriptions
         assertEquals("Daubechies wavelet of order 6", 
-                    WaveletRegistry.getWavelet("db6").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB6).description());
         assertEquals("Daubechies wavelet of order 8", 
-                    WaveletRegistry.getWavelet("db8").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB8).description());
         assertEquals("Daubechies wavelet of order 10", 
-                    WaveletRegistry.getWavelet("db10").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB10).description());
         
         // Test Symlet descriptions
         assertEquals("Symlet wavelet of order 5", 
-                    WaveletRegistry.getWavelet("sym5").description());
+                    WaveletRegistry.getWavelet(WaveletName.SYM5).description());
         assertEquals("Symlet wavelet of order 20", 
-                    WaveletRegistry.getWavelet("sym20").description());
+                    WaveletRegistry.getWavelet(WaveletName.SYM20).description());
         
         // Test Coiflet descriptions
         assertEquals("Coiflet wavelet of order 4", 
-                    WaveletRegistry.getWavelet("coif4").description());
+                    WaveletRegistry.getWavelet(WaveletName.COIF4).description());
         assertEquals("Coiflet wavelet of order 5", 
-                    WaveletRegistry.getWavelet("coif5").description());
+                    WaveletRegistry.getWavelet(WaveletName.COIF5).description());
     }
     
     @Test

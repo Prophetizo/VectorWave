@@ -1,7 +1,7 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.WaveletRegistry;
-import ai.prophetizo.wavelet.cwt.*;
+import ai.prophetizo.wavelet.api.WaveletName;import ai.prophetizo.wavelet.cwt.*;
 
 /**
  * Demonstrates Gaussian derivative wavelets for edge and feature detection.

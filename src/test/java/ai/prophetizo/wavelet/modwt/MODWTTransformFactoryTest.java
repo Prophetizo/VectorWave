@@ -30,15 +30,15 @@ class MODWTTransformFactoryTest {
     
     @Test
     void testCreateWithWaveletName() {
-        MODWTTransform transform = MODWTTransformFactory.create("haar");
+        MODWTTransform transform = MODWTTransformFactory.create(WaveletName.HAAR);
         assertNotNull(transform);
         assertEquals("Haar", transform.getWavelet().name());
     }
     
     @Test
-    void testCreateWithInvalidWaveletName() {
+    void testCreateWithNullWaveletName() {
         assertThrows(InvalidArgumentException.class, () -> {
-            MODWTTransformFactory.create("invalid_wavelet");
+            MODWTTransformFactory.create((WaveletName) null);
         });
     }
     
@@ -61,7 +61,7 @@ class MODWTTransformFactoryTest {
     
     @Test
     void testCreateMultiLevelWithWaveletName() {
-        MultiLevelMODWTTransform transform = MODWTTransformFactory.createMultiLevel("db4");
+        MultiLevelMODWTTransform transform = MODWTTransformFactory.createMultiLevel(WaveletName.DB4);
         assertNotNull(transform);
         assertEquals("db4", transform.getWavelet().name());
     }

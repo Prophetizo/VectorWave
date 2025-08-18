@@ -5,7 +5,7 @@ import ai.prophetizo.wavelet.cwt.CWTTransform;
 import ai.prophetizo.wavelet.cwt.CWTResult;
 import ai.prophetizo.wavelet.cwt.ScaleSpace;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
-
+import ai.prophetizo.wavelet.api.WaveletName;
 /**
  * Demonstrates Gaussian derivative wavelets for feature detection.
  * 

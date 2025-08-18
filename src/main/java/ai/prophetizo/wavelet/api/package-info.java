@@ -48,7 +48,7 @@
  * 
  * // Discover wavelets through registry
  * Set<String> available = WaveletRegistry.getAvailableWavelets();
- * Wavelet db4ByName = WaveletRegistry.getWavelet("db4");
+ * Wavelet db4ByName = WaveletRegistry.getWavelet(WaveletName.DB4);
  * List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
  * 
  * // Check wavelet properties

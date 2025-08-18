@@ -27,7 +27,7 @@ package ai.prophetizo.wavelet.api;
  * Wavelet db4 = Daubechies.DB4;
  *
  * // Get wavelet from registry
- * Wavelet wavelet = WaveletRegistry.getWavelet("db4");
+ * Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.DB4);
  *
  * // Use with transform
  * WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);

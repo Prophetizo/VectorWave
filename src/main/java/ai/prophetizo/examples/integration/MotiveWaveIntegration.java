@@ -2,6 +2,7 @@ package ai.prophetizo.examples.integration;
 
 import ai.prophetizo.wavelet.api.WaveletRegistry;
 import ai.prophetizo.wavelet.api.Wavelet;
+import ai.prophetizo.wavelet.api.WaveletName;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.modwt.*;
 import java.util.*;
@@ -17,11 +18,11 @@ public class MotiveWaveIntegration {
         // That's it. No initialization needed. Just use it.
         
         // Get available wavelets for dropdown menu
-        List<String> wavelets = WaveletRegistry.getOrthogonalWavelets();
+        List<WaveletName> wavelets = WaveletRegistry.getOrthogonalWavelets();
         System.out.println("Available wavelets for dropdown: " + wavelets);
         
-        // User selects "db4" from dropdown
-        String selected = "db4";
+        // User selects DB4 from dropdown
+        WaveletName selected = WaveletName.DB4;
         
         // Get the wavelet and use it
         if (WaveletRegistry.hasWavelet(selected)) {
@@ -43,12 +44,12 @@ public class MotiveWaveIntegration {
      */
     public static class MotiveWaveStudy {
         
-        public String[] getWaveletChoices() {
+        public WaveletName[] getWaveletChoices() {
             // Get wavelets for settings dropdown
-            return WaveletRegistry.getOrthogonalWavelets().toArray(new String[0]);
+            return WaveletRegistry.getOrthogonalWavelets().toArray(new WaveletName[0]);
         }
         
-        public void calculate(String waveletName, double[] data) {
+        public void calculate(WaveletName waveletName, double[] data) {
             // Get selected wavelet
             Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
             

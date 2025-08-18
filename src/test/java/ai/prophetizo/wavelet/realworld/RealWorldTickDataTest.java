@@ -4,6 +4,7 @@ import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
+import ai.prophetizo.wavelet.api.WaveletName;
 import ai.prophetizo.wavelet.cwt.CWTTransform;
 import ai.prophetizo.wavelet.cwt.CWTResult;
 // Use fully qualified name for CWT FinancialWaveletAnalyzer to avoid conflicts
@@ -159,7 +160,7 @@ public class RealWorldTickDataTest {
     @Test
     void testMODWTOnRealPrices() {
         // Use MODWT for multi-resolution analysis of price data
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("db4");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.DB4);
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Take a subset for detailed analysis
@@ -193,7 +194,7 @@ public class RealWorldTickDataTest {
     @Test
     void testDenoisingRealPrices() {
         // Use MODWT-based denoising on noisy price data
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("sym8");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.SYM8);
         
         // Take a subset and add realistic noise
         int sampleSize = 2048;
@@ -329,7 +330,7 @@ public class RealWorldTickDataTest {
     @Test
     void testStreamingDenoiserOnTickData() throws InterruptedException {
         // Test streaming denoiser on continuous tick data
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("db2");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.DB2);
         
         StreamingDenoiserConfig config = new StreamingDenoiserConfig.Builder()
             .wavelet(wavelet)
@@ -404,7 +405,7 @@ public class RealWorldTickDataTest {
     @Test
     void testMarketMicrostructure() {
         // Analyze market microstructure using wavelets
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("haar");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.HAAR);
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Analyze bid-ask spread dynamics
@@ -457,7 +458,7 @@ public class RealWorldTickDataTest {
         System.out.println("\nPerformance Test on Full Dataset:");
         System.out.println("Total ticks: " + ticks.size());
         
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("db4");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.DB4);
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Process in chunks
