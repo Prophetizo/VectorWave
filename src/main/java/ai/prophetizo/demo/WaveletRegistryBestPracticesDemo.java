@@ -7,12 +7,12 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import java.util.*;
 
 /**
- * Best practices for using the WaveletRegistry.
+ * Best practices for using the WaveletRegistry with enum-based API.
  * 
  * This demo shows:
- * - How to discover available wavelets
- * - How to select wavelets for dropdown menus
- * - How to safely get wavelets with error handling
+ * - How to discover available wavelets using enums
+ * - How to check transform compatibility
+ * - Type-safe wavelet selection
  * - How to use wavelets in transforms
  * 
  * Run with: mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.WaveletRegistryBestPracticesDemo"
@@ -27,7 +27,7 @@ public class WaveletRegistryBestPracticesDemo {
         WaveletRegistryBestPracticesDemo demo = new WaveletRegistryBestPracticesDemo();
         demo.demonstrateDiscovery();
         demo.demonstrateSelection();
-        demo.demonstrateErrorHandling();
+        demo.demonstrateCompatibility();
         demo.demonstrateTransformUsage();
     }
     
@@ -38,118 +38,131 @@ public class WaveletRegistryBestPracticesDemo {
         System.out.println("\n1. DISCOVERING AVAILABLE WAVELETS");
         System.out.println("-".repeat(40));
         
-        // Get all available wavelets
-        Set<String> allWavelets = WaveletRegistry.getAvailableWavelets();
+        // Get all available wavelets using enum-based API
+        Set<WaveletName> allWavelets = WaveletRegistry.getAvailableWavelets();
         System.out.println("Total wavelets available: " + allWavelets.size());
-        System.out.println("All wavelets: " + allWavelets);
+        
+        // Display first few wavelets
+        System.out.println("Sample wavelets:");
+        allWavelets.stream().limit(5).forEach(w -> 
+            System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         // Get wavelets by type
-        List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
-        System.out.println("\nOrthogonal wavelets (" + orthogonal.size() + "): " + orthogonal);
+        List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+        System.out.println("\nOrthogonal wavelets (" + orthogonal.size() + " total)");
         
-        List<String> continuous = WaveletRegistry.getContinuousWavelets();
-        System.out.println("Continuous wavelets (" + continuous.size() + "): " + continuous);
+        List<WaveletName> continuous = WaveletRegistry.getContinuousWavelets();
+        System.out.println("Continuous wavelets (" + continuous.size() + " total)");
         
-        // Check specific wavelet availability
-        System.out.println("\nChecking specific wavelets:");
-        String[] checkList = {"haar", "db4", "sym2", "nonexistent"};
-        for (String name : checkList) {
+        // Check specific wavelet availability (always true with enums!)
+        System.out.println("\nEnum-based API guarantees availability:");
+        WaveletName[] checkList = {WaveletName.HAAR, WaveletName.DB4, WaveletName.SYM2};
+        for (WaveletName name : checkList) {
             boolean available = WaveletRegistry.hasWavelet(name);
-            System.out.println("  " + name + ": " + (available ? "✓ Available" : "✗ Not available"));
+            System.out.println("  " + name.getCode() + ": " + 
+                (available ? "✓ Available" : "✗ Not available"));
         }
     }
     
     /**
-     * 2. SELECTING WAVELETS FOR UI
+     * 2. SELECTING WAVELETS FOR SPECIFIC TRANSFORMS
      */
     private void demonstrateSelection() {
-        System.out.println("\n2. SELECTING WAVELETS FOR UI");
+        System.out.println("\n2. SELECTING WAVELETS FOR TRANSFORMS");
         System.out.println("-".repeat(40));
         
-        // Get all orthogonal wavelets for discrete transforms
-        List<String> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
-        System.out.println("Orthogonal wavelets for discrete transforms:");
-        for (String option : dropdownOptions) {
-            System.out.println("  - " + option);
-        }
+        // Get wavelets compatible with MODWT
+        List<WaveletName> modwtWavelets = 
+            WaveletRegistry.getWaveletsForTransform(TransformType.MODWT);
+        System.out.println("Wavelets compatible with MODWT:");
+        modwtWavelets.stream().limit(5).forEach(w -> 
+            System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
+        System.out.println("  ... and " + (modwtWavelets.size() - 5) + " more");
+        
+        // Get wavelets compatible with CWT
+        List<WaveletName> cwtWavelets = 
+            WaveletRegistry.getWaveletsForTransform(TransformType.CWT);
+        System.out.println("\nWavelets compatible with CWT:");
+        cwtWavelets.forEach(w -> 
+            System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         // Default selection
-        String defaultWavelet = "db4";
-        if (!WaveletRegistry.hasWavelet(defaultWavelet)) {
-            defaultWavelet = dropdownOptions.get(0); // Fallback to first available
-        }
-        System.out.println("\nDefault selection: " + defaultWavelet);
+        WaveletName defaultWavelet = WaveletName.DB4;
+        System.out.println("\nDefault selection: " + defaultWavelet.getCode() + 
+            " - " + defaultWavelet.getDescription());
     }
     
     /**
-     * 3. ERROR HANDLING
+     * 3. TRANSFORM COMPATIBILITY
      */
-    private void demonstrateErrorHandling() {
-        System.out.println("\n3. ERROR HANDLING");
+    private void demonstrateCompatibility() {
+        System.out.println("\n3. TRANSFORM COMPATIBILITY");
         System.out.println("-".repeat(40));
         
-        // Safe wavelet retrieval
-        String[] testNames = {"db4", "HAAR", "invalid", null, ""};
-        
-        for (String name : testNames) {
-            try {
-                Wavelet w = WaveletRegistry.getWavelet(name);
-                System.out.println("✓ Got wavelet '" + name + "': " + w.name());
-            } catch (InvalidArgumentException e) {
-                System.out.println("✗ Failed to get '" + name + "': " + e.getMessage());
-            } catch (Exception e) {
-                System.out.println("✗ Unexpected error for '" + name + "': " + e.getMessage());
-            }
+        // Check what transforms a wavelet supports
+        WaveletName wavelet = WaveletName.DB4;
+        Set<TransformType> supported = WaveletRegistry.getSupportedTransforms(wavelet);
+        System.out.println(wavelet.getCode() + " supports:");
+        for (TransformType transform : supported) {
+            System.out.println("  ✓ " + transform.getDescription());
         }
         
-        // Best practice: Always check before getting
-        System.out.println("\nBest practice - check first:");
-        String userInput = "sym2";
-        if (WaveletRegistry.hasWavelet(userInput)) {
-            Wavelet w = WaveletRegistry.getWavelet(userInput);
-            System.out.println("Successfully got: " + w.name() + " - " + w.description());
-        } else {
-            System.out.println("Wavelet not available: " + userInput);
-        }
+        // Check specific compatibility
+        System.out.println("\nCompatibility checks:");
+        System.out.println("  DB4 with MODWT: " + 
+            (WaveletRegistry.isCompatible(WaveletName.DB4, TransformType.MODWT) ? "✓" : "✗"));
+        System.out.println("  DB4 with CWT: " + 
+            (WaveletRegistry.isCompatible(WaveletName.DB4, TransformType.CWT) ? "✓" : "✗"));
+        System.out.println("  MORLET with CWT: " + 
+            (WaveletRegistry.isCompatible(WaveletName.MORLET, TransformType.CWT) ? "✓" : "✗"));
+        
+        // Get recommended transform
+        TransformType recommended = WaveletRegistry.getRecommendedTransform(WaveletName.DB4);
+        System.out.println("\nRecommended transform for DB4: " + recommended.getDescription());
     }
     
     /**
-     * 4. USING WAVELETS IN TRANSFORMS
+     * 4. USING WAVELETS WITH TRANSFORMS
      */
     private void demonstrateTransformUsage() {
-        System.out.println("\n4. USING WAVELETS IN TRANSFORMS");
+        System.out.println("\n4. USING WAVELETS WITH TRANSFORMS");
         System.out.println("-".repeat(40));
         
-        // Get a wavelet
+        // Use wavelets with different transforms
         Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+        Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
         
-        // Create transform
-        MODWTTransform transform = new MODWTTransform(db4, BoundaryMode.PERIODIC);
-        
-        // Sample data
-        double[] signal = new double[64];
+        // Create a simple signal
+        double[] signal = new double[128];
         for (int i = 0; i < signal.length; i++) {
-            signal[i] = Math.sin(2 * Math.PI * i / 16) + 0.5 * Math.sin(2 * Math.PI * i / 8);
+            signal[i] = Math.sin(2 * Math.PI * i / 32) + 
+                       0.5 * Math.sin(6 * Math.PI * i / 32);
         }
         
-        // Perform transform
-        MODWTResult result = transform.forward(signal);
-        System.out.println("Transform complete with " + db4.name());
+        // Use with MODWT
+        System.out.println("Using " + db4.name() + " with MODWT:");
+        MODWTTransform modwt = new MODWTTransform(db4, BoundaryMode.PERIODIC);
+        MODWTResult result = modwt.forward(signal);
         System.out.println("  Signal length: " + signal.length);
-        System.out.println("  Max level: " + result.getMaxLevel());
+        System.out.println("  Approximation length: " + result.getApproximation().length);
+        System.out.println("  Details length: " + result.getDetails().length);
         
-        // Get coefficients
-        double[] approx = result.getApproximation(1);
-        double[] detail = result.getDetail(1);
-        System.out.println("  Level 1 coefficients: " + approx.length + " samples");
+        // Use with Multi-level MODWT
+        System.out.println("\nUsing " + haar.name() + " with Multi-level MODWT:");
+        MultiLevelMODWTTransform mlModwt = new MultiLevelMODWTTransform(haar, BoundaryMode.PERIODIC);
+        MutableMultiLevelMODWTResult mlResult = mlModwt.forward(signal, 3);
+        System.out.println("  Decomposition levels: " + mlResult.getLevels());
+        for (int level = 1; level <= mlResult.getLevels(); level++) {
+            System.out.println("  Level " + level + " details length: " + 
+                mlResult.getDetails(level).length);
+        }
         
-        // Reconstruct
-        double[] reconstructed = transform.inverse(result);
+        // Perfect reconstruction
+        double[] reconstructed = modwt.inverse(result);
         double error = 0;
         for (int i = 0; i < signal.length; i++) {
             error += Math.abs(signal[i] - reconstructed[i]);
         }
-        System.out.println("  Reconstruction error: " + String.format("%.2e", error / signal.length));
+        System.out.println("\nReconstruction error: " + String.format("%.2e", error));
     }
-    
 }
