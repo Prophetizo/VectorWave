@@ -196,5 +196,115 @@ public final class WaveletRegistry {
         }
     }
     
+    // ============================================================
+    // Transform Compatibility API
+    // ============================================================
+    
+    /**
+     * Get all transforms supported by a specific wavelet.
+     * This provides explicit information about which transforms can be used
+     * with the given wavelet, improving API discoverability.
+     * 
+     * @param waveletName the wavelet to check
+     * @return set of compatible transform types
+     */
+    public static Set<TransformType> getSupportedTransforms(WaveletName waveletName) {
+        if (waveletName == null) {
+            return EnumSet.noneOf(TransformType.class);
+        }
+        
+        WaveletType type = waveletName.getType();
+        Set<TransformType> supported = EnumSet.noneOf(TransformType.class);
+        
+        for (TransformType transform : TransformType.values()) {
+            if (transform.isCompatibleWith(type)) {
+                supported.add(transform);
+            }
+        }
+        
+        return supported;
+    }
+    
+    /**
+     * Check if a specific wavelet can be used with a specific transform.
+     * 
+     * @param waveletName the wavelet to check
+     * @param transformType the transform type
+     * @return true if the wavelet can be used with the transform
+     */
+    public static boolean isCompatible(WaveletName waveletName, TransformType transformType) {
+        if (waveletName == null || transformType == null) {
+            return false;
+        }
+        return transformType.isCompatibleWith(waveletName.getType());
+    }
+    
+    /**
+     * Get all wavelets that can be used with a specific transform.
+     * Useful for populating UI dropdowns or validating user input.
+     * 
+     * @param transformType the transform type
+     * @return list of compatible wavelet names
+     */
+    public static List<WaveletName> getWaveletsForTransform(TransformType transformType) {
+        if (transformType == null) {
+            return List.of();
+        }
+        
+        return Stream.of(WaveletName.values())
+            .filter(name -> transformType.isCompatibleWith(name.getType()))
+            .sorted()
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get recommended transform for a specific wavelet based on its type.
+     * This helps users choose the most appropriate transform.
+     * 
+     * @param waveletName the wavelet
+     * @return recommended transform type, or null if wavelet not found
+     */
+    public static TransformType getRecommendedTransform(WaveletName waveletName) {
+        if (waveletName == null) {
+            return null;
+        }
+        
+        return switch (waveletName.getType()) {
+            case ORTHOGONAL, BIORTHOGONAL -> TransformType.MODWT;
+            case CONTINUOUS -> TransformType.CWT;
+            case COMPLEX -> TransformType.CWT;
+            default -> TransformType.MODWT; // Default fallback
+        };
+    }
+    
+    /**
+     * Print transform compatibility matrix for all wavelets.
+     * Useful for documentation and debugging.
+     */
+    public static void printTransformCompatibilityMatrix() {
+        System.out.println("\nWavelet-Transform Compatibility Matrix:");
+        System.out.println("=========================================");
+        
+        // Header
+        System.out.printf("%-20s", "Wavelet");
+        for (TransformType transform : TransformType.values()) {
+            System.out.printf("%-15s", transform.getCode());
+        }
+        System.out.println();
+        
+        // Separator
+        System.out.println("-".repeat(20 + TransformType.values().length * 15));
+        
+        // Matrix
+        for (WaveletName wavelet : WaveletName.values()) {
+            System.out.printf("%-20s", wavelet.getCode());
+            for (TransformType transform : TransformType.values()) {
+                String compatible = isCompatible(wavelet, transform) ? "✓" : "-";
+                System.out.printf("%-15s", compatible);
+            }
+            System.out.println();
+        }
+    }
+    
     private WaveletRegistry() {}
 }
