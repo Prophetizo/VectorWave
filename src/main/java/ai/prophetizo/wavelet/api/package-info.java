@@ -32,6 +32,8 @@
  * <h2>Supporting Classes:</h2>
  * <ul>
  *   <li>{@link ai.prophetizo.wavelet.api.WaveletRegistry} - Central registry for wavelet discovery and lookup</li>
+ *   <li>{@link ai.prophetizo.wavelet.api.WaveletName} - Type-safe enum for all supported wavelets</li>
+ *   <li>{@link ai.prophetizo.wavelet.api.TransformType} - Enum for available transform types</li>
  *   <li>{@link ai.prophetizo.wavelet.api.WaveletProvider} - Service Provider Interface for custom wavelets</li>
  *   <li>{@link ai.prophetizo.wavelet.api.WaveletType} - Enum for wavelet categorization</li>
  *   <li>{@link ai.prophetizo.wavelet.api.BoundaryMode} - Enum for boundary handling modes</li>
@@ -46,10 +48,15 @@
  * Wavelet db4 = Daubechies.DB4;
  * Wavelet morlet = new MorletWavelet(6.0, 1.0);
  * 
- * // Discover wavelets through registry
- * Set<String> available = WaveletRegistry.getAvailableWavelets();
+ * // Discover wavelets through registry using enum-based API
+ * Set<WaveletName> available = WaveletRegistry.getAvailableWavelets();
  * Wavelet db4ByName = WaveletRegistry.getWavelet(WaveletName.DB4);
- * List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+ * List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+ * 
+ * // Check transform compatibility
+ * Set<TransformType> supported = WaveletRegistry.getSupportedTransforms(WaveletName.DB4);
+ * boolean canUseMODWT = WaveletRegistry.isCompatible(WaveletName.DB4, TransformType.MODWT);
+ * List<WaveletName> modwtWavelets = WaveletRegistry.getWaveletsForTransform(TransformType.MODWT);
  * 
  * // Check wavelet properties
  * String name = wavelet.name();
