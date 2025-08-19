@@ -2,6 +2,22 @@
 
 Development guide for working with the VectorWave repository.
 
+## Library Scope
+
+**VectorWave is strictly a wavelet analysis library.** It provides:
+- Wavelet transforms (MODWT, CWT, SWT)
+- Signal processing and denoising
+- Mathematical operations on wavelets
+- Performance optimizations (SIMD, Vector API)
+
+**NOT in scope:**
+- UI components or helpers
+- Platform-specific integrations (MotiveWave, MetaTrader, etc.)
+- Trading platform adapters
+- Display/presentation logic
+
+Any UI adapters or platform integrations should be implemented as separate projects that depend on VectorWave.
+
 ## Current State (January 2025)
 
 ### MODWT as Primary Transform
