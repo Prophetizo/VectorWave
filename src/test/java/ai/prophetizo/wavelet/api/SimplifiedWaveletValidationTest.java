@@ -78,7 +78,7 @@ class SimplifiedWaveletValidationTest {
     private void testWaveletBasics(String name, OrthogonalWavelet wavelet, 
                                    int expectedLength, int expectedVanishingMoments) {
         // Test registration
-        WaveletName waveletName = WaveletName.fromCode(name);
+        WaveletName waveletName = getWaveletNameFromCode(name);
         assertTrue(WaveletRegistry.hasWavelet(waveletName), 
             name + " should be registered in WaveletRegistry");
         
@@ -175,7 +175,7 @@ class SimplifiedWaveletValidationTest {
         
         for (String waveletName : waveletsToTest) {
             try {
-                Wavelet w = WaveletRegistry.getWavelet(WaveletName.fromCode(waveletName));
+                Wavelet w = WaveletRegistry.getWavelet(getWaveletNameFromCode(waveletName));
                 
                 // Create a transform
                 var transform = new ai.prophetizo.wavelet.modwt.MODWTTransform(
@@ -205,19 +205,49 @@ class SimplifiedWaveletValidationTest {
     }
     
     @Test
-    @DisplayName("Test wavelet aliases in registry")
-    void testWaveletAliases() {
-        // Daubechies aliases - using fromCode to check if aliases are recognized
-        assertTrue(WaveletName.hasWavelet("daubechies6"), 
-            "Should have alias daubechies6 for db6");
-        assertTrue(WaveletName.hasWavelet("daubechies8"),
-            "Should have alias daubechies8 for db8");
-        assertTrue(WaveletName.hasWavelet("daubechies10"),
-            "Should have alias daubechies10 for db10");
+    @DisplayName("Test wavelet enum-based registry")
+    void testWaveletEnumRegistry() {
+        // With enum-only approach, each wavelet has exactly one representation
+        // No string aliases or duplicates exist
         
-        // Verify aliases point to same wavelet
-        assertSame(WaveletRegistry.getWavelet(WaveletName.DB6), 
-                  WaveletRegistry.getWavelet(WaveletName.fromCode("daubechies6")),
-                  "Aliases should return same wavelet instance");
+        // Verify wavelets exist with their canonical enum names
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB6), 
+            "DB6 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB8),
+            "DB8 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB10),
+            "DB10 should be registered");
+        
+        // Verify we get the same instance when requesting by enum
+        Wavelet db6_1 = WaveletRegistry.getWavelet(WaveletName.DB6);
+        Wavelet db6_2 = WaveletRegistry.getWavelet(WaveletName.DB6);
+        assertSame(db6_1, db6_2, "Should return same instance for same enum");
+    }
+    
+    /**
+     * Helper method to map wavelet string codes to enum values.
+     * Used for test compatibility where we parameterize with string names.
+     */
+    private WaveletName getWaveletNameFromCode(String code) {
+        switch (code) {
+            // Daubechies
+            case "db6": return WaveletName.DB6;
+            case "db8": return WaveletName.DB8;
+            case "db10": return WaveletName.DB10;
+            // Symlets
+            case "sym5": return WaveletName.SYM5;
+            case "sym6": return WaveletName.SYM6;
+            case "sym7": return WaveletName.SYM7;
+            case "sym8": return WaveletName.SYM8;
+            case "sym10": return WaveletName.SYM10;
+            case "sym12": return WaveletName.SYM12;
+            case "sym15": return WaveletName.SYM15;
+            case "sym20": return WaveletName.SYM20;
+            // Coiflets
+            case "coif4": return WaveletName.COIF4;
+            case "coif5": return WaveletName.COIF5;
+            default:
+                throw new IllegalArgumentException("Unknown wavelet code: " + code);
+        }
     }
 }

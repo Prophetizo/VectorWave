@@ -70,14 +70,19 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.examples.[category].[ExampleName]"
 
 ### Safe Wavelet Selection
 ```java
-if (WaveletRegistry.hasWavelet("db4")) {
-    Wavelet w = WaveletRegistry.getWavelet("db4");
+// Enum-based approach - type-safe and compile-time checked
+if (WaveletRegistry.hasWavelet(WaveletName.DB4)) {
+    Wavelet w = WaveletRegistry.getWavelet(WaveletName.DB4);
 }
 ```
 
 ### Dropdown Population (for UIs)
 ```java
-String[] wavelets = WaveletRegistry.getOrthogonalWavelets().toArray(new String[0]);
+List<WaveletName> wavelets = WaveletRegistry.getOrthogonalWavelets();
+// Convert to display strings for UI
+String[] displayNames = wavelets.stream()
+    .map(WaveletName::getDescription)
+    .toArray(String[]::new);
 ```
 
 ### Transform with Error Checking

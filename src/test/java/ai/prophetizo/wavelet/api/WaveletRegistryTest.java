@@ -179,34 +179,28 @@ class WaveletRegistryTest {
     }
     
     @Test
-    @DisplayName("WaveletName enum conversions")
-    void testWaveletNameEnumConversions() {
-        // Test fromCode method
-        assertEquals(WaveletName.DB4, WaveletName.fromCode("db4"));
-        assertEquals(WaveletName.DB4, WaveletName.fromCode("DB4"));
-        assertEquals(WaveletName.DB4, WaveletName.fromCode("daubechies4"));
-        assertEquals(WaveletName.MORLET, WaveletName.fromCode("morl"));
-        assertEquals(WaveletName.MORLET, WaveletName.fromCode("morlet"));
-        
-        // Test hasWavelet static method
-        assertTrue(WaveletName.hasWavelet("db4"));
-        assertTrue(WaveletName.hasWavelet("haar"));
-        assertFalse(WaveletName.hasWavelet("nonexistent"));
-        
-        // Test getCode method
+    @DisplayName("WaveletName enum properties")
+    void testWaveletNameEnumProperties() {
+        // Test getCode method returns correct codes
         assertEquals("db4", WaveletName.DB4.getCode());
         assertEquals("haar", WaveletName.HAAR.getCode());
         assertEquals("morl", WaveletName.MORLET.getCode());
-    }
-    
-    @Test
-    @DisplayName("WaveletName fromCode with invalid input")
-    void testWaveletNameFromCodeInvalid() {
-        assertThrows(IllegalArgumentException.class, () -> 
-            WaveletName.fromCode(null));
-        assertThrows(IllegalArgumentException.class, () -> 
-            WaveletName.fromCode("nonexistent"));
-        assertThrows(IllegalArgumentException.class, () -> 
-            WaveletName.fromCode(""));
+        assertEquals("sym8", WaveletName.SYM8.getCode());
+        assertEquals("coif3", WaveletName.COIF3.getCode());
+        
+        // Test getDescription method
+        assertEquals("Daubechies 4", WaveletName.DB4.getDescription());
+        assertEquals("Haar wavelet", WaveletName.HAAR.getDescription());
+        assertEquals("Morlet wavelet", WaveletName.MORLET.getDescription());
+        
+        // Test getType method
+        assertEquals(WaveletType.ORTHOGONAL, WaveletName.DB4.getType());
+        assertEquals(WaveletType.ORTHOGONAL, WaveletName.HAAR.getType());
+        assertEquals(WaveletType.CONTINUOUS, WaveletName.MORLET.getType());
+        assertEquals(WaveletType.COMPLEX, WaveletName.CMOR.getType());
+        
+        // Test toString returns the code
+        assertEquals("db4", WaveletName.DB4.toString());
+        assertEquals("haar", WaveletName.HAAR.toString());
     }
 }

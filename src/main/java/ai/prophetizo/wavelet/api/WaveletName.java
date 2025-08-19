@@ -80,50 +80,6 @@ public enum WaveletName {
         return type;
     }
     
-    /**
-     * Find a WaveletName by its code string.
-     * @param code the wavelet code (e.g., "db4", "haar")
-     * @return the matching WaveletName
-     * @throws IllegalArgumentException if no matching wavelet is found
-     */
-    public static WaveletName fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("Wavelet code cannot be null");
-        }
-        
-        String normalizedCode = code.toLowerCase().trim();
-        for (WaveletName name : values()) {
-            if (name.code.equals(normalizedCode)) {
-                return name;
-            }
-        }
-        
-        // Check for common aliases
-        switch (normalizedCode) {
-            case "daubechies2": return DB2;
-            case "daubechies4": return DB4;
-            case "daubechies6": return DB6;
-            case "daubechies8": return DB8;
-            case "daubechies10": return DB10;
-            case "morlet": return MORLET;
-            default:
-                throw new IllegalArgumentException("Unknown wavelet code: " + code);
-        }
-    }
-    
-    /**
-     * Check if a wavelet with the given code exists.
-     * @param code the wavelet code to check
-     * @return true if the wavelet exists, false otherwise
-     */
-    public static boolean hasWavelet(String code) {
-        try {
-            fromCode(code);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
     
     @Override
     public String toString() {

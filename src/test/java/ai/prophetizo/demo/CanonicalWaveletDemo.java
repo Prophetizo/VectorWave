@@ -20,13 +20,11 @@ public class CanonicalWaveletDemo {
             System.out.println("  - " + name);
         }
         
-        // Demonstrate that aliases still work
-        System.out.println("\n=== Alias Compatibility ===");
-        testAlias(WaveletName.DB4, "daubechies4");
-        testAlias(WaveletName.DB2, "daubechies2");
-        testAlias(WaveletName.DB6, "daubechies6");
-        testAlias(WaveletName.DB8, "daubechies8");
-        testAlias(WaveletName.DB10, "daubechies10");
+        // Demonstrate no duplicates with enum
+        System.out.println("\n=== No Duplicates with Enum ===");
+        System.out.println("Each wavelet has exactly one representation.");
+        System.out.println("DB4 is DB4 - no 'daubechies4' variant exists!");
+        System.out.println("This eliminates confusion and ensures consistency.");
         
         // Verify no duplicates
         System.out.println("\n=== Duplicate Check ===");
@@ -47,17 +45,4 @@ public class CanonicalWaveletDemo {
         }
     }
     
-    private static void testAlias(WaveletName canonical, String alias) {
-        try {
-            Wavelet w1 = WaveletRegistry.getWavelet(canonical);
-            Wavelet w2 = WaveletRegistry.getWavelet(WaveletName.fromCode(alias));
-            if (w1.equals(w2)) {
-                System.out.println("  ✓ " + alias + " correctly maps to " + canonical.getCode());
-            } else {
-                System.out.println("  ✗ " + alias + " does not map to " + canonical);
-            }
-        } catch (Exception e) {
-            System.out.println("  ✗ Error accessing " + alias + ": " + e.getMessage());
-        }
-    }
 }

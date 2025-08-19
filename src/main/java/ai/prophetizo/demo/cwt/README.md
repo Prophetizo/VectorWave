@@ -125,8 +125,8 @@ DOGWavelet dog = new DOGWavelet(2.0);
 // Mexican Hat (2nd order) for ridge detection
 GaussianDerivativeWavelet mexicanHat = new GaussianDerivativeWavelet(2);
 
-// From registry (registered as "gaus1", "gaus2", "gaus3", "gaus4")
-var gaus2 = WaveletRegistry.getWavelet("gaus2");
+// From registry using enum for type safety
+var gaussian = WaveletRegistry.getWavelet(WaveletName.GAUSSIAN);
 ```
 
 ### 🚄 **Platform-Adaptive Performance**

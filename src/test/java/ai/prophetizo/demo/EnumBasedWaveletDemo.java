@@ -26,9 +26,6 @@ public class EnumBasedWaveletDemo {
         // No duplicates with enum approach
         demonstrateNoDuplicates();
         
-        // Conversion from legacy string codes
-        demonstrateStringConversion();
-        
         // IDE benefits
         demonstrateIDEBenefits();
     }
@@ -78,29 +75,6 @@ public class EnumBasedWaveletDemo {
         System.out.println();
     }
     
-    private static void demonstrateStringConversion() {
-        System.out.println("4. String Code Conversion:");
-        System.out.println("-----------------------------");
-        
-        // Convert legacy string codes to enum
-        String[] legacyCodes = {"db4", "haar", "sym2", "coif1", "morl"};
-        
-        for (String code : legacyCodes) {
-            try {
-                WaveletName name = WaveletName.fromCode(code);
-                System.out.println("  '" + code + "' -> " + name);
-            } catch (IllegalArgumentException e) {
-                System.out.println("  '" + code + "' -> Not found");
-            }
-        }
-        
-        // Also handles aliases
-        System.out.println("\n  Aliases also work:");
-        System.out.println("  'daubechies4' -> " + WaveletName.fromCode("daubechies4"));
-        System.out.println("  'morlet' -> " + WaveletName.fromCode("morlet"));
-        
-        System.out.println();
-    }
     
     private static void demonstrateIDEBenefits() {
         System.out.println("5. IDE Benefits:");

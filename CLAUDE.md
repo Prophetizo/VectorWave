@@ -51,9 +51,21 @@ Development guide for working with the VectorWave repository.
 
 ## Key APIs
 
+### Wavelet Selection (Type-Safe Enum)
+```java
+// Get wavelets using enum - compile-time safety
+Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
+
+// Discover available wavelets
+List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
+```
+
 ### Basic MODWT
 ```java
-MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.DB4);
+MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
 double[] signal = new double[777]; // Any length!
 MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);

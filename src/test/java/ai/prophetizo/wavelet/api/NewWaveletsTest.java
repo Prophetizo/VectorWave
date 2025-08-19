@@ -72,7 +72,8 @@ class NewWaveletsTest {
     @MethodSource("newDaubechiesWavelets")
     @DisplayName("Daubechies wavelets should be registered in WaveletRegistry")
     void testDaubechiesRegistration(Daubechies wavelet) {
-        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
         assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
@@ -113,7 +114,8 @@ class NewWaveletsTest {
     @MethodSource("newSymletWavelets")
     @DisplayName("Symlet wavelets should be registered in WaveletRegistry")
     void testSymletRegistration(Symlet wavelet) {
-        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
         assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
@@ -144,7 +146,8 @@ class NewWaveletsTest {
     @MethodSource("newCoifletWavelets")
     @DisplayName("Coiflet wavelets should be registered in WaveletRegistry")
     void testCoifletRegistration(Coiflet wavelet) {
-        WaveletName waveletName = WaveletName.fromCode(wavelet.name());
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
         assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
@@ -288,5 +291,34 @@ class NewWaveletsTest {
         assertEquals(-0.0000000960401011, coeffs[0], 1e-15);
         assertEquals(0.7742936228603274, coeffs[19], 1e-10);
         assertEquals(-0.0002120818620675, coeffs[29], 1e-10);
+    }
+    
+    /**
+     * Helper method to map wavelet instances to their corresponding WaveletName enum.
+     * This is needed for test parameterization since we pass wavelet instances
+     * but need enum values for the registry.
+     */
+    private WaveletName getWaveletNameForInstance(Wavelet wavelet) {
+        String name = wavelet.name();
+        switch (name) {
+            // Daubechies
+            case "db6": return WaveletName.DB6;
+            case "db8": return WaveletName.DB8;
+            case "db10": return WaveletName.DB10;
+            // Symlets
+            case "sym5": return WaveletName.SYM5;
+            case "sym6": return WaveletName.SYM6;
+            case "sym7": return WaveletName.SYM7;
+            case "sym8": return WaveletName.SYM8;
+            case "sym10": return WaveletName.SYM10;
+            case "sym12": return WaveletName.SYM12;
+            case "sym15": return WaveletName.SYM15;
+            case "sym20": return WaveletName.SYM20;
+            // Coiflets
+            case "coif4": return WaveletName.COIF4;
+            case "coif5": return WaveletName.COIF5;
+            default:
+                throw new IllegalArgumentException("Unknown wavelet: " + name);
+        }
     }
 }

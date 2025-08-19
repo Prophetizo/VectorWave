@@ -19,25 +19,24 @@ The VectorWave `WaveletRegistry` provides a centralized, thread-safe way to disc
 
 ### Basic Usage
 ```java
-// Check if a wavelet is available
-if (WaveletRegistry.isWaveletAvailable("db4")) {
-    Wavelet wavelet = WaveletRegistry.getWavelet("db4");
-    // Use the wavelet...
-}
+// Type-safe wavelet selection with enum
+Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
 
 // Get all available wavelets
-Set<String> allWavelets = WaveletRegistry.getAvailableWavelets();
+Set<WaveletName> allWavelets = WaveletRegistry.getAvailableWavelets();
 
-// Get wavelets by type (more efficient)
-Set<String> orthogonalWavelets = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
+// Get wavelets by type (returns enum list)
+List<WaveletName> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
+Set<WaveletName> continuousWavelets = WaveletRegistry.getWaveletsByType(WaveletType.CONTINUOUS);
 ```
 
 ### With MODWT Integration
 ```java
-// Safe wavelet selection with MODWT
-String waveletName = "db4";
-if (WaveletRegistry.isWaveletAvailable(waveletName)) {
-    Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
+// Type-safe wavelet selection with MODWT
+WaveletName selected = WaveletName.DB4;  // IDE autocomplete!
+if (WaveletRegistry.hasWavelet(selected)) {
+    Wavelet wavelet = WaveletRegistry.getWavelet(selected);
     if (wavelet instanceof DiscreteWavelet discreteWavelet) {
         MODWTTransform transform = new MODWTTransform(discreteWavelet);
         // Perform transform...
@@ -49,18 +48,23 @@ if (WaveletRegistry.isWaveletAvailable(waveletName)) {
 
 ### ✅ Efficient Type-Based Discovery
 ```java
-// GOOD: Use type-specific queries
-Set<String> orthogonal = WaveletRegistry.getWaveletsByType(WaveletType.ORTHOGONAL);
-List<String> continuous = WaveletRegistry.getContinuousWavelets();
+// GOOD: Use type-specific queries with enum results
+List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<WaveletName> continuous = WaveletRegistry.getContinuousWavelets();
+
+// Family-specific queries
+List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
+List<WaveletName> symlets = WaveletRegistry.getSymletWavelets();
+List<WaveletName> coiflets = WaveletRegistry.getCoifletWavelets();
 ```
 
-### ❌ Inefficient Filtering
+### ✅ Type-Safe Iteration
 ```java
-// AVOID: Filtering all wavelets
-Set<String> orthogonal = WaveletRegistry.getAvailableWavelets()
-    .stream()
-    .filter(name -> WaveletRegistry.getWavelet(name).getType() == WaveletType.ORTHOGONAL)
-    .collect(Collectors.toSet());
+// Iterate through all orthogonal wavelets
+for (WaveletName name : WaveletRegistry.getOrthogonalWavelets()) {
+    Wavelet wavelet = WaveletRegistry.getWavelet(name);
+    System.out.println(name + ": " + wavelet.description());
+}
 ```
 
 ### Registry Overview
@@ -68,28 +72,47 @@ Set<String> orthogonal = WaveletRegistry.getAvailableWavelets()
 // Print comprehensive overview
 WaveletRegistry.printAvailableWavelets();
 
-// Programmatic exploration
+// Programmatic exploration with enum
 for (WaveletType type : WaveletType.values()) {
-    Set<String> wavelets = WaveletRegistry.getWaveletsByType(type);
+    Set<WaveletName> wavelets = WaveletRegistry.getWaveletsByType(type);
     System.out.println(type + ": " + wavelets.size() + " wavelets");
 }
+
+// Use enum features for powerful queries
+EnumSet<WaveletName> dbWavelets = EnumSet.of(
+    WaveletName.DB2, WaveletName.DB4, WaveletName.DB6, 
+    WaveletName.DB8, WaveletName.DB10
+);
 ```
 
 ## Safe Selection
 
-### Validation Before Use
+### Type-Safe Selection with Enum
 ```java
-public Wavelet selectWaveletSafely(String... candidates) {
-    for (String candidate : candidates) {
-        if (WaveletRegistry.isWaveletAvailable(candidate)) {
+public Wavelet selectWaveletSafely(WaveletName... candidates) {
+    for (WaveletName candidate : candidates) {
+        if (WaveletRegistry.hasWavelet(candidate)) {
             return WaveletRegistry.getWavelet(candidate);
         }
     }
-    throw new IllegalArgumentException("No suitable wavelet found");
+    // Fallback to HAAR which is always available
+    return WaveletRegistry.getWavelet(WaveletName.HAAR);
 }
 
-// Usage with fallback strategy
-Wavelet wavelet = selectWaveletSafely("sym8", "db4", "haar");
+// Usage with fallback strategy - compile-time safe!
+Wavelet wavelet = selectWaveletSafely(
+    WaveletName.SYM8, 
+    WaveletName.DB4, 
+    WaveletName.HAAR
+);
+
+// Switch on wavelet type - enum enables this!
+switch (selectedWavelet) {
+    case DB2, DB4, DB6, DB8, DB10 -> processDataubechies();
+    case SYM2, SYM3, SYM4 -> processSymlet();
+    case HAAR -> processHaar();
+    default -> processGeneric();
+}
 ```
 
 ### Signal Compatibility Validation
