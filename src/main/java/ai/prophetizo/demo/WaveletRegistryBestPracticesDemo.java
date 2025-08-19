@@ -29,7 +29,6 @@ public class WaveletRegistryBestPracticesDemo {
         demo.demonstrateSelection();
         demo.demonstrateErrorHandling();
         demo.demonstrateTransformUsage();
-        demo.demonstrateMotiveWaveIntegration();
     }
     
     /**
@@ -67,9 +66,9 @@ public class WaveletRegistryBestPracticesDemo {
         System.out.println("\n2. SELECTING WAVELETS FOR UI");
         System.out.println("-".repeat(40));
         
-        // For a dropdown menu (e.g., in MotiveWave)
-        List<String> dropdownOptions = WaveletRegistry.getOrthogonalWavelets();
-        System.out.println("Dropdown options for discrete transforms:");
+        // Get all orthogonal wavelets for discrete transforms
+        List<String> orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
+        System.out.println("Orthogonal wavelets for discrete transforms:");
         for (String option : dropdownOptions) {
             System.out.println("  - " + option);
         }
@@ -153,82 +152,4 @@ public class WaveletRegistryBestPracticesDemo {
         System.out.println("  Reconstruction error: " + String.format("%.2e", error / signal.length));
     }
     
-    /**
-     * 5. MOTIVEWAVE INTEGRATION EXAMPLE
-     */
-    private void demonstrateMotiveWaveIntegration() {
-        System.out.println("\n5. MOTIVEWAVE INTEGRATION EXAMPLE");
-        System.out.println("-".repeat(40));
-        
-        // Simulate MotiveWave study settings
-        class StudySettings {
-            String waveletName = "db4";
-            int decompositionLevel = 3;
-            double threshold = 0.1;
-        }
-        
-        StudySettings settings = new StudySettings();
-        
-        // Simulate price data
-        double[] prices = new double[256];
-        Random rand = new Random(42);
-        prices[0] = 100;
-        for (int i = 1; i < prices.length; i++) {
-            prices[i] = prices[i-1] + rand.nextGaussian() * 0.5;
-        }
-        
-        // Process with wavelet
-        try {
-            // Get wavelet from settings
-            if (!WaveletRegistry.hasWavelet(settings.waveletName)) {
-                System.out.println("Invalid wavelet, using default");
-                settings.waveletName = "haar";
-            }
-            
-            Wavelet wavelet = WaveletRegistry.getWavelet(settings.waveletName);
-            System.out.println("Using wavelet: " + wavelet.name());
-            
-            // Create transform
-            MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
-            
-            // Process price data
-            MODWTResult result = transform.forward(prices);
-            
-            // Extract trend (approximation at higher level)
-            double[] trend = result.getApproximation(settings.decompositionLevel);
-            System.out.println("Extracted trend at level " + settings.decompositionLevel);
-            
-            // Extract noise (detail at level 1)
-            double[] noise = result.getDetail(1);
-            
-            // Calculate statistics
-            double trendMean = Arrays.stream(trend).average().orElse(0);
-            double noiseStd = Math.sqrt(Arrays.stream(noise)
-                .map(x -> x * x)
-                .average().orElse(0));
-            
-            System.out.println("  Trend mean: " + String.format("%.2f", trendMean));
-            System.out.println("  Noise std: " + String.format("%.4f", noiseStd));
-            
-            // Denoise by thresholding
-            int thresholdedCount = 0;
-            for (int level = 1; level <= settings.decompositionLevel; level++) {
-                double[] details = result.getDetail(level);
-                for (int i = 0; i < details.length; i++) {
-                    if (Math.abs(details[i]) < settings.threshold) {
-                        details[i] = 0;
-                        thresholdedCount++;
-                    }
-                }
-            }
-            System.out.println("  Thresholded " + thresholdedCount + " coefficients");
-            
-            // Reconstruct denoised signal
-            double[] denoised = transform.inverse(result);
-            System.out.println("  Denoised signal reconstructed");
-            
-        } catch (Exception e) {
-            System.err.println("Error in processing: " + e.getMessage());
-        }
-    }
 }
