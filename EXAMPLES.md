@@ -68,8 +68,8 @@ mvn exec:java -Dexec.mainClass="ai.prophetizo.examples.integration.MotiveWaveInt
 
 ## Key Points
 
-- **No ServiceLoader** - Simple static registry that works everywhere
-- **No Complex Setup** - Just `WaveletRegistry.getWavelet("db4")`
+- **Type-Safe Enum** - Use `WaveletName.DB4` with full IDE support
+- **No String Typos** - Compile-time checking with `WaveletRegistry.getWavelet(WaveletName.DB4)`
 - **MODWT Focus** - Works with ANY signal length
 - **Production Ready** - Safe patterns for real applications
 

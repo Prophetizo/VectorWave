@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.api.WaveletName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -60,8 +61,8 @@ class SimplifiedWaveletValidationTest {
         testWaveletBasics("sym12", Symlet.SYM12, 24, 12);
         
         // SYM15 and SYM20 may have different lengths due to optimization
-        assertTrue(WaveletRegistry.hasWavelet("sym15"), "SYM15 should be registered");
-        assertTrue(WaveletRegistry.hasWavelet("sym20"), "SYM20 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.SYM15), "SYM15 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.SYM20), "SYM20 should be registered");
     }
     
     @Test
@@ -77,11 +78,12 @@ class SimplifiedWaveletValidationTest {
     private void testWaveletBasics(String name, OrthogonalWavelet wavelet, 
                                    int expectedLength, int expectedVanishingMoments) {
         // Test registration
-        assertTrue(WaveletRegistry.hasWavelet(name), 
+        WaveletName waveletName = getWaveletNameFromCode(name);
+        assertTrue(WaveletRegistry.hasWavelet(waveletName), 
             name + " should be registered in WaveletRegistry");
         
         // Test retrieval
-        Wavelet retrieved = WaveletRegistry.getWavelet(name);
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved, name + " should be retrievable");
         assertEquals(name, retrieved.name(), "Retrieved wavelet should have correct name");
         
@@ -173,7 +175,7 @@ class SimplifiedWaveletValidationTest {
         
         for (String waveletName : waveletsToTest) {
             try {
-                Wavelet w = WaveletRegistry.getWavelet(waveletName);
+                Wavelet w = WaveletRegistry.getWavelet(getWaveletNameFromCode(waveletName));
                 
                 // Create a transform
                 var transform = new ai.prophetizo.wavelet.modwt.MODWTTransform(
@@ -203,19 +205,49 @@ class SimplifiedWaveletValidationTest {
     }
     
     @Test
-    @DisplayName("Test wavelet aliases in registry")
-    void testWaveletAliases() {
-        // Daubechies aliases
-        assertTrue(WaveletRegistry.hasWavelet("daubechies6"), 
-            "Should have alias daubechies6 for db6");
-        assertTrue(WaveletRegistry.hasWavelet("daubechies8"),
-            "Should have alias daubechies8 for db8");
-        assertTrue(WaveletRegistry.hasWavelet("daubechies10"),
-            "Should have alias daubechies10 for db10");
+    @DisplayName("Test wavelet enum-based registry")
+    void testWaveletEnumRegistry() {
+        // With enum-only approach, each wavelet has exactly one representation
+        // No string aliases or duplicates exist
         
-        // Verify aliases point to same wavelet
-        assertSame(WaveletRegistry.getWavelet("db6"), 
-                  WaveletRegistry.getWavelet("daubechies6"),
-                  "Aliases should return same wavelet instance");
+        // Verify wavelets exist with their canonical enum names
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB6), 
+            "DB6 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB8),
+            "DB8 should be registered");
+        assertTrue(WaveletRegistry.hasWavelet(WaveletName.DB10),
+            "DB10 should be registered");
+        
+        // Verify we get the same instance when requesting by enum
+        Wavelet db6_1 = WaveletRegistry.getWavelet(WaveletName.DB6);
+        Wavelet db6_2 = WaveletRegistry.getWavelet(WaveletName.DB6);
+        assertSame(db6_1, db6_2, "Should return same instance for same enum");
+    }
+    
+    /**
+     * Helper method to map wavelet string codes to enum values.
+     * Used for test compatibility where we parameterize with string names.
+     */
+    private WaveletName getWaveletNameFromCode(String code) {
+        switch (code) {
+            // Daubechies
+            case "db6": return WaveletName.DB6;
+            case "db8": return WaveletName.DB8;
+            case "db10": return WaveletName.DB10;
+            // Symlets
+            case "sym5": return WaveletName.SYM5;
+            case "sym6": return WaveletName.SYM6;
+            case "sym7": return WaveletName.SYM7;
+            case "sym8": return WaveletName.SYM8;
+            case "sym10": return WaveletName.SYM10;
+            case "sym12": return WaveletName.SYM12;
+            case "sym15": return WaveletName.SYM15;
+            case "sym20": return WaveletName.SYM20;
+            // Coiflets
+            case "coif4": return WaveletName.COIF4;
+            case "coif5": return WaveletName.COIF5;
+            default:
+                throw new IllegalArgumentException("Unknown wavelet code: " + code);
+        }
     }
 }

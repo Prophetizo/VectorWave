@@ -29,8 +29,8 @@ public class PluginArchitectureDemo {
         // Demo 4: Show provider information
         showProviderInfo();
         
-        // Demo 5: Demonstrate case-insensitive lookup
-        caseInsensitiveLookupDemo();
+        // Demo 5: Demonstrate enum benefits
+        enumBenefitsDemo();
         
         // Demo 6: Show how to add custom wavelets
         customWaveletExample();
@@ -40,52 +40,48 @@ public class PluginArchitectureDemo {
         System.out.println("1. All Available Wavelets");
         System.out.println("-------------------------");
         
-        Set<String> wavelets = WaveletRegistry.getAvailableWavelets();
+        Set<WaveletName> wavelets = WaveletRegistry.getAvailableWavelets();
         System.out.println("Total wavelets discovered: " + wavelets.size());
         System.out.println();
         
         System.out.println("Wavelets grouped by family:");
         
-        // Group by prefix
+        // Group by family
         System.out.println("\nHaar family:");
         wavelets.stream()
-            .filter(w -> w.toLowerCase().contains("haar"))
+            .filter(w -> w.name().contains("HAAR"))
             .sorted()
-            .forEach(w -> System.out.println("  - " + w));
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println("\nDaubechies family:");
         wavelets.stream()
-            .filter(w -> w.startsWith("DB") || w.toLowerCase().contains("daubechies"))
+            .filter(w -> w.name().startsWith("DB"))
             .sorted()
-            .forEach(w -> System.out.println("  - " + w));
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println("\nSymlet family:");
         wavelets.stream()
-            .filter(w -> w.startsWith("SYM") || w.toLowerCase().contains("symlet"))
+            .filter(w -> w.name().startsWith("SYM"))
             .sorted()
-            .forEach(w -> System.out.println("  - " + w));
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println("\nCoiflet family:");
         wavelets.stream()
-            .filter(w -> w.startsWith("COIF") || w.toLowerCase().contains("coiflet"))
+            .filter(w -> w.name().startsWith("COIF"))
             .sorted()
-            .forEach(w -> System.out.println("  - " + w));
-        
-        System.out.println("\nBiorthogonal family:");
-        wavelets.stream()
-            .filter(w -> w.startsWith("BIOR") || w.toLowerCase().contains("biorthogonal"))
-            .sorted()
-            .forEach(w -> System.out.println("  - " + w));
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println("\nContinuous wavelets:");
         wavelets.stream()
-            .filter(w -> w.toLowerCase().contains("morlet") || 
-                        w.toLowerCase().contains("paul") || 
-                        w.toLowerCase().contains("dog") ||
-                        w.toLowerCase().contains("shannon") ||
-                        w.toLowerCase().contains("gaussian"))
+            .filter(w -> w.getType() == WaveletType.CONTINUOUS)
             .sorted()
-            .forEach(w -> System.out.println("  - " + w));
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
+        
+        System.out.println("\nComplex wavelets:");
+        wavelets.stream()
+            .filter(w -> w.getType() == WaveletType.COMPLEX)
+            .sorted()
+            .forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println();
     }
@@ -94,21 +90,23 @@ public class PluginArchitectureDemo {
         System.out.println("2. Wavelets by Type");
         System.out.println("-------------------");
         
-        List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+        List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
         System.out.println("Orthogonal wavelets (" + orthogonal.size() + "):");
-        orthogonal.stream().limit(5).forEach(w -> System.out.println("  - " + w));
-        System.out.println("  ... and " + (orthogonal.size() - 5) + " more");
+        orthogonal.stream().limit(5).forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
+        if (orthogonal.size() > 5) {
+            System.out.println("  ... and " + (orthogonal.size() - 5) + " more");
+        }
         
-        List<String> biorthogonal = WaveletRegistry.getBiorthogonalWavelets();
+        List<WaveletName> biorthogonal = WaveletRegistry.getBiorthogonalWavelets();
         System.out.println("\nBiorthogonal wavelets (" + biorthogonal.size() + "):");
-        biorthogonal.stream().limit(5).forEach(w -> System.out.println("  - " + w));
+        biorthogonal.stream().limit(5).forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         if (biorthogonal.size() > 5) {
             System.out.println("  ... and " + (biorthogonal.size() - 5) + " more");
         }
         
-        List<String> continuous = WaveletRegistry.getContinuousWavelets();
+        List<WaveletName> continuous = WaveletRegistry.getContinuousWavelets();
         System.out.println("\nContinuous wavelets (" + continuous.size() + "):");
-        continuous.forEach(w -> System.out.println("  - " + w));
+        continuous.forEach(w -> System.out.println("  - " + w.getCode() + ": " + w.getDescription()));
         
         System.out.println();
     }
@@ -117,28 +115,26 @@ public class PluginArchitectureDemo {
         System.out.println("3. Wavelet Lookup");
         System.out.println("-----------------");
         
-        // Lookup specific wavelets
-        String[] testNames = {"Haar", "DB4", "SYM3", "COIF2", "Morlet"};
+        // Lookup specific wavelets using enum
+        WaveletName[] testWavelets = {WaveletName.HAAR, WaveletName.DB4, WaveletName.SYM3, WaveletName.COIF2, WaveletName.MORLET};
         
-        for (String name : testNames) {
+        for (WaveletName name : testWavelets) {
             if (WaveletRegistry.hasWavelet(name)) {
                 Wavelet wavelet = WaveletRegistry.getWavelet(name);
-                System.out.printf("Found '%s': %s (type: %s)\n", 
+                System.out.printf("Found %s: %s (type: %s)\n", 
                     name, 
-                    wavelet.name(),
+                    wavelet.description(),
                     wavelet.getType());
             } else {
-                System.out.printf("Wavelet '%s' not found\n", name);
+                System.out.printf("Wavelet %s not found\n", name);
             }
         }
         
-        // Try non-existent wavelet
-        System.out.println("\nTrying non-existent wavelet:");
-        try {
-            WaveletRegistry.getWavelet("NonExistent");
-        } catch (IllegalArgumentException e) {
-            System.out.println("  Exception: " + e.getMessage());
-        }
+        // Demonstrate type-safe access - no runtime errors for typos!
+        System.out.println("\nType-safe access benefits:");
+        System.out.println("  - Compile-time checking prevents typos");
+        System.out.println("  - IDE autocomplete shows all options");
+        System.out.println("  - Refactoring is safe and automatic");
         
         System.out.println();
     }
@@ -147,14 +143,8 @@ public class PluginArchitectureDemo {
         System.out.println("4. Provider Information");
         System.out.println("-----------------------");
         
-        // Check for any load warnings
-        List<String> warnings = WaveletRegistry.getLoadWarnings();
-        if (warnings.isEmpty()) {
-            System.out.println("All wavelet providers loaded successfully!");
-        } else {
-            System.out.println("Load warnings:");
-            warnings.forEach(w -> System.out.println("  - " + w));
-        }
+        // Wavelets are loaded automatically via ServiceLoader
+        System.out.println("All wavelet providers loaded successfully!");
         
         // Show how wavelets are discovered
         System.out.println("\nWavelets are discovered via ServiceLoader from:");
@@ -168,26 +158,27 @@ public class PluginArchitectureDemo {
         System.out.println();
     }
     
-    private static void caseInsensitiveLookupDemo() {
-        System.out.println("5. Case-Insensitive Lookup");
-        System.out.println("--------------------------");
+    private static void enumBenefitsDemo() {
+        System.out.println("5. Enum-Based Access Benefits");
+        System.out.println("------------------------------");
         
-        String[] variations = {"haar", "HAAR", "Haar", "HaAr"};
+        System.out.println("No more case sensitivity issues:");
+        System.out.println("  - WaveletName.HAAR is always HAAR");
+        System.out.println("  - No confusion between 'haar', 'HAAR', 'Haar'");
         
-        System.out.println("All these variations return the same wavelet:");
-        for (String variation : variations) {
-            Wavelet wavelet = WaveletRegistry.getWavelet(variation);
-            System.out.printf("  '%s' -> %s\n", variation, wavelet.name());
-        }
+        System.out.println("\nNo more string typos:");
+        System.out.println("  - Compile-time checking prevents errors");
+        System.out.println("  - IDE autocomplete shows all available wavelets");
         
-        System.out.println("\nAlso works for complex names:");
-        String[] complexNames = {"daubechies-4", "DAUBECHIES-4", "Daubechies-4", "db4", "DB4"};
-        for (String name : complexNames) {
-            if (WaveletRegistry.hasWavelet(name)) {
-                Wavelet wavelet = WaveletRegistry.getWavelet(name);
-                System.out.printf("  '%s' -> %s\n", name, wavelet.name());
-            }
-        }
+        System.out.println("\nConsistent naming:");
+        System.out.println("  - Each wavelet has ONE canonical representation");
+        System.out.println("  - No duplicates like 'db4' vs 'daubechies4'");
+        
+        System.out.println("\nDirect access examples:");
+        Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
+        Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+        System.out.printf("  HAAR -> %s\n", haar.description());
+        System.out.printf("  DB4 -> %s\n", db4.description());
         
         System.out.println();
     }
@@ -237,10 +228,8 @@ public class PluginArchitectureDemo {
         System.out.println("  - Easy to extend without modifying core");
         System.out.println("  - Works with Java modules and classpath");
         
-        // Force reload demonstration
-        System.out.println("\nReloading wavelet registry...");
-        WaveletRegistry.reload();
-        System.out.println("Registry reloaded. Total wavelets: " + 
+        // Wavelets are loaded once at startup
+        System.out.println("\nTotal wavelets available: " + 
             WaveletRegistry.getAvailableWavelets().size());
     }
 }

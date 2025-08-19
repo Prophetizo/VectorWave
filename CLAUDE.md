@@ -2,6 +2,22 @@
 
 Development guide for working with the VectorWave repository.
 
+## Library Scope
+
+**VectorWave is strictly a wavelet analysis library.** It provides:
+- Wavelet transforms (MODWT, CWT, SWT)
+- Signal processing and denoising
+- Mathematical operations on wavelets
+- Performance optimizations (SIMD, Vector API)
+
+**NOT in scope:**
+- UI components or helpers
+- Platform-specific integrations (MotiveWave, MetaTrader, etc.)
+- Trading platform adapters
+- Display/presentation logic
+
+Any UI adapters or platform integrations should be implemented as separate projects that depend on VectorWave.
+
 ## Current State (January 2025)
 
 ### MODWT as Primary Transform
@@ -51,9 +67,21 @@ Development guide for working with the VectorWave repository.
 
 ## Key APIs
 
+### Wavelet Selection (Type-Safe Enum)
+```java
+// Get wavelets using enum - compile-time safety
+Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
+
+// Discover available wavelets
+List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
+```
+
 ### Basic MODWT
 ```java
-MODWTTransform transform = new MODWTTransform(Daubechies.DB4, BoundaryMode.PERIODIC);
+Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.DB4);
+MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
 double[] signal = new double[777]; // Any length!
 MODWTResult result = transform.forward(signal);
 double[] reconstructed = transform.inverse(result);

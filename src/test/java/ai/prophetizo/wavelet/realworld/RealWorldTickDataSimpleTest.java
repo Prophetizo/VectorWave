@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.realworld;
 import ai.prophetizo.wavelet.api.BoundaryMode;
 import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
+import ai.prophetizo.wavelet.api.WaveletName;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
@@ -52,7 +53,7 @@ public class RealWorldTickDataSimpleTest {
     @Test
     void testSingleLevelMODWT() {
         // Test single-level MODWT
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("haar");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.HAAR);
         MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Take a subset
@@ -93,7 +94,7 @@ public class RealWorldTickDataSimpleTest {
     @Test
     void testMultiLevelMODWT() {
         // Test multi-level MODWT
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("db4");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.DB4);
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Take a subset
@@ -143,7 +144,7 @@ public class RealWorldTickDataSimpleTest {
     @Test
     void testMODWTWithRealPriceMovements() {
         // Analyze real price movements
-        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet("sym4");
+        DiscreteWavelet wavelet = (DiscreteWavelet) WaveletRegistry.getWavelet(WaveletName.SYM4);
         MultiLevelMODWTTransform transform = new MultiLevelMODWTTransform(wavelet, BoundaryMode.PERIODIC);
         
         // Use 4096 samples for good resolution

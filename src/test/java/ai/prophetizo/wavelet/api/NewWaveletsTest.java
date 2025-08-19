@@ -1,5 +1,6 @@
 package ai.prophetizo.wavelet.api;
 
+import ai.prophetizo.wavelet.api.WaveletName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,10 +72,12 @@ class NewWaveletsTest {
     @MethodSource("newDaubechiesWavelets")
     @DisplayName("Daubechies wavelets should be registered in WaveletRegistry")
     void testDaubechiesRegistration(Daubechies wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -111,10 +114,12 @@ class NewWaveletsTest {
     @MethodSource("newSymletWavelets")
     @DisplayName("Symlet wavelets should be registered in WaveletRegistry")
     void testSymletRegistration(Symlet wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -141,10 +146,12 @@ class NewWaveletsTest {
     @MethodSource("newCoifletWavelets")
     @DisplayName("Coiflet wavelets should be registered in WaveletRegistry")
     void testCoifletRegistration(Coiflet wavelet) {
-        assertTrue(WaveletRegistry.hasWavelet(wavelet.name()),
+        // Map wavelet instance to enum
+        WaveletName waveletName = getWaveletNameForInstance(wavelet);
+        assertTrue(WaveletRegistry.hasWavelet(waveletName),
             wavelet.name() + " should be registered");
         
-        Wavelet retrieved = WaveletRegistry.getWavelet(wavelet.name());
+        Wavelet retrieved = WaveletRegistry.getWavelet(waveletName);
         assertNotNull(retrieved);
         assertEquals(wavelet.name(), retrieved.name());
         assertArrayEquals(wavelet.lowPassDecomposition(), 
@@ -181,23 +188,23 @@ class NewWaveletsTest {
         var orthogonalWavelets = WaveletRegistry.getOrthogonalWavelets();
         
         // Check new Daubechies wavelets
-        assertTrue(orthogonalWavelets.contains("db6"));
-        assertTrue(orthogonalWavelets.contains("db8"));
-        assertTrue(orthogonalWavelets.contains("db10"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB6));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB8));
+        assertTrue(orthogonalWavelets.contains(WaveletName.DB10));
         
         // Check new Symlet wavelets
-        assertTrue(orthogonalWavelets.contains("sym5"));
-        assertTrue(orthogonalWavelets.contains("sym6"));
-        assertTrue(orthogonalWavelets.contains("sym7"));
-        assertTrue(orthogonalWavelets.contains("sym8"));
-        assertTrue(orthogonalWavelets.contains("sym10"));
-        assertTrue(orthogonalWavelets.contains("sym12"));
-        assertTrue(orthogonalWavelets.contains("sym15"));
-        assertTrue(orthogonalWavelets.contains("sym20"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM5));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM6));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM7));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM8));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM10));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM12));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM15));
+        assertTrue(orthogonalWavelets.contains(WaveletName.SYM20));
         
         // Check new Coiflet wavelets
-        assertTrue(orthogonalWavelets.contains("coif4"));
-        assertTrue(orthogonalWavelets.contains("coif5"));
+        assertTrue(orthogonalWavelets.contains(WaveletName.COIF4));
+        assertTrue(orthogonalWavelets.contains(WaveletName.COIF5));
     }
     
     @Test
@@ -205,23 +212,23 @@ class NewWaveletsTest {
     void testWaveletDescriptions() {
         // Test Daubechies descriptions
         assertEquals("Daubechies wavelet of order 6", 
-                    WaveletRegistry.getWavelet("db6").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB6).description());
         assertEquals("Daubechies wavelet of order 8", 
-                    WaveletRegistry.getWavelet("db8").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB8).description());
         assertEquals("Daubechies wavelet of order 10", 
-                    WaveletRegistry.getWavelet("db10").description());
+                    WaveletRegistry.getWavelet(WaveletName.DB10).description());
         
         // Test Symlet descriptions
         assertEquals("Symlet wavelet of order 5", 
-                    WaveletRegistry.getWavelet("sym5").description());
+                    WaveletRegistry.getWavelet(WaveletName.SYM5).description());
         assertEquals("Symlet wavelet of order 20", 
-                    WaveletRegistry.getWavelet("sym20").description());
+                    WaveletRegistry.getWavelet(WaveletName.SYM20).description());
         
         // Test Coiflet descriptions
         assertEquals("Coiflet wavelet of order 4", 
-                    WaveletRegistry.getWavelet("coif4").description());
+                    WaveletRegistry.getWavelet(WaveletName.COIF4).description());
         assertEquals("Coiflet wavelet of order 5", 
-                    WaveletRegistry.getWavelet("coif5").description());
+                    WaveletRegistry.getWavelet(WaveletName.COIF5).description());
     }
     
     @Test
@@ -284,5 +291,34 @@ class NewWaveletsTest {
         assertEquals(-0.0000000960401011, coeffs[0], 1e-15);
         assertEquals(0.7742936228603274, coeffs[19], 1e-10);
         assertEquals(-0.0002120818620675, coeffs[29], 1e-10);
+    }
+    
+    /**
+     * Helper method to map wavelet instances to their corresponding WaveletName enum.
+     * This is needed for test parameterization since we pass wavelet instances
+     * but need enum values for the registry.
+     */
+    private WaveletName getWaveletNameForInstance(Wavelet wavelet) {
+        String name = wavelet.name();
+        switch (name) {
+            // Daubechies
+            case "db6": return WaveletName.DB6;
+            case "db8": return WaveletName.DB8;
+            case "db10": return WaveletName.DB10;
+            // Symlets
+            case "sym5": return WaveletName.SYM5;
+            case "sym6": return WaveletName.SYM6;
+            case "sym7": return WaveletName.SYM7;
+            case "sym8": return WaveletName.SYM8;
+            case "sym10": return WaveletName.SYM10;
+            case "sym12": return WaveletName.SYM12;
+            case "sym15": return WaveletName.SYM15;
+            case "sym20": return WaveletName.SYM20;
+            // Coiflets
+            case "coif4": return WaveletName.COIF4;
+            case "coif5": return WaveletName.COIF5;
+            default:
+                throw new IllegalArgumentException("Unknown wavelet: " + name);
+        }
     }
 }

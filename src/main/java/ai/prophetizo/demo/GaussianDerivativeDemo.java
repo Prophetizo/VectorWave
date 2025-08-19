@@ -1,6 +1,7 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.WaveletRegistry;
+import ai.prophetizo.wavelet.api.WaveletName;
 import ai.prophetizo.wavelet.cwt.*;
 
 /**
@@ -20,13 +21,13 @@ public class GaussianDerivativeDemo {
             demonstrateGaussianDerivative(signal, order);
         }
         
-        // Show wavelet registry
-        System.out.println("\n=== Available Gaussian Derivative Wavelets ===");
+        // Show available continuous wavelets in registry
+        System.out.println("\n=== Available Continuous Wavelets ===");
         WaveletRegistry.getContinuousWavelets().stream()
-            .filter(name -> name.startsWith("gaus"))
+            .filter(name -> name.getCode().startsWith("gaus"))
             .forEach(name -> {
                 var wavelet = WaveletRegistry.getWavelet(name);
-                System.out.println(name + ": " + wavelet.description());
+                System.out.println(name.getCode() + ": " + wavelet.description());
             });
     }
     
@@ -57,9 +58,13 @@ public class GaussianDerivativeDemo {
     private static void demonstrateGaussianDerivative(double[] signal, int order) {
         System.out.println("\n--- Gaussian Derivative Order " + order + " ---");
         
-        // Get wavelet from registry
-        GaussianDerivativeWavelet wavelet = (GaussianDerivativeWavelet) 
-            WaveletRegistry.getWavelet("gaus" + order);
+        // Create Gaussian derivative wavelet directly with specified order
+        // Different orders detect different features:
+        // Order 1: Edge detection
+        // Order 2: Ridge detection (Mexican Hat)
+        // Order 3: Inflection points
+        // Order 4: Higher-order features
+        GaussianDerivativeWavelet wavelet = new GaussianDerivativeWavelet(order);
         
         System.out.println("Description: " + wavelet.description());
         System.out.println("Center frequency: " + wavelet.centerFrequency());

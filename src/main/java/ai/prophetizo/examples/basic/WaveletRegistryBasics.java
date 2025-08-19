@@ -52,7 +52,7 @@ public class WaveletRegistryBasics {
         WaveletRegistry.getOrthogonalWavelets()
             .stream()
             .limit(5)
-            .forEach(name -> System.out.println("  - " + name));
+            .forEach(name -> System.out.println("  - " + name + " (" + name.getCode() + ")"));
         
         System.out.println();
     }
@@ -65,9 +65,9 @@ public class WaveletRegistryBasics {
         System.out.println("-------------------------");
         
         // Always check availability first
-        String[] candidates = {"db4", "haar", "sym8", "nonexistent"};
+        WaveletName[] candidates = {WaveletName.DB4, WaveletName.HAAR, WaveletName.SYM8};
         
-        for (String name : candidates) {
+        for (WaveletName name : candidates) {
             if (WaveletRegistry.isWaveletAvailable(name)) {
                 Wavelet wavelet = WaveletRegistry.getWavelet(name);
                 System.out.println("✓ " + name + " - Available (" + wavelet.getType() + ")");
@@ -77,7 +77,7 @@ public class WaveletRegistryBasics {
         }
         
         // Select with fallback
-        Wavelet selectedWavelet = selectWaveletWithFallback("sym8", "db4", "haar");
+        Wavelet selectedWavelet = selectWaveletWithFallback(WaveletName.SYM8, WaveletName.DB4, WaveletName.HAAR);
         System.out.println("\nSelected wavelet: " + selectedWavelet.name());
         System.out.println();
     }
@@ -94,7 +94,7 @@ public class WaveletRegistryBasics {
         System.out.println("Created test signal with length: " + signal.length);
         
         // Select a discrete wavelet
-        String waveletName = "db4";
+        WaveletName waveletName = WaveletName.DB4;
         if (WaveletRegistry.isWaveletAvailable(waveletName)) {
             Wavelet wavelet = WaveletRegistry.getWavelet(waveletName);
             
@@ -133,14 +133,14 @@ public class WaveletRegistryBasics {
     /**
      * Selects first available wavelet from candidates.
      */
-    private static Wavelet selectWaveletWithFallback(String... candidates) {
-        for (String candidate : candidates) {
+    private static Wavelet selectWaveletWithFallback(WaveletName... candidates) {
+        for (WaveletName candidate : candidates) {
             if (WaveletRegistry.isWaveletAvailable(candidate)) {
                 return WaveletRegistry.getWavelet(candidate);
             }
         }
         // If we get here, use the first available orthogonal wavelet
-        String firstOrthogonal = WaveletRegistry.getOrthogonalWavelets().get(0);
+        WaveletName firstOrthogonal = WaveletRegistry.getOrthogonalWavelets().get(0);
         return WaveletRegistry.getWavelet(firstOrthogonal);
     }
     

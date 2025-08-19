@@ -5,7 +5,7 @@ import ai.prophetizo.wavelet.cwt.CWTTransform;
 import ai.prophetizo.wavelet.cwt.CWTResult;
 import ai.prophetizo.wavelet.cwt.ScaleSpace;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
-
+import ai.prophetizo.wavelet.api.WaveletName;
 /**
  * Demonstrates Gaussian derivative wavelets for feature detection.
  * 
@@ -208,23 +208,21 @@ public class GaussianDerivativeDemo {
             }
         }
         
-        // Demonstrate usage via registry
-        System.out.println("\nUsing wavelets from registry:");
+        // Demonstrate creating wavelets directly
+        System.out.println("\nCreating Gaussian derivative wavelets directly:");
         
-        var mexicanHatWavelet = WaveletRegistry.getWavelet("gaus2");
-        if (mexicanHatWavelet != null) {
-            GaussianDerivativeWavelet mexicanHat = (GaussianDerivativeWavelet) mexicanHatWavelet;
-            
-            double[] testSignal = createSimpleTestSignal();
-            CWTTransform cwt = new CWTTransform(mexicanHat);
-            
-            double[] scales = {1.0, 2.0, 4.0};
-            CWTResult result = cwt.analyze(testSignal, scales);
-            
-            System.out.printf("  Successfully used '%s' from registry%n", mexicanHat.name());
-            System.out.printf("  Result dimensions: %d scales × %d time points%n", 
-                result.getCoefficients().length, result.getCoefficients()[0].length);
-        }
+        // Create Mexican Hat wavelet (2nd order Gaussian derivative)
+        GaussianDerivativeWavelet mexicanHat = new GaussianDerivativeWavelet(2);
+        
+        double[] testSignal = createSimpleTestSignal();
+        CWTTransform cwt = new CWTTransform(mexicanHat);
+        
+        double[] scales = {1.0, 2.0, 4.0};
+        CWTResult result = cwt.analyze(testSignal, scales);
+        
+        System.out.printf("  Successfully used '%s' wavelet%n", mexicanHat.name());
+        System.out.printf("  Result dimensions: %d scales × %d time points%n", 
+            result.getCoefficients().length, result.getCoefficients()[0].length);
         
         System.out.println();
     }

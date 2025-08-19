@@ -122,7 +122,7 @@ public class WaveletRegistryBestPracticesDemo {
         System.out.println("-".repeat(40));
         
         // Get a wavelet
-        Wavelet db4 = WaveletRegistry.getWavelet("db4");
+        Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
         
         // Create transform
         MODWTTransform transform = new MODWTTransform(db4, BoundaryMode.PERIODIC);

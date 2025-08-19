@@ -84,13 +84,26 @@ for (double[] chunk : audioStream) {
 
 ### Wavelet Registry
 ```java
-// Discover available wavelets
-Set<String> available = WaveletRegistry.getAvailableWavelets();
-List<String> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+// Discover available wavelets - type-safe enum approach
+Set<WaveletName> available = WaveletRegistry.getAvailableWavelets();
+List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<WaveletName> continuous = WaveletRegistry.getContinuousWavelets();
 
-// Get wavelets by name (case-insensitive)
-Wavelet db4 = WaveletRegistry.getWavelet("db4");
-Wavelet morlet = WaveletRegistry.getWavelet("morlet");
+// Get wavelets using enum - compile-time type safety!
+Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+Wavelet morlet = WaveletRegistry.getWavelet(WaveletName.MORLET);
+Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
+
+// Get wavelets by family
+List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
+List<WaveletName> symlets = WaveletRegistry.getSymletWavelets();
+List<WaveletName> coiflets = WaveletRegistry.getCoifletWavelets();
+
+// Type-safe wavelet selection
+WaveletName selected = WaveletName.DB4;  // IDE autocomplete shows all options
+if (WaveletRegistry.hasWavelet(selected)) {
+    Wavelet wavelet = WaveletRegistry.getWavelet(selected);
+}
 ```
 
 ## Core Classes

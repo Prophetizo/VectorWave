@@ -70,8 +70,8 @@ Signal Size | Wavelet | Standard Time | Optimized Time | Speedup
 ### Basic Usage
 ```java
 // Optimizations are automatically applied
-Wavelet wavelet = WaveletRegistry.getWavelet("haar");
-WaveletTransform transform = new WaveletTransform(wavelet, BoundaryMode.PERIODIC);
+Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.HAAR);
+MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
 
 // Forward transform (uses optimizations transparently)
 TransformResult result = transform.forward(signal);
