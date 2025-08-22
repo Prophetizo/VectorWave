@@ -1069,12 +1069,12 @@ class GatherScatterOpsTest {
         assertNotNull(result);
         assertEquals(6, result.length);
         
-        assertEquals(0.0, result[0], EPSILON);   // 0^2
-        assertEquals(225.0, result[1], EPSILON); // 15^2
-        assertEquals(900.0, result[2], EPSILON); // 30^2
-        assertEquals(2025.0, result[3], EPSILON); // 45^2
-        assertEquals(3600.0, result[4], EPSILON); // 60^2
-        assertEquals(5625.0, result[5], EPSILON); // 75^2
+        assertEquals(0.0 * 0.0, result[0], EPSILON);
+        assertEquals(15.0 * 15.0, result[1], EPSILON);
+        assertEquals(30.0 * 30.0, result[2], EPSILON);
+        assertEquals(45.0 * 45.0, result[3], EPSILON);
+        assertEquals(60.0 * 60.0, result[4], EPSILON);
+        assertEquals(75.0 * 75.0, result[5], EPSILON);
     }
     
     

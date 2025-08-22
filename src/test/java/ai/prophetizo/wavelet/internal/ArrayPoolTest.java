@@ -292,37 +292,16 @@ public class ArrayPoolTest {
         assertEquals(-1, getPoolIndexMethod.invoke(pool, 2048));
     }
     
-    // Helper methods to access the static methods via reflection
+    // Helper methods to access ArrayPool methods directly
     private double[] borrowArray(int size) {
-        try {
-            Class<?> clazz = Class.forName("ai.prophetizo.wavelet.internal.ArrayPool");
-            Method method = clazz.getDeclaredMethod("borrow", int.class);
-            method.setAccessible(true);
-            return (double[]) method.invoke(null, size);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return ArrayPool.borrow(size);
     }
     
     private void releaseArray(double[] array) {
-        try {
-            Class<?> clazz = Class.forName("ai.prophetizo.wavelet.internal.ArrayPool");
-            Method method = clazz.getDeclaredMethod("release", double[].class);
-            method.setAccessible(true);
-            method.invoke(null, array);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        ArrayPool.release(array);
     }
     
     private void clearPool() {
-        try {
-            Class<?> clazz = Class.forName("ai.prophetizo.wavelet.internal.ArrayPool");
-            Method method = clazz.getDeclaredMethod("clear");
-            method.setAccessible(true);
-            method.invoke(null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        ArrayPool.clear();
     }
 }
