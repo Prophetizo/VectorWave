@@ -226,70 +226,73 @@ public class ArrayPoolTest {
     }
     
     @Test
-    @DisplayName("Test Pool inner class directly")
-    void testPoolInnerClass() throws Exception {
-        // Use reflection to access the inner Pool class
-        Class<?> poolClass = Class.forName("ai.prophetizo.wavelet.internal.ArrayPool$Pool");
-        Constructor<?> constructor = poolClass.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        Object pool = constructor.newInstance();
+    @DisplayName("Test array pooling behavior through public API")
+    void testArrayPoolingBehavior() {
+        // Test that arrays are properly borrowed and can be released
+        double[] array1 = borrowArray(64);
+        assertNotNull(array1);
+        assertEquals(64, array1.length);
+        assertArrayEquals(new double[64], array1, "Borrowed array should be zero-initialized");
         
-        // Get methods
-        Method borrowMethod = poolClass.getDeclaredMethod("borrow", int.class);
-        Method releaseMethod = poolClass.getDeclaredMethod("release", double[].class);
-        Method clearMethod = poolClass.getDeclaredMethod("clear");
-        borrowMethod.setAccessible(true);
-        releaseMethod.setAccessible(true);
-        clearMethod.setAccessible(true);
+        // Modify array to test if pooling preserves zero state
+        array1[0] = 42.0;
+        releaseArray(array1);
         
-        // Test borrow
-        double[] array = (double[]) borrowMethod.invoke(pool, 64);
-        assertNotNull(array);
-        assertEquals(64, array.length);
+        // Borrow another array of same size - should be zero-initialized even if pooled
+        double[] array2 = borrowArray(64);
+        assertNotNull(array2);
+        assertEquals(64, array2.length);
+        assertArrayEquals(new double[64], array2, "Arrays should always be returned zero-initialized");
         
-        // Test release
-        releaseMethod.invoke(pool, array);
-        
-        // Test clear
-        clearMethod.invoke(pool);
-        
-        // Test releasing null
-        releaseMethod.invoke(pool, (Object) null); // Should not throw
-        
-        // Test non-standard size
-        double[] nonStandardArray = (double[]) borrowMethod.invoke(pool, 77);
-        assertNotNull(nonStandardArray);
-        assertEquals(77, nonStandardArray.length);
-        
-        // Release non-standard size (should not be pooled)
-        releaseMethod.invoke(pool, nonStandardArray);
+        releaseArray(array2);
     }
     
     @Test
-    @DisplayName("Test getPoolIndex method")
-    void testGetPoolIndex() throws Exception {
-        // Use reflection to test the private getPoolIndex method
-        Class<?> poolClass = Class.forName("ai.prophetizo.wavelet.internal.ArrayPool$Pool");
-        Constructor<?> constructor = poolClass.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        Object pool = constructor.newInstance();
+    @DisplayName("Test non-standard array sizes through public API") 
+    void testNonStandardArraySizes() {
+        // Test that non-standard sizes work correctly
+        int[] nonStandardSizes = {77, 100, 333, 2048};
         
-        Method getPoolIndexMethod = poolClass.getDeclaredMethod("getPoolIndex", int.class);
-        getPoolIndexMethod.setAccessible(true);
+        for (int size : nonStandardSizes) {
+            double[] array = borrowArray(size);
+            assertNotNull(array, "Should provide array for non-standard size " + size);
+            assertEquals(size, array.length, "Array should have requested size");
+            assertArrayEquals(new double[size], array, "Array should be zero-initialized");
+            
+            // Releasing should not cause any issues
+            assertDoesNotThrow(() -> releaseArray(array), 
+                "Releasing non-standard size array should not throw");
+        }
+    }
+    
+    @Test
+    @DisplayName("Test releasing null arrays through public API")
+    void testReleaseNullArray() {
+        // Test that releasing null doesn't cause issues
+        assertDoesNotThrow(() -> releaseArray(null), "Releasing null array should not throw");
+    }
+    
+    @Test 
+    @DisplayName("Test pool clearing behavior")
+    void testPoolClearingBehavior() {
+        // This tests the observable behavior of clearing rather than implementation
         
-        // Test standard sizes
-        assertEquals(0, getPoolIndexMethod.invoke(pool, 32));
-        assertEquals(1, getPoolIndexMethod.invoke(pool, 64));
-        assertEquals(2, getPoolIndexMethod.invoke(pool, 128));
-        assertEquals(3, getPoolIndexMethod.invoke(pool, 256));
-        assertEquals(4, getPoolIndexMethod.invoke(pool, 512));
-        assertEquals(5, getPoolIndexMethod.invoke(pool, 1024));
+        // Borrow and release some arrays
+        double[] array1 = borrowArray(64);
+        double[] array2 = borrowArray(128);
+        releaseArray(array1);
+        releaseArray(array2);
         
-        // Test non-standard sizes
-        assertEquals(-1, getPoolIndexMethod.invoke(pool, 31));
-        assertEquals(-1, getPoolIndexMethod.invoke(pool, 33));
-        assertEquals(-1, getPoolIndexMethod.invoke(pool, 100));
-        assertEquals(-1, getPoolIndexMethod.invoke(pool, 2048));
+        // Clear pool
+        clearPool();
+        
+        // After clearing, borrowing should still work normally
+        double[] array3 = borrowArray(64);
+        assertNotNull(array3);
+        assertEquals(64, array3.length);
+        assertArrayEquals(new double[64], array3, "Array should be zero-initialized after pool clear");
+        
+        releaseArray(array3);
     }
     
     // Helper methods to access ArrayPool methods directly
