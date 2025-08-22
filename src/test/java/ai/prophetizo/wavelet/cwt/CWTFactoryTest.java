@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
+import ai.prophetizo.wavelet.api.Factory;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -184,5 +185,56 @@ class CWTFactoryTest {
         assertTrue(config.isUseScopedValues());
         assertFalse(config.isUseStructuredConcurrency());
         assertTrue(config.isUseStreamGatherers());
+    }
+    
+    @Test
+    @DisplayName("Test CWTFactory.Instance singleton")
+    void testInstanceSingleton() {
+        CWTFactory.Instance instance1 = CWTFactory.getInstance();
+        CWTFactory.Instance instance2 = CWTFactory.getInstance();
+        
+        assertNotNull(instance1);
+        assertNotNull(instance2);
+        assertSame(instance1, instance2, "Should return the same instance");
+    }
+    
+    @Test
+    @DisplayName("Test Instance.create() without wavelet")
+    void testInstanceCreateWithoutWavelet() {
+        Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+        
+        assertThrows(UnsupportedOperationException.class, () -> {
+            factory.create();
+        });
+    }
+    
+    @Test
+    @DisplayName("Test Instance.create(wavelet)")
+    void testInstanceCreateWithWavelet() {
+        Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+        ContinuousWavelet wavelet = new MorletWavelet();
+        
+        CWTTransform transform = factory.create(wavelet);
+        assertNotNull(transform);
+        assertEquals(wavelet, transform.getWavelet());
+    }
+    
+    @Test
+    @DisplayName("Test Instance.isValidConfiguration")
+    void testInstanceIsValidConfiguration() {
+        Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+        
+        assertTrue(factory.isValidConfiguration(new MorletWavelet()));
+        assertFalse(factory.isValidConfiguration(null));
+    }
+    
+    @Test
+    @DisplayName("Test Instance.getDescription")
+    void testInstanceGetDescription() {
+        Factory<CWTTransform, ContinuousWavelet> factory = CWTFactory.getInstance();
+        
+        String description = factory.getDescription();
+        assertNotNull(description);
+        assertEquals("Factory for creating CWT transform instances", description);
     }
 }

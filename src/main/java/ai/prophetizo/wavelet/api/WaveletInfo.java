@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Collections;
 
 /**
@@ -54,7 +55,9 @@ public final class WaveletInfo {
         this.type = type;
         this.family = family;
         this.order = order;
-        this.aliases = Collections.unmodifiableSet(aliases);
+        // Make a defensive copy of the aliases set to ensure immutability
+        this.aliases = aliases == null ? Collections.emptySet() : 
+                       Collections.unmodifiableSet(new HashSet<>(aliases));
         this.description = description;
         this.vanishingMoments = vanishingMoments;
         this.filterLength = filterLength;
