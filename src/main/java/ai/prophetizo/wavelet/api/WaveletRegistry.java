@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
 import ai.prophetizo.wavelet.cwt.*;
+import ai.prophetizo.wavelet.cwt.finance.*;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
 import java.util.*;
@@ -50,6 +51,14 @@ public final class WaveletRegistry {
         
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
+        register(WaveletName.MEXICAN_HAT, new MATLABMexicanHat());  // MATLAB-compatible Mexican Hat
+        register(WaveletName.GAUSSIAN, new GaussianDerivativeWavelet(1));  // Gaussian derivative (1st order)
+        register(WaveletName.PAUL, new PaulWavelet(4));  // Paul wavelet with default order 4
+        register(WaveletName.DOG, new DOGWavelet(2));  // Derivative of Gaussian with default order 2
+        register(WaveletName.SHANNON, new ShannonGaborWavelet(1.0, 1.0));  // Shannon with default params
+        register(WaveletName.FBSP, new ShannonGaborWavelet(1.0, 1.5));  // Frequency B-Spline variant
+        register(WaveletName.CMOR, new ComplexMorletWavelet(1.0, 1.0));  // Complex Morlet with default params
+        register(WaveletName.CGAU, new GaussianDerivativeWavelet(2));  // Gaussian derivative (2nd order for complex-like behavior)
     }
     
     private static void register(WaveletName name, Wavelet wavelet) {
