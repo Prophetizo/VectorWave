@@ -58,7 +58,7 @@ public final class WaveletRegistry {
         register(WaveletName.SHANNON, new ShannonGaborWavelet(1.0, 1.0));  // Shannon with default params
         register(WaveletName.FBSP, new ShannonGaborWavelet(1.0, 1.5));  // Frequency B-Spline variant
         register(WaveletName.CMOR, new ComplexMorletWavelet(1.0, 1.0));  // Complex Morlet with default params
-        register(WaveletName.CGAU, new GaussianDerivativeWavelet(2));  // Gaussian derivative (2nd order for complex-like behavior)
+        register(WaveletName.CGAU, new ComplexGaussianWavelet(1, 1.0, 5.0));  // Complex Gaussian wavelet
     }
     
     private static void register(WaveletName name, Wavelet wavelet) {

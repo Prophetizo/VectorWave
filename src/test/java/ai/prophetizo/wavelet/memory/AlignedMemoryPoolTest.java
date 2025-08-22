@@ -224,7 +224,7 @@ class AlignedMemoryPoolTest {
                         
                         // Use
                         for (PooledArray array : arrays) {
-                            array.array()[array.offset()] = Thread.currentThread().threadId();
+                            array.array()[array.offset()] = Thread.currentThread().getId();
                         }
                         
                         // Release
