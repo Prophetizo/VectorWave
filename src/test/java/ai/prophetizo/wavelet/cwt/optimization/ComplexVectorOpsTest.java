@@ -825,7 +825,10 @@ class ComplexVectorOpsTest {
     @DisplayName("Test static assertion verification")
     void testStaticAssertion() {
         // This test verifies that the static assertion in ComplexVectorOps works
-        // If UNROLL_FACTOR is not 4, the class would fail to load
+        // This test verifies that the static assertion in ComplexVectorOps works.
+        // The static assertion in ComplexVectorOps requires UNROLL_FACTOR to be 4.
+        // If UNROLL_FACTOR is not 4, the class would fail to load and this test would fail.
+        // (Note: UNROLL_FACTOR is not visible in this test context, but its value is checked in the implementation.)
         assertDoesNotThrow(() -> {
             ComplexVectorOps testOps = new ComplexVectorOps();
             assertNotNull(testOps);
