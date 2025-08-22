@@ -73,9 +73,7 @@ final class GatherScatterOps {
      * </ul>
      */
     private static boolean checkGatherScatterSupport() {
-        // Java 17 compatibility: temporarily disable gather/scatter due to compress() method unavailability
-        return false;
-        /*
+        // Java 17 compatibility: enable gather/scatter with manual compress implementation
         try {
             // Check basic requirements
             if (DOUBLE_SPECIES.length() < 4) {
@@ -109,7 +107,6 @@ final class GatherScatterOps {
             // If any check fails, disable gather/scatter
             return false;
         }
-        */
     }
     
     /**
@@ -353,8 +350,16 @@ final class GatherScatterOps {
             // Only copy the valid compressed elements
             if (compressedLength > 0) {
                 double[] temp = new double[DOUBLE_LENGTH];
-                // compressed.intoArray(temp, 0); // Java 17 fallback needed
-                System.arraycopy(temp, 0, result, resultIdx, compressedLength);
+                values.intoArray(temp, 0);  // Extract all values from vector
+                
+                // Manually compress by selecting only masked values
+                int writeIdx = 0;
+                for (int j = 0; j < DOUBLE_LENGTH && writeIdx < compressedLength; j++) {
+                    if (maskChunk[j]) {
+                        result[resultIdx + writeIdx] = temp[j];
+                        writeIdx++;
+                    }
+                }
             }
             
             resultIdx += compressedLength;
@@ -622,8 +627,16 @@ final class GatherScatterOps {
             // Only copy the valid compressed elements
             if (compressedLength > 0) {
                 double[] temp = new double[DOUBLE_LENGTH];
-                // compressed.intoArray(temp, 0); // Java 17 fallback needed
-                System.arraycopy(temp, 0, result, resultIdx, compressedLength);
+                values.intoArray(temp, 0);  // Extract all values from vector
+                
+                // Manually compress by selecting only masked values
+                int writeIdx = 0;
+                for (int j = 0; j < DOUBLE_LENGTH && writeIdx < compressedLength; j++) {
+                    if (maskChunk[j]) {
+                        result[resultIdx + writeIdx] = temp[j];
+                        writeIdx++;
+                    }
+                }
             }
             
             resultIdx += compressedLength;
