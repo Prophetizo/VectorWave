@@ -392,7 +392,7 @@ public class MODWTTransform {
     
     /**
      * Record representing processing time estimation with confidence bounds.
-     * Uses Java 17+ record pattern for clean data structure.
+     * Uses Java 23 record pattern for clean data structure.
      */
     public record ProcessingEstimate(
         int signalLength,

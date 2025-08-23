@@ -73,7 +73,7 @@ final class GatherScatterOps {
      * </ul>
      */
     private static boolean checkGatherScatterSupport() {
-        // Java 17 compatibility: enable gather/scatter with manual compress implementation
+        // Java 23: enable gather/scatter with manual compress implementation
         try {
             // Check basic requirements
             if (DOUBLE_SPECIES.length() < 4) {
@@ -344,7 +344,7 @@ final class GatherScatterOps {
             DoubleVector values = DoubleVector.fromArray(DOUBLE_SPECIES, signal, i, vectorMask);
 
             // Compress values under mask
-            // DoubleVector compressed = values.compress(vectorMask); // Java 17 compatibility issue
+            // DoubleVector compressed = values.compress(vectorMask); // Manual compress implementation for consistency
             int compressedLength = vectorMask.trueCount();
             
             // Only copy the valid compressed elements
@@ -621,7 +621,7 @@ final class GatherScatterOps {
             DoubleVector values = DoubleVector.fromArray(DOUBLE_SPECIES, signal, i, vectorMask);
 
             // Compress values under mask
-            // DoubleVector compressed = values.compress(vectorMask); // Java 17 compatibility issue
+            // DoubleVector compressed = values.compress(vectorMask); // Manual compress implementation for consistency
             int compressedLength = vectorMask.trueCount();
             
             // Only copy the valid compressed elements
