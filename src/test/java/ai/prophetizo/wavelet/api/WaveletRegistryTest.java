@@ -172,11 +172,26 @@ class WaveletRegistryTest {
         List<WaveletName> coiflets = WaveletRegistry.getCoifletWavelets();
         
         assertNotNull(coiflets);
-        assertEquals(10, coiflets.size());
+        assertEquals(17, coiflets.size());
+        
+        // Test all 17 Coiflets are present
         assertTrue(coiflets.contains(WaveletName.COIF1));
+        assertTrue(coiflets.contains(WaveletName.COIF2));
+        assertTrue(coiflets.contains(WaveletName.COIF3));
+        assertTrue(coiflets.contains(WaveletName.COIF4));
         assertTrue(coiflets.contains(WaveletName.COIF5));
         assertTrue(coiflets.contains(WaveletName.COIF6));
+        assertTrue(coiflets.contains(WaveletName.COIF7));
+        assertTrue(coiflets.contains(WaveletName.COIF8));
+        assertTrue(coiflets.contains(WaveletName.COIF9));
         assertTrue(coiflets.contains(WaveletName.COIF10));
+        assertTrue(coiflets.contains(WaveletName.COIF11));
+        assertTrue(coiflets.contains(WaveletName.COIF12));
+        assertTrue(coiflets.contains(WaveletName.COIF13));
+        assertTrue(coiflets.contains(WaveletName.COIF14));
+        assertTrue(coiflets.contains(WaveletName.COIF15));
+        assertTrue(coiflets.contains(WaveletName.COIF16));
+        assertTrue(coiflets.contains(WaveletName.COIF17));
     }
     
     @Test

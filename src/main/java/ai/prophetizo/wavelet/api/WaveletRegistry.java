@@ -75,6 +75,13 @@ public final class WaveletRegistry {
         register(WaveletName.COIF8, Coiflet.COIF8);
         register(WaveletName.COIF9, Coiflet.COIF9);
         register(WaveletName.COIF10, Coiflet.COIF10);
+        register(WaveletName.COIF11, Coiflet.COIF11);
+        register(WaveletName.COIF12, Coiflet.COIF12);
+        register(WaveletName.COIF13, Coiflet.COIF13);
+        register(WaveletName.COIF14, Coiflet.COIF14);
+        register(WaveletName.COIF15, Coiflet.COIF15);
+        register(WaveletName.COIF16, Coiflet.COIF16);
+        register(WaveletName.COIF17, Coiflet.COIF17);
         
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
