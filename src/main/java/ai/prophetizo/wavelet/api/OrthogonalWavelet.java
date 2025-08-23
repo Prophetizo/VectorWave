@@ -10,7 +10,7 @@ package ai.prophetizo.wavelet.api;
  * <p>Examples include: Haar, Daubechies, Symlets, Coiflets</p>
  */
 public sealed interface OrthogonalWavelet extends DiscreteWavelet
-        permits Haar, Daubechies, Symlet, Coiflet {
+        permits Haar, Daubechies, Symlet, Coiflet, DiscreteMeyer {
 
     /**
      * For orthogonal wavelets, the low-pass reconstruction filter

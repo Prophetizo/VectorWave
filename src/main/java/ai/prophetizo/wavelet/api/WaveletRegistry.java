@@ -88,6 +88,9 @@ public final class WaveletRegistry {
         register(WaveletName.COIF16, Coiflet.COIF16);
         register(WaveletName.COIF17, Coiflet.COIF17);
         
+        // Discrete Meyer wavelet
+        register(WaveletName.DMEY, DiscreteMeyer.DMEY);
+        
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
         register(WaveletName.MEXICAN_HAT, new MATLABMexicanHat());  // MATLAB-compatible Mexican Hat
