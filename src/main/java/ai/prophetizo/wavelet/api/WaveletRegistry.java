@@ -56,9 +56,17 @@ public final class WaveletRegistry {
         register(WaveletName.SYM6, Symlet.SYM6);
         register(WaveletName.SYM7, Symlet.SYM7);
         register(WaveletName.SYM8, Symlet.SYM8);
+        register(WaveletName.SYM9, Symlet.SYM9);
         register(WaveletName.SYM10, Symlet.SYM10);
+        register(WaveletName.SYM11, Symlet.SYM11);
         register(WaveletName.SYM12, Symlet.SYM12);
+        register(WaveletName.SYM13, Symlet.SYM13);
+        register(WaveletName.SYM14, Symlet.SYM14);
         register(WaveletName.SYM15, Symlet.SYM15);
+        register(WaveletName.SYM16, Symlet.SYM16);
+        register(WaveletName.SYM17, Symlet.SYM17);
+        register(WaveletName.SYM18, Symlet.SYM18);
+        register(WaveletName.SYM19, Symlet.SYM19);
         register(WaveletName.SYM20, Symlet.SYM20);
         
         // Coiflet wavelets
