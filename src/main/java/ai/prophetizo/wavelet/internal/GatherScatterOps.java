@@ -73,6 +73,7 @@ final class GatherScatterOps {
      * </ul>
      */
     private static boolean checkGatherScatterSupport() {
+        // Java 23: enable gather/scatter with manual compress implementation
         try {
             // Check basic requirements
             if (DOUBLE_SPECIES.length() < 4) {
@@ -343,14 +344,22 @@ final class GatherScatterOps {
             DoubleVector values = DoubleVector.fromArray(DOUBLE_SPECIES, signal, i, vectorMask);
 
             // Compress values under mask
-            DoubleVector compressed = values.compress(vectorMask);
+            // DoubleVector compressed = values.compress(vectorMask); // Manual compress implementation for consistency
             int compressedLength = vectorMask.trueCount();
             
             // Only copy the valid compressed elements
             if (compressedLength > 0) {
                 double[] temp = new double[DOUBLE_LENGTH];
-                compressed.intoArray(temp, 0);
-                System.arraycopy(temp, 0, result, resultIdx, compressedLength);
+                values.intoArray(temp, 0);  // Extract all values from vector
+                
+                // Manually compress by selecting only masked values
+                int writeIdx = 0;
+                for (int j = 0; j < DOUBLE_LENGTH && writeIdx < compressedLength; j++) {
+                    if (maskChunk[j]) {
+                        result[resultIdx + writeIdx] = temp[j];
+                        writeIdx++;
+                    }
+                }
             }
             
             resultIdx += compressedLength;
@@ -612,14 +621,22 @@ final class GatherScatterOps {
             DoubleVector values = DoubleVector.fromArray(DOUBLE_SPECIES, signal, i, vectorMask);
 
             // Compress values under mask
-            DoubleVector compressed = values.compress(vectorMask);
+            // DoubleVector compressed = values.compress(vectorMask); // Manual compress implementation for consistency
             int compressedLength = vectorMask.trueCount();
             
             // Only copy the valid compressed elements
             if (compressedLength > 0) {
                 double[] temp = new double[DOUBLE_LENGTH];
-                compressed.intoArray(temp, 0);
-                System.arraycopy(temp, 0, result, resultIdx, compressedLength);
+                values.intoArray(temp, 0);  // Extract all values from vector
+                
+                // Manually compress by selecting only masked values
+                int writeIdx = 0;
+                for (int j = 0; j < DOUBLE_LENGTH && writeIdx < compressedLength; j++) {
+                    if (maskChunk[j]) {
+                        result[resultIdx + writeIdx] = temp[j];
+                        writeIdx++;
+                    }
+                }
             }
             
             resultIdx += compressedLength;

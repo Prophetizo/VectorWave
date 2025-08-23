@@ -64,7 +64,7 @@ public final class ScalarOps {
         } catch (ClassNotFoundException e) {
             // Vector API not available
             vectorEnabled = false;
-            failureReason = "Vector API classes not found (requires Java 17+ with jdk.incubator.vector module)";
+            failureReason = "Vector API classes not found (requires Java 23 with jdk.incubator.vector module)";
         } catch (NoClassDefFoundError e) {
             // Vector API runtime issue
             vectorEnabled = false;
@@ -923,7 +923,7 @@ public final class ScalarOps {
     
     /**
      * Record containing performance configuration information.
-     * Uses Java 17+ record pattern for clean data representation.
+     * Uses Java 23 record pattern for clean data representation.
      */
     public record PerformanceInfo(
         boolean vectorizationEnabled,
