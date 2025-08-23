@@ -305,16 +305,19 @@ public class AdditionalWaveletsTest {
         }
     }
     
-    // Helper method to compute inner product of two wavelets
+    // Helper method to compute inner product of two wavelets using Simpson's rule for efficiency
     private double computeInnerProduct(HermitianWavelet w1, HermitianWavelet w2) {
-        int n = (int)(2 * INTEGRATION_RANGE / INTEGRATION_STEP);
-        
-        double sum = 0.0;
-        for (int i = 0; i < n; i++) {
-            double t = -INTEGRATION_RANGE + i * INTEGRATION_STEP;
-            sum += w1.psi(t) * w2.psi(t) * INTEGRATION_STEP;
+        // Use a moderate number of intervals for fast test execution
+        int intervals = 100; // Must be even for Simpson's rule
+        double a = -INTEGRATION_RANGE;
+        double b = INTEGRATION_RANGE;
+        double h = (b - a) / intervals;
+        double sum = w1.psi(a) * w2.psi(a) + w1.psi(b) * w2.psi(b);
+        for (int i = 1; i < intervals; i++) {
+            double t = a + i * h;
+            double factor = (i % 2 == 0) ? 2.0 : 4.0;
+            sum += factor * w1.psi(t) * w2.psi(t);
         }
-        
-        return sum;
+        return sum * h / 3.0;
     }
 }
