@@ -1,12 +1,15 @@
 package ai.prophetizo.wavelet.modwt;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Coiflet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import ai.prophetizo.wavelet.exception.ErrorCode;
 import ai.prophetizo.wavelet.exception.ErrorContext;
 import ai.prophetizo.wavelet.WaveletOperations;
+import ai.prophetizo.wavelet.util.FFTConvolution;
+import ai.prophetizo.wavelet.util.FFTConvolution.ConvolutionMode;
 import ai.prophetizo.wavelet.util.MathUtils;
 import ai.prophetizo.wavelet.util.ValidationUtils;
 import ai.prophetizo.wavelet.performance.AdaptivePerformanceEstimator;
@@ -108,8 +111,12 @@ public class MODWTTransform {
      * that are the same length as the input signal, making the transform shift-invariant
      * and applicable to arbitrary length signals.</p>
      * 
-     * <p><strong>Performance:</strong> Automatically selects scalar or vectorized implementation
-     * based on signal size and system capabilities for optimal performance.</p>
+     * <p><strong>Performance:</strong> Automatically selects optimal implementation:</p>
+     * <ul>
+     *   <li>FFT-based convolution for large Coiflet filters (≥128 taps)</li>
+     *   <li>Vectorized SIMD implementation for medium filters</li>
+     *   <li>Scalar implementation for small filters or when SIMD unavailable</li>
+     * </ul>
      * 
      * @param signal The input signal of any length ≥ 1
      * @return A MODWTResult containing same-length approximation and detail coefficients
@@ -144,18 +151,28 @@ public class MODWTTransform {
         // Measure actual execution time for adaptive learning
         long startTime = System.nanoTime();
         
-        // Perform convolution without downsampling based on boundary mode
-        if (boundaryMode == BoundaryMode.PERIODIC) {
-            // WaveletOperations.circularConvolveMODWT internally delegates to vectorized
-            // implementation when beneficial, falling back to scalar otherwise
-            WaveletOperations.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-            WaveletOperations.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
-        } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
-            WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-            WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
-        } else { // SYMMETRIC
-            WaveletOperations.symmetricConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
-            WaveletOperations.symmetricConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+        // Check if we should use FFT convolution for large filters
+        boolean useFFT = shouldUseFFT();
+        
+        if (useFFT && boundaryMode == BoundaryMode.PERIODIC) {
+            // Use FFT-based convolution for large filters with periodic boundaries
+            approximationCoeffs = FFTConvolution.convolve(signal, scaledLowPass, ConvolutionMode.SAME);
+            detailCoeffs = FFTConvolution.convolve(signal, scaledHighPass, ConvolutionMode.SAME);
+        } else {
+            // Use standard convolution (with automatic SIMD optimization)
+            // Perform convolution without downsampling based on boundary mode
+            if (boundaryMode == BoundaryMode.PERIODIC) {
+                // WaveletOperations.circularConvolveMODWT internally delegates to vectorized
+                // implementation when beneficial, falling back to scalar otherwise
+                WaveletOperations.circularConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+                WaveletOperations.circularConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+            } else if (boundaryMode == BoundaryMode.ZERO_PADDING) {
+                WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+                WaveletOperations.zeroPaddingConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+            } else { // SYMMETRIC
+                WaveletOperations.symmetricConvolveMODWT(signal, scaledLowPass, approximationCoeffs);
+                WaveletOperations.symmetricConvolveMODWT(signal, scaledHighPass, detailCoeffs);
+            }
         }
         
         long endTime = System.nanoTime();
@@ -170,6 +187,22 @@ public class MODWTTransform {
         }
         
         return MODWTResult.create(approximationCoeffs, detailCoeffs);
+    }
+    
+    /**
+     * Determines whether to use FFT-based convolution based on filter size.
+     * Large Coiflet filters benefit from FFT convolution.
+     * 
+     * @return true if FFT convolution should be used
+     */
+    private boolean shouldUseFFT() {
+        // Check if wavelet is a Coiflet with large filter size
+        if (wavelet instanceof Coiflet coiflet) {
+            return coiflet.shouldUseFFTConvolution();
+        }
+        
+        // For other wavelets, use FFT if filter is very large
+        return wavelet.lowPassDecomposition().length >= 128;
     }
     
     /**
