@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
 import ai.prophetizo.wavelet.cwt.FrequencyBSplineWavelet;
-import ai.prophetizo.wavelet.cwt.ShannonWavelet;
+import ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet;
 import ai.prophetizo.wavelet.cwt.finance.ShannonGaborWavelet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ class Issue196FixTest {
             "SHANNON and FBSP should not both use ShannonGaborWavelet");
         
         // Verify correct types
-        assertTrue(shannon instanceof ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet, 
+        assertTrue(shannon instanceof ClassicalShannonWavelet, 
             "SHANNON should use ClassicalShannonWavelet implementation");
         assertTrue(fbsp instanceof FrequencyBSplineWavelet,
             "FBSP should use FrequencyBSplineWavelet implementation");

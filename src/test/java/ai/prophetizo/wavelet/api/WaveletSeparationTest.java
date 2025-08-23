@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
 import ai.prophetizo.wavelet.cwt.FrequencyBSplineWavelet;
-import ai.prophetizo.wavelet.cwt.ShannonWavelet;
+import ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,8 +22,8 @@ class WaveletSeparationTest {
         // Should be different classes
         assertNotEquals(shannon.getClass(), fbsp.getClass());
         
-        // Shannon should be ShannonWavelet
-        assertTrue(shannon instanceof ShannonWavelet);
+        // Shannon should be ClassicalShannonWavelet
+        assertTrue(shannon instanceof ClassicalShannonWavelet);
         
         // FBSP should be FrequencyBSplineWavelet  
         assertTrue(fbsp instanceof FrequencyBSplineWavelet);
@@ -87,10 +87,10 @@ class WaveletSeparationTest {
     @Test
     @DisplayName("Shannon sinc property at zero")
     void testShannonSincProperty() {
-        ShannonWavelet shannon = new ShannonWavelet(1.0, 1.0);
+        ClassicalShannonWavelet shannon = new ClassicalShannonWavelet();
         
-        // At t=0, Shannon should equal sqrt(fb) * cos(0) = sqrt(fb)
-        assertEquals(Math.sqrt(1.0), shannon.psi(0), 1e-10);
+        // At t=0, Classical Shannon should equal 1.0 (2*sinc(0) - sinc(0) = 2*1 - 1 = 1)
+        assertEquals(1.0, shannon.psi(0), 1e-10);
     }
     
     @Test 
