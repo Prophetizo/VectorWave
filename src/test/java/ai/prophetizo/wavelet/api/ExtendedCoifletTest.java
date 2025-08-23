@@ -155,11 +155,12 @@ class ExtendedCoifletTest {
     }
     
     @Test
-    @DisplayName("Compare approximation power: COIF6 vs DB18")
+    @DisplayName("Compare approximation power: COIF3 vs DB10")
     void testApproximationPower() {
-        // Both have same filter length (36), but Coiflet should approximate better
-        Coiflet coif6 = Coiflet.COIF6;
-        Wavelet db18 = WaveletRegistry.getWavelet(WaveletName.DB10); // We don't have DB18 yet
+        // COIF3 has 18 coefficients, DB10 has 20 coefficients (similar lengths)
+        // Coiflet should approximate polynomials better due to vanishing moments
+        Coiflet coif3 = Coiflet.COIF3;
+        Wavelet db10 = WaveletRegistry.getWavelet(WaveletName.DB10);
         
         // Create smooth polynomial signal
         double[] signal = new double[256];
@@ -169,8 +170,8 @@ class ExtendedCoifletTest {
         }
         
         // Transform with both wavelets
-        MODWTTransform coifTransform = new MODWTTransform(coif6, BoundaryMode.PERIODIC);
-        MODWTTransform dbTransform = new MODWTTransform(db18, BoundaryMode.PERIODIC);
+        MODWTTransform coifTransform = new MODWTTransform(coif3, BoundaryMode.PERIODIC);
+        MODWTTransform dbTransform = new MODWTTransform(db10, BoundaryMode.PERIODIC);
         
         MODWTResult coifResult = coifTransform.forward(signal);
         MODWTResult dbResult = dbTransform.forward(signal);
@@ -181,7 +182,7 @@ class ExtendedCoifletTest {
         
         // Coiflet should have less detail energy for smooth signals
         assertTrue(coifDetailEnergy <= dbDetailEnergy * 1.1, // Allow 10% margin
-            String.format("COIF6 should approximate smooth signals better than DB: %.4f vs %.4f",
+            String.format("COIF3 should approximate smooth signals better than DB10: %.4f vs %.4f",
                 coifDetailEnergy, dbDetailEnergy));
     }
     
