@@ -3,6 +3,7 @@ package ai.prophetizo.wavelet.cwt;
 import ai.prophetizo.wavelet.api.ContinuousWavelet;
 import ai.prophetizo.wavelet.api.WaveletRegistry;
 import ai.prophetizo.wavelet.api.WaveletName;
+import ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,20 +22,20 @@ class ShannonVsFBSPMathematicalComparisonTest {
     private static final double TOLERANCE = 1e-10;
     private static final double COMPARISON_TOLERANCE = 1e-3;
     
-    private ShannonWavelet shannon;
+    private ClassicalShannonWavelet shannon;
     private FrequencyBSplineWavelet fbsp;
     
     @BeforeEach
     void setUp() {
         // Get wavelets from registry to ensure we're testing the actual registered instances
-        shannon = (ShannonWavelet) WaveletRegistry.getWavelet(WaveletName.SHANNON);
+        shannon = (ClassicalShannonWavelet) WaveletRegistry.getWavelet(WaveletName.SHANNON);
         fbsp = (FrequencyBSplineWavelet) WaveletRegistry.getWavelet(WaveletName.FBSP);
     }
     
     @Test
     @DisplayName("Shannon and FBSP should have fundamentally different mathematical definitions")
     void testFundamentalMathematicalDifferences() {
-        // Shannon: ψ(t) = √fb * sinc(fb*t) * cos(2π*fc*t) [REAL]
+        // Shannon: ψ(t) = 2*sinc(2t) - sinc(t) [REAL] (Classical Shannon)
         // FBSP: ψ̂(ω) = √fb * [sinc(fb*ω/(2m))]^m * exp(i*fc*ω) [COMPLEX]
         
         // 1. Complex vs Real nature
@@ -52,7 +53,7 @@ class ShannonVsFBSPMathematicalComparisonTest {
         assertTrue(Double.isFinite(fbspRealAt0), "FBSP real part at t=0 should be finite");
         assertTrue(Double.isFinite(fbspImagAt0), "FBSP imaginary part at t=0 should be finite");
         
-        // Shannon at t=0: √fb * sinc(0) * cos(0) = √1.0 * 1 * 1 = 1.0
+        // Shannon at t=0: 2*sinc(0) - sinc(0) = 2*1 - 1 = 1.0
         assertEquals(1.0, shannonAt0, TOLERANCE, "Shannon at t=0 should be 1.0");
         
         // FBSP has different value due to different mathematical definition
@@ -66,8 +67,8 @@ class ShannonVsFBSPMathematicalComparisonTest {
         // Shannon has rectangular frequency response (perfect band-pass)
         // FBSP has smooth B-spline shaped frequency response
         
-        assertEquals(1.5, shannon.centerFrequency(), TOLERANCE);
-        assertEquals(1.0, shannon.bandwidth(), TOLERANCE);
+        assertEquals(0.375, shannon.centerFrequency(), TOLERANCE);
+        assertEquals(0.25, shannon.bandwidth(), TOLERANCE);
         
         assertEquals(1.0, fbsp.centerFrequency(), TOLERANCE);
         assertEquals(1.0, fbsp.bandwidth(), TOLERANCE);
@@ -176,15 +177,15 @@ class ShannonVsFBSPMathematicalComparisonTest {
     void testDistinctMathematicalFormulas() {
         // This test verifies the actual mathematical formulas are different
         
-        // Shannon mathematical definition test
+        // Shannon mathematical definition test: ψ(t) = 2*sinc(2t) - sinc(t)
         double t = 1.0;
-        double fb_shannon = shannon.getBandwidthParameter();
-        double fc_shannon = shannon.getCenterFrequencyParameter();
         
-        // Manual calculation of Shannon: √fb * sinc(fb*t) * cos(2π*fc*t)
-        double sinc = (Math.abs(fb_shannon * t) < 1e-10) ? 1.0 : 
-                      Math.sin(Math.PI * fb_shannon * t) / (Math.PI * fb_shannon * t);
-        double expectedShannon = Math.sqrt(fb_shannon) * sinc * Math.cos(2 * Math.PI * fc_shannon * t);
+        // Manual calculation of Classical Shannon: 2*sinc(2t) - sinc(t)
+        double sinc2t = (Math.abs(2 * t) < 1e-10) ? 1.0 : 
+                       Math.sin(Math.PI * 2 * t) / (Math.PI * 2 * t);
+        double sinc_t = (Math.abs(t) < 1e-10) ? 1.0 : 
+                       Math.sin(Math.PI * t) / (Math.PI * t);
+        double expectedShannon = 2.0 * sinc2t - sinc_t;
         double actualShannon = shannon.psi(t);
         
         assertEquals(expectedShannon, actualShannon, TOLERANCE,
@@ -231,11 +232,13 @@ class ShannonVsFBSPMathematicalComparisonTest {
     @Test
     @DisplayName("Should verify mathematical consistency with registry configuration")
     void testRegistryConfigurationConsistency() {
-        // Verify that the registry configuration matches expected mathematical parameters
+        // Verify that the registry configuration uses the correct wavelet types
         
-        // Shannon registry configuration: new ShannonWavelet(1.0, 1.5)
-        assertEquals(1.0, shannon.getBandwidthParameter(), TOLERANCE);
-        assertEquals(1.5, shannon.getCenterFrequencyParameter(), TOLERANCE);
+        // Shannon registry configuration: ClassicalShannonWavelet()
+        assertEquals(0.375, shannon.centerFrequency(), TOLERANCE, 
+            "Shannon center frequency should be 3π/4 / 2π = 0.375");
+        assertEquals(0.25, shannon.bandwidth(), TOLERANCE,
+            "Shannon bandwidth should be π/2 / 2π = 0.25");
         
         // FBSP registry configuration: new FrequencyBSplineWavelet(2, 1.0, 1.0)
         assertEquals(2, fbsp.getOrder());

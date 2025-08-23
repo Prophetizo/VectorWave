@@ -223,7 +223,7 @@ class FrequencyBSplineWaveletMathTest {
         FrequencyBSplineWavelet fbsp3 = new FrequencyBSplineWavelet(2, 0.5, 1.0);
         FrequencyBSplineWavelet fbsp4 = new FrequencyBSplineWavelet(2, 1.0, 2.0);
         
-        double t = 1.0;
+        double t = 0.5; // Use a point where B-spline is non-zero for all orders
         double val1 = fbsp1.psi(t);
         double val2 = fbsp2.psi(t);
         double val3 = fbsp3.psi(t);

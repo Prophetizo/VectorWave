@@ -13,6 +13,9 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  * 
  * where m is the B-spline order.
  * 
+ * For the time domain, we use a closed-form approximation based on 
+ * the mathematical properties of B-splines and frequency modulation.
+ * 
  * Properties:
  * - Smooth frequency response (B-spline shaped)
  * - Better time-frequency trade-off than Shannon
@@ -66,33 +69,28 @@ public final class FrequencyBSplineWavelet implements ComplexContinuousWavelet {
     
     @Override
     public double psi(double t) {
-        // Real part - computed using approximation of inverse Fourier transform
-        return computeRealPart(t);
+        // Real part - using mathematical approximation based on B-spline properties
+        return computeTimeDomainReal(t);
     }
     
     @Override
     public double psiImaginary(double t) {
-        // Imaginary part
-        return computeImaginaryPart(t);
+        // Imaginary part - using mathematical approximation
+        return computeTimeDomainImaginary(t);
     }
     
     /**
-     * FBSP in frequency domain (easier to define).
+     * FBSP in frequency domain.
      * Returns complex value as [real, imaginary] array.
      */
     public double[] psiHat(double omega) {
-        if (Math.abs(omega) < 1e-10) {
-            // At ω=0, sinc(0) = 1, so we get √fb
-            // Note: This creates a non-zero DC component that affects admissibility
-            return new double[]{Math.sqrt(fb), 0.0};
-        }
-        
         // B-spline in frequency: [sinc(fb*ω/(2m))]^m
         double arg = fb * omega / (2 * m);
-        double sinc = Math.sin(Math.PI * arg) / (Math.PI * arg);
+        double sinc = (Math.abs(arg) < 1e-10) ? 1.0 : 
+                      Math.sin(Math.PI * arg) / (Math.PI * arg);
         double magnitude = Math.sqrt(fb) * Math.pow(Math.abs(sinc), m);
         
-        // Phase modulation
+        // Phase modulation: exp(i*fc*ω)
         double phase = fc * omega;
         
         return new double[]{
@@ -101,43 +99,80 @@ public final class FrequencyBSplineWavelet implements ComplexContinuousWavelet {
         };
     }
     
-    private double computeRealPart(double t) {
-        // Numerical inverse Fourier transform with improved accuracy
-        double sum = 0;
-        double dcComponent = 0; // Track DC for zero mean correction
-        int N = 1000; // Increased for better accuracy
-        double wMax = 20.0; // Expanded frequency range
-        double dw = 2 * wMax / N;
+    /**
+     * Compute time domain real part using mathematical approximation.
+     * 
+     * For FBSP, we use the fact that the time domain can be approximated as:
+     * ψ(t) ≈ √fb * B_m(fb*t) * cos(2π*fc*t - π/4)
+     * 
+     * where B_m is a normalized B-spline function of order m.
+     */
+    private double computeTimeDomainReal(double t) {
+        // B-spline approximation in time domain
+        double scaledT = fb * t;
+        double bspline = computeBSpline(scaledT, m);
         
-        for (int k = 0; k < N; k++) {
-            double w = -wMax + k * dw;
-            double[] psiW = psiHat(w);
-            
-            if (Math.abs(w) < 1e-10) {
-                dcComponent = psiW[0] / (2 * Math.PI); // DC contribution
-            }
-            
-            sum += psiW[0] * Math.cos(w * t) - psiW[1] * Math.sin(w * t);
-        }
+        // Frequency modulation with phase shift
+        double phase = 2 * Math.PI * fc * t - Math.PI / 4;
         
-        // Subtract DC component for zero mean (admissibility)
-        return sum * dw / (2 * Math.PI) - dcComponent;
+        return Math.sqrt(fb) * bspline * Math.cos(phase);
     }
     
-    private double computeImaginaryPart(double t) {
-        // Improved numerical computation for imaginary part
-        double sum = 0;
-        int N = 1000; // Increased for consistency 
-        double wMax = 20.0; // Expanded frequency range
-        double dw = 2 * wMax / N;
+    /**
+     * Compute time domain imaginary part using mathematical approximation.
+     */
+    private double computeTimeDomainImaginary(double t) {
+        // B-spline approximation in time domain
+        double scaledT = fb * t;
+        double bspline = computeBSpline(scaledT, m);
         
-        for (int k = 0; k < N; k++) {
-            double w = -wMax + k * dw;
-            double[] psiW = psiHat(w);
-            sum += psiW[0] * Math.sin(w * t) + psiW[1] * Math.cos(w * t);
+        // Frequency modulation with phase shift
+        double phase = 2 * Math.PI * fc * t - Math.PI / 4;
+        
+        return Math.sqrt(fb) * bspline * Math.sin(phase);
+    }
+    
+    /**
+     * Compute normalized B-spline function of order m.
+     * This provides a good approximation to the time domain behavior.
+     */
+    private double computeBSpline(double t, int order) {
+        // B-spline of order m has support in [-m/2, m/2]
+        double support = order / 2.0;
+        if (Math.abs(t) > support) {
+            return 0.0;
         }
         
-        return sum * dw / (2 * Math.PI);
+        // Approximate B-spline using recursive formula
+        // For efficiency, we use closed-form approximations for common orders
+        switch (order) {
+            case 1:
+                // Box function
+                return Math.abs(t) < 0.5 ? 1.0 : 0.0;
+            
+            case 2:
+                // Hat function (linear B-spline)
+                double absT = Math.abs(t);
+                return absT < 1.0 ? (1.0 - absT) : 0.0;
+            
+            case 3:
+                // Quadratic B-spline
+                absT = Math.abs(t);
+                if (absT <= 0.5) {
+                    return 0.75 - absT * absT;
+                } else if (absT < 1.5) {
+                    double temp = 1.5 - absT;
+                    return 0.5 * temp * temp;
+                } else {
+                    return 0.0;
+                }
+            
+            default:
+                // General approximation using Gaussian-like function for higher orders
+                // This approximates higher-order B-splines and has infinite support
+                double sigma = order / 4.0; // Empirical scaling
+                return Math.exp(-t * t / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
+        }
     }
     
     @Override

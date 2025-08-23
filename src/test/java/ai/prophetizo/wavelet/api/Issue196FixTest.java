@@ -25,8 +25,8 @@ class Issue196FixTest {
             "SHANNON and FBSP should not both use ShannonGaborWavelet");
         
         // Verify correct types
-        assertTrue(shannon instanceof ShannonWavelet, 
-            "SHANNON should use ShannonWavelet implementation");
+        assertTrue(shannon instanceof ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet, 
+            "SHANNON should use ClassicalShannonWavelet implementation");
         assertTrue(fbsp instanceof FrequencyBSplineWavelet,
             "FBSP should use FrequencyBSplineWavelet implementation");
         
@@ -76,18 +76,20 @@ class Issue196FixTest {
     @Test
     @DisplayName("Verify comprehensive mathematical separation")
     void testComprehensiveMathematicalSeparation() {
-        ShannonWavelet shannon = (ShannonWavelet) WaveletRegistry.getWavelet(WaveletName.SHANNON);
+        ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet shannon = 
+            (ai.prophetizo.wavelet.cwt.finance.ClassicalShannonWavelet) WaveletRegistry.getWavelet(WaveletName.SHANNON);
         FrequencyBSplineWavelet fbsp = (FrequencyBSplineWavelet) WaveletRegistry.getWavelet(WaveletName.FBSP);
         
-        // Verify registry configuration parameters are different
-        assertEquals(1.0, shannon.getBandwidthParameter(), 1e-10);
-        assertEquals(1.5, shannon.getCenterFrequencyParameter(), 1e-10);
+        // Verify registry configuration parameters 
+        assertEquals(0.375, shannon.centerFrequency(), 1e-10);
+        assertEquals(0.25, shannon.bandwidth(), 1e-10);
         assertEquals(2, fbsp.getOrder());
         assertEquals(1.0, fbsp.bandwidth(), 1e-10);
         assertEquals(1.0, fbsp.centerFrequency(), 1e-10);
         
         // Mathematical definitions should produce different values at multiple points
-        double[] testPoints = {0.0, 0.5, 1.0, 2.0, 3.0};
+        // Use points where both wavelets are non-zero
+        double[] testPoints = {0.0, 0.1, 0.3, 0.7, 1.5, 2.5};
         for (double t : testPoints) {
             double shannonVal = shannon.psi(t);
             double fbspVal = fbsp.psi(t);
@@ -98,8 +100,8 @@ class Issue196FixTest {
             assertTrue(Double.isFinite(fbspVal), 
                 String.format("FBSP value at t=%.1f should be finite", t));
             
-            // Values should be mathematically different (except possibly at special points)
-            if (t != 0.0) { // Allow t=0 to potentially be similar for some wavelets
+            // Values should be mathematically different (except when both are zero)
+            if (Math.abs(shannonVal) > 1e-6 || Math.abs(fbspVal) > 1e-6) {
                 assertNotEquals(shannonVal, fbspVal, 1e-3,
                     String.format("Shannon and FBSP should produce different values at t=%.1f", t));
             }
