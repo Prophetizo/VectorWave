@@ -318,6 +318,118 @@ class CoifletMathematicalVerificationTest {
         }
     }
 
+    @Test
+    @DisplayName("Verify COIF11-COIF17 specific properties")
+    void testHighOrderCoifletProperties() {
+        // Test that higher order Coiflets have very small boundary coefficients
+        Coiflet coif11 = Coiflet.COIF11;
+        Coiflet coif12 = Coiflet.COIF12;
+        Coiflet coif13 = Coiflet.COIF13;
+        Coiflet coif14 = Coiflet.COIF14;
+        Coiflet coif15 = Coiflet.COIF15;
+        Coiflet coif16 = Coiflet.COIF16;
+        Coiflet coif17 = Coiflet.COIF17;
+        
+        // Verify specific coefficient counts
+        assertEquals(66, coif11.lowPassDecomposition().length, "COIF11 should have 66 coefficients");
+        assertEquals(72, coif12.lowPassDecomposition().length, "COIF12 should have 72 coefficients");
+        assertEquals(78, coif13.lowPassDecomposition().length, "COIF13 should have 78 coefficients");
+        assertEquals(84, coif14.lowPassDecomposition().length, "COIF14 should have 84 coefficients");
+        assertEquals(90, coif15.lowPassDecomposition().length, "COIF15 should have 90 coefficients");
+        assertEquals(96, coif16.lowPassDecomposition().length, "COIF16 should have 96 coefficients");
+        assertEquals(102, coif17.lowPassDecomposition().length, "COIF17 should have 102 coefficients");
+        
+        // Verify vanishing moments
+        assertEquals(22, coif11.vanishingMoments(), "COIF11 should have 22 vanishing moments");
+        assertEquals(24, coif12.vanishingMoments(), "COIF12 should have 24 vanishing moments");
+        assertEquals(26, coif13.vanishingMoments(), "COIF13 should have 26 vanishing moments");
+        assertEquals(28, coif14.vanishingMoments(), "COIF14 should have 28 vanishing moments");
+        assertEquals(30, coif15.vanishingMoments(), "COIF15 should have 30 vanishing moments");
+        assertEquals(32, coif16.vanishingMoments(), "COIF16 should have 32 vanishing moments");
+        assertEquals(34, coif17.vanishingMoments(), "COIF17 should have 34 vanishing moments");
+        
+        // Verify first coefficients are extremely small (characteristic of high-order Coiflets)
+        assertTrue(Math.abs(coif11.lowPassDecomposition()[0]) < 1e-14, 
+            "COIF11 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif12.lowPassDecomposition()[0]) < 1e-15, 
+            "COIF12 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif13.lowPassDecomposition()[0]) < 1e-16, 
+            "COIF13 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif14.lowPassDecomposition()[0]) < 1e-17, 
+            "COIF14 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif15.lowPassDecomposition()[0]) < 1e-18, 
+            "COIF15 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif16.lowPassDecomposition()[0]) < 1e-19, 
+            "COIF16 first coefficient should be extremely small");
+        assertTrue(Math.abs(coif17.lowPassDecomposition()[0]) < 1e-20, 
+            "COIF17 first coefficient should be extremely small");
+    }
+
+    @Test
+    @DisplayName("Verify COIF11-COIF17 mathematical validity")
+    void testHighOrderCoifletMathematicalValidity() {
+        for (int order = 11; order <= 17; order++) {
+            Coiflet coif = Coiflet.get(order);
+            double[] coeffs = coif.lowPassDecomposition();
+            
+            // Verify sum equals sqrt(2)
+            double sum = 0;
+            for (double c : coeffs) {
+                sum += c;
+            }
+            assertEquals(Math.sqrt(2), sum, 1e-10,
+                String.format("COIF%d coefficients should sum to sqrt(2)", order));
+            
+            // Verify sum of squares equals 1
+            double sumSquares = 0;
+            for (double c : coeffs) {
+                sumSquares += c * c;
+            }
+            assertEquals(1.0, sumSquares, 1e-10,
+                String.format("COIF%d sum of squares should equal 1", order));
+            
+            // Verify orthogonality
+            for (int k = 1; k < order; k++) {
+                double dot = 0;
+                for (int n = 0; n < coeffs.length - 2*k; n++) {
+                    dot += coeffs[n] * coeffs[n + 2*k];
+                }
+                assertEquals(0.0, dot, 1e-10,
+                    String.format("COIF%d orthogonality must be satisfied for k=%d", order, k));
+            }
+            
+            // Verify verifyCoefficients() method works
+            assertTrue(coif.verifyCoefficients(),
+                String.format("COIF%d.verifyCoefficients() should return true", order));
+        }
+    }
+
+    @Test
+    @DisplayName("Verify COIF17 has maximum precision")
+    void testCOIF17MaximumPrecision() {
+        Coiflet coif17 = Coiflet.COIF17;
+        double[] coeffs = coif17.lowPassDecomposition();
+        
+        // COIF17 is the maximum order in PyWavelets
+        assertEquals(102, coeffs.length, "COIF17 should have 102 coefficients (maximum)");
+        
+        // Verify the first coefficient matches PyWavelets value
+        assertEquals(-1.4925731767051474E-22, coeffs[0], 0.0,
+            "COIF17 first coefficient should match PyWavelets exactly");
+        
+        // Verify the last coefficient
+        assertEquals(-9.1930449016478320E-12, coeffs[coeffs.length - 1], 0.0,
+            "COIF17 last coefficient should match PyWavelets exactly");
+        
+        // Verify some middle coefficients for accuracy (largest magnitude coefficients)
+        assertEquals(4.4823872485149524E-01, coeffs[66], 1e-15,
+            "COIF17 coefficient 66 should match expected value");
+        assertEquals(7.4328122144113895E-01, coeffs[67], 1e-15,
+            "COIF17 coefficient 67 should match expected value");
+        assertEquals(4.3998382065204200E-01, coeffs[68], 1e-15,
+            "COIF17 coefficient 68 should match expected value");
+    }
+
     /**
      * Helper class to hold test case data for parameterized tests.
      */
