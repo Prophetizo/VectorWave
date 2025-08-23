@@ -117,12 +117,12 @@ class WaveletRegistryTest {
         List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
         
         assertNotNull(daubechies);
-        // Now includes extended Daubechies wavelets in enum (even if not implemented)
+        // Now includes extended Daubechies wavelets up to PyWavelets maximum
         // Original: DB2, DB4, DB6, DB8, DB10 (5)
         // First Extended: DB12, DB14, DB16, DB18, DB20 (5)
-        // Advanced Extended: DB22, DB24, DB26, DB28, DB30, DB32, DB34, DB36, DB38, DB40, DB42, DB44, DB45 (13)
-        // Total: 23 wavelets
-        assertEquals(23, daubechies.size());
+        // Advanced Extended: DB22, DB24, DB26, DB28, DB30, DB32, DB34, DB36, DB38 (9)
+        // Total: 19 wavelets
+        assertEquals(19, daubechies.size());
         
         // Original Daubechies wavelets
         assertTrue(daubechies.contains(WaveletName.DB2));
@@ -131,14 +131,14 @@ class WaveletRegistryTest {
         assertTrue(daubechies.contains(WaveletName.DB8));
         assertTrue(daubechies.contains(WaveletName.DB10));
         
-        // First Extended Set (in enum but not yet implemented)
+        // First Extended Set (implemented via DaubechiesGenerator)
         assertTrue(daubechies.contains(WaveletName.DB12));
         assertTrue(daubechies.contains(WaveletName.DB14));
         assertTrue(daubechies.contains(WaveletName.DB16));
         assertTrue(daubechies.contains(WaveletName.DB18));
         assertTrue(daubechies.contains(WaveletName.DB20));
         
-        // Advanced Extended Set (in enum but not yet implemented)
+        // Advanced Extended Set (implemented via DaubechiesGenerator with PyWavelets coefficients)
         assertTrue(daubechies.contains(WaveletName.DB22));
         assertTrue(daubechies.contains(WaveletName.DB24));
         assertTrue(daubechies.contains(WaveletName.DB26));
@@ -147,11 +147,7 @@ class WaveletRegistryTest {
         assertTrue(daubechies.contains(WaveletName.DB32));
         assertTrue(daubechies.contains(WaveletName.DB34));
         assertTrue(daubechies.contains(WaveletName.DB36));
-        assertTrue(daubechies.contains(WaveletName.DB38));
-        assertTrue(daubechies.contains(WaveletName.DB40));
-        assertTrue(daubechies.contains(WaveletName.DB42));
-        assertTrue(daubechies.contains(WaveletName.DB44));
-        assertTrue(daubechies.contains(WaveletName.DB45));
+        assertTrue(daubechies.contains(WaveletName.DB38)); // PyWavelets maximum
     }
     
     @Test

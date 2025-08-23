@@ -36,7 +36,7 @@ public final class WaveletRegistry {
         register(WaveletName.DB18, Daubechies.DB18);
         register(WaveletName.DB20, Daubechies.DB20);
         
-        // Advanced Extended Daubechies wavelets (DB22-DB45)
+        // Advanced Extended Daubechies wavelets (DB22-DB38)
         register(WaveletName.DB22, Daubechies.DB22);
         register(WaveletName.DB24, Daubechies.DB24);
         register(WaveletName.DB26, Daubechies.DB26);
@@ -46,10 +46,7 @@ public final class WaveletRegistry {
         register(WaveletName.DB34, Daubechies.DB34);
         register(WaveletName.DB36, Daubechies.DB36);
         register(WaveletName.DB38, Daubechies.DB38);
-        register(WaveletName.DB40, Daubechies.DB40);
-        register(WaveletName.DB42, Daubechies.DB42);
-        register(WaveletName.DB44, Daubechies.DB44);
-        register(WaveletName.DB45, Daubechies.DB45);
+        // DB38 is the maximum supported (PyWavelets limit)
         
         // Symlet wavelets
         register(WaveletName.SYM2, Symlet.SYM2);

@@ -117,10 +117,19 @@ class DaubechiesGeneratorTest {
     @Test
     @DisplayName("Generate coefficients for unimplemented orders")
     void testUnimplementedOrders() {
-        // Test an unimplemented order (DB26 is not yet fully implemented)
+        // Test an unimplemented order (beyond DB38 which is the maximum)
         assertThrows(IllegalArgumentException.class,
-            () -> DaubechiesGenerator.generateCoefficients(26),
+            () -> DaubechiesGenerator.generateCoefficients(40),
             "Should throw exception for unimplemented order");
+            
+        // Test invalid orders
+        assertThrows(IllegalArgumentException.class,
+            () -> DaubechiesGenerator.generateCoefficients(0),
+            "Should throw exception for invalid order 0");
+            
+        assertThrows(IllegalArgumentException.class,
+            () -> DaubechiesGenerator.generateCoefficients(50),
+            "Should throw exception for unsupported high order");
     }
     
     @Test

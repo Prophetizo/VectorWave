@@ -22,7 +22,7 @@ public enum WaveletName {
     DB18("db18", "Daubechies 18", WaveletType.ORTHOGONAL),
     DB20("db20", "Daubechies 20", WaveletType.ORTHOGONAL),
     
-    // Advanced Extended Daubechies wavelets (DB22-DB45)
+    // Advanced Extended Daubechies wavelets (DB22-DB38)
     // DB22-DB30 set
     DB22("db22", "Daubechies 22", WaveletType.ORTHOGONAL),
     DB24("db24", "Daubechies 24", WaveletType.ORTHOGONAL),
@@ -30,17 +30,11 @@ public enum WaveletName {
     DB28("db28", "Daubechies 28", WaveletType.ORTHOGONAL),
     DB30("db30", "Daubechies 30", WaveletType.ORTHOGONAL),
     
-    // DB32-DB38 set (PyWavelets maximum)
+    // DB32-DB38 set
     DB32("db32", "Daubechies 32", WaveletType.ORTHOGONAL),
     DB34("db34", "Daubechies 34", WaveletType.ORTHOGONAL),
     DB36("db36", "Daubechies 36", WaveletType.ORTHOGONAL),
-    DB38("db38", "Daubechies 38", WaveletType.ORTHOGONAL),
-    
-    // DB40-DB45 set (MATLAB maximum)
-    DB40("db40", "Daubechies 40", WaveletType.ORTHOGONAL),
-    DB42("db42", "Daubechies 42", WaveletType.ORTHOGONAL),
-    DB44("db44", "Daubechies 44", WaveletType.ORTHOGONAL),
-    DB45("db45", "Daubechies 45", WaveletType.ORTHOGONAL),
+    DB38("db38", "Daubechies 38", WaveletType.ORTHOGONAL), // PyWavelets maximum
     
     // Symlet wavelets
     SYM2("sym2", "Symlet 2", WaveletType.ORTHOGONAL),

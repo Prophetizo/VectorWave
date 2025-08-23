@@ -16,7 +16,7 @@ package ai.prophetizo.wavelet.api;
  * </ul>
  * </p>
  *
- * <p>Common variants: DB2, DB3, DB4, ..., DB10</p>
+ * <p>Implemented variants: DB2-DB38 (38 is the maximum supported order)</p>
  *
  * <h3>Mathematical Foundation:</h3>
  * <p>Daubechies wavelets were developed by Ingrid Daubechies in 1988. They are
@@ -209,7 +209,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
         20
     );
 
-    // Advanced Extended Set (DB22-DB45)
+    // Advanced Extended Set (DB22-DB38 - PyWavelets maximum)
     
     /**
      * Daubechies 22 (DB22) coefficients.
@@ -237,7 +237,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB26 = new Daubechies(
         "db26",
-        generatePlaceholderCoefficients(52),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(26),
         26
     );
 
@@ -247,7 +247,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB28 = new Daubechies(
         "db28",
-        generatePlaceholderCoefficients(56),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(28),
         28
     );
 
@@ -257,7 +257,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB30 = new Daubechies(
         "db30",
-        generatePlaceholderCoefficients(60),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(30),
         30
     );
 
@@ -267,7 +267,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB32 = new Daubechies(
         "db32",
-        generatePlaceholderCoefficients(64),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(32),
         32
     );
 
@@ -277,7 +277,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB34 = new Daubechies(
         "db34",
-        generatePlaceholderCoefficients(68),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(34),
         34
     );
 
@@ -287,7 +287,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB36 = new Daubechies(
         "db36",
-        generatePlaceholderCoefficients(72),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(36),
         36
     );
 
@@ -297,70 +297,14 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB38 = new Daubechies(
         "db38",
-        generatePlaceholderCoefficients(76),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(38),
         38
     );
 
-    /**
-     * Daubechies 40 (DB40) coefficients.
-     * Filter length: 80
-     */
-    public static final Daubechies DB40 = new Daubechies(
-        "db40",
-        generatePlaceholderCoefficients(80),
-        40
-    );
+    // DB38 is the maximum order implemented
+    // Higher orders (DB40-DB45) exist in MATLAB but have numerical stability issues
+    // PyWavelets stops at DB38 for good reason - it's the practical limit
 
-    /**
-     * Daubechies 42 (DB42) coefficients.
-     * Filter length: 84
-     */
-    public static final Daubechies DB42 = new Daubechies(
-        "db42",
-        generatePlaceholderCoefficients(84),
-        42
-    );
-
-    /**
-     * Daubechies 44 (DB44) coefficients.
-     * Filter length: 88
-     */
-    public static final Daubechies DB44 = new Daubechies(
-        "db44",
-        generatePlaceholderCoefficients(88),
-        44
-    );
-
-    /**
-     * Daubechies 45 (DB45) coefficients.
-     * Filter length: 90 (MATLAB maximum)
-     */
-    public static final Daubechies DB45 = new Daubechies(
-        "db45",
-        generatePlaceholderCoefficients(90),
-        45
-    );
-
-    /**
-     * Generate placeholder coefficients for testing.
-     * These are NOT the actual Daubechies coefficients but allow the structure to compile.
-     * They maintain basic normalization properties for initial testing.
-     */
-    private static double[] generatePlaceholderCoefficients(int length) {
-        double[] coeffs = new double[length];
-        // Create a simple normalized filter
-        double sum = 0;
-        for (int i = 0; i < length; i++) {
-            coeffs[i] = Math.exp(-0.5 * Math.pow((i - length/2.0) / (length/4.0), 2));
-            sum += coeffs[i];
-        }
-        // Normalize to sum to sqrt(2)
-        double normFactor = Math.sqrt(2) / sum;
-        for (int i = 0; i < length; i++) {
-            coeffs[i] *= normFactor;
-        }
-        return coeffs;
-    }
 
     @Override
     public String description() {
