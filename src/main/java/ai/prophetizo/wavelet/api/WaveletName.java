@@ -76,6 +76,9 @@ public enum WaveletName {
     COIF16("coif16", "Coiflet 16", WaveletType.ORTHOGONAL),
     COIF17("coif17", "Coiflet 17", WaveletType.ORTHOGONAL),
     
+    // Discrete Meyer wavelet
+    DMEY("dmey", "Discrete Meyer wavelet", WaveletType.ORTHOGONAL),
+    
     // Continuous wavelets
     MORLET("morl", "Morlet wavelet", WaveletType.CONTINUOUS),
     MEXICAN_HAT("mexh", "Mexican Hat wavelet", WaveletType.CONTINUOUS),
