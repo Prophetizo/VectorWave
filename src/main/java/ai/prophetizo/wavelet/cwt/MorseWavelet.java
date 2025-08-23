@@ -26,6 +26,8 @@ import ai.prophetizo.wavelet.api.ComplexContinuousWavelet;
  */
 public final class MorseWavelet implements ComplexContinuousWavelet {
     
+    private static final double GAMMA_STIRLING_THRESHOLD = 10.0; // Threshold for using Stirling's approximation
+    
     private final double beta;  // Time-bandwidth product
     private final double gamma; // Symmetry parameter
     private final double normalizationFactor;
@@ -153,7 +155,7 @@ public final class MorseWavelet implements ComplexContinuousWavelet {
         double factor = Math.sqrt(2 * Math.PI * gamma) * Math.pow(2, ratio);
         
         // Gamma function approximation for small values
-        if (ratio < 10) {
+        if (ratio < GAMMA_STIRLING_THRESHOLD) {
             factor /= gammaApprox(ratio);
         } else {
             // Stirling's approximation for large values

@@ -18,6 +18,10 @@ public class AdditionalWaveletsTest {
     private static final double TOLERANCE = 1e-10;
     private static final double RELAXED_TOLERANCE = 1e-6;
     
+    // Numerical integration parameters for inner product computation
+    private static final double INTEGRATION_RANGE = 10.0;  // Integration from -tMax to +tMax
+    private static final double INTEGRATION_STEP = 0.01;   // Step size for numerical integration
+    
     @Test
     @DisplayName("Complex Shannon Wavelet - Construction and Properties")
     void testComplexShannonConstruction() {
@@ -303,14 +307,12 @@ public class AdditionalWaveletsTest {
     
     // Helper method to compute inner product of two wavelets
     private double computeInnerProduct(HermitianWavelet w1, HermitianWavelet w2) {
-        double tMax = 10.0;
-        double dt = 0.01;
-        int n = (int)(2 * tMax / dt);
+        int n = (int)(2 * INTEGRATION_RANGE / INTEGRATION_STEP);
         
         double sum = 0.0;
         for (int i = 0; i < n; i++) {
-            double t = -tMax + i * dt;
-            sum += w1.psi(t) * w2.psi(t) * dt;
+            double t = -INTEGRATION_RANGE + i * INTEGRATION_STEP;
+            sum += w1.psi(t) * w2.psi(t) * INTEGRATION_STEP;
         }
         
         return sum;
