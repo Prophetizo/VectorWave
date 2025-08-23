@@ -117,14 +117,22 @@ public final class DiscreteMeyer implements OrthogonalWavelet {
     }
     
     /**
-     * Map of known tolerances for DMEY.
-     * The standard DMEY implementation has a small normalization error.
+     * Tolerance for coefficient sum verification.
+     * The sum should equal sqrt(2) within machine precision.
      */
-    private static final Map<String, Double> VERIFICATION_TOLERANCES = Map.of(
-        "sum", 1e-10,      // Sum should be sqrt(2)
-        "sum_sq", 3e-3,    // Sum of squares has ~0.002 error
-        "orthogonality", 3e-5  // Orthogonality has small errors
-    );
+    private static final double SUM_TOLERANCE = 1e-10;
+    
+    /**
+     * Tolerance for sum of squares verification.
+     * DMEY has a known ~0.002 error in normalization.
+     */
+    private static final double SUM_SQUARES_TOLERANCE = 3e-3;
+    
+    /**
+     * Tolerance for orthogonality verification.
+     * DMEY has small orthogonality errors due to discrete approximation.
+     */
+    private static final double ORTHOGONALITY_TOLERANCE = 3e-5;
     
     /**
      * Verifies that the DMEY coefficients satisfy the expected conditions.
@@ -140,7 +148,7 @@ public final class DiscreteMeyer implements OrthogonalWavelet {
         for (double coeff : h) {
             sum += coeff;
         }
-        if (Math.abs(sum - Math.sqrt(2)) > VERIFICATION_TOLERANCES.get("sum")) {
+        if (Math.abs(sum - Math.sqrt(2)) > SUM_TOLERANCE) {
             return false;
         }
         
@@ -149,21 +157,20 @@ public final class DiscreteMeyer implements OrthogonalWavelet {
         for (double coeff : h) {
             sumSquares += coeff * coeff;
         }
-        if (Math.abs(sumSquares - 1.0) > VERIFICATION_TOLERANCES.get("sum_sq")) {
+        if (Math.abs(sumSquares - 1.0) > SUM_SQUARES_TOLERANCE) {
             return false;
         }
         
         // Check orthogonality for even shifts (with relaxed tolerance)
-        double orthoTolerance = VERIFICATION_TOLERANCES.get("orthogonality");
         for (int k = 2; k < Math.min(h.length, 10); k += 2) {
             double dot = 0;
             for (int n = 0; n < h.length - k; n++) {
                 dot += h[n] * h[n + k];
             }
-            if (Math.abs(dot) > orthoTolerance) {
+            if (Math.abs(dot) > ORTHOGONALITY_TOLERANCE) {
                 // DMEY has known small orthogonality errors
                 // Only fail if error is too large
-                if (Math.abs(dot) > 10 * orthoTolerance) {
+                if (Math.abs(dot) > 10 * ORTHOGONALITY_TOLERANCE) {
                     return false;
                 }
             }

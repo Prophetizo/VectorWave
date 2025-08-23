@@ -25,10 +25,32 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Discrete Meyer Wavelet Test Suite")
 public class DiscreteMeyerTest {
     
-    private static final double MACHINE_PRECISION = 1e-10;
-    private static final double HIGH_PRECISION = 1e-15;
-    private static final double RECONSTRUCTION_TOLERANCE = 5e-3; // DMEY has normalization issues
-    private static final double DMEY_NORMALIZATION_TOLERANCE = 3e-3; // Known issue with DMEY
+    /**
+     * Tolerance for coefficient value comparisons.
+     * Used when comparing individual coefficient values against reference implementations.
+     */
+    private static final double COEFFICIENT_PRECISION = 1e-15;
+    
+    /**
+     * Tolerance for mathematical property verification.
+     * Used for sum checks and other mathematical properties that should be exact.
+     */
+    private static final double MATHEMATICAL_PRECISION = 1e-10;
+    
+    /**
+     * Tolerance for DMEY-specific normalization issues.
+     * DMEY has known ~0.002 error in sum of squares normalization.
+     * Used for both normalization checks and reconstruction (which is affected by normalization).
+     */
+    private static final double DMEY_NORMALIZATION_TOLERANCE = 3e-3;
+    
+    /**
+     * Tolerance for reconstruction accuracy.
+     * Set higher than typical due to DMEY's normalization issues affecting reconstruction.
+     * This is intentionally slightly higher than DMEY_NORMALIZATION_TOLERANCE to account for
+     * error accumulation during forward and inverse transforms.
+     */
+    private static final double RECONSTRUCTION_TOLERANCE = 5e-3;
     
     /**
      * Test that DMEY is properly registered in the registry.
@@ -78,13 +100,13 @@ public class DiscreteMeyerTest {
         
         // Check specific coefficients (spot check)
         // First coefficient
-        assertEquals(0.0, h[0], HIGH_PRECISION, 
+        assertEquals(0.0, h[0], COEFFICIENT_PRECISION, 
             "DMEY first coefficient should be 0");
         
         // Central coefficients (peak values)
-        assertEquals(7.44585592318806277e-01, h[31], HIGH_PRECISION,
+        assertEquals(7.44585592318806277e-01, h[31], COEFFICIENT_PRECISION,
             "DMEY central coefficient should match PyWavelets");
-        assertEquals(4.44593002757577238e-01, h[30], HIGH_PRECISION,
+        assertEquals(4.44593002757577238e-01, h[30], COEFFICIENT_PRECISION,
             "DMEY near-central coefficient should match PyWavelets");
         
         // DMEY is NOT perfectly symmetric, but nearly symmetric
@@ -103,7 +125,7 @@ public class DiscreteMeyerTest {
         
         // Sum should be sqrt(2)
         double sum = Arrays.stream(h).sum();
-        assertEquals(Math.sqrt(2), sum, MACHINE_PRECISION,
+        assertEquals(Math.sqrt(2), sum, MATHEMATICAL_PRECISION,
             "DMEY coefficients sum should be sqrt(2)");
         
         // Sum of squares should be ~1 (known to be ~1.002 for DMEY)
@@ -219,7 +241,7 @@ public class DiscreteMeyerTest {
         // Verify QMF relationship: g[n] = (-1)^n * h[N-1-n]
         for (int i = 0; i < h.length; i++) {
             double expected = (i % 2 == 0 ? 1 : -1) * h[h.length - 1 - i];
-            assertEquals(expected, g[i], MACHINE_PRECISION,
+            assertEquals(expected, g[i], MATHEMATICAL_PRECISION,
                 String.format("QMF relationship failed at index %d", i));
         }
     }
