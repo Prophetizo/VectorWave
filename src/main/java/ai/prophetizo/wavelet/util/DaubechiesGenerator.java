@@ -81,10 +81,13 @@ public final class DaubechiesGenerator {
      * @param coeffs the coefficients to verify
      * @param N the expected order
      * @return true if coefficients are valid
+     * @throws IllegalStateException if a property verification fails with details
      */
     public static boolean verifyDaubechiesProperties(double[] coeffs, int N) {
         if (coeffs.length != 2 * N) {
-            return false;
+            throw new IllegalArgumentException(
+                String.format("Invalid coefficient length: expected %d, got %d", 2 * N, coeffs.length)
+            );
         }
         
         double tolerance = 1e-12;
@@ -94,9 +97,12 @@ public final class DaubechiesGenerator {
         for (double c : coeffs) {
             sum += c;
         }
-        if (Math.abs(sum - Math.sqrt(2)) > tolerance) {
-            System.err.println("Sum test failed: " + sum + " vs " + Math.sqrt(2));
-            return false;
+        double expectedSum = Math.sqrt(2);
+        if (Math.abs(sum - expectedSum) > tolerance) {
+            throw new IllegalStateException(
+                String.format("Sum test failed: %.15f vs %.15f (difference: %.2e, tolerance: %.2e)", 
+                    sum, expectedSum, Math.abs(sum - expectedSum), tolerance)
+            );
         }
         
         // 2. Sum of squares = 1
@@ -105,8 +111,10 @@ public final class DaubechiesGenerator {
             sumSquares += c * c;
         }
         if (Math.abs(sumSquares - 1.0) > tolerance) {
-            System.err.println("Sum of squares test failed: " + sumSquares + " vs 1.0");
-            return false;
+            throw new IllegalStateException(
+                String.format("Sum of squares test failed: %.15f vs 1.0 (difference: %.2e, tolerance: %.2e)", 
+                    sumSquares, Math.abs(sumSquares - 1.0), tolerance)
+            );
         }
         
         // 3. Orthogonality: sum(h[n] * h[n+2k]) = 0 for k != 0
@@ -116,8 +124,10 @@ public final class DaubechiesGenerator {
                 dot += coeffs[n] * coeffs[n + 2*k];
             }
             if (Math.abs(dot) > tolerance) {
-                System.err.println("Orthogonality test failed for k=" + k + ": " + dot);
-                return false;
+                throw new IllegalStateException(
+                    String.format("Orthogonality test failed for k=%d: %.15f (tolerance: %.2e)", 
+                        k, dot, tolerance)
+                );
             }
         }
         
