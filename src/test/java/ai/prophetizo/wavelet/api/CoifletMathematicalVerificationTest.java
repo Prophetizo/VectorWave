@@ -29,7 +29,14 @@ class CoifletMathematicalVerificationTest {
             new CoifletTestCase("COIF7", Coiflet.COIF7, 7, 42, TOLERANCE),
             new CoifletTestCase("COIF8", Coiflet.COIF8, 8, 48, TOLERANCE),
             new CoifletTestCase("COIF9", Coiflet.COIF9, 9, 54, TOLERANCE),
-            new CoifletTestCase("COIF10", Coiflet.COIF10, 10, 60, TOLERANCE)
+            new CoifletTestCase("COIF10", Coiflet.COIF10, 10, 60, TOLERANCE),
+            new CoifletTestCase("COIF11", Coiflet.COIF11, 11, 66, TOLERANCE),
+            new CoifletTestCase("COIF12", Coiflet.COIF12, 12, 72, TOLERANCE),
+            new CoifletTestCase("COIF13", Coiflet.COIF13, 13, 78, TOLERANCE),
+            new CoifletTestCase("COIF14", Coiflet.COIF14, 14, 84, TOLERANCE),
+            new CoifletTestCase("COIF15", Coiflet.COIF15, 15, 90, TOLERANCE),
+            new CoifletTestCase("COIF16", Coiflet.COIF16, 16, 96, TOLERANCE),
+            new CoifletTestCase("COIF17", Coiflet.COIF17, 17, 102, TOLERANCE)
         );
     }
 
@@ -270,45 +277,44 @@ class CoifletMathematicalVerificationTest {
     @Test
     @DisplayName("Verify all Coiflets are properly registered")
     void testCoifletRegistration() {
-        // Test that all standard Coiflets can be accessed
-        assertNotNull(Coiflet.COIF1);
-        assertNotNull(Coiflet.COIF2);
-        assertNotNull(Coiflet.COIF3);
-        assertNotNull(Coiflet.COIF4);
-        assertNotNull(Coiflet.COIF5);
+        // Test that all Coiflets can be accessed
+        for (int order = 1; order <= 17; order++) {
+            Coiflet coif = Coiflet.get(order);
+            assertNotNull(coif, "COIF" + order + " should be accessible");
+            assertEquals("coif" + order, coif.name(), "COIF" + order + " should have correct name");
+            assertEquals(6 * order, coif.lowPassDecomposition().length, 
+                "COIF" + order + " should have " + (6 * order) + " coefficients");
+        }
         
         // Verify they have distinct coefficients
-        assertNotEquals(Coiflet.COIF1.lowPassDecomposition()[0], Coiflet.COIF2.lowPassDecomposition()[0]);
-        assertNotEquals(Coiflet.COIF2.lowPassDecomposition()[0], Coiflet.COIF3.lowPassDecomposition()[0]);
-        assertNotEquals(Coiflet.COIF3.lowPassDecomposition()[0], Coiflet.COIF4.lowPassDecomposition()[0]);
-        assertNotEquals(Coiflet.COIF4.lowPassDecomposition()[0], Coiflet.COIF5.lowPassDecomposition()[0]);
+        for (int order = 1; order < 17; order++) {
+            Coiflet current = Coiflet.get(order);
+            Coiflet next = Coiflet.get(order + 1);
+            assertNotEquals(current.lowPassDecomposition()[0], next.lowPassDecomposition()[0],
+                "COIF" + order + " and COIF" + (order + 1) + " should have different first coefficients");
+        }
     }
 
     @Test
     @DisplayName("Verify extended Coiflets mathematical consistency")
     void testExtendedCoifletsConsistency() {
-        // Test extended Coiflets (COIF6-COIF17) if they exist
-        Coiflet[] extendedCoiflets = {
-            Coiflet.COIF6, Coiflet.COIF7, Coiflet.COIF8,
-            Coiflet.COIF9, Coiflet.COIF10
-        };
-        
-        for (int i = 0; i < extendedCoiflets.length - 1; i++) {
-            Coiflet current = extendedCoiflets[i];
-            Coiflet next = extendedCoiflets[i + 1];
+        // Test extended Coiflets (COIF6-COIF17)
+        for (int order = 6; order < 17; order++) {
+            Coiflet current = Coiflet.get(order);
+            Coiflet next = Coiflet.get(order + 1);
             
             // Verify filter lengths increase
             assertTrue(next.lowPassDecomposition().length > current.lowPassDecomposition().length,
-                String.format("%s should have more coefficients than %s", 
-                    next.name(), current.name()));
+                String.format("COIF%d should have more coefficients than COIF%d", 
+                    order + 1, order));
             
             // Verify boundary coefficients get smaller (better approximation)
             double currentBoundary = Math.abs(current.lowPassDecomposition()[0]);
             double nextBoundary = Math.abs(next.lowPassDecomposition()[0]);
             
             assertTrue(nextBoundary < currentBoundary,
-                String.format("%s should have smaller boundary coefficient than %s", 
-                    next.name(), current.name()));
+                String.format("COIF%d should have smaller boundary coefficient than COIF%d", 
+                    order + 1, order));
         }
     }
 
