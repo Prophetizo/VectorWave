@@ -156,7 +156,7 @@ class WaveletRegistryTest {
         List<WaveletName> symlets = WaveletRegistry.getSymletWavelets();
         
         assertNotNull(symlets);
-        assertEquals(11, symlets.size());
+        assertEquals(19, symlets.size()); // SYM2-SYM20 including new ones
         assertTrue(symlets.contains(WaveletName.SYM2));
         assertTrue(symlets.contains(WaveletName.SYM3));
         assertTrue(symlets.contains(WaveletName.SYM20));

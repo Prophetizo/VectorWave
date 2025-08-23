@@ -44,9 +44,17 @@ public enum WaveletName {
     SYM6("sym6", "Symlet 6", WaveletType.ORTHOGONAL),
     SYM7("sym7", "Symlet 7", WaveletType.ORTHOGONAL),
     SYM8("sym8", "Symlet 8", WaveletType.ORTHOGONAL),
+    SYM9("sym9", "Symlet 9", WaveletType.ORTHOGONAL),
     SYM10("sym10", "Symlet 10", WaveletType.ORTHOGONAL),
+    SYM11("sym11", "Symlet 11", WaveletType.ORTHOGONAL),
     SYM12("sym12", "Symlet 12", WaveletType.ORTHOGONAL),
+    SYM13("sym13", "Symlet 13", WaveletType.ORTHOGONAL),
+    SYM14("sym14", "Symlet 14", WaveletType.ORTHOGONAL),
     SYM15("sym15", "Symlet 15", WaveletType.ORTHOGONAL),
+    SYM16("sym16", "Symlet 16", WaveletType.ORTHOGONAL),
+    SYM17("sym17", "Symlet 17", WaveletType.ORTHOGONAL),
+    SYM18("sym18", "Symlet 18", WaveletType.ORTHOGONAL),
+    SYM19("sym19", "Symlet 19", WaveletType.ORTHOGONAL),
     SYM20("sym20", "Symlet 20", WaveletType.ORTHOGONAL),
     
     // Coiflet wavelets

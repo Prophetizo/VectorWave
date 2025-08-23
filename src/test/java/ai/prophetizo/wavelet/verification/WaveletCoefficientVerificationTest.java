@@ -65,8 +65,10 @@ public class WaveletCoefficientVerificationTest {
             
             // Symlet family
             Symlet.SYM2, Symlet.SYM3, Symlet.SYM4, Symlet.SYM5,
-            Symlet.SYM6, Symlet.SYM7, Symlet.SYM8, Symlet.SYM10,
-            Symlet.SYM12, Symlet.SYM15, Symlet.SYM20,
+            Symlet.SYM6, Symlet.SYM7, Symlet.SYM8, Symlet.SYM9,
+            Symlet.SYM10, Symlet.SYM11, Symlet.SYM12, Symlet.SYM13,
+            Symlet.SYM14, Symlet.SYM15, Symlet.SYM16, Symlet.SYM17,
+            Symlet.SYM18, Symlet.SYM19, Symlet.SYM20,
             
             // Coiflet family
             Coiflet.COIF1, Coiflet.COIF2, Coiflet.COIF3, 
