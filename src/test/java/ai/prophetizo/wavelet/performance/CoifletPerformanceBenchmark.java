@@ -31,7 +31,6 @@ class CoifletPerformanceBenchmark {
         System.out.println("\n=== COIF8 Performance (48 taps) ===");
         System.out.println("Signal length: " + SIGNAL_LENGTH);
         System.out.println("Filter length: " + coif8.lowPassDecomposition().length);
-        System.out.println("Using FFT: " + coif8.shouldUseFFTConvolution());
         
         // Single implementation with internal optimizations
         MODWTTransform transform = new MODWTTransform(coif8, BoundaryMode.PERIODIC);
@@ -49,7 +48,6 @@ class CoifletPerformanceBenchmark {
         System.out.println("\n=== COIF10 Performance (60 taps) ===");
         System.out.println("Signal length: " + SIGNAL_LENGTH);
         System.out.println("Filter length: " + coif10.lowPassDecomposition().length);
-        System.out.println("Using FFT: " + coif10.shouldUseFFTConvolution());
         
         // Single implementation with internal optimizations
         MODWTTransform transform = new MODWTTransform(coif10, BoundaryMode.PERIODIC);
@@ -65,9 +63,9 @@ class CoifletPerformanceBenchmark {
         
         System.out.println("\n=== Coiflet Performance Comparison ===");
         System.out.println("Signal length: " + SIGNAL_LENGTH);
-        System.out.printf("%-8s %-12s %-15s %-10s\n", 
-            "Order", "Filter Len", "Time (ms)", "Using FFT");
-        System.out.println("-".repeat(50));
+        System.out.printf("%-8s %-12s %-15s\n", 
+            "Order", "Filter Len", "Time (ms)");
+        System.out.println("-".repeat(35));
         
         for (int order = 1; order <= 10; order++) {
             Coiflet coif = Coiflet.get(order);
@@ -77,10 +75,8 @@ class CoifletPerformanceBenchmark {
             MODWTTransform transform = new MODWTTransform(coif, BoundaryMode.PERIODIC);
             double time = quickBenchmark(transform, signal);
             
-            boolean usingFFT = coif.shouldUseFFTConvolution();
-            
-            System.out.printf("COIF%-4d %-12d %-15.2f %-10s\n",
-                order, filterLen, time, usingFFT ? "Yes" : "No");
+            System.out.printf("COIF%-4d %-12d %-15.2f\n",
+                order, filterLen, time);
         }
     }
     
@@ -116,9 +112,8 @@ class CoifletPerformanceBenchmark {
             }
             double avgTime = (System.nanoTime() - startTime) / 1e6 / 10;
             
-            boolean usingFFT = coif.shouldUseFFTConvolution();
-            System.out.printf("COIF%-4d %-15.2f %s\n",
-                order, avgTime, usingFFT ? "(FFT)" : "(Direct)");
+            System.out.printf("COIF%-4d %-15.2f\n",
+                order, avgTime);
         }
     }
     
@@ -148,7 +143,6 @@ class CoifletPerformanceBenchmark {
         long memUsage = (memAfter - memBefore) / 1024 / 1024; // MB
         
         System.out.printf("Memory usage: ~%d MB\n", memUsage);
-        System.out.printf("Using FFT optimization: %s\n", coif10.shouldUseFFTConvolution());
         
         // Test inverse
         double[] reconstructed = transform.inverse(result);

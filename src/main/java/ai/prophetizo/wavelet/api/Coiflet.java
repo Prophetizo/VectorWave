@@ -316,7 +316,6 @@ public final class Coiflet implements OrthogonalWavelet {
     private final int order;
     private final String name;
     private final double[] lowPassCoeffs;
-    private volatile Boolean useFFTConvolution; // Cached decision for FFT usage
 
     private Coiflet(int order, double[] coefficients) {
         this.order = order;
@@ -349,19 +348,6 @@ public final class Coiflet implements OrthogonalWavelet {
         }
     }
     
-    /**
-     * Check if FFT convolution should be used for this Coiflet.
-     * FFT is more efficient for filters with length >= 128 with current implementation.
-     * Note: With an optimized FFT library, this threshold could be lowered to ~48.
-     * 
-     * @return true if FFT convolution should be used
-     */
-    public boolean shouldUseFFTConvolution() {
-        if (useFFTConvolution == null) {
-            useFFTConvolution = lowPassCoeffs.length >= 128;
-        }
-        return useFFTConvolution;
-    }
 
     @Override
     public String name() {
