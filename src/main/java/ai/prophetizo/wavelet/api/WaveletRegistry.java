@@ -29,6 +29,13 @@ public final class WaveletRegistry {
         register(WaveletName.DB8, Daubechies.DB8);
         register(WaveletName.DB10, Daubechies.DB10);
         
+        // Extended Daubechies wavelets (DB12-DB20) - To be implemented in future versions
+        // register(WaveletName.DB12, Daubechies.DB12);
+        // register(WaveletName.DB14, Daubechies.DB14);
+        // register(WaveletName.DB16, Daubechies.DB16);
+        // register(WaveletName.DB18, Daubechies.DB18);
+        // register(WaveletName.DB20, Daubechies.DB20);
+        
         // Symlet wavelets
         register(WaveletName.SYM2, Symlet.SYM2);
         register(WaveletName.SYM3, Symlet.SYM3);
