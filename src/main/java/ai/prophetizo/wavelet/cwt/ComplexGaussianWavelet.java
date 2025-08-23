@@ -179,9 +179,6 @@ public final class ComplexGaussianWavelet implements ComplexContinuousWavelet {
         
         // For n=0, this would be just the Gaussian
         // For n=1,2,3... we need the derivative term
-        if (n == 0) {
-            return new ComplexNumber(normFactor * gaussian, 0);
-        }
         
         // (i*(ω-ω₀))^n computation
         double magnitude;
