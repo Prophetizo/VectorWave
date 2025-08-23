@@ -16,7 +16,7 @@ package ai.prophetizo.wavelet.api;
  * </ul>
  * </p>
  *
- * <p>Common variants: DB2, DB3, DB4, ..., DB10</p>
+ * <p>Implemented variants: DB2-DB38 (38 is the maximum supported order)</p>
  *
  * <h3>Mathematical Foundation:</h3>
  * <p>Daubechies wavelets were developed by Ingrid Daubechies in 1988. They are
@@ -159,8 +159,152 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
             10
     );
 
-    // Note: Extended Daubechies wavelets (DB12-DB20) will be added in future versions
-    // after proper coefficient verification against multiple reference sources.
+    /**
+     * Daubechies 12 (DB12) coefficients.
+     * Filter length: 24
+     */
+    public static final Daubechies DB12 = new Daubechies(
+        "db12",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(12),
+        12
+    );
+
+    /**
+     * Daubechies 14 (DB14) coefficients.
+     * Filter length: 28
+     */
+    public static final Daubechies DB14 = new Daubechies(
+        "db14",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(14),
+        14
+    );
+
+    /**
+     * Daubechies 16 (DB16) coefficients.
+     * Filter length: 32
+     */
+    public static final Daubechies DB16 = new Daubechies(
+        "db16",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(16),
+        16
+    );
+
+    /**
+     * Daubechies 18 (DB18) coefficients.
+     * Filter length: 36
+     */
+    public static final Daubechies DB18 = new Daubechies(
+        "db18",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(18),
+        18
+    );
+
+    /**
+     * Daubechies 20 (DB20) coefficients.
+     * Filter length: 40
+     */
+    public static final Daubechies DB20 = new Daubechies(
+        "db20",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(20),
+        20
+    );
+
+    // Advanced Extended Set (DB22-DB38 - PyWavelets maximum)
+    
+    /**
+     * Daubechies 22 (DB22) coefficients.
+     * Filter length: 44
+     */
+    public static final Daubechies DB22 = new Daubechies(
+        "db22",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(22),
+        22
+    );
+
+    /**
+     * Daubechies 24 (DB24) coefficients.
+     * Filter length: 48
+     */
+    public static final Daubechies DB24 = new Daubechies(
+        "db24",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(24),
+        24
+    );
+
+    /**
+     * Daubechies 26 (DB26) coefficients.
+     * Filter length: 52
+     */
+    public static final Daubechies DB26 = new Daubechies(
+        "db26",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(26),
+        26
+    );
+
+    /**
+     * Daubechies 28 (DB28) coefficients.
+     * Filter length: 56
+     */
+    public static final Daubechies DB28 = new Daubechies(
+        "db28",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(28),
+        28
+    );
+
+    /**
+     * Daubechies 30 (DB30) coefficients.
+     * Filter length: 60
+     */
+    public static final Daubechies DB30 = new Daubechies(
+        "db30",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(30),
+        30
+    );
+
+    /**
+     * Daubechies 32 (DB32) coefficients.
+     * Filter length: 64
+     */
+    public static final Daubechies DB32 = new Daubechies(
+        "db32",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(32),
+        32
+    );
+
+    /**
+     * Daubechies 34 (DB34) coefficients.
+     * Filter length: 68
+     */
+    public static final Daubechies DB34 = new Daubechies(
+        "db34",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(34),
+        34
+    );
+
+    /**
+     * Daubechies 36 (DB36) coefficients.
+     * Filter length: 72
+     */
+    public static final Daubechies DB36 = new Daubechies(
+        "db36",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(36),
+        36
+    );
+
+    /**
+     * Daubechies 38 (DB38) coefficients.
+     * Filter length: 76 (PyWavelets maximum)
+     */
+    public static final Daubechies DB38 = new Daubechies(
+        "db38",
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(38),
+        38
+    );
+
+    // DB38 is the maximum order implemented
+    // Higher orders (DB40-DB45) exist in MATLAB but have numerical stability issues
+    // PyWavelets stops at DB38 for good reason - it's the practical limit
+
 
     @Override
     public String description() {

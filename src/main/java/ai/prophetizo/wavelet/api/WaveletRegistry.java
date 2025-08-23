@@ -29,12 +29,24 @@ public final class WaveletRegistry {
         register(WaveletName.DB8, Daubechies.DB8);
         register(WaveletName.DB10, Daubechies.DB10);
         
-        // Extended Daubechies wavelets (DB12-DB20) - To be implemented in future versions
-        // register(WaveletName.DB12, Daubechies.DB12);
-        // register(WaveletName.DB14, Daubechies.DB14);
-        // register(WaveletName.DB16, Daubechies.DB16);
-        // register(WaveletName.DB18, Daubechies.DB18);
-        // register(WaveletName.DB20, Daubechies.DB20);
+        // Extended Daubechies wavelets (DB12-DB20)
+        register(WaveletName.DB12, Daubechies.DB12);
+        register(WaveletName.DB14, Daubechies.DB14);
+        register(WaveletName.DB16, Daubechies.DB16);
+        register(WaveletName.DB18, Daubechies.DB18);
+        register(WaveletName.DB20, Daubechies.DB20);
+        
+        // Advanced Extended Daubechies wavelets (DB22-DB38)
+        register(WaveletName.DB22, Daubechies.DB22);
+        register(WaveletName.DB24, Daubechies.DB24);
+        register(WaveletName.DB26, Daubechies.DB26);
+        register(WaveletName.DB28, Daubechies.DB28);
+        register(WaveletName.DB30, Daubechies.DB30);
+        register(WaveletName.DB32, Daubechies.DB32);
+        register(WaveletName.DB34, Daubechies.DB34);
+        register(WaveletName.DB36, Daubechies.DB36);
+        register(WaveletName.DB38, Daubechies.DB38);
+        // DB38 is the maximum supported (PyWavelets limit)
         
         // Symlet wavelets
         register(WaveletName.SYM2, Symlet.SYM2);
@@ -60,6 +72,13 @@ public final class WaveletRegistry {
         register(WaveletName.COIF8, Coiflet.COIF8);
         register(WaveletName.COIF9, Coiflet.COIF9);
         register(WaveletName.COIF10, Coiflet.COIF10);
+        register(WaveletName.COIF11, Coiflet.COIF11);
+        register(WaveletName.COIF12, Coiflet.COIF12);
+        register(WaveletName.COIF13, Coiflet.COIF13);
+        register(WaveletName.COIF14, Coiflet.COIF14);
+        register(WaveletName.COIF15, Coiflet.COIF15);
+        register(WaveletName.COIF16, Coiflet.COIF16);
+        register(WaveletName.COIF17, Coiflet.COIF17);
         
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
