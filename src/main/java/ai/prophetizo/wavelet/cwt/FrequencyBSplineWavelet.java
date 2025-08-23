@@ -82,7 +82,9 @@ public final class FrequencyBSplineWavelet implements ComplexContinuousWavelet {
      */
     public double[] psiHat(double omega) {
         if (Math.abs(omega) < 1e-10) {
-            return new double[]{Math.sqrt(fb), 0};
+            // At ω=0, sinc(0) = 1, so we get √fb
+            // Note: This creates a non-zero DC component that affects admissibility
+            return new double[]{Math.sqrt(fb), 0.0};
         }
         
         // B-spline in frequency: [sinc(fb*ω/(2m))]^m
@@ -100,27 +102,33 @@ public final class FrequencyBSplineWavelet implements ComplexContinuousWavelet {
     }
     
     private double computeRealPart(double t) {
-        // Numerical inverse Fourier transform
-        // Using simplified approximation for efficiency
+        // Numerical inverse Fourier transform with improved accuracy
         double sum = 0;
-        int N = 200; // Reduced for performance
-        double wMax = 10.0; // Frequency range
+        double dcComponent = 0; // Track DC for zero mean correction
+        int N = 1000; // Increased for better accuracy
+        double wMax = 20.0; // Expanded frequency range
         double dw = 2 * wMax / N;
         
         for (int k = 0; k < N; k++) {
             double w = -wMax + k * dw;
             double[] psiW = psiHat(w);
+            
+            if (Math.abs(w) < 1e-10) {
+                dcComponent = psiW[0] / (2 * Math.PI); // DC contribution
+            }
+            
             sum += psiW[0] * Math.cos(w * t) - psiW[1] * Math.sin(w * t);
         }
         
-        return sum * dw / (2 * Math.PI);
+        // Subtract DC component for zero mean (admissibility)
+        return sum * dw / (2 * Math.PI) - dcComponent;
     }
     
     private double computeImaginaryPart(double t) {
-        // Similar numerical computation for imaginary part
+        // Improved numerical computation for imaginary part
         double sum = 0;
-        int N = 200;
-        double wMax = 10.0;
+        int N = 1000; // Increased for consistency 
+        double wMax = 20.0; // Expanded frequency range
         double dw = 2 * wMax / N;
         
         for (int k = 0; k < N; k++) {
