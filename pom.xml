@@ -239,6 +239,7 @@
                                         <exclude>ai.prophetizo.wavelet.modwt.MODWTResult</exclude>
                                         <exclude>ai.prophetizo.wavelet.modwt.BatchSIMDMODWT</exclude>
                                         <exclude>ai.prophetizo.wavelet.modwt.MODWTTransform</exclude>
+                                        
 
                                     </excludes>
                                     <limits>

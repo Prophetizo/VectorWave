@@ -165,7 +165,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB12 = new Daubechies(
         "db12",
-        generatePlaceholderCoefficients(24),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(12),
         12
     );
 
@@ -175,7 +175,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB14 = new Daubechies(
         "db14",
-        generatePlaceholderCoefficients(28),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(14),
         14
     );
 
@@ -185,7 +185,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB16 = new Daubechies(
         "db16",
-        generatePlaceholderCoefficients(32),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(16),
         16
     );
 
@@ -195,7 +195,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB18 = new Daubechies(
         "db18",
-        generatePlaceholderCoefficients(36),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(18),
         18
     );
 
@@ -205,7 +205,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB20 = new Daubechies(
         "db20",
-        generatePlaceholderCoefficients(40),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(20),
         20
     );
 
@@ -217,7 +217,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB22 = new Daubechies(
         "db22",
-        generatePlaceholderCoefficients(44),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(22),
         22
     );
 
@@ -227,7 +227,7 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
      */
     public static final Daubechies DB24 = new Daubechies(
         "db24",
-        generatePlaceholderCoefficients(48),
+        ai.prophetizo.wavelet.util.DaubechiesGenerator.generateCoefficients(24),
         24
     );
 
