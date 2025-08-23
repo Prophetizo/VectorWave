@@ -77,7 +77,14 @@ public enum WaveletName {
     SHANNON("shan", "Shannon wavelet", WaveletType.CONTINUOUS),
     FBSP("fbsp", "Frequency B-Spline", WaveletType.CONTINUOUS),
     CMOR("cmor", "Complex Morlet", WaveletType.COMPLEX),
-    CGAU("cgau", "Complex Gaussian", WaveletType.COMPLEX);
+    CGAU("cgau", "Complex Gaussian", WaveletType.COMPLEX),
+    
+    // Additional continuous wavelets (added in 1.4.0)
+    CSHAN("cshan", "Complex Shannon wavelet", WaveletType.COMPLEX),
+    MEYER("meyr", "Meyer wavelet", WaveletType.CONTINUOUS),
+    MORSE("morse", "Morse wavelet", WaveletType.COMPLEX),
+    RICKER("ricker", "Ricker wavelet", WaveletType.CONTINUOUS),
+    HERMITIAN("herm", "Hermitian wavelet", WaveletType.CONTINUOUS);
     
     private final String code;
     private final String description;

@@ -90,6 +90,13 @@ public final class WaveletRegistry {
         register(WaveletName.FBSP, new FrequencyBSplineWavelet(2, 1.0, 1.0));  // Frequency B-Spline with default params
         register(WaveletName.CMOR, new ComplexMorletWavelet(1.0, 1.0));  // Complex Morlet with default params
         register(WaveletName.CGAU, new ComplexGaussianWavelet(1, 1.0, 5.0));  // Complex Gaussian wavelet
+        
+        // Additional continuous wavelets (added in 1.4.0)
+        register(WaveletName.CSHAN, new ComplexShannonWavelet());  // Complex Shannon with default params (fb=1, fc=1)
+        register(WaveletName.MEYER, new ContinuousMeyerWavelet());  // Meyer wavelet
+        register(WaveletName.MORSE, new MorseWavelet());  // Morse wavelet with default params (beta=3, gamma=60)
+        register(WaveletName.RICKER, new RickerWavelet());  // Ricker wavelet with default sigma=1
+        register(WaveletName.HERMITIAN, new HermitianWavelet(2));  // Hermitian wavelet with default order 2
     }
     
     private static void register(WaveletName name, Wavelet wavelet) {
