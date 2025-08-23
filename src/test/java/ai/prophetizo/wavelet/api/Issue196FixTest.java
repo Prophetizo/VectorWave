@@ -72,4 +72,51 @@ class Issue196FixTest {
         assertTrue(fbsp.bandwidth() > 0, "FBSP bandwidth should be positive");
         assertTrue(fbsp.centerFrequency() > 0, "FBSP center frequency should be positive");
     }
+    
+    @Test
+    @DisplayName("Verify comprehensive mathematical separation")
+    void testComprehensiveMathematicalSeparation() {
+        ShannonWavelet shannon = (ShannonWavelet) WaveletRegistry.getWavelet(WaveletName.SHANNON);
+        FrequencyBSplineWavelet fbsp = (FrequencyBSplineWavelet) WaveletRegistry.getWavelet(WaveletName.FBSP);
+        
+        // Verify registry configuration parameters are different
+        assertEquals(1.0, shannon.getBandwidthParameter(), 1e-10);
+        assertEquals(1.5, shannon.getCenterFrequencyParameter(), 1e-10);
+        assertEquals(2, fbsp.getOrder());
+        assertEquals(1.0, fbsp.bandwidth(), 1e-10);
+        assertEquals(1.0, fbsp.centerFrequency(), 1e-10);
+        
+        // Mathematical definitions should produce different values at multiple points
+        double[] testPoints = {0.0, 0.5, 1.0, 2.0, 3.0};
+        for (double t : testPoints) {
+            double shannonVal = shannon.psi(t);
+            double fbspVal = fbsp.psi(t);
+            
+            // Both should be finite
+            assertTrue(Double.isFinite(shannonVal), 
+                String.format("Shannon value at t=%.1f should be finite", t));
+            assertTrue(Double.isFinite(fbspVal), 
+                String.format("FBSP value at t=%.1f should be finite", t));
+            
+            // Values should be mathematically different (except possibly at special points)
+            if (t != 0.0) { // Allow t=0 to potentially be similar for some wavelets
+                assertNotEquals(shannonVal, fbspVal, 1e-3,
+                    String.format("Shannon and FBSP should produce different values at t=%.1f", t));
+            }
+        }
+        
+        // Verify different discretizations
+        double[] shannonSamples = shannon.discretize(64);
+        double[] fbspSamples = fbsp.discretize(64);
+        
+        boolean foundSignificantDifference = false;
+        for (int i = 0; i < 64; i++) {
+            if (Math.abs(shannonSamples[i] - fbspSamples[i]) > 0.1) {
+                foundSignificantDifference = true;
+                break;
+            }
+        }
+        assertTrue(foundSignificantDifference, 
+            "Shannon and FBSP discretizations should have significant differences");
+    }
 }
