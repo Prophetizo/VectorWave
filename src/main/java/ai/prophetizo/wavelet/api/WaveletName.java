@@ -61,6 +61,11 @@ public enum WaveletName {
     COIF3("coif3", "Coiflet 3", WaveletType.ORTHOGONAL),
     COIF4("coif4", "Coiflet 4", WaveletType.ORTHOGONAL),
     COIF5("coif5", "Coiflet 5", WaveletType.ORTHOGONAL),
+    COIF6("coif6", "Coiflet 6", WaveletType.ORTHOGONAL),
+    COIF7("coif7", "Coiflet 7", WaveletType.ORTHOGONAL),
+    COIF8("coif8", "Coiflet 8", WaveletType.ORTHOGONAL),
+    COIF9("coif9", "Coiflet 9", WaveletType.ORTHOGONAL),
+    COIF10("coif10", "Coiflet 10", WaveletType.ORTHOGONAL),
     
     // Continuous wavelets
     MORLET("morl", "Morlet wavelet", WaveletType.CONTINUOUS),

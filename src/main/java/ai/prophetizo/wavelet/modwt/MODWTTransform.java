@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.modwt;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.Coiflet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.exception.InvalidSignalException;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
@@ -108,8 +109,12 @@ public class MODWTTransform {
      * that are the same length as the input signal, making the transform shift-invariant
      * and applicable to arbitrary length signals.</p>
      * 
-     * <p><strong>Performance:</strong> Automatically selects scalar or vectorized implementation
-     * based on signal size and system capabilities for optimal performance.</p>
+     * <p><strong>Performance:</strong> Automatically selects optimal implementation:</p>
+     * <ul>
+     *   <li>FFT-based convolution for large Coiflet filters (≥128 taps)</li>
+     *   <li>Vectorized SIMD implementation for medium filters</li>
+     *   <li>Scalar implementation for small filters or when SIMD unavailable</li>
+     * </ul>
      * 
      * @param signal The input signal of any length ≥ 1
      * @return A MODWTResult containing same-length approximation and detail coefficients
@@ -145,6 +150,7 @@ public class MODWTTransform {
         long startTime = System.nanoTime();
         
         // Perform convolution without downsampling based on boundary mode
+        // WaveletOperations methods internally use automatic SIMD optimization
         if (boundaryMode == BoundaryMode.PERIODIC) {
             // WaveletOperations.circularConvolveMODWT internally delegates to vectorized
             // implementation when beneficial, falling back to scalar otherwise
@@ -171,6 +177,7 @@ public class MODWTTransform {
         
         return MODWTResult.create(approximationCoeffs, detailCoeffs);
     }
+    
     
     /**
      * Performs a single-level inverse MODWT to reconstruct the signal.
