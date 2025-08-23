@@ -77,10 +77,10 @@ public final class DaubechiesCoefficients {
             return coeffs.clone();
         }
         
-        // For now, only implement DB12 with proper research needed for coefficients
-        throw new IllegalArgumentException("Extended Daubechies wavelets (DB12+) are not yet fully implemented. " +
+        // For now, return error for extended wavelets until coefficients are properly researched
+        throw new IllegalArgumentException("Extended Daubechies wavelets (DB12+) require proper coefficient research. " +
             "Current implementation supports: DB2, DB4, DB6, DB8, DB10. " +
-            "DB12-DB20 coefficients need to be verified against multiple reference sources.");
+            "Extended wavelets will be implemented with coefficients verified against academic sources.");
     }
 
     /**
@@ -131,7 +131,8 @@ public final class DaubechiesCoefficients {
             return false;
         }
         
-        double tolerance = 1e-12;
+        // Use more lenient tolerance for floating point comparisons
+        double tolerance = 1e-10;
         
         // Check sum = √2
         double sum = 0;

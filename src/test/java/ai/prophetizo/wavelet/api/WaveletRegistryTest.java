@@ -117,12 +117,19 @@ class WaveletRegistryTest {
         List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
         
         assertNotNull(daubechies);
-        assertEquals(5, daubechies.size());
+        // Now includes extended Daubechies wavelets in enum (even if not implemented)
+        assertEquals(10, daubechies.size());
         assertTrue(daubechies.contains(WaveletName.DB2));
         assertTrue(daubechies.contains(WaveletName.DB4));
         assertTrue(daubechies.contains(WaveletName.DB6));
         assertTrue(daubechies.contains(WaveletName.DB8));
         assertTrue(daubechies.contains(WaveletName.DB10));
+        // Extended Daubechies wavelets (in enum but not yet implemented)
+        assertTrue(daubechies.contains(WaveletName.DB12));
+        assertTrue(daubechies.contains(WaveletName.DB14));
+        assertTrue(daubechies.contains(WaveletName.DB16));
+        assertTrue(daubechies.contains(WaveletName.DB18));
+        assertTrue(daubechies.contains(WaveletName.DB20));
     }
     
     @Test
