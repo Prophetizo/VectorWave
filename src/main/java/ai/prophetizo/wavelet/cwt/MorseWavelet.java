@@ -150,18 +150,10 @@ public final class MorseWavelet implements ComplexContinuousWavelet {
      */
     private double computeNormalization(double beta, double gamma) {
         // Normalization: sqrt(2 * pi * gamma * (2^(beta/gamma)) / Gamma(beta/gamma))
-        // Using Stirling's approximation for simplicity
+        // Use Lanczos approximation for all values for better accuracy
         double ratio = beta / gamma;
         double factor = Math.sqrt(2 * Math.PI * gamma) * Math.pow(2, ratio);
-        
-        // Gamma function approximation for small values
-        if (ratio < GAMMA_STIRLING_THRESHOLD) {
-            factor /= gammaApprox(ratio);
-        } else {
-            // Stirling's approximation for large values
-            factor /= Math.sqrt(2 * Math.PI * ratio) * Math.pow(ratio / Math.E, ratio);
-        }
-        
+        factor /= gammaApprox(ratio);
         return factor;
     }
     
