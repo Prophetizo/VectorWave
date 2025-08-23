@@ -16,8 +16,8 @@ public final class DaubechiesGenerator {
      * @return the scaling function coefficients h[k]
      */
     public static double[] generateCoefficients(int N) {
-        if (N < 1 || N > 20) {
-            throw new IllegalArgumentException("Order must be between 1 and 20");
+        if (N < 1 || N > 45) {
+            throw new IllegalArgumentException("Order must be between 1 and 45");
         }
         
         // Get raw coefficients and normalize them
