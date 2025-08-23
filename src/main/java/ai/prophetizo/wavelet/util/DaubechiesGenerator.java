@@ -81,8 +81,6 @@ public final class DaubechiesGenerator {
      * @param coeffs the coefficients to verify
      * @param N the expected order
      * @return true if coefficients are valid
-     * @throws IllegalStateException if a property verification fails with details
-     */
     public static boolean verifyDaubechiesProperties(double[] coeffs, int N) {
         if (coeffs.length != 2 * N) {
             throw new IllegalArgumentException(
