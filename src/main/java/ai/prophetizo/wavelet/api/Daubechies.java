@@ -159,6 +159,9 @@ public record Daubechies(String name, double[] lowPassCoeffs, int order) impleme
             10
     );
 
+    // Note: Extended Daubechies wavelets (DB12-DB20) will be added in future versions
+    // after proper coefficient verification against multiple reference sources.
+
     @Override
     public String description() {
         return "Daubechies wavelet of order " + order;

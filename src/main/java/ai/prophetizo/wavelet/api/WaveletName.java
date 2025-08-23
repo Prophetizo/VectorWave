@@ -15,6 +15,13 @@ public enum WaveletName {
     DB8("db8", "Daubechies 8", WaveletType.ORTHOGONAL),
     DB10("db10", "Daubechies 10", WaveletType.ORTHOGONAL),
     
+    // Extended Daubechies wavelets (DB12-DB20)
+    DB12("db12", "Daubechies 12", WaveletType.ORTHOGONAL),
+    DB14("db14", "Daubechies 14", WaveletType.ORTHOGONAL),
+    DB16("db16", "Daubechies 16", WaveletType.ORTHOGONAL),
+    DB18("db18", "Daubechies 18", WaveletType.ORTHOGONAL),
+    DB20("db20", "Daubechies 20", WaveletType.ORTHOGONAL),
+    
     // Symlet wavelets
     SYM2("sym2", "Symlet 2", WaveletType.ORTHOGONAL),
     SYM3("sym3", "Symlet 3", WaveletType.ORTHOGONAL),
