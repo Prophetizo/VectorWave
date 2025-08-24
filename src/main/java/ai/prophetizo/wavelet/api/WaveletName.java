@@ -79,6 +79,13 @@ public enum WaveletName {
     // Discrete Meyer wavelet
     DMEY("dmey", "Discrete Meyer wavelet", WaveletType.ORTHOGONAL),
     
+    // Battle-Lemarié spline wavelets
+    BLEM1("blem1", "Linear Battle-Lemarié", WaveletType.ORTHOGONAL),
+    BLEM2("blem2", "Quadratic Battle-Lemarié", WaveletType.ORTHOGONAL),
+    BLEM3("blem3", "Cubic Battle-Lemarié", WaveletType.ORTHOGONAL),
+    BLEM4("blem4", "Quartic Battle-Lemarié", WaveletType.ORTHOGONAL),
+    BLEM5("blem5", "Quintic Battle-Lemarié", WaveletType.ORTHOGONAL),
+    
     // Biorthogonal wavelets - BIOR family
     BIOR1_1("bior1.1", "Biorthogonal 1.1", WaveletType.BIORTHOGONAL),
     BIOR1_3("bior1.3", "Biorthogonal 1.3", WaveletType.BIORTHOGONAL),
