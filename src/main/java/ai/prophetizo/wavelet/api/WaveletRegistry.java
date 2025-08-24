@@ -108,6 +108,23 @@ public final class WaveletRegistry {
         register(WaveletName.BIOR5_5, BiorthogonalSpline.BIOR5_5);
         register(WaveletName.BIOR6_8, BiorthogonalSpline.BIOR6_8);
         
+        // Reverse Biorthogonal wavelets
+        register(WaveletName.RBIO1_1, ReverseBiorthogonalSpline.RBIO1_1);
+        register(WaveletName.RBIO1_3, ReverseBiorthogonalSpline.RBIO1_3);
+        register(WaveletName.RBIO1_5, ReverseBiorthogonalSpline.RBIO1_5);
+        register(WaveletName.RBIO2_2, ReverseBiorthogonalSpline.RBIO2_2);
+        register(WaveletName.RBIO2_4, ReverseBiorthogonalSpline.RBIO2_4);
+        register(WaveletName.RBIO2_6, ReverseBiorthogonalSpline.RBIO2_6);
+        register(WaveletName.RBIO2_8, ReverseBiorthogonalSpline.RBIO2_8);
+        register(WaveletName.RBIO3_1, ReverseBiorthogonalSpline.RBIO3_1);
+        register(WaveletName.RBIO3_3, ReverseBiorthogonalSpline.RBIO3_3);
+        register(WaveletName.RBIO3_5, ReverseBiorthogonalSpline.RBIO3_5);
+        register(WaveletName.RBIO3_7, ReverseBiorthogonalSpline.RBIO3_7);
+        register(WaveletName.RBIO3_9, ReverseBiorthogonalSpline.RBIO3_9);
+        register(WaveletName.RBIO4_4, ReverseBiorthogonalSpline.RBIO4_4);
+        register(WaveletName.RBIO5_5, ReverseBiorthogonalSpline.RBIO5_5);
+        register(WaveletName.RBIO6_8, ReverseBiorthogonalSpline.RBIO6_8);
+        
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
         register(WaveletName.MEXICAN_HAT, new MATLABMexicanHat());  // MATLAB-compatible Mexican Hat
