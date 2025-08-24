@@ -96,6 +96,23 @@ public enum WaveletName {
     BIOR5_5("bior5.5", "Biorthogonal 5.5", WaveletType.BIORTHOGONAL),
     BIOR6_8("bior6.8", "Biorthogonal 6.8", WaveletType.BIORTHOGONAL),
     
+    // Reverse Biorthogonal wavelets - RBIO family
+    RBIO1_1("rbio1.1", "Reverse Biorthogonal 1.1", WaveletType.BIORTHOGONAL),
+    RBIO1_3("rbio1.3", "Reverse Biorthogonal 1.3", WaveletType.BIORTHOGONAL),
+    RBIO1_5("rbio1.5", "Reverse Biorthogonal 1.5", WaveletType.BIORTHOGONAL),
+    RBIO2_2("rbio2.2", "Reverse Biorthogonal 2.2", WaveletType.BIORTHOGONAL),
+    RBIO2_4("rbio2.4", "Reverse Biorthogonal 2.4", WaveletType.BIORTHOGONAL),
+    RBIO2_6("rbio2.6", "Reverse Biorthogonal 2.6", WaveletType.BIORTHOGONAL),
+    RBIO2_8("rbio2.8", "Reverse Biorthogonal 2.8", WaveletType.BIORTHOGONAL),
+    RBIO3_1("rbio3.1", "Reverse Biorthogonal 3.1", WaveletType.BIORTHOGONAL),
+    RBIO3_3("rbio3.3", "Reverse Biorthogonal 3.3", WaveletType.BIORTHOGONAL),
+    RBIO3_5("rbio3.5", "Reverse Biorthogonal 3.5", WaveletType.BIORTHOGONAL),
+    RBIO3_7("rbio3.7", "Reverse Biorthogonal 3.7", WaveletType.BIORTHOGONAL),
+    RBIO3_9("rbio3.9", "Reverse Biorthogonal 3.9", WaveletType.BIORTHOGONAL),
+    RBIO4_4("rbio4.4", "Reverse Biorthogonal 4.4", WaveletType.BIORTHOGONAL),
+    RBIO5_5("rbio5.5", "Reverse Biorthogonal 5.5", WaveletType.BIORTHOGONAL),
+    RBIO6_8("rbio6.8", "Reverse Biorthogonal 6.8", WaveletType.BIORTHOGONAL),
+    
     // Continuous wavelets
     MORLET("morl", "Morlet wavelet", WaveletType.CONTINUOUS),
     MEXICAN_HAT("mexh", "Mexican Hat wavelet", WaveletType.CONTINUOUS),

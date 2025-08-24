@@ -225,8 +225,8 @@ public class BiorthogonalBasicVerificationTest {
         assertNotNull(bioWavelets);
         assertFalse(bioWavelets.isEmpty(), "Should have biorthogonal wavelets registered");
         
-        // Check we have the expected count
-        assertEquals(15, bioWavelets.size(), "Should have exactly 15 BIOR wavelets registered");
+        // Check we have the expected count (15 BIOR + 15 RBIO)
+        assertEquals(30, bioWavelets.size(), "Should have exactly 30 biorthogonal wavelets registered");
         
         // Check key wavelets are present
         assertTrue(bioWavelets.contains(WaveletName.BIOR1_1), "BIOR1.1 should be registered");

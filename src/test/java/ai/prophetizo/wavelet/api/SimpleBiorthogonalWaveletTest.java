@@ -135,7 +135,7 @@ public class SimpleBiorthogonalWaveletTest {
         assertTrue(bioWavelets.contains(WaveletName.BIOR5_5));
         assertTrue(bioWavelets.contains(WaveletName.BIOR6_8));
         
-        assertEquals(15, bioWavelets.size(), "Should have exactly 15 BIOR wavelets registered");
+        assertEquals(30, bioWavelets.size(), "Should have exactly 30 biorthogonal wavelets registered (15 BIOR + 15 RBIO)");
     }
     
     /**
