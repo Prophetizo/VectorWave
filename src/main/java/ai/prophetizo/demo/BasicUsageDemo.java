@@ -2,12 +2,14 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.modwt.MutableMultiLevelMODWTResult;
+import ai.prophetizo.wavelet.swt.VectorWaveSwtAdapter;
 import ai.prophetizo.wavelet.api.*;
 
 import java.util.Arrays;
 
 /**
- * Demonstrates basic usage patterns for the VectorWave library using MODWT.
+ * Demonstrates basic usage patterns for the VectorWave library using MODWT and SWT.
  *
  * <p>This demo covers:
  * <ul>
@@ -15,13 +17,14 @@ import java.util.Arrays;
  *   <li>Forward and inverse transforms</li>
  *   <li>Using different wavelet families</li>
  *   <li>Working with arbitrary length signals (not just power-of-2)</li>
+ *   <li>SWT for shift-invariant analysis</li>
  *   <li>Error handling best practices</li>
  * </ul>
  */
 public class BasicUsageDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== VectorWave Basic Usage Demo (MODWT) ===\n");
+        System.out.println("=== VectorWave Basic Usage Demo ===\n");
 
         // Demo 1: Simple transform with Haar wavelet
         demonstrateBasicTransform();
@@ -37,6 +40,9 @@ public class BasicUsageDemo {
 
         // Demo 5: Coefficient analysis
         demonstrateCoefficientAnalysis();
+        
+        // Demo 6: SWT for shift-invariant analysis
+        demonstrateSWT();
     }
 
     private static void demonstrateBasicTransform() {
@@ -221,6 +227,95 @@ public class BasicUsageDemo {
 
         double compressionError = calculateMaxError(signal, reconstructed);
         System.out.printf("  Compression error: %.4f\n", compressionError);
+    }
+    
+    private static void demonstrateSWT() {
+        System.out.println("\n6. SWT (Stationary Wavelet Transform)");
+        System.out.println("-------------------------------------");
+        System.out.println("SWT provides shift-invariant analysis with automatic optimizations.\n");
+        
+        // Create a signal with a transient event
+        int length = 256;
+        double[] signal = new double[length];
+        for (int i = 0; i < length; i++) {
+            signal[i] = Math.sin(2 * Math.PI * i / 32.0); // Base frequency
+            if (i >= 100 && i <= 110) {
+                signal[i] += 2.0; // Transient spike
+            }
+        }
+        
+        // Create SWT adapter - optimizations are automatic!
+        VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(
+            Daubechies.DB4, BoundaryMode.PERIODIC);
+        
+        // Multi-level decomposition
+        int levels = 3;
+        MutableMultiLevelMODWTResult swtResult = swt.forward(signal, levels);
+        
+        System.out.println("SWT Decomposition:");
+        System.out.printf("  Signal length: %d\n", signal.length);
+        System.out.printf("  Decomposition levels: %d\n", levels);
+        System.out.printf("  Shift-invariant: YES\n");
+        
+        // Analyze energy distribution
+        System.out.println("\nEnergy distribution across levels:");
+        double totalEnergy = 0;
+        double[] levelEnergies = new double[levels + 1];
+        
+        // Approximation energy
+        double[] approx = swtResult.getMutableApproximationCoeffs();
+        levelEnergies[0] = calculateEnergy(approx);
+        totalEnergy += levelEnergies[0];
+        
+        // Detail energies
+        for (int level = 1; level <= levels; level++) {
+            double[] detail = swtResult.getMutableDetailCoeffs(level);
+            levelEnergies[level] = calculateEnergy(detail);
+            totalEnergy += levelEnergies[level];
+        }
+        
+        System.out.printf("  Approximation: %.2f%%\n", 
+                         100 * levelEnergies[0] / totalEnergy);
+        for (int level = 1; level <= levels; level++) {
+            System.out.printf("  Level %d detail: %.2f%%\n", 
+                             level, 100 * levelEnergies[level] / totalEnergy);
+        }
+        
+        // Demonstrate denoising
+        System.out.println("\nDenoising example:");
+        
+        // Add noise to signal
+        double[] noisySignal = new double[length];
+        java.util.Random rand = new java.util.Random(42);
+        for (int i = 0; i < length; i++) {
+            noisySignal[i] = signal[i] + 0.2 * rand.nextGaussian();
+        }
+        
+        // Denoise using universal threshold
+        double[] denoised = swt.denoise(noisySignal, levels, -1, true);
+        
+        double noiseError = calculateMaxError(signal, noisySignal);
+        double denoisedError = calculateMaxError(signal, denoised);
+        
+        System.out.printf("  Noisy signal error: %.4f\n", noiseError);
+        System.out.printf("  Denoised signal error: %.4f\n", denoisedError);
+        System.out.printf("  Improvement: %.1f%%\n", 
+                         100 * (noiseError - denoisedError) / noiseError);
+        
+        // Feature extraction at specific level
+        System.out.println("\nFeature extraction (level 2 only):");
+        double[] level2Features = swt.extractLevel(signal, levels, 2);
+        double level2Energy = calculateEnergy(level2Features);
+        System.out.printf("  Level 2 features energy: %.4f\n", level2Energy);
+        
+        // Clean up resources
+        swt.cleanup();
+        
+        System.out.println("\nKey advantages of SWT:");
+        System.out.println("  • Shift-invariant (redundant representation)");
+        System.out.println("  • Better for pattern detection and alignment");
+        System.out.println("  • Automatic internal optimizations");
+        System.out.println("  • Perfect for denoising applications");
     }
 
     // Helper methods
