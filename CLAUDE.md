@@ -116,6 +116,12 @@ MODWTResult[] results = transform.forwardBatch(signals); // 2-4x speedup
 
 ## Development Guidelines
 
+### API Design Principles
+1. **Single Clean API**: Never create "optimized" versions as separate classes (e.g., no SWTOptimizedWavelet)
+2. **Internal Optimizations**: All optimizations must be private, internal, and automatic
+3. **Transparent Performance**: Users get optimizations automatically without API changes
+4. **No Implementation Leakage**: Implementation details should never appear in public APIs
+
 ### When Adding Features
 1. **Use MODWT**: Primary transform for new features
 2. **Explicit Configuration**: No default financial parameters
