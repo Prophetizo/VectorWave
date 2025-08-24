@@ -17,10 +17,16 @@ package ai.prophetizo.wavelet.api;
  */
 public final class BiorthogonalSpline implements BiorthogonalWavelet {
 
-    // CDF 1,3 coefficient constants for improved readability
+    // Common mathematical constants for improved readability
     private static final double ONE_EIGHTH = 1.0 / 8.0;
     private static final double MINUS_ONE_EIGHTH = -1.0 / 8.0;
     private static final double ONE = 1.0;
+    private static final double SQRT_2_INVERSE = 1.0 / Math.sqrt(2.0);  // 0.7071067811865476
+    private static final double SQRT_2 = Math.sqrt(2.0);  // 1.4142135623730951
+    private static final double HALF_SQRT_2_INVERSE = 0.5 / Math.sqrt(2.0);  // 0.3535533905932738
+    private static final double QUARTER_SQRT_2_INVERSE = 0.25 / Math.sqrt(2.0);  // 0.1767766952966369
+    private static final double THREE_QUARTER_SQRT_2_INVERSE = 0.75 / Math.sqrt(2.0);  // 0.5303300858899107
+    private static final double THREE_HALF_SQRT_2_INVERSE = 1.5 / Math.sqrt(2.0);  // THREE_HALF_SQRT_2_INVERSE
 
     // Example: bior1.3 - commonly used for edge detection
     // These are the standard Cohen-Daubechies-Feauveau (CDF) 1,3 coefficients
@@ -47,9 +53,9 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
     public static final BiorthogonalSpline BIOR1_1 = new BiorthogonalSpline(
             "bior1.1", 1, 1,
             // Decomposition low-pass filter
-            new double[]{0.7071067811865476, 0.7071067811865476},
+            new double[]{SQRT_2_INVERSE, SQRT_2_INVERSE},
             // Reconstruction low-pass filter  
-            new double[]{0.7071067811865476, 0.7071067811865476},
+            new double[]{SQRT_2_INVERSE, SQRT_2_INVERSE},
             true,
             1.0,  // No scaling needed for orthogonal Haar
             0     // No group delay for symmetric Haar
@@ -63,9 +69,9 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         0.812723635450, 0.417005184424, -0.076488599078, -0.059434418646,
                         0.023680171947, 0.005611434819},
             // Reconstruction low-pass filter (2 coefficients)
-            new double[]{0.7071067811865476, 0.7071067811865476},
+            new double[]{SQRT_2_INVERSE, SQRT_2_INVERSE},
             true,
-            0.7071067811865476,  // Reconstruction scaling
+            SQRT_2_INVERSE,  // Reconstruction scaling
             4     // Group delay
     );
     
@@ -74,10 +80,10 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
     public static final BiorthogonalSpline BIOR2_2 = new BiorthogonalSpline(
             "bior2.2", 2, 2,
             // Decomposition low-pass filter (5 coefficients)
-            new double[]{-0.1767766952966369, 0.3535533905932738, 1.0606601717798214,
-                        0.3535533905932738, -0.1767766952966369},
+            new double[]{-QUARTER_SQRT_2_INVERSE, HALF_SQRT_2_INVERSE, THREE_HALF_SQRT_2_INVERSE,
+                        HALF_SQRT_2_INVERSE, -QUARTER_SQRT_2_INVERSE},
             // Reconstruction low-pass filter (3 coefficients)
-            new double[]{0.3535533905932738, 0.7071067811865476, 0.3535533905932738},
+            new double[]{HALF_SQRT_2_INVERSE, SQRT_2_INVERSE, HALF_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             2     // Group delay
@@ -91,7 +97,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         0.85269867900889, 0.37740285561138, -0.11062440441844, -0.02384946501956,
                         0.03782845550726},
             // Reconstruction low-pass filter (3 coefficients)
-            new double[]{0.3535533905932738, 0.7071067811865476, 0.3535533905932738},
+            new double[]{HALF_SQRT_2_INVERSE, SQRT_2_INVERSE, HALF_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             4     // Group delay
@@ -106,7 +112,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         -0.17185392490960, -0.06650878107113, 0.03307121615827, 0.00193588752085,
                         -0.00679744371334},
             // Reconstruction low-pass filter (3 coefficients)
-            new double[]{0.3535533905932738, 0.7071067811865476, 0.3535533905932738},
+            new double[]{HALF_SQRT_2_INVERSE, SQRT_2_INVERSE, HALF_SQRT_2_INVERSE},
             true,
             0.7071067811865476,  // Reconstruction scaling
             6     // Group delay
@@ -122,7 +128,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         0.03968708834741, 0.00513451063436, -0.00750912736790, 0.00020703315896,
                         0.00133639669065},
             // Reconstruction low-pass filter (3 coefficients)
-            new double[]{0.3535533905932738, 0.7071067811865476, 0.3535533905932738},
+            new double[]{HALF_SQRT_2_INVERSE, SQRT_2_INVERSE, HALF_SQRT_2_INVERSE},
             true,
             0.6298942083656,  // Reconstruction scaling
             8     // Group delay
@@ -132,9 +138,9 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
     public static final BiorthogonalSpline BIOR3_1 = new BiorthogonalSpline(
             "bior3.1", 3, 1,
             // Decomposition low-pass filter (4 coefficients)
-            new double[]{-0.3535533905932738, 1.0606601717798214, 1.0606601717798214, -0.3535533905932738},
+            new double[]{-HALF_SQRT_2_INVERSE, THREE_HALF_SQRT_2_INVERSE, THREE_HALF_SQRT_2_INVERSE, -HALF_SQRT_2_INVERSE},
             // Reconstruction low-pass filter (4 coefficients)
-            new double[]{0.1767766952966369, 0.5303300858899107, 0.5303300858899107, 0.1767766952966369},
+            new double[]{QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, QUARTER_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             2     // Group delay
@@ -147,7 +153,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
             new double[]{0.06629126073624, -0.19887378220871, -0.15467960838456, 0.99436891104358,
                         0.99436891104358, -0.15467960838456, -0.19887378220871, 0.06629126073624},
             // Reconstruction low-pass filter (4 coefficients)
-            new double[]{0.1767766952966369, 0.5303300858899107, 0.5303300858899107, 0.1767766952966369},
+            new double[]{QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, QUARTER_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             3     // Group delay
@@ -161,7 +167,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         -0.07181553374457, 0.96674755240348, 0.96674755240348, -0.07181553374457,
                         -0.26792357880567, 0.05224175305576, 0.04145791438182, -0.01380930374353},
             // Reconstruction low-pass filter (4 coefficients)
-            new double[]{0.1767766952966369, 0.5303300858899107, 0.5303300858899107, 0.1767766952966369},
+            new double[]{QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, QUARTER_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             5     // Group delay
@@ -176,7 +182,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         0.97875960941423, 0.03892321448596, -0.24072663312710, 0.00123255138768,
                         0.06207776192089, -0.00881784307093, -0.00709427600303, 0.00353713800152},
             // Reconstruction low-pass filter (4 coefficients)
-            new double[]{0.1767766952966369, 0.5303300858899107, 0.5303300858899107, 0.1767766952966369},
+            new double[]{QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, QUARTER_SQRT_2_INVERSE},
             true,
             1.0,  // No additional scaling needed
             7     // Group delay
@@ -192,7 +198,7 @@ public final class BiorthogonalSpline implements BiorthogonalWavelet {
                         -0.17520070369698, -0.01636499682386, 0.06375562764545, -0.00471408733933,
                         -0.01721018024336, 0.00294786709734, 0.00141682627301, -0.00088388347648},
             // Reconstruction low-pass filter (4 coefficients)
-            new double[]{0.1767766952966369, 0.5303300858899107, 0.5303300858899107, 0.1767766952966369},
+            new double[]{QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, THREE_QUARTER_SQRT_2_INVERSE, QUARTER_SQRT_2_INVERSE},
             true,
             0.9808930729813,  // Reconstruction scaling
             9     // Group delay
