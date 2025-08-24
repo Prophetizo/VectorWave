@@ -79,6 +79,23 @@ public enum WaveletName {
     // Discrete Meyer wavelet
     DMEY("dmey", "Discrete Meyer wavelet", WaveletType.ORTHOGONAL),
     
+    // Biorthogonal wavelets - BIOR family
+    BIOR1_1("bior1.1", "Biorthogonal 1.1", WaveletType.BIORTHOGONAL),
+    BIOR1_3("bior1.3", "Biorthogonal 1.3", WaveletType.BIORTHOGONAL),
+    BIOR1_5("bior1.5", "Biorthogonal 1.5", WaveletType.BIORTHOGONAL),
+    BIOR2_2("bior2.2", "Biorthogonal 2.2", WaveletType.BIORTHOGONAL),
+    BIOR2_4("bior2.4", "Biorthogonal 2.4", WaveletType.BIORTHOGONAL),
+    BIOR2_6("bior2.6", "Biorthogonal 2.6", WaveletType.BIORTHOGONAL),
+    BIOR2_8("bior2.8", "Biorthogonal 2.8", WaveletType.BIORTHOGONAL),
+    BIOR3_1("bior3.1", "Biorthogonal 3.1", WaveletType.BIORTHOGONAL),
+    BIOR3_3("bior3.3", "Biorthogonal 3.3", WaveletType.BIORTHOGONAL),
+    BIOR3_5("bior3.5", "Biorthogonal 3.5", WaveletType.BIORTHOGONAL),
+    BIOR3_7("bior3.7", "Biorthogonal 3.7", WaveletType.BIORTHOGONAL),
+    BIOR3_9("bior3.9", "Biorthogonal 3.9", WaveletType.BIORTHOGONAL),
+    BIOR4_4("bior4.4", "Biorthogonal 4.4 (JPEG2000)", WaveletType.BIORTHOGONAL),
+    BIOR5_5("bior5.5", "Biorthogonal 5.5", WaveletType.BIORTHOGONAL),
+    BIOR6_8("bior6.8", "Biorthogonal 6.8", WaveletType.BIORTHOGONAL),
+    
     // Continuous wavelets
     MORLET("morl", "Morlet wavelet", WaveletType.CONTINUOUS),
     MEXICAN_HAT("mexh", "Mexican Hat wavelet", WaveletType.CONTINUOUS),

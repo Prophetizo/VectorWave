@@ -91,6 +91,23 @@ public final class WaveletRegistry {
         // Discrete Meyer wavelet
         register(WaveletName.DMEY, DiscreteMeyer.DMEY);
         
+        // Biorthogonal wavelets
+        register(WaveletName.BIOR1_1, BiorthogonalSpline.BIOR1_1);
+        register(WaveletName.BIOR1_3, BiorthogonalSpline.BIOR1_3);
+        register(WaveletName.BIOR1_5, BiorthogonalSpline.BIOR1_5);
+        register(WaveletName.BIOR2_2, BiorthogonalSpline.BIOR2_2);
+        register(WaveletName.BIOR2_4, BiorthogonalSpline.BIOR2_4);
+        register(WaveletName.BIOR2_6, BiorthogonalSpline.BIOR2_6);
+        register(WaveletName.BIOR2_8, BiorthogonalSpline.BIOR2_8);
+        register(WaveletName.BIOR3_1, BiorthogonalSpline.BIOR3_1);
+        register(WaveletName.BIOR3_3, BiorthogonalSpline.BIOR3_3);
+        register(WaveletName.BIOR3_5, BiorthogonalSpline.BIOR3_5);
+        register(WaveletName.BIOR3_7, BiorthogonalSpline.BIOR3_7);
+        register(WaveletName.BIOR3_9, BiorthogonalSpline.BIOR3_9);
+        register(WaveletName.BIOR4_4, BiorthogonalSpline.BIOR4_4);
+        register(WaveletName.BIOR5_5, BiorthogonalSpline.BIOR5_5);
+        register(WaveletName.BIOR6_8, BiorthogonalSpline.BIOR6_8);
+        
         // Continuous wavelets
         register(WaveletName.MORLET, new MorletWavelet());  // Uses default params (omega0=6, sigma=1)
         register(WaveletName.MEXICAN_HAT, new MATLABMexicanHat());  // MATLAB-compatible Mexican Hat
