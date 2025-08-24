@@ -420,7 +420,7 @@ public class VectorWaveSwtAdapter {
      * 
      * @return map with cache statistics
      */
-    Map<String, Object> getCacheStatistics() {
+    public Map<String, Object> getCacheStatistics() {
         Map<String, Object> stats = new ConcurrentHashMap<>();
         stats.put("filterCacheSize", filterCaches.size());
         stats.put("parallelExecutorActive", parallelExecutor != null);
