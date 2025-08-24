@@ -153,30 +153,45 @@ public final class ReverseBiorthogonalSpline implements BiorthogonalWavelet {
     
     /**
      * Get the reconstruction scaling factor.
-     * For RBIO, this may need to be inverted compared to BIOR.
+     * 
+     * For RBIO wavelets, the reconstruction scaling is inverted compared to BIOR
+     * because the filter roles are swapped. When BIOR uses a scaling factor s
+     * for reconstruction, RBIO needs 1/s to maintain perfect reconstruction
+     * after the filter swap.
      *
      * @return the reconstruction scaling factor
      */
     public double getReconstructionScale() {
-        // For RBIO, we might need to invert the scaling
-        // This depends on the specific wavelet construction
         double biorScale = originalBior.getReconstructionScale();
-        // For most cases, the scaling remains the same
-        return biorScale;
+        // Invert the scaling factor for RBIO
+        // Special case: if scale is 1.0, it remains 1.0
+        if (Math.abs(biorScale - 1.0) < 1e-10) {
+            return 1.0;
+        }
+        return 1.0 / biorScale;
     }
     
     /**
      * Get the group delay of the wavelet.
-     * The delay characteristics change when filters are swapped.
+     * 
+     * The group delay is recalculated for RBIO wavelets because the filter
+     * lengths are swapped. The delay is determined by the combined length
+     * of the analysis and synthesis filters.
+     * 
+     * Formula: delay = (length(h0_decomp) - 1)/2 + (length(h0_recon) - 1)/2 - 1
      *
      * @return the group delay in samples
      */
     public int getGroupDelay() {
-        // Group delay needs to be recalculated for swapped filters
-        // delay = (length(h0_decomp) - 1)/2 + (length(h0_recon) - 1)/2 - 1
+        // Calculate delay for the swapped filter configuration
         int decompLength = lowPassDecomposition().length;
         int reconLength = lowPassReconstruction().length;
-        return ((decompLength - 1) + (reconLength - 1)) / 2 - 1;
+        
+        // Apply the standard group delay formula
+        int delay = ((decompLength - 1) + (reconLength - 1)) / 2 - 1;
+        
+        // Ensure non-negative delay
+        return Math.max(0, delay);
     }
     
     /**

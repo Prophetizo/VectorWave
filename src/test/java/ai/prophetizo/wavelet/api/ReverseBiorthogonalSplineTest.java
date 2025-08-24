@@ -199,6 +199,58 @@ public class ReverseBiorthogonalSplineTest {
     }
     
     /**
+     * Test reconstruction scaling factor is properly inverted.
+     */
+    @Test
+    @DisplayName("Verify RBIO reconstruction scaling")
+    void testReconstructionScaling() {
+        // Test RBIO1.3 which has BIOR1.3 scaling of 0.5
+        BiorthogonalSpline bior13 = BiorthogonalSpline.BIOR1_3;
+        ReverseBiorthogonalSpline rbio13 = ReverseBiorthogonalSpline.RBIO1_3;
+        
+        double biorScale = bior13.getReconstructionScale();
+        double rbioScale = rbio13.getReconstructionScale();
+        
+        // RBIO scale should be inverted (1/0.5 = 2.0)
+        assertEquals(1.0 / biorScale, rbioScale, 1e-10,
+                    "RBIO1.3 reconstruction scale should be inverse of BIOR1.3");
+        assertEquals(2.0, rbioScale, 1e-10,
+                    "RBIO1.3 should have reconstruction scale of 2.0");
+        
+        // Test a case where scale is 1.0 (should remain 1.0)
+        BiorthogonalSpline bior22 = BiorthogonalSpline.BIOR2_2;
+        ReverseBiorthogonalSpline rbio22 = ReverseBiorthogonalSpline.RBIO2_2;
+        
+        if (Math.abs(bior22.getReconstructionScale() - 1.0) < 1e-10) {
+            assertEquals(1.0, rbio22.getReconstructionScale(), 1e-10,
+                        "RBIO2.2 should maintain scale of 1.0 when BIOR2.2 has scale 1.0");
+        }
+    }
+    
+    /**
+     * Test group delay calculation for RBIO wavelets.
+     */
+    @Test
+    @DisplayName("Verify RBIO group delay")
+    void testGroupDelay() {
+        // Test several RBIO wavelets
+        ReverseBiorthogonalSpline rbio24 = ReverseBiorthogonalSpline.RBIO2_4;
+        ReverseBiorthogonalSpline rbio33 = ReverseBiorthogonalSpline.RBIO3_3;
+        
+        // Group delay should be non-negative
+        assertTrue(rbio24.getGroupDelay() >= 0,
+                  "RBIO2.4 group delay should be non-negative");
+        assertTrue(rbio33.getGroupDelay() >= 0,
+                  "RBIO3.3 group delay should be non-negative");
+        
+        // Verify the delay calculation makes sense
+        // For RBIO2.4: decomp=3, recon=9
+        // delay = ((3-1) + (9-1))/2 - 1 = (2+8)/2 - 1 = 5 - 1 = 4
+        assertEquals(4, rbio24.getGroupDelay(),
+                    "RBIO2.4 should have group delay of 4");
+    }
+    
+    /**
      * Test filter DC response.
      */
     @ParameterizedTest(name = "DC Response: {0}")
