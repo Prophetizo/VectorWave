@@ -15,6 +15,7 @@ public class BattleLemarieTest {
     
     private static final double TOLERANCE = 1e-8;  // For ideal properties
     private static final double RELAXED_TOLERANCE = 1e-2; // For approximate Battle-Lemarié
+    private static final double SEVERE_ORTHOGONALITY_THRESHOLD = 1.0; // Threshold for severely non-orthogonal filters
     
     @Test
     @DisplayName("Test Battle-Lemarié wavelet instances exist")
@@ -337,8 +338,8 @@ public class BattleLemarieTest {
                     }
                     // Very relaxed tolerance for approximations
                     // Battle-Lemarié approximations may not satisfy strict orthogonality
-                    if (Math.abs(dot) > 1.0) { // Only fail if severely non-orthogonal
-                        assertEquals(0.0, dot, 1.0,
+                    if (Math.abs(dot) > SEVERE_ORTHOGONALITY_THRESHOLD) { // Only fail if severely non-orthogonal
+                        assertEquals(0.0, dot, SEVERE_ORTHOGONALITY_THRESHOLD,
                             String.format("Low-pass self-orthogonality failed for shift %d in %s",
                                 k, wavelet.name()));
                     }
