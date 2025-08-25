@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
-import static ai.prophetizo.wavelet.api.Daubechies.*;
+import ai.prophetizo.wavelet.padding.*;import static ai.prophetizo.wavelet.api.Daubechies.*;
 import ai.prophetizo.wavelet.config.TransformConfig;
 import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;

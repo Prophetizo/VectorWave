@@ -3,7 +3,7 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.memory.MemoryPool;
 import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.api.*;
-
+import ai.prophetizo.wavelet.padding.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;

@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.modwt;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

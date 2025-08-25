@@ -121,27 +121,27 @@ public class BatchSIMDMODWTBenchmark {
         for (int b = 0; b < batchSize; b++) {
             // Mix of different signal types
             switch (b % 4) {
-                case 0: // Random noise
+                case 0 -> { // Random noise
                     for (int t = 0; t < signalLength; t++) {
                         signals[b][t] = random.nextGaussian();
                     }
-                    break;
-                case 1: // Sine wave
+                }
+                case 1 -> { // Sine wave
                     for (int t = 0; t < signalLength; t++) {
                         signals[b][t] = Math.sin(2 * Math.PI * t / signalLength * (b + 1));
                     }
-                    break;
-                case 2: // Step function
+                }
+                case 2 -> { // Step function
                     for (int t = 0; t < signalLength; t++) {
                         signals[b][t] = (t < signalLength / 2) ? 1.0 : -1.0;
                     }
-                    break;
-                case 3: // Chirp signal
+                }
+                case 3 -> { // Chirp signal
                     for (int t = 0; t < signalLength; t++) {
                         double freq = 0.1 + 0.4 * t / signalLength;
                         signals[b][t] = Math.sin(2 * Math.PI * freq * t);
                     }
-                    break;
+                }
             }
         }
         

@@ -1,7 +1,7 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.*;
-import java.util.Set;
+import ai.prophetizo.wavelet.padding.*;import java.util.Set;
 import java.util.List;
 
 /**

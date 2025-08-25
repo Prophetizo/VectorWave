@@ -2,7 +2,7 @@ package ai.prophetizo.wavelet.integration;
 
 import ai.prophetizo.wavelet.WaveletOperations;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 import ai.prophetizo.financial.*;
 import ai.prophetizo.wavelet.memory.MemoryPool;
 import ai.prophetizo.wavelet.modwt.*;

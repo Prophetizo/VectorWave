@@ -1,7 +1,7 @@
 package ai.prophetizo.demo.cwt;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.cwt.*;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.cwt.*;
 import ai.prophetizo.wavelet.cwt.finance.*;
 
 /**

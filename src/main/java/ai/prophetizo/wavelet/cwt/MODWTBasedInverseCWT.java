@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.cwt;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.MODWTTransform;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MODWTResult;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTTransform;
 import ai.prophetizo.wavelet.modwt.MultiLevelMODWTResult;

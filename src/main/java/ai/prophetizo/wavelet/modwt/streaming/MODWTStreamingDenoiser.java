@@ -192,15 +192,11 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         
         // Calculate noise level based on method
         switch (noiseEstimation) {
-            case MAD:
-                estimatedNoiseLevel = calculateMAD(noiseWindow) / 0.6745;
-                break;
-            case STD:
-                estimatedNoiseLevel = calculateSTD(noiseWindow);
-                break;
-            default:
+            case MAD -> estimatedNoiseLevel = calculateMAD(noiseWindow) / 0.6745;
+            case STD -> estimatedNoiseLevel = calculateSTD(noiseWindow);
+            default -> {
                 // Fixed noise level, no update needed
-                break;
+            }
         }
     }
     
@@ -297,34 +293,34 @@ public class MODWTStreamingDenoiser implements Flow.Publisher<double[]>, AutoClo
         
         // Calculate threshold based on selected method
         int n = samples.length;
-        switch (thresholdMethod) {
-            case UNIVERSAL:
+        return switch (thresholdMethod) {
+            case UNIVERSAL -> 
                 // Universal threshold (VisuShrink): sigma * sqrt(2 * log(n))
-                return sigma * Math.sqrt(2.0 * Math.log(n));
+                sigma * Math.sqrt(2.0 * Math.log(n));
                 
-            case SURE:
+            case SURE -> 
                 // For SURE threshold, we need the actual coefficients
                 // This is more complex, so we'll approximate with a conservative factor
-                return sigma * Math.sqrt(2.0 * Math.log(n)) * 0.8;
+                sigma * Math.sqrt(2.0 * Math.log(n)) * 0.8;
                 
-            case MINIMAX:
+            case MINIMAX -> {
                 // Minimax threshold approximation
                 double logN = Math.log(n);
                 if (n <= 32) {
-                    return 0.0;
+                    yield 0.0;
                 } else if (n <= 64) {
-                    return sigma * (0.3936 + 0.1829 * logN);
+                    yield sigma * (0.3936 + 0.1829 * logN);
                 } else {
-                    return sigma * (0.4745 + 0.1148 * logN);
+                    yield sigma * (0.4745 + 0.1148 * logN);
                 }
+            }
                 
-            case FIXED:
+            case FIXED -> 
                 // For fixed method, return a reasonable default that will be multiplied
-                return sigma;
+                sigma;
                 
-            default:
-                throw new IllegalArgumentException("Unknown threshold method: " + thresholdMethod);
-        }
+            default -> throw new IllegalArgumentException("Unknown threshold method: " + thresholdMethod);
+        };
     }
     
     

@@ -358,47 +358,45 @@ public final class CWTTransform {
     private double getBoundaryValue(double[] signal, int index) {
         int length = signal.length;
         
-        switch (config.getPaddingStrategy()) {
-            case ZERO:
-                return 0.0;
+        return switch (config.getPaddingStrategy()) {
+            case ZERO -> 0.0;
                 
-            case REFLECT:
+            case REFLECT -> {
                 if (index < 0) {
-                    index = -index;
-                    if (index >= length) {
-                        index = length - 1;
+                    int reflectedIndex = -index;
+                    if (reflectedIndex >= length) {
+                        reflectedIndex = length - 1;
                     }
-                    return signal[index];
+                    yield signal[reflectedIndex];
                 } else if (index >= length) {
-                    index = 2 * length - index - 2;
-                    if (index < 0) {
-                        index = 0;
+                    int reflectedIndex = 2 * length - index - 2;
+                    if (reflectedIndex < 0) {
+                        reflectedIndex = 0;
                     }
-                    return signal[index];
+                    yield signal[reflectedIndex];
                 }
-                break;
+                yield 0.0; // fallback
+            }
                 
-            case SYMMETRIC:
+            case SYMMETRIC -> {
                 if (index < 0) {
-                    index = -index - 1;
-                    if (index >= length) {
-                        index = length - 1;
+                    int symmetricIndex = -index - 1;
+                    if (symmetricIndex >= length) {
+                        symmetricIndex = length - 1;
                     }
-                    return signal[index];
+                    yield signal[symmetricIndex];
                 } else if (index >= length) {
-                    index = 2 * length - index - 1;
-                    if (index < 0) {
-                        index = 0;
+                    int symmetricIndex = 2 * length - index - 1;
+                    if (symmetricIndex < 0) {
+                        symmetricIndex = 0;
                     }
-                    return signal[index];
+                    yield signal[symmetricIndex];
                 }
-                break;
+                yield 0.0; // fallback
+            }
                 
-            case PERIODIC:
-                return signal[(index % length + length) % length];
-        }
-        
-        return 0.0;
+            case PERIODIC -> signal[(index % length + length) % length];
+        };
     }
     
     /**

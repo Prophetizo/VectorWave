@@ -1,4 +1,4 @@
-package ai.prophetizo.wavelet.api;
+package ai.prophetizo.wavelet.padding;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
@@ -200,7 +200,17 @@ public record PolynomialExtrapolationStrategy(
      * Fallback to linear extrapolation when not enough points for requested order.
      */
     private double[] fallbackToLowerOrder(double[] signal, int targetLength, int actualOrder) {
-        if (actualOrder <= 1) {
+        if (actualOrder <= 1 || signal.length < 2) {
+            // Fall back to constant padding for single element or when linear isn't possible
+            if (signal.length == 1) {
+                ConstantPaddingStrategy.PaddingMode constMode = switch (mode) {
+                    case RIGHT -> ConstantPaddingStrategy.PaddingMode.RIGHT;
+                    case LEFT -> ConstantPaddingStrategy.PaddingMode.LEFT;
+                    case SYMMETRIC -> ConstantPaddingStrategy.PaddingMode.SYMMETRIC;
+                };
+                var constant = new ConstantPaddingStrategy(constMode);
+                return constant.pad(signal, targetLength);
+            }
             // Fall back to linear extrapolation
             LinearExtrapolationStrategy.PaddingMode linearMode = switch (mode) {
                 case RIGHT -> LinearExtrapolationStrategy.PaddingMode.RIGHT;
@@ -260,62 +270,145 @@ public record PolynomialExtrapolationStrategy(
         }
         
         // Solve the system using Gaussian elimination
-        return solveLinearSystem(VtV, Vty);
+        double[] coeffs = solveLinearSystem(VtV, Vty);
+        
+        // If solving failed (singular/ill-conditioned), fall back to simpler fit
+        if (coeffs == null) {
+            // Fall back to linear fit (degree 1) which is more stable
+            if (degree > 1) {
+                return fitPolynomial(x, y, 1);
+            }
+            // If even linear fit fails, return constant (mean of y values)
+            double meanY = 0;
+            for (double yi : y) {
+                meanY += yi;
+            }
+            meanY /= y.length;
+            coeffs = new double[degree + 1];
+            coeffs[0] = meanY; // Constant term
+            // Rest are zeros (no higher order terms)
+        }
+        
+        return coeffs;
     }
     
     /**
      * Solve linear system Ax = b using Gaussian elimination with partial pivoting.
+     * Enhanced with numerical stability checks and condition number estimation.
      */
     private double[] solveLinearSystem(double[][] A, double[] b) {
         int n = b.length;
         double[][] augmented = new double[n][n + 1];
         
-        // Create augmented matrix
+        // Create augmented matrix and track scaling
+        double maxElement = 0;
         for (int i = 0; i < n; i++) {
             System.arraycopy(A[i], 0, augmented[i], 0, n);
             augmented[i][n] = b[i];
+            for (int j = 0; j < n; j++) {
+                maxElement = Math.max(maxElement, Math.abs(A[i][j]));
+            }
+        }
+        
+        // Scale matrix if elements are too large or too small
+        boolean scaled = false;
+        double scaleFactor = 1.0;
+        if (maxElement > 1e8 || (maxElement < 1e-8 && maxElement > 0)) {
+            scaleFactor = 1.0 / maxElement;
+            scaled = true;
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j <= n; j++) {
+                    augmented[i][j] *= scaleFactor;
+                }
+            }
         }
         
         // Forward elimination with partial pivoting
+        double conditionEstimate = 1.0;
         for (int k = 0; k < n; k++) {
-            // Find pivot
+            // Find pivot with column scaling
             int maxRow = k;
-            double maxVal = Math.abs(augmented[k][k]);
-            for (int i = k + 1; i < n; i++) {
-                if (Math.abs(augmented[i][k]) > maxVal) {
-                    maxVal = Math.abs(augmented[i][k]);
-                    maxRow = i;
+            double maxVal = 0;
+            for (int i = k; i < n; i++) {
+                // Scale by row norm for better pivot selection
+                double rowNorm = 0;
+                for (int j = k; j < n; j++) {
+                    rowNorm += Math.abs(augmented[i][j]);
+                }
+                if (rowNorm > 1e-15) {
+                    double scaledVal = Math.abs(augmented[i][k]) / rowNorm;
+                    if (scaledVal > maxVal) {
+                        maxVal = scaledVal;
+                        maxRow = i;
+                    }
                 }
             }
             
-            // Swap rows
-            double[] temp = augmented[k];
-            augmented[k] = augmented[maxRow];
-            augmented[maxRow] = temp;
-            
-            // Check for singular matrix
-            if (Math.abs(augmented[k][k]) < 1e-10) {
-                // Singular matrix, return zeros (will fall back to lower order)
-                return new double[n];
+            // Swap rows if needed
+            if (maxRow != k) {
+                double[] temp = augmented[k];
+                augmented[k] = augmented[maxRow];
+                augmented[maxRow] = temp;
             }
             
-            // Eliminate column
+            // Check for near-singular matrix
+            double pivot = augmented[k][k];
+            if (Math.abs(pivot) < 1e-12) {
+                // Matrix is singular or nearly singular
+                // Return null to signal failure (caller will handle fallback)
+                return null;
+            }
+            
+            // Update condition number estimate
+            if (k > 0) {
+                conditionEstimate *= Math.abs(augmented[k][k] / augmented[0][0]);
+            }
+            
+            // Eliminate column with numerical stability check
             for (int i = k + 1; i < n; i++) {
-                double factor = augmented[i][k] / augmented[k][k];
-                for (int j = k; j <= n; j++) {
+                double factor = augmented[i][k] / pivot;
+                
+                // Check for numerical instability
+                if (!Double.isFinite(factor) || Math.abs(factor) > 1e10) {
+                    return null; // Numerical instability detected
+                }
+                
+                augmented[i][k] = 0; // Explicitly zero out for clarity
+                for (int j = k + 1; j <= n; j++) {
                     augmented[i][j] -= factor * augmented[k][j];
                 }
             }
         }
         
-        // Back substitution
+        // Check condition number estimate
+        if (conditionEstimate > 1e12) {
+            // Matrix is ill-conditioned
+            return null;
+        }
+        
+        // Back substitution with stability checks
         double[] x = new double[n];
         for (int i = n - 1; i >= 0; i--) {
-            x[i] = augmented[i][n];
+            double sum = augmented[i][n];
             for (int j = i + 1; j < n; j++) {
-                x[i] -= augmented[i][j] * x[j];
+                sum -= augmented[i][j] * x[j];
             }
-            x[i] /= augmented[i][i];
+            
+            if (Math.abs(augmented[i][i]) < 1e-15) {
+                return null; // Diagonal element too small
+            }
+            
+            x[i] = sum / augmented[i][i];
+            
+            // Check for numerical overflow/underflow
+            if (!Double.isFinite(x[i]) || Math.abs(x[i]) > 1e10) {
+                return null; // Solution is numerically unstable
+            }
+        }
+        
+        // Unscale solution if we scaled the matrix
+        if (scaled && scaleFactor != 0) {
+            // No need to unscale x for homogeneous scaling
         }
         
         return x;

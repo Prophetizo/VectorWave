@@ -1,4 +1,4 @@
-package ai.prophetizo.wavelet.api;
+package ai.prophetizo.wavelet.padding;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 import java.util.Arrays;

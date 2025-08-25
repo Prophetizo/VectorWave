@@ -90,23 +90,10 @@ public class EnumBasedWaveletDemo {
         WaveletName selectedWavelet = WaveletName.DB4;
         
         switch (selectedWavelet) {
-            case HAAR:
-                System.out.println("    Using Haar wavelet");
-                break;
-            case DB2:
-            case DB4:
-            case DB6:
-            case DB8:
-            case DB10:
-                System.out.println("    Using Daubechies family");
-                break;
-            case SYM2:
-            case SYM3:
-            case SYM4:
-                System.out.println("    Using Symlet family");
-                break;
-            default:
-                System.out.println("    Using other wavelet");
+            case HAAR -> System.out.println("    Using Haar wavelet");
+            case DB2, DB4, DB6, DB8, DB10 -> System.out.println("    Using Daubechies family");
+            case SYM2, SYM3, SYM4 -> System.out.println("    Using Symlet family");
+            default -> System.out.println("    Using other wavelet");
         }
         
         System.out.println();

@@ -5,7 +5,7 @@ import ai.prophetizo.wavelet.modwt.MODWTTransform;
 import ai.prophetizo.wavelet.modwt.MutableMultiLevelMODWTResult;
 import ai.prophetizo.wavelet.swt.VectorWaveSwtAdapter;
 import ai.prophetizo.wavelet.api.*;
-
+import ai.prophetizo.wavelet.padding.*;
 import java.util.Arrays;
 
 /**

@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.api.providers;
 
 import ai.prophetizo.wavelet.api.*;
-import java.util.List;
+import ai.prophetizo.wavelet.padding.*;import java.util.List;
 
 /**
  * Provider for orthogonal wavelets in the VectorWave library.

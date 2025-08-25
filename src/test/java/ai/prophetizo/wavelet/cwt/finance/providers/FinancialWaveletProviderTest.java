@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.cwt.finance.providers;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.cwt.finance.*;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.cwt.finance.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

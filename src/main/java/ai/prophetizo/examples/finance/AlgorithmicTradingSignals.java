@@ -3,7 +3,7 @@ package ai.prophetizo.examples.finance;
 import ai.prophetizo.financial.*;
 import ai.prophetizo.wavelet.WaveletOperations;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 

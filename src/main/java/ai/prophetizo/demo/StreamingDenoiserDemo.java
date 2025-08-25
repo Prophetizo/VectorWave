@@ -1,7 +1,7 @@
 package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingDenoiser;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingDenoiser;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdMethod;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser.ThresholdType;
 

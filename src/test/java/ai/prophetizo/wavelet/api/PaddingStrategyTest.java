@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.api;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
+import ai.prophetizo.wavelet.padding.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

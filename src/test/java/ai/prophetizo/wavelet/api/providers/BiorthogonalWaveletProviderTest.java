@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.api.providers;
 
 import ai.prophetizo.wavelet.api.*;
-import org.junit.jupiter.api.BeforeEach;
+import ai.prophetizo.wavelet.padding.*;import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

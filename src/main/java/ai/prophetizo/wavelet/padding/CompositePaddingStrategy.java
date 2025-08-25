@@ -1,4 +1,4 @@
-package ai.prophetizo.wavelet.api;
+package ai.prophetizo.wavelet.padding;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
@@ -78,21 +78,24 @@ public record CompositePaddingStrategy(
         
         double[] result = new double[targetLength];
         
+        // Optimize memory by creating minimal temporary arrays
         if (leftPadding > 0) {
-            // Apply left padding
-            double[] leftPadded = leftStrategy.pad(signal, signal.length + leftPadding);
+            // Create a small signal subset for left padding computation
+            int contextSize = Math.min(signal.length, 10); // Use at most 10 points for context
+            double[] leftContext = new double[contextSize];
+            System.arraycopy(signal, 0, leftContext, 0, contextSize);
             
-            // Extract left padding based on strategy type
+            // Apply strategy to minimal context
+            double[] leftPadded = leftStrategy.pad(leftContext, contextSize + leftPadding);
+            
+            // Extract the padding portion
             if (isRightAlignedStrategy(leftStrategy)) {
-                // Strategy pads on the right, we need to extract and reverse
-                double[] leftPad = new double[leftPadding];
+                // Padding is at the end of the result
                 for (int i = 0; i < leftPadding; i++) {
-                    leftPad[i] = leftPadded[signal.length + i];
+                    result[leftPadding - 1 - i] = leftPadded[contextSize + i];
                 }
-                // Use the padding values at the beginning
-                System.arraycopy(leftPad, 0, result, 0, leftPadding);
             } else {
-                // Strategy pads on the left or symmetrically
+                // Padding is at the beginning
                 System.arraycopy(leftPadded, 0, result, 0, leftPadding);
             }
         }
@@ -101,21 +104,24 @@ public record CompositePaddingStrategy(
         System.arraycopy(signal, 0, result, leftPadding, signal.length);
         
         if (rightPadding > 0) {
-            // Apply right padding
-            double[] rightPadded = rightStrategy.pad(signal, signal.length + rightPadding);
+            // Create a small signal subset for right padding computation
+            int contextSize = Math.min(signal.length, 10); // Use at most 10 points for context
+            int startIdx = Math.max(0, signal.length - contextSize);
+            double[] rightContext = new double[contextSize];
+            System.arraycopy(signal, startIdx, rightContext, 0, contextSize);
             
-            // Extract right padding
+            // Apply strategy to minimal context
+            double[] rightPadded = rightStrategy.pad(rightContext, contextSize + rightPadding);
+            
+            // Extract the padding portion
             if (isLeftAlignedStrategy(rightStrategy)) {
-                // Strategy pads on the left, we need to extract and use end values
-                double[] rightPad = new double[rightPadding];
-                for (int i = 0; i < rightPadding; i++) {
-                    rightPad[i] = rightPadded[i];
-                }
-                // Use the padding values at the end
-                System.arraycopy(rightPad, 0, result, leftPadding + signal.length, rightPadding);
+                // Padding is at the beginning
+                System.arraycopy(rightPadded, 0, 
+                               result, leftPadding + signal.length, rightPadding);
             } else {
-                // Strategy pads on the right or symmetrically
-                System.arraycopy(rightPadded, signal.length, 
+                // Padding is at the end - but check array bounds
+                int srcPos = Math.min(contextSize, rightPadded.length - rightPadding);
+                System.arraycopy(rightPadded, srcPos, 
                                result, leftPadding + signal.length, rightPadding);
             }
         }
@@ -125,31 +131,38 @@ public record CompositePaddingStrategy(
     
     /**
      * Check if strategy typically pads on the right.
+     * Uses pattern matching for cleaner code.
      */
     private boolean isRightAlignedStrategy(PaddingStrategy strategy) {
-        // Most strategies pad on the right by default
-        return !(strategy instanceof ConstantPaddingStrategy constant 
-                 && constant.mode() == ConstantPaddingStrategy.PaddingMode.LEFT)
-            && !(strategy instanceof LinearExtrapolationStrategy linear
-                 && linear.mode() == LinearExtrapolationStrategy.PaddingMode.LEFT)
-            && !(strategy instanceof PolynomialExtrapolationStrategy poly
-                 && poly.mode() == PolynomialExtrapolationStrategy.PaddingMode.LEFT)
-            && !(strategy instanceof StatisticalPaddingStrategy stat
-                 && stat.mode() == StatisticalPaddingStrategy.PaddingMode.LEFT);
+        return switch (strategy) {
+            case ConstantPaddingStrategy(var mode) -> 
+                mode != ConstantPaddingStrategy.PaddingMode.LEFT;
+            case LinearExtrapolationStrategy(_, var mode) -> 
+                mode != LinearExtrapolationStrategy.PaddingMode.LEFT;
+            case PolynomialExtrapolationStrategy(_, _, var mode) -> 
+                mode != PolynomialExtrapolationStrategy.PaddingMode.LEFT;
+            case StatisticalPaddingStrategy(_, _, var mode) -> 
+                mode != StatisticalPaddingStrategy.PaddingMode.LEFT;
+            default -> true; // Most strategies pad on the right by default
+        };
     }
     
     /**
      * Check if strategy typically pads on the left.
+     * Uses pattern matching for cleaner code.
      */
     private boolean isLeftAlignedStrategy(PaddingStrategy strategy) {
-        return (strategy instanceof ConstantPaddingStrategy constant 
-                && constant.mode() == ConstantPaddingStrategy.PaddingMode.LEFT)
-            || (strategy instanceof LinearExtrapolationStrategy linear
-                && linear.mode() == LinearExtrapolationStrategy.PaddingMode.LEFT)
-            || (strategy instanceof PolynomialExtrapolationStrategy poly
-                && poly.mode() == PolynomialExtrapolationStrategy.PaddingMode.LEFT)
-            || (strategy instanceof StatisticalPaddingStrategy stat
-                && stat.mode() == StatisticalPaddingStrategy.PaddingMode.LEFT);
+        return switch (strategy) {
+            case ConstantPaddingStrategy(var mode) -> 
+                mode == ConstantPaddingStrategy.PaddingMode.LEFT;
+            case LinearExtrapolationStrategy(_, var mode) -> 
+                mode == LinearExtrapolationStrategy.PaddingMode.LEFT;
+            case PolynomialExtrapolationStrategy(_, _, var mode) -> 
+                mode == PolynomialExtrapolationStrategy.PaddingMode.LEFT;
+            case StatisticalPaddingStrategy(_, _, var mode) -> 
+                mode == StatisticalPaddingStrategy.PaddingMode.LEFT;
+            default -> false; // Most strategies don't pad on the left
+        };
     }
     
     @Override
