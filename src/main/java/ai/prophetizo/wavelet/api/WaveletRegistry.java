@@ -91,6 +91,13 @@ public final class WaveletRegistry {
         // Discrete Meyer wavelet
         register(WaveletName.DMEY, DiscreteMeyer.DMEY);
         
+        // Battle-Lemarié wavelets
+        register(WaveletName.BLEM1, BattleLemarieWavelet.BLEM1);
+        register(WaveletName.BLEM2, BattleLemarieWavelet.BLEM2);
+        register(WaveletName.BLEM3, BattleLemarieWavelet.BLEM3);
+        register(WaveletName.BLEM4, BattleLemarieWavelet.BLEM4);
+        register(WaveletName.BLEM5, BattleLemarieWavelet.BLEM5);
+        
         // Biorthogonal wavelets
         register(WaveletName.BIOR1_1, BiorthogonalSpline.BIOR1_1);
         register(WaveletName.BIOR1_3, BiorthogonalSpline.BIOR1_3);
