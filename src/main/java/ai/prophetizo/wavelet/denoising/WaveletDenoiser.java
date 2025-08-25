@@ -366,7 +366,7 @@ public class WaveletDenoiser {
      * @param detailCoeffs the detail coefficients
      * @return estimated noise standard deviation
      */
-    private double estimateNoiseSigma(double[] detailCoeffs) {
+    protected double estimateNoiseSigma(double[] detailCoeffs) {
         // Calculate median absolute deviation
         double[] absCoeffs = new double[detailCoeffs.length];
         for (int i = 0; i < detailCoeffs.length; i++) {
@@ -382,7 +382,7 @@ public class WaveletDenoiser {
     /**
      * Calculates the threshold value based on the selected method.
      */
-    private double calculateThreshold(double[] coeffs, double sigma, ThresholdMethod method) {
+    protected double calculateThreshold(double[] coeffs, double sigma, ThresholdMethod method) {
         int n = coeffs.length;
 
         switch (method) {
@@ -541,7 +541,7 @@ public class WaveletDenoiser {
     /**
      * Applies thresholding to coefficients.
      */
-    private double[] applyThreshold(double[] coeffs, double threshold, ThresholdType type) {
+    protected double[] applyThreshold(double[] coeffs, double threshold, ThresholdType type) {
         if (useVectorOps) {
             // Use SIMD-optimized thresholding
             return type == ThresholdType.SOFT
