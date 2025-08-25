@@ -203,35 +203,46 @@ public final class BSplineUtils {
     
     /**
      * Normalize filter for orthogonality conditions.
+     * 
+     * Note: For orthogonal wavelets, the primary requirement is sum = sqrt(2).
+     * The sum of squares = 1 constraint is secondary and may not be perfectly
+     * satisfied for Battle-Lemarié approximations.
      */
     private static double[] normalizeForOrthogonality(double[] filter) {
-        // Ensure sum = sqrt(2) and sum of squares = 1
+        // Calculate current sum
         double sum = 0;
-        double sumSq = 0;
         for (double h : filter) {
             sum += h;
-            sumSq += h * h;
         }
         
-        // First normalize to unit energy
-        double scale = 1.0 / Math.sqrt(sumSq);
+        // If sum is too small (near zero), the filter might have alternating signs
+        // In this case, we can't properly normalize to sum = sqrt(2)
+        // Just normalize to unit energy instead
+        if (Math.abs(sum) < 1e-10) {
+            double sumSq = 0;
+            for (double h : filter) {
+                sumSq += h * h;
+            }
+            double scale = 1.0 / Math.sqrt(sumSq);
+            double[] normalized = new double[filter.length];
+            for (int i = 0; i < filter.length; i++) {
+                normalized[i] = filter[i] * scale;
+            }
+            return normalized;
+        }
+        
+        // Primary normalization: ensure sum = sqrt(2)
+        // This is the most important constraint for orthogonal wavelets
+        double scale = Math.sqrt(2) / sum;
         double[] normalized = new double[filter.length];
         for (int i = 0; i < filter.length; i++) {
             normalized[i] = filter[i] * scale;
         }
         
-        // Then adjust sum to sqrt(2)
-        sum = 0;
-        for (double h : normalized) {
-            sum += h;
-        }
-        
-        if (Math.abs(sum) > 1e-10) {
-            scale = Math.sqrt(2) / sum;
-            for (int i = 0; i < normalized.length; i++) {
-                normalized[i] *= scale;
-            }
-        }
+        // Note: We don't enforce sum of squares = 1 as a secondary step
+        // because that would break the sum = sqrt(2) constraint.
+        // For true Battle-Lemarié wavelets, both conditions would be satisfied
+        // naturally, but our approximations prioritize the sum constraint.
         
         return normalized;
     }
