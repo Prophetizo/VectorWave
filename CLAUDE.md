@@ -1,137 +1,160 @@
-# CLAUDE.md
+# VectorWave Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Development guide for working with the VectorWave repository.
 
-## Build and Run Commands
+## Library Scope
 
-### Building the project
-```bash
-mvn clean compile
-```
+**VectorWave is strictly a wavelet analysis library.** It provides:
+- Wavelet transforms (MODWT, CWT, SWT)
+- Signal processing and denoising
+- Mathematical operations on wavelets
+- Performance optimizations (SIMD, Vector API)
 
-### Running the main demo
-```bash
-# Direct Java execution (recommended)
-java -cp target/classes ai.prophetizo.Main
+**NOT in scope:**
+- UI components or helpers
+- Platform-specific integrations (MotiveWave, MetaTrader, etc.)
+- Trading platform adapters
+- Display/presentation logic
 
-# Using Maven exec plugin (requires exec plugin configuration in pom.xml)
-mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
-```
+Any UI adapters or platform integrations should be implemented as separate projects that depend on VectorWave.
 
-### Packaging as JAR
-```bash
-mvn clean package
-```
+## Current State (January 2025)
 
-## Architecture Overview
+### MODWT as Primary Transform
+- **PRIMARY**: MODWT (Maximal Overlap Discrete Wavelet Transform) is the main discrete transform
+- **KEY BENEFITS**:
+  - Works with ANY signal length (no power-of-2 restriction)
+  - Shift-invariant processing - critical for pattern detection
+  - Perfect reconstruction with machine precision
+  - Ideal for real-time and financial applications
 
-VectorWave is a comprehensive Fast Wavelet Transform (FWT) library supporting multiple wavelet families through a flexible, type-safe architecture.
+### Core Architecture
+- **MODWT Package**: `ai.prophetizo.wavelet.modwt`
+  - `MODWTTransform`: Main transform with automatic SIMD optimization
+  - `MODWTResult`: Interface with factory method `MODWTResult.create()`
+  - `MultiLevelMODWTTransform`: Multi-level decomposition and reconstruction
+  - `MutableMultiLevelMODWTResult`: Mutable coefficients for in-place processing
+- **SWT Package**: `ai.prophetizo.wavelet.swt`
+  - `VectorWaveSwtAdapter`: SWT interface leveraging MODWT backend
+  - Provides familiar SWT API for users migrating from other libraries
+  - Full denoising and feature extraction capabilities
+- **Performance**: Automatic vectorization using Vector API with scalar fallback
+- **Use Cases**: Financial analysis, real-time processing, pattern detection, denoising
 
-### Core Design Principles
-- **Extensibility**: Supports orthogonal, biorthogonal, and continuous wavelets
-- **Type-safe wavelet selection**: Sealed interface hierarchy ensures compile-time validation
-- **Clean API separation**: Public API in `ai.prophetizo.wavelet.api`, internal implementations hidden
-- **Zero dependencies**: Pure Java implementation
+### Financial Analysis
+- **Configuration-Based**: All financial parameters must be explicitly configured
+- **No Default Values**: Removed all default configurations to ensure explicit parameter setting
+- **Risk-Free Rate**: Must be provided based on current market conditions and geographic region
+- **Specialized Wavelets**: Paul, Shannon-Gabor, DOG wavelets for financial analysis
 
-### Wavelet Type Hierarchy
+### Performance Optimizations
+- **Automatic SIMD**: Vector API with platform detection (x86: AVX2/AVX512, ARM: NEON)
+- **Batch Processing**: `forwardBatch()` and `inverseBatch()` methods with 2-4x speedup
+- **Memory Efficiency**: Object pooling and aligned allocation
+- **Streaming**: Real-time processing with arbitrary block sizes
 
-```
-Wavelet (sealed base interface)
-├── DiscreteWavelet (for DWT)
-│   ├── OrthogonalWavelet
-│   │   ├── Haar
-│   │   ├── Daubechies (DB2, DB4)
-│   │   ├── Symlet (sym2, sym3, ...)
-│   │   └── Coiflet (coif1, coif2, ...)
-│   └── BiorthogonalWavelet
-│       └── BiorthogonalSpline (bior1.3, ...)
-└── ContinuousWavelet (for CWT)
-    └── MorletWavelet
-```
+### CWT (Continuous Wavelet Transform)
+- **FFT Acceleration**: Real-to-complex optimization for 2x speedup
+- **Complex Analysis**: Full phase and magnitude information
+- **Automatic Scale Selection**: Signal-adaptive scale placement
+- **Financial Wavelets**: Paul, Morlet, DOG wavelets for market analysis
 
-### Key Components
+## Testing
+- **All tests passing**: 934 total, 12 skipped
+- **Real-world data**: Tick data tests with actual financial data
+- **Performance tests**: SIMD optimization verification
+- **Memory efficiency**: Streaming and batch processing validation
 
-1. **WaveletTransform** (`wavelet/WaveletTransform.java`): Main transform engine
-   - Handles forward and inverse transforms
-   - Supports periodic and zero-padding boundary modes
-   - Works with any wavelet type
+## Key APIs
 
-2. **Wavelet Interfaces** (`wavelet/api/`):
-   - `Wavelet`: Base sealed interface with core methods
-   - `DiscreteWavelet`: Base for discrete wavelets with vanishing moments
-   - `OrthogonalWavelet`: Wavelets where reconstruction = decomposition filters
-   - `BiorthogonalWavelet`: Wavelets with dual filter pairs
-   - `ContinuousWavelet`: Wavelets defined by mathematical functions
-
-3. **WaveletRegistry** (`wavelet/api/WaveletRegistry.java`):
-   - Central registry for all available wavelets
-   - Lookup by name or type
-   - Wavelet discovery functionality
-
-4. **Transform Operations**:
-   - `ScalarOps`: Core mathematical operations for wavelet transforms
-   - Handles convolution, downsampling, upsampling for both boundary modes
-
-### Important Technical Notes
-- Requires Java 21 or later
-- Power-of-2 signal lengths required for transforms
-- Currently implements single-level transforms only
-- No external dependencies (pure Java implementation)
-- Continuous wavelets are discretized for DWT operations
-
-### Adding New Wavelets
-
-To add a new wavelet type:
-
-1. **For Orthogonal wavelets**: Implement `OrthogonalWavelet` interface
-2. **For Biorthogonal wavelets**: Implement `BiorthogonalWavelet` interface  
-3. **For Continuous wavelets**: Implement `ContinuousWavelet` interface
-4. Register in `WaveletRegistry` static initializer
-5. Add comprehensive tests
-
-Example:
+### Wavelet Selection (Type-Safe Enum)
 ```java
-public record MyWavelet() implements OrthogonalWavelet {
-    @Override
-    public String name() { return "mywav"; }
-    
-    @Override
-    public double[] lowPassDecomposition() { 
-        return new double[]{...}; 
-    }
-    
-    @Override
-    public double[] highPassDecomposition() {
-        // Generate from low-pass using QMF
-    }
-    
-    @Override
-    public int vanishingMoments() { return 2; }
-}
+// Get wavelets using enum - compile-time safety
+Wavelet db4 = WaveletRegistry.getWavelet(WaveletName.DB4);
+Wavelet haar = WaveletRegistry.getWavelet(WaveletName.HAAR);
+
+// Discover available wavelets
+List<WaveletName> orthogonal = WaveletRegistry.getOrthogonalWavelets();
+List<WaveletName> daubechies = WaveletRegistry.getDaubechiesWavelets();
 ```
 
-### Testing
-JUnit 5 is configured for unit testing:
-- Test files are located in `src/test/java/ai/prophetizo/`
-- Run all tests: `mvn test`
-- Run specific test: `mvn test -Dtest=TestClassName`
-- Performance tests are disabled by default (annotated with `@Disabled`)
-- Example: `ValidationUtilsTest` covers all validation scenarios
+### Basic MODWT
+```java
+Wavelet wavelet = WaveletRegistry.getWavelet(WaveletName.DB4);
+MODWTTransform transform = new MODWTTransform(wavelet, BoundaryMode.PERIODIC);
+double[] signal = new double[777]; // Any length!
+MODWTResult result = transform.forward(signal);
+double[] reconstructed = transform.inverse(result);
+```
 
-### Benchmarking
-JMH (Java Microbenchmark Harness) is configured for accurate performance measurements:
-- Benchmark classes are in `src/test/java/ai/prophetizo/wavelet/benchmark/`
-- See `BENCHMARKING.md` for detailed instructions
-- Run benchmarks using: `./jmh-runner.sh` or `./jmh-runner.sh BenchmarkName`
-- **Important**: Always use JMH for performance measurements, not manual timing
+### SWT (Stationary Wavelet Transform)
+```java
+// SWT adapter for familiar API
+VectorWaveSwtAdapter swt = new VectorWaveSwtAdapter(Daubechies.DB4, BoundaryMode.PERIODIC);
+MutableMultiLevelMODWTResult result = swt.forward(signal, 4);
 
-### Continuous Integration
-GitHub Actions are configured for:
-- **CI Workflow** (`ci.yml`): Runs on all pushes and PRs
-  - Multi-platform testing (Ubuntu, Windows, macOS)
-  - Unit and integration tests
-  - Code quality checks
-  - Test result reporting and artifact upload
+// Direct coefficient manipulation
+swt.applyThreshold(result, 1, 0.5, true); // soft threshold level 1
+double[] denoised = swt.inverse(result);
 
-### License
-This project is licensed under the GNU General Public License v3.0.
+// Convenience denoising
+double[] cleanSignal = swt.denoise(noisySignal, 4, -1, true); // universal threshold
+```
+
+### Financial Analysis
+```java
+FinancialConfig config = new FinancialConfig(0.045); // 4.5% risk-free rate
+FinancialWaveletAnalyzer analyzer = new FinancialWaveletAnalyzer(config);
+double sharpeRatio = analyzer.calculateWaveletSharpeRatio(returns);
+```
+
+### Batch Processing
+```java
+double[][] signals = new double[32][1000];
+MODWTResult[] results = transform.forwardBatch(signals); // 2-4x speedup
+```
+
+## Development Guidelines
+
+### API Design Principles
+1. **Single Clean API**: Never create "optimized" versions as separate classes (e.g., no SWTOptimizedWavelet)
+2. **Internal Optimizations**: All optimizations must be private, internal, and automatic
+3. **Transparent Performance**: Users get optimizations automatically without API changes
+4. **No Implementation Leakage**: Implementation details should never appear in public APIs
+
+### When Adding Features
+1. **Use MODWT**: Primary transform for new features
+2. **Explicit Configuration**: No default financial parameters
+3. **Test with Real Data**: Use tick data in `src/test/resources/`
+4. **Performance**: Leverage automatic SIMD optimization
+5. **Thread Safety**: Follow existing patterns for concurrent access
+
+### When Fixing Issues
+1. **Run Full Test Suite**: `mvn test` (all 934 tests should pass)
+2. **Check SIMD**: Verify performance on target platforms
+3. **Financial Parameters**: Ensure explicit configuration
+4. **Documentation**: Update relevant guides in `docs/`
+
+### Testing Commands
+```bash
+# Run all tests
+mvn test
+
+# Run specific test pattern
+mvn test -Dtest=*MODWT*
+mvn test -Dtest=*SWT*
+
+# Run with Vector API
+mvn test -Dtest.args="--add-modules jdk.incubator.vector"
+
+# Run demos
+mvn exec:java -Dexec.mainClass="ai.prophetizo.Main"
+mvn exec:java -Dexec.mainClass="ai.prophetizo.demo.SWTDemo"
+```
+
+## Important Notes
+
+- **GitHub Issue #150**: Not required - MODWT already provides better arbitrary-length support
+- **No DWT**: Removed all discrete wavelet transform classes - use MODWT instead
+- **Java 23+**: Required for Vector API and modern features
+- **Clean API**: Use public facades like `WaveletOperations`, avoid internal classes
