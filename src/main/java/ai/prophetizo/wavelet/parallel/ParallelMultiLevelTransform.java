@@ -1,6 +1,7 @@
 package ai.prophetizo.wavelet.parallel;
 
 import ai.prophetizo.wavelet.api.BoundaryMode;
+import ai.prophetizo.wavelet.api.DiscreteWavelet;
 import ai.prophetizo.wavelet.api.Wavelet;
 import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
@@ -355,8 +356,19 @@ public class ParallelMultiLevelTransform extends MultiLevelMODWTTransform {
      */
     private int calculateMaxLevel(int signalLength) {
         // For MODWT, we need at least as many samples as the filter length at each level
-        // Assume typical filter length for MODWT wavelets
-        int filterLength = 8; // Will vary by wavelet type
+        // Get the actual filter length from the wavelet
+        Wavelet wavelet = getWavelet();
+        int filterLength;
+        
+        if (wavelet instanceof DiscreteWavelet) {
+            filterLength = ((DiscreteWavelet) wavelet).supportWidth();
+        } else {
+            // Fallback for continuous wavelets or others
+            filterLength = 8; // Conservative default
+        }
+        
+        // Ensure we have enough samples for stable decomposition
+        // MODWT requires at least 2^level * filterLength samples
         return (int) (Math.log(signalLength / (double) filterLength) / Math.log(2));
     }
     

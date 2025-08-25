@@ -25,6 +25,59 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ParallelConfig {
     
+    // Parallelization thresholds - based on empirical measurements
+    
+    /**
+     * Minimum array size for parallel processing to overcome overhead.
+     * Based on measurements showing ~0.5ms overhead for thread coordination.
+     */
+    private static final int MIN_PARALLEL_SIZE = 512;
+    
+    /**
+     * Default parallel threshold for general operations.
+     * Represents approximately 1ms of work on modern CPUs.
+     */
+    private static final int DEFAULT_PARALLEL_THRESHOLD = 1024;
+    
+    /**
+     * Parallel threshold for I/O-bound operations.
+     * Lower threshold since I/O wait time dominates.
+     */
+    private static final int IO_PARALLEL_THRESHOLD = 256;
+    
+    /**
+     * Operations per core estimate for threshold calculation.
+     * Based on ~1 GFLOP/s throughput per core for wavelet operations.
+     */
+    private static final int OPERATIONS_PER_CORE_MS = 1000;
+    
+    /**
+     * Default chunk size for signal processing.
+     * Optimized for L1 cache (32KB) with double precision (8 bytes).
+     */
+    private static final int DEFAULT_CHUNK_SIZE = 512;
+    
+    /**
+     * Cache line size in bytes on most modern processors.
+     */
+    private static final int CACHE_LINE_BYTES = 64;
+    
+    /**
+     * Size of a double in bytes.
+     */
+    private static final int DOUBLE_SIZE_BYTES = 8;
+    
+    /**
+     * Number of doubles per cache line.
+     */
+    private static final int DOUBLES_PER_CACHE_LINE = CACHE_LINE_BYTES / DOUBLE_SIZE_BYTES;
+    
+    /**
+     * Target number of cache lines for optimal chunk size.
+     * 64 cache lines * 64 bytes = 4KB (fits in L1 cache).
+     */
+    private static final int TARGET_CACHE_LINES = 64;
+    
     /**
      * Execution modes for parallel operations.
      */
@@ -53,6 +106,7 @@ public class ParallelConfig {
     private final boolean enableStructuredConcurrency;
     private final boolean adaptiveThreshold;
     private final double overheadFactor;
+    private final boolean enableParallelThresholding;
     
     // Thread pools
     private final ExecutorService cpuExecutor;
@@ -73,6 +127,7 @@ public class ParallelConfig {
         this.enableStructuredConcurrency = builder.enableStructuredConcurrency;
         this.adaptiveThreshold = builder.adaptiveThreshold;
         this.overheadFactor = builder.overheadFactor;
+        this.enableParallelThresholding = builder.enableParallelThresholding;
         this.enableMetrics = builder.enableMetrics;
         
         // Initialize thread pools
@@ -96,6 +151,7 @@ public class ParallelConfig {
             .mode(ExecutionMode.ADAPTIVE)
             .adaptiveThreshold(true)
             .enableStructuredConcurrency(true)
+            .enableParallelThresholding(true)
             .build();
     }
     
@@ -109,7 +165,7 @@ public class ParallelConfig {
         
         return new Builder()
             .parallelismLevel(cores)
-            .parallelThreshold(1024)
+            .parallelThreshold(DEFAULT_PARALLEL_THRESHOLD)
             .useVirtualThreads(false) // Platform threads for CPU-bound work
             .mode(ExecutionMode.ADAPTIVE)
             .chunkSize(optimizeChunkSize())
@@ -124,7 +180,7 @@ public class ParallelConfig {
     public static ParallelConfig ioIntensive() {
         return new Builder()
             .parallelismLevel(Runtime.getRuntime().availableProcessors() * 4)
-            .parallelThreshold(256)
+            .parallelThreshold(IO_PARALLEL_THRESHOLD)
             .useVirtualThreads(true)
             .mode(ExecutionMode.VIRTUAL_THREADS_IO)
             .enableStructuredConcurrency(true)
@@ -241,15 +297,17 @@ public class ParallelConfig {
     }
     
     private static int calculateOptimalThreshold(int cores) {
-        // Heuristic: overhead becomes worthwhile at ~1ms of work
-        // Assuming ~1 GFLOP/s per core, this translates to ~1000 operations
-        return Math.max(512, 1000 / cores);
+        // Calculate threshold based on overhead vs. parallelization benefit
+        // More cores = lower threshold per core to keep all cores busy
+        int perCoreThreshold = OPERATIONS_PER_CORE_MS / cores;
+        return Math.max(MIN_PARALLEL_SIZE, perCoreThreshold);
     }
     
     private static int optimizeChunkSize() {
-        // Optimize for L1 cache line (typically 64 bytes = 8 doubles)
-        // Use multiple cache lines for better performance
-        return 64 * 8; // 512 doubles = 4KB
+        // Optimize for L1 cache utilization
+        // TARGET_CACHE_LINES (64) * DOUBLES_PER_CACHE_LINE (8) = 512 doubles
+        // 512 doubles * 8 bytes/double = 4KB (fits well in L1 cache)
+        return TARGET_CACHE_LINES * DOUBLES_PER_CACHE_LINE;
     }
     
     private double calculateSpeedupEstimate() {
@@ -272,6 +330,7 @@ public class ParallelConfig {
     public boolean isEnableStructuredConcurrency() { return enableStructuredConcurrency; }
     public boolean isAdaptiveThreshold() { return adaptiveThreshold; }
     public double getOverheadFactor() { return overheadFactor; }
+    public boolean isEnableParallelThresholding() { return enableParallelThresholding; }
     public boolean isEnableMetrics() { return enableMetrics; }
     
     /**
@@ -293,14 +352,15 @@ public class ParallelConfig {
      */
     public static class Builder {
         private int parallelismLevel = ForkJoinPool.getCommonPoolParallelism();
-        private int parallelThreshold = 1024;
+        private int parallelThreshold = DEFAULT_PARALLEL_THRESHOLD;
         private boolean useVirtualThreads = true;
         private boolean enableGPU = false;
         private ExecutionMode mode = ExecutionMode.ADAPTIVE;
-        private int chunkSize = 512;
+        private int chunkSize = DEFAULT_CHUNK_SIZE;
         private boolean enableStructuredConcurrency = true;
         private boolean adaptiveThreshold = false;
         private double overheadFactor = 1.0;
+        private boolean enableParallelThresholding = true;
         private boolean enableMetrics = false;
         
         public Builder parallelismLevel(int level) {
@@ -357,6 +417,11 @@ public class ParallelConfig {
                 throw new IllegalArgumentException("Overhead factor must be > 0");
             }
             this.overheadFactor = factor;
+            return this;
+        }
+        
+        public Builder enableParallelThresholding(boolean enable) {
+            this.enableParallelThresholding = enable;
             return this;
         }
         
