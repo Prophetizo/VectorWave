@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.swt.VectorWaveSwtAdapter;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.MutableMultiLevelMODWTResult;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.MutableMultiLevelMODWTResult;
 
 import java.util.Arrays;
 

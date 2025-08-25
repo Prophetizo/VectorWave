@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.api.*;
-
+import ai.prophetizo.wavelet.padding.*;
 import java.util.*;
 
 /**
@@ -519,16 +519,12 @@ public class SignalAnalysisDemo {
     }
 
     private static String getMODWTCharacteristic(String className) {
-        switch (className) {
-            case "Periodic":
-                return "Shift-invariant oscillations";
-            case "Transient":
-                return "Localized events preserved";
-            case "Noisy":
-                return "Scale-invariant randomness";
-            default:
-                return "Unknown";
-        }
+        return switch (className) {
+            case "Periodic" -> "Shift-invariant oscillations";
+            case "Transient" -> "Localized events preserved";
+            case "Noisy" -> "Scale-invariant randomness";
+            default -> "Unknown";
+        };
     }
 
     private static void testMODWTSignalClassification(MODWTTransform transform,
@@ -546,21 +542,21 @@ public class SignalAnalysisDemo {
             // Generate test signal
             double[] testSignal = new double[length];
             switch (actualClass) {
-                case "Periodic":
+                case "Periodic" -> {
                     for (int i = 0; i < length; i++) {
                         testSignal[i] = Math.sin(2.5 * 2 * Math.PI * i / length);
                     }
-                    break;
-                case "Transient":
+                }
+                case "Transient" -> {
                     for (int i = 0; i < length; i++) {
                         testSignal[i] = Math.exp(-0.5 * (i - length/2) * (i - length/2) / 9);
                     }
-                    break;
-                case "Noisy":
+                }
+                case "Noisy" -> {
                     for (int i = 0; i < length; i++) {
                         testSignal[i] = rng.nextGaussian() * 0.7;
                     }
-                    break;
+                }
             }
 
             // Extract features

@@ -2,7 +2,7 @@ package ai.prophetizo.demo;
 
 import ai.prophetizo.wavelet.*;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.memory.*;
 import ai.prophetizo.wavelet.modwt.streaming.MODWTStreamingDenoiser;
 

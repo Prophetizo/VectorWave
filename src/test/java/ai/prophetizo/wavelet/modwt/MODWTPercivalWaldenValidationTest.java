@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.modwt;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.internal.ScalarOps;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.internal.ScalarOps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;

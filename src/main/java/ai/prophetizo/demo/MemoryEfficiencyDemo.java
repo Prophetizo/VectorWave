@@ -3,7 +3,7 @@ package ai.prophetizo.demo;
 import ai.prophetizo.wavelet.modwt.*;
 import ai.prophetizo.wavelet.modwt.streaming.*;
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.memory.MemoryPool;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.memory.MemoryPool;
 import ai.prophetizo.wavelet.denoising.WaveletDenoiser;
 
 import java.lang.management.GarbageCollectorMXBean;

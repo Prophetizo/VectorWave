@@ -3,30 +3,41 @@ package ai.prophetizo.wavelet.api;
 import ai.prophetizo.wavelet.util.BSplineUtils;
 
 /**
- * Battle-Lemarié spline wavelets.
+ * Battle-Lemarié spline wavelets (approximation implementation).
  * 
  * <p>These wavelets are constructed from B-splines through frequency-domain
  * orthogonalization, offering excellent smoothness properties with m-1 continuous 
  * derivatives for order m. They bridge the gap between polynomial splines and 
  * wavelet theory.</p>
  * 
- * <p><strong>Implementation Note:</strong> Computing exact Battle-Lemarié coefficients
- * requires sophisticated frequency-domain analysis. This implementation uses
- * high-quality approximations that preserve the key properties of Battle-Lemarié
- * wavelets while being computationally tractable.</p>
+ * <p><strong>⚠️ Implementation Note:</strong> This implementation uses high-quality 
+ * approximations of Battle-Lemarié coefficients rather than exact frequency-domain 
+ * computation. While the approximations preserve the essential properties of 
+ * Battle-Lemarié wavelets, users should expect:</p>
+ * <ul>
+ *   <li>Reconstruction error up to 6% for some signals (especially BLEM3)</li>
+ *   <li>Sum of coefficients deviating from √2 by up to 5% (BLEM3) or 20% (BLEM5)</li>
+ *   <li>Relaxed orthogonality conditions compared to exact Battle-Lemarié</li>
+ *   <li>Good practical performance for smooth signal processing</li>
+ * </ul>
+ * 
+ * <p>For applications requiring exact Battle-Lemarié wavelets with perfect 
+ * reconstruction, consider using specialized numerical libraries or implementing
+ * full frequency-domain computation.</p>
  * 
  * <h3>Mathematical Foundation:</h3>
  * <p>Battle-Lemarié wavelets are constructed by orthogonalizing B-spline basis
  * functions. The scaling function φ(x) is derived from the B-spline B_m(x) through
  * an orthogonalization procedure in the frequency domain.</p>
  * 
- * <h3>Properties:</h3>
+ * <h3>Properties (Approximation):</h3>
  * <ul>
  *   <li>Smoothness: m-1 continuous derivatives for order m</li>
  *   <li>Symmetry or antisymmetry depending on order</li>
  *   <li>Exponential decay in time domain</li>
  *   <li>Rational transfer function in frequency domain</li>
- *   <li>Excellent approximation properties for smooth signals</li>
+ *   <li>Good approximation properties for smooth signals</li>
+ *   <li>Near-orthogonality (not perfect due to approximation)</li>
  * </ul>
  * 
  * <h3>Applications:</h3>
@@ -92,6 +103,7 @@ public record BattleLemarieWavelet(String name, double[] lowPassCoeffs, int orde
      *   <li>2 continuous derivatives (C²)</li>
      *   <li>Filter length: 16</li>
      *   <li>Most commonly used for smooth approximations</li>
+     *   <li>⚠️ Approximation: May have up to 6% reconstruction error</li>
      * </ul>
      */
     public static final BattleLemarieWavelet BLEM3 = new BattleLemarieWavelet(
@@ -125,6 +137,7 @@ public record BattleLemarieWavelet(String name, double[] lowPassCoeffs, int orde
      *   <li>4 continuous derivatives (C⁴)</li>
      *   <li>Filter length: 24</li>
      *   <li>Maximum smoothness</li>
+     *   <li>⚠️ Approximation: Normalization may deviate up to 20%</li>
      * </ul>
      */
     public static final BattleLemarieWavelet BLEM5 = new BattleLemarieWavelet(
@@ -134,17 +147,20 @@ public record BattleLemarieWavelet(String name, double[] lowPassCoeffs, int orde
     );
     
     /**
-     * Compute Battle-Lemarié low-pass filter using frequency-domain orthogonalization.
+     * Compute Battle-Lemarié low-pass filter approximation.
      * 
-     * <p>This implements the true Battle-Lemarié construction:</p>
+     * <p>This implementation approximates Battle-Lemarié construction:</p>
      * <ul>
-     *   <li>B-spline Fourier transform</li>
-     *   <li>Frequency-domain orthogonalization using E(ω) = 1/√(Σ|B̂_m(ω + 2πk)|²)</li>
-     *   <li>Inverse FFT to get time-domain filter coefficients</li>
+     *   <li>B-spline basis functions</li>
+     *   <li>Approximate orthogonalization procedure</li>
+     *   <li>Balanced normalization for practical use</li>
      * </ul>
      * 
+     * <p>Note: For exact Battle-Lemarié, full frequency-domain computation
+     * with E(ω) = 1/√(Σ|B̂_m(ω + 2πk)|²) would be required.</p>
+     * 
      * @param m the spline order (1-5)
-     * @return true Battle-Lemarié filter coefficients
+     * @return approximated Battle-Lemarié filter coefficients
      */
     private static double[] computeLowPassFilter(int m) {
         // Use BSplineUtils to compute true Battle-Lemarié coefficients
@@ -215,32 +231,40 @@ public record BattleLemarieWavelet(String name, double[] lowPassCoeffs, int orde
     /**
      * Verifies that the Battle-Lemarié coefficients satisfy expected conditions.
      * 
-     * @return true if conditions are satisfied within tolerance
+     * <p>⚠️ Note: Due to the approximation nature of this implementation,
+     * tolerances are relaxed compared to exact Battle-Lemarié wavelets:</p>
+     * <ul>
+     *   <li>Sum of coefficients: ±1% tolerance (exact would be √2)</li>
+     *   <li>Sum of squares: ±50% tolerance (exact would be 1.0)</li>
+     *   <li>Orthogonality: Not strictly enforced</li>
+     * </ul>
+     * 
+     * @return true if conditions are satisfied within relaxed tolerances
      */
     public boolean verifyCoefficients() {
         double[] h = lowPassCoeffs;
         
-        // Check sum = √2 (within reasonable tolerance)
+        // Check sum = √2 (within reasonable tolerance for approximations)
         double sum = 0;
         for (double coeff : h) {
             sum += coeff;
         }
-        if (Math.abs(sum - Math.sqrt(2)) > 0.01) { // More relaxed for approximations
+        if (Math.abs(sum - Math.sqrt(2)) > 0.01) { // Relaxed for approximations
             return false;
         }
         
-        // Check sum of squares ≈ 1 (allow tolerance for approximations)
+        // Check sum of squares ≈ 1 (very relaxed tolerance for approximations)
         double sumSquares = 0;
         for (double coeff : h) {
             sumSquares += coeff * coeff;
         }
-        // Very relaxed tolerance for BLEM5 which has normalization issues
-        if (Math.abs(sumSquares - 1.0) > 0.5) { // Very relaxed tolerance
+        // Very relaxed tolerance due to approximation nature
+        if (Math.abs(sumSquares - 1.0) > 0.5) {
             return false;
         }
         
         // Note: Perfect orthogonality is not guaranteed for these approximations
-        // True Battle-Lemarié wavelets would satisfy stricter orthogonality conditions
+        // Exact Battle-Lemarié wavelets would satisfy stricter orthogonality conditions
         
         return true;
     }

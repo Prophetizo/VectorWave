@@ -1,4 +1,4 @@
-package ai.prophetizo.wavelet.api;
+package ai.prophetizo.wavelet.padding;
 
 import ai.prophetizo.wavelet.exception.InvalidArgumentException;
 
@@ -20,7 +20,11 @@ import ai.prophetizo.wavelet.exception.InvalidArgumentException;
  */
 public sealed interface PaddingStrategy
         permits ZeroPaddingStrategy, SymmetricPaddingStrategy,
-        ReflectPaddingStrategy, PeriodicPaddingStrategy {
+        ReflectPaddingStrategy, PeriodicPaddingStrategy,
+        ConstantPaddingStrategy, LinearExtrapolationStrategy, 
+        AntisymmetricPaddingStrategy, PolynomialExtrapolationStrategy,
+        StatisticalPaddingStrategy, AdaptivePaddingStrategy,
+        CompositePaddingStrategy {
 
     /**
      * Pads the input signal to the target length.

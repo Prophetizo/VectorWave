@@ -1,7 +1,7 @@
 package ai.prophetizo.wavelet.cwt.providers;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.cwt.GaussianDerivativeWavelet;
 import ai.prophetizo.wavelet.cwt.MorletWavelet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

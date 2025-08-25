@@ -14,6 +14,7 @@ This guide helps you choose the right wavelet for your specific application.
 | **Edge Detection** | Mexican Hat (DOG2), DB2 | Zero crossings, sharp transitions |
 | **Compression** | DB4-DB8, Bior | Energy compaction, perfect reconstruction |
 | **Scientific Data** | Morlet, Paul, DOG | Physical interpretation, continuous analysis |
+| **Smooth Signal Approximation** | BLEM3-BLEM4, Coiflets, DB8+ | High regularity, polynomial approximation |
 
 ## Continuous Wavelets (CWT)
 
@@ -182,6 +183,36 @@ BiorthogonalWavelet bior = BiorthogonalSpline.BIOR2_2;
 - Perfect reconstruction
 - Different analysis and synthesis wavelets
 
+### Battle-Lemarié Wavelets (B-Spline)
+```java
+BattleLemarieWavelet blem3 = BattleLemarieWavelet.BLEM3; // Cubic (recommended)
+BattleLemarieWavelet blem2 = BattleLemarieWavelet.BLEM2; // Quadratic
+```
+
+**Best for:**
+- Very smooth signal approximation
+- Numerical analysis with spline methods
+- Signals with polynomial-like behavior
+- Applications requiring high regularity
+
+**Characteristics:**
+- Constructed from orthogonalized B-splines
+- m-1 continuous derivatives for order m
+- Excellent smoothness properties
+- Exponential decay in time domain
+
+**⚠️ Implementation Note:** Current implementation uses approximations with:
+- Up to 6% reconstruction error (particularly BLEM3)
+- Relaxed orthogonality conditions
+- Good practical performance for smooth signals
+
+**Selection Guide:**
+- **BLEM1**: Linear splines, piecewise linear approximation
+- **BLEM2**: Quadratic splines, C¹ continuity
+- **BLEM3**: Cubic splines, C² continuity (most common)
+- **BLEM4**: Quartic splines, C³ continuity
+- **BLEM5**: Quintic splines, C⁴ continuity (may have normalization issues)
+
 ## Selection Criteria
 
 ### 1. Time-Frequency Resolution Trade-off
@@ -190,10 +221,10 @@ BiorthogonalWavelet bior = BiorthogonalSpline.BIOR2_2;
 - **Need balance?** → Morlet (ω₀=6), DB4-DB8
 
 ### 2. Signal Characteristics
-- **Smooth signals** → Higher-order wavelets (DB8+, Coif)
+- **Smooth signals** → Battle-Lemarié (BLEM3-4), Higher-order wavelets (DB8+, Coif)
 - **Sharp transients** → Low-order wavelets (DB2-DB4, Paul)
 - **Oscillatory** → Morlet, Shannon
-- **Polynomial trends** → Coiflets, high-order Daubechies
+- **Polynomial trends** → Battle-Lemarié, Coiflets, high-order Daubechies
 
 ### 3. Application Requirements
 - **Real-time** → Orthogonal wavelets (Daubechies, Symlets)

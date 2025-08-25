@@ -1,7 +1,7 @@
 package ai.prophetizo.examples.basic;
 
 import ai.prophetizo.wavelet.api.*;
-import ai.prophetizo.wavelet.modwt.*;
+import ai.prophetizo.wavelet.padding.*;import ai.prophetizo.wavelet.modwt.*;
 
 /**
  * Getting Started with VectorWave - Minimal example to get you running.

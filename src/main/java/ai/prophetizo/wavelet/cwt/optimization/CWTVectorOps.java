@@ -431,32 +431,32 @@ public final class CWTVectorOps {
         
         // Apply padding
         switch (padding) {
-            case ZERO:
-                // Already zeros
-                break;
+            case ZERO -> {
+                // Already zeros - no action needed
+            }
                 
-            case REFLECT:
+            case REFLECT -> {
                 for (int i = 0; i < padSize; i++) {
                     paddedSignal[i] = signal[Math.min(padSize - i, signal.length - 1)];
                     paddedSignal[paddedSignal.length - 1 - i] = 
                         signal[Math.max(signal.length - padSize + i - 1, 0)];
                 }
-                break;
+            }
                 
-            case PERIODIC:
+            case PERIODIC -> {
                 for (int i = 0; i < padSize; i++) {
                     paddedSignal[i] = signal[signal.length - padSize + i];
                     paddedSignal[paddedSignal.length - padSize + i] = signal[i];
                 }
-                break;
+            }
                 
-            case SYMMETRIC:
+            case SYMMETRIC -> {
                 for (int i = 0; i < padSize; i++) {
                     paddedSignal[i] = signal[padSize - i - 1];
                     paddedSignal[paddedSignal.length - 1 - i] = 
                         signal[signal.length - padSize + i];
                 }
-                break;
+            }
         }
         
         // Convolve padded signal
