@@ -22,7 +22,9 @@ public sealed interface PaddingStrategy
         permits ZeroPaddingStrategy, SymmetricPaddingStrategy,
         ReflectPaddingStrategy, PeriodicPaddingStrategy,
         ConstantPaddingStrategy, LinearExtrapolationStrategy, 
-        AntisymmetricPaddingStrategy {
+        AntisymmetricPaddingStrategy, PolynomialExtrapolationStrategy,
+        StatisticalPaddingStrategy, AdaptivePaddingStrategy,
+        CompositePaddingStrategy {
 
     /**
      * Pads the input signal to the target length.
